@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.8)
 project(superbuild)
 include(ExternalProject)
-set(CMAKE_CXX_STANDARD 11)
 
-set(SOURCE_FILES main.cpp)
+
+find_package(PythonLibs 3 REQUIRED)
+#find_package(Boost COMPONENTS python3 REQUIRED)
 
 ExternalProject_Add(zlibsource
         URL https://zlib.net/zlib-1.2.11.tar.gz
@@ -15,7 +16,9 @@ ExternalProject_Add(zlibsource
         -DINSTALL_PKGCONFIG_DIR=""
 
         )
-ExternalProject_Add(libexpat
+ExternalProject_Get_Property(zlibsource install_dir)
+message(STATUS "zlibsource install_dir = ${install_dir}")
+ExternalProject_Add(project_libexpat
         URL https://github.com/libexpat/libexpat/archive/R_2_2_4.tar.gz
         SOURCE_SUBDIR expat
         CMAKE_ARGS
@@ -23,22 +26,62 @@ ExternalProject_Add(libexpat
         -DBUILD_shared=off
         -DBUILD_tests=off
         -DBUILD_tools=off
-        -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/thirdparty/expat
+        -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+#        -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/thirdparty/expat
         )
-ExternalProject_Add(libexiv2
-        GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
+ExternalProject_Get_Property(project_libexpat install_dir)
+set(libexpat_install_dir ${install_dir})
+message(STATUS "libexpat_install_dir = ${libexpat_install_dir}")
+ExternalProject_Add(project_libexiv2
+#        URL http://www.exiv2.org/builds/exiv2-0.26-trunk.tar.gz
+        GIT_REPOSITORY https://github.com/henryborchers/exiv2.git
         CMAKE_ARGS
         -DEXIV2_ENABLE_DYNAMIC_RUNTIME=ON
-        -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/thirdparty/exiv2
+        -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+#        -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/thirdparty/exiv2
         -DBUILD_SHARED_LIBS=OFF
-        -DEXPAT_INCLUDE_DIR=${CMAKE_BINARY_DIR}/thirdparty/expat/include
-        -DEXPAT_LIBRARY=${CMAKE_BINARY_DIR}/thirdparty/expat/lib/${CMAKE_STATIC_LIBRARY_PREFIX}expat${CMAKE_STATIC_LIBRARY_SUFFIX}
+        -DEXIV2_ENABLE_BUILD_SAMPLES=ON
+        -DEXIV2_ENABLE_TOOLS=ON
+        -DEXIV2_ENABLE_CURL=ON
+        -DEXIV2_ENABLE_PNG=OFF
+        -DEXIV2_ENABLE_XMP=OFF
+        -DEXPAT_INCLUDE_DIR=${libexpat_install_dir}/include
+#        -DEXPAT_INCLUDE_DIR=${CMAKE_BINARY_DIR}/thirdparty/expat/include
+#        -DEXPAT_LIBRARY=${libexpat_install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}expat${CMAKE_STATIC_LIBRARY_SUFFIX}
+        -DEXPAT_LIBRARY=${libexpat_install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}expat${CMAKE_STATIC_LIBRARY_SUFFIX}
+#        -DEXPAT_LIBRARY=${CMAKE_BINARY_DIR}/thirdparty/expat/lib/${CMAKE_STATIC_LIBRARY_PREFIX}expat${CMAKE_STATIC_LIBRARY_SUFFIX}
         -DZLIB_INCLUDE_DIR=${CMAKE_BINARY_DIR}/thirdparty/zlib/include
         -DZLIB_LIBRARY=${CMAKE_BINARY_DIR}/thirdparty/zlib/lib/${CMAKE_STATIC_LIBRARY_PREFIX}zlibstatic${CMAKE_STATIC_LIBRARY_SUFFIX}
         -DICONV_INCLUDE_DIR=""
         -DICONV_LIBRARY=""
         )
+add_dependencies(project_libexiv2 zlibsource project_libexpat)
+ExternalProject_Get_Property(project_libexiv2 install_dir)
+message(STATUS "project_libexiv2 install_dir = ${install_dir}")
+add_library(libexiv2 STATIC IMPORTED)
+add_dependencies(libexiv2 project_libexiv2)
+#add_library(libexiv2_shared SHARED IMPORTED)
+#add_dependencies(libexiv2_shared project_libexiv2)
 
-add_executable(superbuild ${SOURCE_FILES})
-add_dependencies(libexiv2 zlibsource libexpat)
-add_dependencies(superbuild libexiv2)
+
+set_property(TARGET libexiv2 PROPERTY INCLUDE_DIRECTORIES ${install_dir}/include)
+
+set_target_properties(libexiv2 PROPERTIES
+        IMPORTED_LOCATION_DEBUG ${install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}exiv2d${CMAKE_STATIC_LIBRARY_SUFFIX}
+        IMPORTED_LOCATION_RELEASE ${install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}exiv2${CMAKE_STATIC_LIBRARY_SUFFIX}
+        CXX_STANDARD 98
+        )
+
+add_executable(runme main.cpp)
+target_link_libraries(runme PRIVATE libexiv2)
+add_dependencies(runme libexiv2)
+include_directories(${install_dir}/include)
+#add_library(glue glue.cpp glue.h)
+#add_dependencies(runme glue)
+#add_dependencies(runme libexiv2::libexiv2)
+#PYTHON_ADD_MODULE(pyexiv2 glue.cpp glue.h)
+#
+#target_link_libraries(runme PUBLIC glue)
+#target_link_libraries(glue PUBLIC libexiv2::libexiv2)
+#target_link_libraries(pyexiv2  PUBLIC libexiv2::libexiv2)
+##target_include_directories(glue PUBLIC ${install_dir}/include)
