@@ -10,6 +10,8 @@ pipeline {
             steps {
                 deleteDir()
                 checkout scm
+                bat 'mkdir build'
+
 
             }
 
