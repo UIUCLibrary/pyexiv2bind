@@ -10,6 +10,7 @@ pipeline {
             steps {
                 deleteDir()
                 checkout scm
+                bat 'git submodule update --init'
                 bat 'mkdir build'
                 dir('build') {
                     bat 'cmake ..'
