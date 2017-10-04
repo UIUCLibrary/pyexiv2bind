@@ -9,8 +9,15 @@ pipeline {
 
             steps {
                 deleteDir()
-                checkout scm
-                bat 'git submodule update --init'
+
+                checkout([
+                        $class: 'GitSCM',
+                        branches: scm.branches,
+                        doGenerateSubmoduleConfigurations: true,
+                        extensions: scm.extensions + [[$class: 'SubmoduleOption', parentCredentials: true]],
+                        userRemoteConfigs: scm.userRemoteConfigs
+                    ])
+
                 bat 'mkdir build'
                 dir('build') {
                     bat 'cmake ..'
