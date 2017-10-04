@@ -3,7 +3,7 @@ project(pyexiv2bind)
 include(ExternalProject)
 
 
-find_package(PythonLibs 3 REQUIRED)
+#find_package(PythonLibs 3 REQUIRED)
 #find_package(Boost COMPONENTS python3 REQUIRED)
 
 ExternalProject_Add(zlibsource
