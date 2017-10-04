@@ -33,8 +33,8 @@ ExternalProject_Get_Property(project_libexpat install_dir)
 set(libexpat_install_dir ${install_dir})
 message(STATUS "libexpat_install_dir = ${libexpat_install_dir}")
 ExternalProject_Add(project_libexiv2
-#        URL http://www.exiv2.org/builds/exiv2-0.26-trunk.tar.gz
-        GIT_REPOSITORY https://github.com/henryborchers/exiv2.git
+        URL https://github.com/henryborchers/exiv2/archive/v0.26_deps.tar.gz
+#        GIT_REPOSITORY https://github.com/henryborchers/exiv2.git
         CMAKE_ARGS
         -DEXIV2_ENABLE_DYNAMIC_RUNTIME=ON
         -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
