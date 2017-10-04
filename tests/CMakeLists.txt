@@ -5,7 +5,7 @@ add_custom_target(add_tests
         COMMENT "Adding test the build directory"
         )
 
-add_dependencies(add_tests glue)
+add_dependencies(add_tests py3exiv2bind)
 add_test(NAME import_test
         COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_BINARY_DIR}/test_run.py
         )
