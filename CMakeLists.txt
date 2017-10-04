@@ -39,12 +39,12 @@ ExternalProject_Add(project_libexiv2
         -DEXIV2_ENABLE_DYNAMIC_RUNTIME=ON
         -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
 #        -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/thirdparty/exiv2
-        -DBUILD_SHARED_LIBS=OFF
-        -DEXIV2_ENABLE_BUILD_SAMPLES=ON
-        -DEXIV2_ENABLE_TOOLS=ON
-        -DEXIV2_ENABLE_CURL=ON
-        -DEXIV2_ENABLE_PNG=OFF
-        -DEXIV2_ENABLE_XMP=OFF
+        -DBUILD_SHARED_LIBS:BOOL=OFF
+        -DEXIV2_ENABLE_BUILD_SAMPLES:BOOL=OFF
+        -DEXIV2_ENABLE_TOOLS:BOOL=ON
+        -DEXIV2_ENABLE_CURL:BOOL=ON
+        -DEXIV2_ENABLE_PNG:BOOL=OFF
+        -DEXIV2_ENABLE_XMP:BOOL=OFF
         -DEXPAT_INCLUDE_DIR=${libexpat_install_dir}/include
 #        -DEXPAT_INCLUDE_DIR=${CMAKE_BINARY_DIR}/thirdparty/expat/include
 #        -DEXPAT_LIBRARY=${libexpat_install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}expat${CMAKE_STATIC_LIBRARY_SUFFIX}
@@ -76,12 +76,14 @@ add_executable(runme main.cpp)
 target_link_libraries(runme PRIVATE libexiv2)
 add_dependencies(runme libexiv2)
 include_directories(${install_dir}/include)
+add_subdirectory(thirdparty/pybind11)
+pybind11_add_module(glue glue.cpp glue.h)
 #add_library(glue glue.cpp glue.h)
 #add_dependencies(runme glue)
-#add_dependencies(runme libexiv2::libexiv2)
+#add_dependencies(glue libexiv2::libexiv2)
 #PYTHON_ADD_MODULE(pyexiv2 glue.cpp glue.h)
 #
 #target_link_libraries(runme PUBLIC glue)
-#target_link_libraries(glue PUBLIC libexiv2::libexiv2)
+target_link_libraries(glue PUBLIC libexiv2)
 #target_link_libraries(pyexiv2  PUBLIC libexiv2::libexiv2)
 ##target_include_directories(glue PUBLIC ${install_dir}/include)
