@@ -10,7 +10,7 @@ pipeline {
             steps {
                 deleteDir()
                 checkout scm
-                bat 'git submodule update --init --recursive'
+                bat 'git pull --recurse-submodules'
                 bat 'mkdir build'
                 dir('build') {
                     bat 'cmake ..'
