@@ -1,11 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        label "Windows"
+    }
     stages {
 
         stage("Building") {
-            agent {
-                label "Windows"
-            }
 
             steps {
                 deleteDir()
@@ -22,10 +21,6 @@ pipeline {
 
         }
         stage("testing") {
-            agent {
-                label "Windows"
-            }
-
             steps {
                 dir('build') {
                     bat 'ctest --verbose'
