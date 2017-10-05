@@ -13,8 +13,8 @@ pipeline {
                 bat 'mkdir build'
                 dir('build') {
                     bat 'call "%vs140comntools%..\\..\\VC\\vcvarsall.bat" x86_amd64 && cmake .. -GNinja'
-                    bat 'cmake --build . --target project_libexiv2'
-                    bat 'cmake --build . --target add_tests'
+                    bat 'call "%vs140comntools%..\\..\\VC\\vcvarsall.bat" x86_amd64 && cmake --build . --target project_libexiv2'
+                    bat 'call "%vs140comntools%..\\..\\VC\\vcvarsall.bat" x86_amd64 && cmake --build . --target add_tests'
                     bat 'ctest'
                 }
 
