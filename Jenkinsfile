@@ -28,7 +28,7 @@ pipeline {
 
             steps {
                 dir('build') {
-                    bat 'ctest'
+                    bat 'ctest --verbose'
                 }
 
 
