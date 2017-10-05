@@ -15,6 +15,19 @@ pipeline {
                     bat 'call "%vs140comntools%..\\..\\VC\\vcvarsall.bat" x86_amd64 && cmake .. -GNinja'
                     bat 'call "%vs140comntools%..\\..\\VC\\vcvarsall.bat" x86_amd64 && cmake --build . --target project_libexiv2'
                     bat 'call "%vs140comntools%..\\..\\VC\\vcvarsall.bat" x86_amd64 && cmake --build . --target add_tests'
+                }
+
+
+            }
+
+        }
+        stage("testing") {
+            agent {
+                label "Windows"
+            }
+
+            steps {
+                dir('build') {
                     bat 'ctest'
                 }
 
