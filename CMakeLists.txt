@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 project(pyexiv2bind)
 include(ExternalProject)
-
-
 #find_package(PythonLibs 3 REQUIRED)
 #find_package(Boost COMPONENTS python3 REQUIRED)
 
