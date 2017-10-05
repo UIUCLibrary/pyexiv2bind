@@ -6,7 +6,7 @@ add_custom_target(add_tests
         )
 add_dependencies(add_tests py3exiv2bind project_libexiv2)
 add_custom_command(TARGET add_tests
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_run.py $<TARGET_FILE_DIR:py3exiv2bind>/../tests/
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_run.py ${CMAKE_CURRENT_BINARY_DIR}
         )
 
 add_test(NAME python_tests
