@@ -9,6 +9,6 @@ add_custom_command(TARGET add_tests
         )
 
 add_test(NAME python_tests
-        COMMAND ${PYTHON_EXECUTABLE} setup.py test
+        COMMAND ${PYTHON_EXECUTABLE} -m tox
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         )
