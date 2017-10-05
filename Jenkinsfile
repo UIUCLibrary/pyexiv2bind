@@ -51,5 +51,12 @@ pipeline {
             }
 
         }
+        stage("Packaging"){
+            steps{
+                dir('build') {
+                    bat "${env.PYTHON3} setup.py bdist_wheel"
+                }
+            }
+        }
     }
 }
