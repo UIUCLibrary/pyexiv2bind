@@ -41,7 +41,7 @@ pipeline {
             }
 
         }
-        stage("testing") {
+        stage("Testing") {
             steps {
                 dir('build') {
                     bat 'ctest --verbose'
@@ -55,6 +55,7 @@ pipeline {
             steps{
                 dir('build') {
                     bat "${env.PYTHON3} setup.py bdist_wheel"
+                    archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
                 }
             }
         }
