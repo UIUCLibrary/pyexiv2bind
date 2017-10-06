@@ -1,7 +1,7 @@
 set(PYTHON_TEST_FILES python_tests/test_run.py)
 find_package(PythonInterp 3 REQUIRED)
 add_custom_target(add_python_tests
-        COMMENT "Adding test the build directory"
+        COMMENT "Adding Python test"
         DEPENDS core project_libexiv2
         )
 add_dependencies(add_python_tests core project_libexiv2)
@@ -17,11 +17,18 @@ add_subdirectory(thirdparty/catch)
 
 add_library(Catch INTERFACE)
 target_include_directories(Catch INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/catch/include)
-add_executable(tests test_basic.cpp)
-set_target_properties(tests PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-target_link_libraries(tests Catch)
+add_executable(cpp_tests test_basic.cpp)
+set_target_properties(cpp_tests PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+        RUNTIME_OUTPUT_NAME test
+        )
+target_link_libraries(cpp_tests Catch)
 add_test(NAME cpp_tests
         COMMAND tests
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        )
+
+add_custom_target(add_tests
+        COMMENT "Adding tests to ${CMAKE_BINARY_DIR}"
+        DEPENDS add_python_tests cpp_tests
         )
