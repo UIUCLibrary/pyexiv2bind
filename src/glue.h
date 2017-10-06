@@ -7,7 +7,13 @@
 
 #include <string>
 
+struct  metadata_chunk{
+    const std::string key;
+    const std::string data_type;
+    const std::string value;
+};
+
 std::string exiv2_version();
-int get_exif_metadata();
+const std::vector<metadata_chunk> get_exif_metadata(const std::string &filename);
 
 #endif //SUPERBUILD_GLUE_H
