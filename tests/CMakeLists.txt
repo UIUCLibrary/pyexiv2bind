@@ -24,7 +24,7 @@ set_target_properties(cpp_tests PROPERTIES
         )
 target_link_libraries(cpp_tests Catch)
 add_test(NAME cpp_tests
-        COMMAND tests
+        COMMAND test
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         )
 
