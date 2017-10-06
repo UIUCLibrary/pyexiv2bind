@@ -8,6 +8,6 @@
 #include <string>
 
 std::string exiv2_version();
-
+int get_exif_metadata();
 
 #endif //SUPERBUILD_GLUE_H

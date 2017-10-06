@@ -3,7 +3,7 @@
 #set_target_properties(py3exiv2bind PROPERTIES PREFIX "${PYTHON_MODULE_PREFIX}"
 #        SUFFIX "${PYTHON_MODULE_EXTENSION}")
 
-pybind11_add_module(core py3exiv2bind.cpp glue.cpp glue.h)
+pybind11_add_module(core core.cpp glue.cpp glue.h)
 set_target_properties(core PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/py3exiv2bind
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/py3exiv2bind
