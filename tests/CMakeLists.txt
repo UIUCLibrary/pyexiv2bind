@@ -2,9 +2,9 @@ set(PYTHON_TEST_FILES ${CMAKE_CURRENT_SOURCE_DIR}/test_run.py)
 find_package(PythonInterp 3 REQUIRED)
 add_custom_target(add_tests
         COMMENT "Adding test the build directory"
-        DEPENDS py3exiv2bind project_libexiv2
+        DEPENDS core project_libexiv2
         )
-add_dependencies(add_tests py3exiv2bind project_libexiv2)
+add_dependencies(add_tests core project_libexiv2)
 add_custom_command(TARGET add_tests
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_run.py ${CMAKE_CURRENT_BINARY_DIR}
         )

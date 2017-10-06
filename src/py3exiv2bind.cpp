@@ -6,7 +6,7 @@
 #include "glue.h"
 
 
-PYBIND11_MODULE(py3exiv2bind, m){
+PYBIND11_MODULE(core, m){
     m.doc() = "Glue code";
     m.def("exiv2_version", &exiv2_version, "Just a exiv2_version check");
 }
