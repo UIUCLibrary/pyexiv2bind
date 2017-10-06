@@ -1,9 +1,6 @@
 [submodule "thirdparty/pybind11"]
 	path = thirdparty/pybind11
 	url = https://github.com/pybind/pybind11.git
-[submodule "thirdparty/catch"]
-	path = thirdparty/catch
-	url = https://github.com/philsquared/Catch.git
-[submodule "tests\\thirdparty\\catch"]
-	path = tests\\thirdparty\\catch
+[submodule "tests/thirdparty/catch"]
+	path = tests/thirdparty/catch
 	url = https://github.com/philsquared/Catch.git
