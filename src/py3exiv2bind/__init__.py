@@ -1,1 +1,1 @@
-from . py3exiv2bind import *
+from . core import *
