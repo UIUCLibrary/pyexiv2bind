@@ -13,7 +13,7 @@ add_test(NAME python_tests
         COMMAND ${PYTHON_EXECUTABLE} -m tox
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         )
-add_subdirectory(thirdparty/catch)
+#add_subdirectory(thirdparty/catch)
 
 add_library(Catch INTERFACE)
 target_include_directories(Catch INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/catch/include)
