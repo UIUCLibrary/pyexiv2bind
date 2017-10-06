@@ -4,3 +4,6 @@
 [submodule "thirdparty/catch"]
 	path = thirdparty/catch
 	url = https://github.com/philsquared/Catch.git
+[submodule "tests\\thirdparty\\catch"]
+	path = tests\\thirdparty\\catch
+	url = https://github.com/philsquared/Catch.git
