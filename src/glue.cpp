@@ -10,7 +10,7 @@ std::string exiv2_version() {
 }
 
 const std::vector<metadata_chunk> get_exif_metadata(const std::string &filename) {
-    std::cout << "getting exif metadata of " << filename << std::endl;
+//    std::cout << "getting exif metadata of " << filename << std::endl;
     std::vector<metadata_chunk> metadata;
     try{
 //        TODO: get metadata from filename
@@ -27,9 +27,8 @@ const std::vector<metadata_chunk> get_exif_metadata(const std::string &filename)
 
         auto end = exifData.end();
         for (auto md = exifData.begin(); md != end; md++){
-            std::cout << md->key() << std::endl;
-            metadata_chunk chunk = {md->key(), std::string(md->typeName()), std::string(md->value().toString().c_str())};
-            metadata.push_back(chunk);
+//            std::cout << md->key() << std::endl;
+            metadata.push_back({md->key(), std::string(md->typeName()), std::string(md->value().toString().c_str())});
         }
 
     }catch (Exiv2::AnyError &e){
@@ -41,3 +40,44 @@ const std::vector<metadata_chunk> get_exif_metadata(const std::string &filename)
     std::cout << "Returning\n";
     return metadata;
 }
+
+const std::map<std::string, std::string> get_exif_metadata2(const std::string &filename) {
+    std::cout << "getting exif metadata of " << filename << std::endl;
+    std::map<std::string, std::string> metadata;
+    try{
+//        TODO: get metadata from filename
+        using namespace Exiv2;
+        Image::AutoPtr image = ImageFactory::open(filename);
+        assert(image.get() != 0); // Make sure it's able to read the file
+        image->readMetadata();
+        ExifData &exifData = image->exifData();
+        if(exifData.empty()){
+            std::string error(filename);
+            error += ": no Exif data found in file";
+            throw Error(1, error);
+        }
+
+        auto end = exifData.end();
+        for (auto md = exifData.begin(); md != end; md++){
+//            std::cout << md->key() << " " <<md->value() << std::endl;
+            metadata[md->key()] = md->value().toString();
+//            metadata_chunk tmp = {"asdfas", "asdfasdf", "afaf"};
+//            metadata["ddd"] =tmp;
+//            metadata.
+//            metadata_chunk chunk = {md->key(), std::string(md->typeName()), std::string(md->value().toString().c_str())};
+//            metadata["dddd"] = {"asdfas", "asdfasdf", "afaf"};
+//            metadata["dddd"] = metadata_chunk("asdfas", "asdfasdf", "afaf");
+//            metadata[md->key()] = metadata_chunk(md->key(), md->typeName(), std::string(md->value().toString()));
+//            metadata[md->key()] = metadata_chunk(md->key(), md->typeName(), std::string(md->value().toString()));
+        }
+
+    }catch (Exiv2::AnyError &e){
+//        TODO: Handle errors
+        std::cerr << e.what() <<std::endl;
+        throw;
+    }
+//    TODO: return the metadata a vector
+//    std::cout << "Returning\n";
+    return metadata;
+}
+
