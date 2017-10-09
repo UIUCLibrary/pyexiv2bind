@@ -19,5 +19,8 @@ add_custom_command(TARGET core PRE_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/tox.ini $<TARGET_FILE_DIR:core>/..
         )
 add_custom_command(TARGET core PRE_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/py3exiv2bind $<TARGET_FILE_DIR:core>
+#        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/py3exiv2bind $<TARGET_FILE_DIR:core>
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/py3exiv2bind/__init__.py $<TARGET_FILE_DIR:core>
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/py3exiv2bind/metadata.py $<TARGET_FILE_DIR:core>
+        COMMENT "Updaing metadata.py"
         )
