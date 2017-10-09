@@ -54,7 +54,8 @@ const std::map<std::string, std::string> get_exif_metadata2(const std::string &f
         if(exifData.empty()){
             std::string error(filename);
             error += ": no Exif data found in file";
-            throw Error(1, error);
+            return std::map<std::string, std::string>();
+//            throw Error(1, error);
         }
 
         auto end = exifData.end();
