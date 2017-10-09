@@ -3,7 +3,7 @@
 //
 #include <exiv2/exiv2.hpp>
 #include <iostream>
-#include <assert.h>
+#include <cassert>
 #include "glue.h"
 std::string exiv2_version() {
     return Exiv2::version();

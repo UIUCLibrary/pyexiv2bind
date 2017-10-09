@@ -7,6 +7,7 @@
 
 #include <string>
 #include <map>
+#include "glue_export.h"
 
 struct metadata_chunk {
 
@@ -33,7 +34,7 @@ struct metadata_chunk {
 
 std::string exiv2_version();
 
-const std::vector<metadata_chunk> get_exif_metadata(const std::string &filename);
+GLUE_DEPRECATED const std::vector<metadata_chunk> get_exif_metadata(const std::string &filename);
 
 const std::map<std::string, std::string> get_exif_metadata2(const std::string &filename);
 
