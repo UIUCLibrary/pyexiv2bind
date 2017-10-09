@@ -1,1 +1,1 @@
-from . core import *
+from .metadata import get_exif
