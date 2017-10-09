@@ -59,16 +59,7 @@ const std::map<std::string, std::string> get_exif_metadata2(const std::string &f
 
         auto end = exifData.end();
         for (auto md = exifData.begin(); md != end; md++){
-//            std::cout << md->key() << " " <<md->value() << std::endl;
             metadata[md->key()] = md->value().toString();
-//            metadata_chunk tmp = {"asdfas", "asdfasdf", "afaf"};
-//            metadata["ddd"] =tmp;
-//            metadata.
-//            metadata_chunk chunk = {md->key(), std::string(md->typeName()), std::string(md->value().toString().c_str())};
-//            metadata["dddd"] = {"asdfas", "asdfasdf", "afaf"};
-//            metadata["dddd"] = metadata_chunk("asdfas", "asdfasdf", "afaf");
-//            metadata[md->key()] = metadata_chunk(md->key(), md->typeName(), std::string(md->value().toString()));
-//            metadata[md->key()] = metadata_chunk(md->key(), md->typeName(), std::string(md->value().toString()));
         }
 
     }catch (Exiv2::AnyError &e){
@@ -81,3 +72,33 @@ const std::map<std::string, std::string> get_exif_metadata2(const std::string &f
     return metadata;
 }
 
+int get_pixelHeight(const std::string &filename){
+    try {
+        using namespace Exiv2;
+        Image::AutoPtr image = ImageFactory::open(filename);
+        assert(image.get() != 0); // Make sure it's able to read the file
+        image->readMetadata();
+        return image->pixelHeight();
+
+    }catch (Exiv2::AnyError &e){
+//        TODO: Handle errors
+        std::cerr << e.what() <<std::endl;
+        throw;
+    }
+
+}
+
+int get_pixelWidth(const std::string &filename){
+    try {
+        using namespace Exiv2;
+        Image::AutoPtr image = ImageFactory::open(filename);
+        assert(image.get() != 0); // Make sure it's able to read the file
+        image->readMetadata();
+        return image->pixelWidth();
+
+    }catch (Exiv2::AnyError &e) {
+//        TODO: Handle errors
+        std::cerr << e.what() << std::endl;
+        throw;
+    }
+}
