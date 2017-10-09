@@ -37,4 +37,8 @@ const std::vector<metadata_chunk> get_exif_metadata(const std::string &filename)
 
 const std::map<std::string, std::string> get_exif_metadata2(const std::string &filename);
 
+int get_pixelHeight(const std::string &filename);
+
+int get_pixelWidth(const std::string &filename);
+
 #endif //SUPERBUILD_GLUE_H
