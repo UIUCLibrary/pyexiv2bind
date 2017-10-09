@@ -5,8 +5,15 @@
 #include <glue.h>
 
 
-TEST_CASE("get_exif_metadata", "[glue]"){
+TEST_CASE("get_exif_metadata", "[glue]") {
     const std::string filename = "tests/sample_images/dummy.jp2";
     auto metadata = get_exif_metadata(filename);
-    REQUIRE( !metadata.empty());
+    REQUIRE(!metadata.empty());
+}
+
+TEST_CASE("get_exif_metadata2", "[glue]") {
+    const std::string filename = "tests/sample_images/dummy.jp2";
+    auto metadata = get_exif_metadata2(filename);
+
+    REQUIRE(metadata.size() != 0);
 }
