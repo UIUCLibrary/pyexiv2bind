@@ -2,11 +2,11 @@ include(ExternalProject)
 ExternalProject_Add(zlibsource
         URL https://zlib.net/zlib-1.2.11.tar.gz
         CMAKE_ARGS
-        -DINSTALL_BIN_DIR=""
-        -DINSTALL_LIB_DIR=<INSTALL_DIR>/lib
-        -DINSTALL_INC_DIR=<INSTALL_DIR>/include
-        -DINSTALL_MAN_DIR=""
-        -DINSTALL_PKGCONFIG_DIR=""
+            -DINSTALL_BIN_DIR=""
+            -DINSTALL_LIB_DIR=<INSTALL_DIR>/lib
+            -DINSTALL_INC_DIR=<INSTALL_DIR>/include
+            -DINSTALL_MAN_DIR=<INSTALL_DIR>/man
+            -DINSTALL_PKGCONFIG_DIR=<INSTALL_DIR>/share/pkgconfig
 
         )
 ExternalProject_Get_Property(zlibsource install_dir)
