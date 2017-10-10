@@ -1,3 +1,6 @@
+# try:
+#     from skbuild import setup
+# except ImportError:
 from setuptools import setup
 
 setup(
