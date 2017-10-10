@@ -1,11 +1,5 @@
-#add_library(py3exiv2bind MODULE py3exiv2bind.cpp glue.cpp glue.h)
-#target_link_libraries(py3exiv2bind PRIVATE pybind11::module)
-#set_target_properties(py3exiv2bind PROPERTIES PREFIX "${PYTHON_MODULE_PREFIX}"
-#        SUFFIX "${PYTHON_MODULE_EXTENSION}")
-
-#set(ModuleFiles setup.py setup.cfg tox.ini)
+# BUILD the Python Module
 file(GLOB python_files "${CMAKE_CURRENT_SOURCE_DIR}/py3exiv2bind/*.py")
-
 add_custom_target(py3exiv2bind
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/setup.py $<TARGET_FILE_DIR:core>/..
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/setup.cfg $<TARGET_FILE_DIR:core>/..
