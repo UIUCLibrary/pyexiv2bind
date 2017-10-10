@@ -1,8 +1,4 @@
-try:
-    from skbuild import setup
-except ImportError:
-    from setuptools import setup
-# from setuptools import setup
+from skbuild import setup
 
 setup(
     name="py3exiv2bind",
