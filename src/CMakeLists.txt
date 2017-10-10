@@ -2,39 +2,22 @@
 #target_link_libraries(py3exiv2bind PRIVATE pybind11::module)
 #set_target_properties(py3exiv2bind PROPERTIES PREFIX "${PYTHON_MODULE_PREFIX}"
 #        SUFFIX "${PYTHON_MODULE_EXTENSION}")
-include(GenerateExportHeader)
-pybind11_add_module(core py3exiv2bind/core/core.cpp)
-add_library(glue STATIC py3exiv2bind/core/glue.cpp py3exiv2bind/core/glue.h)
-target_include_directories(glue PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/py3exiv2bind/core)
-set_target_properties(glue PROPERTIES
-        CXX_STANDARD 14)
-GENERATE_EXPORT_HEADER(glue)
-target_include_directories(glue PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(core PUBLIC glue)
-set_target_properties(core PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/py3exiv2bind
-        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/py3exiv2bind
-        )
+#set(ModuleFiles setup.py setup.cfg tox.ini)
+file(GLOB python_files "${CMAKE_CURRENT_SOURCE_DIR}/py3exiv2bind/*.py")
 
-target_link_libraries(glue PUBLIC libexiv2)
-add_dependencies(core libexiv2)
-add_custom_command(TARGET core PRE_BUILD
+add_custom_target(py3exiv2bind
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/setup.py $<TARGET_FILE_DIR:core>/..
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/setup.cfg $<TARGET_FILE_DIR:core>/..
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/tox.ini $<TARGET_FILE_DIR:core>/..
+        BYPRODUCTS
+            setup.py
+            setup.cfg
+            tox.ini
         )
-add_custom_command(TARGET core PRE_BUILD
-#        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/py3exiv2bind $<TARGET_FILE_DIR:core>
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/py3exiv2bind/__init__.py $<TARGET_FILE_DIR:core>
-        COMMENT "Updating __init__.py"
-        )
-add_custom_command(TARGET core PRE_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/py3exiv2bind/metadata.py $<TARGET_FILE_DIR:core>
-        COMMENT "Updating metadata.py"
-        )
-
-add_custom_command(TARGET core PRE_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/py3exiv2bind/image.py $<TARGET_FILE_DIR:core>
-        COMMENT "Updating image.py"
-        )
+foreach (_file ${python_files})
+    add_custom_command(TARGET py3exiv2bind
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_file} $<TARGET_FILE_DIR:core>
+            )
+endforeach ()
+add_subdirectory(py3exiv2bind/core)
