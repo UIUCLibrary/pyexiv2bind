@@ -5,7 +5,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <map>
-#include <glue.h>
+#include "glue.h"
 
 std::map<std::string, std::string> exif_metadata(const std::string &filename) {
     std::map<std::string, std::string> metadata;

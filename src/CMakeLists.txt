@@ -3,9 +3,9 @@
 #set_target_properties(py3exiv2bind PROPERTIES PREFIX "${PYTHON_MODULE_PREFIX}"
 #        SUFFIX "${PYTHON_MODULE_EXTENSION}")
 include(GenerateExportHeader)
-pybind11_add_module(core py3exiv2bind/core.cpp)
-add_library(glue STATIC py3exiv2bind/glue.cpp py3exiv2bind/glue.h)
-target_include_directories(glue PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/py3exiv2bind)
+pybind11_add_module(core py3exiv2bind/core/core.cpp)
+add_library(glue STATIC py3exiv2bind/core/glue.cpp py3exiv2bind/core/glue.h)
+target_include_directories(glue PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/py3exiv2bind/core)
 set_target_properties(glue PROPERTIES
         CXX_STANDARD 14)
 GENERATE_EXPORT_HEADER(glue)
