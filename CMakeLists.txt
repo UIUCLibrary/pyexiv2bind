@@ -5,6 +5,7 @@ option( build_tests     "build test suite"  ON  )
 
 include(ExternalProject)
 include(external_exiv2.cmake)
+include(build_python_module.cmake)
 
 add_executable(runme main.cpp)
 
@@ -16,6 +17,6 @@ target_link_libraries(runme PRIVATE libexiv2)
 add_dependencies(runme libexiv2)
 include_directories(${install_dir}/include)
 add_subdirectory(thirdparty/pybind11)
-add_subdirectory(src)
+add_subdirectory(py3exiv2bind/core)
 enable_testing()
 add_subdirectory(tests)

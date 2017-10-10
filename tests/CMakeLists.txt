@@ -4,7 +4,7 @@ add_custom_target(add_python_tests
         COMMENT "Adding Python test"
         DEPENDS core project_libexiv2
         )
-add_dependencies(add_python_tests core add_test_images)
+add_dependencies(add_python_tests add_test_images py3exiv2bind core)
 add_custom_command(TARGET add_python_tests
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/python_tests/test_core.py ${CMAKE_CURRENT_BINARY_DIR}
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/python_tests/test_common.py ${CMAKE_CURRENT_BINARY_DIR}
