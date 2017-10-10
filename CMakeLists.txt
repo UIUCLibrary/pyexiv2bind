@@ -1,20 +1,18 @@
 cmake_minimum_required(VERSION 3.8)
 project(pyexiv2bind)
+if (SKBUILD)
+    message(WARNING "USING SCIKIT BUILD")
+    find_package(PythonInterp REQUIRED)
+    find_package(PythonLibs)
+    find_package(PythonExtensions REQUIRED)
+    find_package(EXIV2 REQUIRED)
+else ()
+    include(external_exiv2.cmake)
+    include(ExternalProject)
+    include(build_python_module.cmake)
 
-option( build_tests     "build test suite"  ON  )
-
-include(ExternalProject)
-include(external_exiv2.cmake)
-include(build_python_module.cmake)
-
-add_executable(runme main.cpp)
-
-
-if(build_tests)
-    add_dependencies(runme add_tests)
-endif()
-target_link_libraries(runme PRIVATE libexiv2)
-add_dependencies(runme libexiv2)
+endif ()
+option(pyexiv2bind_build_tests "build test suite" ON)
 include_directories(${install_dir}/include)
 add_subdirectory(thirdparty/pybind11)
 add_subdirectory(py3exiv2bind/core)
