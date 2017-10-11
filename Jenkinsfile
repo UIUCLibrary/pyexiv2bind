@@ -60,7 +60,8 @@ pipeline {
                 bat """${env.PYTHON3} -m venv venv
                        dir
                        dir venv\\
-                       venv\\scripts\\activate.bat
+                       dir venv\\Scripts\\
+                       venv\\Scripts\\activate.bat
                        pip install -r requirements-dev.txt
                        python setup.py bdist_wheel
                        """
