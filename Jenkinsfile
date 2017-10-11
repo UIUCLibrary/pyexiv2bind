@@ -30,7 +30,6 @@ pipeline {
                         ]
                     ]
                 ])
-                bat "dir"
                 bat "${env.TOX}"
 //                bat 'mkdir build'
 //                dir('build') {
