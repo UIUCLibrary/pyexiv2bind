@@ -38,9 +38,13 @@ pipeline {
                 node('!Windows') {
                     sh 'wget https://jenkins.library.illinois.edu/jenkins/userContent/sample_images.tar.gz'
                     sh 'tar -xzf sample_images.tar.gz'
-                    sh 'ls -laR'
+//                    sh 'ls -laR'
+                    stash includes: 'sample_images/**', name: 'sample_images'
                 }
-
+                dir("tests") {
+                    unstash 'sample_images'
+                    bat "dir"
+                }
                 bat "${env.TOX}"
 //                dir('build') {
 //                    bat 'ctest --verbose'
