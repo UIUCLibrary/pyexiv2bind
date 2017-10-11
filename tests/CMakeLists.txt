@@ -9,9 +9,10 @@ else ()
             )
     add_dependencies(add_python_tests add_test_images core)
     add_custom_command(TARGET add_python_tests
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different test_core.py ${CMAKE_CURRENT_BINARY_DIR}
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different test_common.py ${CMAKE_CURRENT_BINARY_DIR}
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different test_image.py ${CMAKE_CURRENT_BINARY_DIR}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_core.py ${CMAKE_CURRENT_BINARY_DIR}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_common.py ${CMAKE_CURRENT_BINARY_DIR}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_image.py ${CMAKE_CURRENT_BINARY_DIR}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_image2.py ${CMAKE_CURRENT_BINARY_DIR}
             )
 
     add_test(NAME python_tests

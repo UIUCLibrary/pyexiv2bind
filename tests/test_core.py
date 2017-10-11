@@ -14,7 +14,7 @@ def test_exiv_version():
 
 
 def test_exif_metadata():
-    sample_file = "tests/sample_images/dummy.jp2"
+    sample_file = os.path.join(os.path.dirname(__file__), "sample_images/dummy.jp2")
     assert os.path.exists(sample_file)
     print("Found test file")
     print("Testing {}".format(sample_file))

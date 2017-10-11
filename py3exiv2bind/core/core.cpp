@@ -5,7 +5,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <map>
-#include "glue.h"
+#include "glue/glue.h"
+#include <glue/Image2.h>
 
 std::map<std::string, std::string> exif_metadata(const std::string &filename) {
     std::map<std::string, std::string> metadata;
@@ -19,4 +20,12 @@ PYBIND11_MODULE(core, m) {
     m.def("get_exif_metadata", &exif_metadata, "Get the exif metadata of a file", pybind11::arg("filename"));
     m.def("get_pixelWidth", &get_pixelWidth, "Get the pixel width of a file", pybind11::arg("filename"));
     m.def("get_pixelHeight", &get_pixelHeight, "Get the pixel height of a file", pybind11::arg("filename"));
+    pybind11::class_<Image2>(m, "Image2")
+            .def(pybind11::init<const std::string &>())
+            .def_property_readonly("filename", &Image2::getFilename)
+            .def_property_readonly("pixelHeight", &Image2::get_pixelHeight)
+            .def_property_readonly("pixelWidth", &Image2::get_pixelWidth)
+            .def_property_readonly("exif", &Image2::get_exif_metadata);
+//            .def_property_readonly("filename", [](pybind11::object){ return &Image2::getFilename;});
+//    m.def()
 }
