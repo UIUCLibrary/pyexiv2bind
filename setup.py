@@ -1,10 +1,10 @@
-from setuptools import setup
+from skbuild import setup
 
 setup(
     name="py3exiv2bind",
     version="0.0.1",
     packages=['py3exiv2bind'],
-    package_data={'py3exiv2bind': ['*.pyd']},
+    # package_data={'py3exiv2bind': ['*.pyd', '*.so']},
     setup_requires=[
         "pytest-runner"
     ],

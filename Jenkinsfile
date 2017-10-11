@@ -1,63 +1,102 @@
+#!groovy
+@Library("ds-utils@v0.2.0")
+// Uses library from https://github.com/UIUCLibrary/Jenkins_utils
+import org.ds.*
+
 pipeline {
     agent {
         label "Windows"
     }
+    parameters {
+        booleanParam(name: "DEPLOY_DEVPI", defaultValue: true, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
+    }
     stages {
-        stage("Building") {
+        stage("Checking Out from Source Control") {
             steps {
                 deleteDir()
                 checkout([
-                    $class: 'GitSCM',
-                    branches: [
-                            [name: '*/master']
+                        $class                           : 'GitSCM',
+                        branches                         : [
+                                [name: "*/${env.BRANCH_NAME}"]
                         ],
-                    doGenerateSubmoduleConfigurations: false,
-                    extensions: [
-                        [
-                            $class: 'SubmoduleOption',
-                            disableSubmodules: false,
-                            parentCredentials: false,
-                            recursiveSubmodules: true,
-                            reference: '',
-                            trackingSubmodules: false
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions                       : [
+                                [
+                                        $class             : 'SubmoduleOption',
+                                        disableSubmodules  : false,
+                                        parentCredentials  : false,
+                                        recursiveSubmodules: true,
+                                        reference          : '',
+                                        trackingSubmodules : false
+                                ]
+                        ],
+                        submoduleCfg                     : [],
+                        userRemoteConfigs                : [
+                                [
+                                        credentialsId: 'ccb29ea2-6d0f-4bfa-926d-6b4edd8995a8',
+                                        url          : 'git@github.com:UIUCLibrary/pyexiv2bind.git'
+                                ]
                         ]
-                    ],
-                    submoduleCfg: [],
-                    userRemoteConfigs: [
-                        [
-                            credentialsId: 'ccb29ea2-6d0f-4bfa-926d-6b4edd8995a8',
-                            url: 'git@github.com:UIUCLibrary/pyexiv2bind.git'
-                        ]
-                    ]
                 ])
-                bat 'mkdir build'
-                dir('build') {
-                    bat 'call "%vs140comntools%..\\..\\VC\\vcvarsall.bat" x86_amd64 && cmake .. -GNinja'
-                    bat 'call "%vs140comntools%..\\..\\VC\\vcvarsall.bat" x86_amd64 && cmake --build . --target project_libexiv2'
-                    bat 'call "%vs140comntools%..\\..\\VC\\vcvarsall.bat" x86_amd64 && cmake --build . --target add_tests'
-                }
-
-
             }
 
         }
         stage("Testing") {
             steps {
-                dir('build') {
-                    bat 'ctest --verbose'
+                node('!Windows') {
+                    sh 'wget https://jenkins.library.illinois.edu/jenkins/userContent/sample_images.tar.gz'
+                    sh 'tar -xzf sample_images.tar.gz'
+                    stash includes: 'sample_images/**', name: 'sample_images'
                 }
+                dir("tests") {
+                    unstash 'sample_images'
+                }
+                bat "${env.TOX}"
+//                }
 
 
             }
 
         }
-        stage("Packaging"){
-            steps{
-                dir('build') {
-                    bat "${env.PYTHON3} setup.py bdist_wheel"
-                    archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
+        stage("Packaging") {
+            steps {
+                bat """${env.PYTHON3} -m venv venv
+                       call venv\\Scripts\\activate.bat
+                       pip install -r requirements-dev.txt
+                       python setup.py bdist_wheel
+                       """
+                dir("dist") {
+                    archiveArtifacts artifacts: "*.whl", fingerprint: true
                 }
             }
+        }
+        stage("Deploying to Devpi") {
+            when {
+                expression { params.DEPLOY_DEVPI == true }
+            }
+            steps {
+                bat "devpi use http://devpy.library.illinois.edu"
+                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                    bat "devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                    bat "devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                    script {
+                        try {
+                            bat "devpi upload --with-docs --formats bdist_wheel,sdist"
+
+                        } catch (exc) {
+                            echo "Unable to upload to devpi with docs. Trying without"
+                            bat "devpi upload --formats bdist_wheel,sdist"
+                        }
+                    }
+//                bat "devpi test hsw"
+                }
+
+            }
+        }
+    }
+    post {
+        success {
+            echo "Cleaning up workspace"
         }
     }
 }
