@@ -56,7 +56,7 @@ pipeline {
         }
         stage("Packaging") {
             steps {
-                virtualenv python_path: env.PYTHON3, requirements_file: "requirements.txt", windows: true, "python setup.py bdist_wheel"
+                virtualenv python_path: env.PYTHON3, requirements_file: "requirements-dev.txt", windows: true, "python setup.py bdist_wheel"
 //                bat "${env.PYTHON3} setup.py bdist_wheel"
                 dir("dist"){
                     archiveArtifacts artifacts: "*.whl", fingerprint: true
