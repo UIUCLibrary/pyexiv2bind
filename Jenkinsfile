@@ -61,8 +61,7 @@ pipeline {
                        dir
                        dir venv\\
                        dir venv\\Scripts\\
-                       venv\\Scripts\\activate.bat
-                       dir
+                       call venv\\Scripts\\activate.bat
                        pip install -r requirements-dev.txt
                        python setup.py bdist_wheel
                        """
