@@ -38,7 +38,7 @@ pipeline {
                 node('!Windows') {
                     sh 'wget https://jenkins.library.illinois.edu/jenkins/userContent/sample_images.tar.gz'
                     sh 'tar -xzf sample_images.tar.gz'
-                    sh 'ls -la'
+                    sh 'ls -laR'
                 }
 
                 bat "${env.TOX}"
