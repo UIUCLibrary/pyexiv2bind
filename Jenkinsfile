@@ -36,7 +36,8 @@ pipeline {
         stage("Testing") {
             steps {
                 node('!Windows') {
-                    sh 'ls -la'
+                    sh 'wget https://jenkins.library.illinois.edu/jenkins/userContent/sample_images.tar.gz'
+                    sh 'targ -xzf sample_images.tar.gz'
                 }
 
                 bat "${env.TOX}"
