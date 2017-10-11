@@ -15,6 +15,7 @@ struct Image2 {
     int get_pixelHeight() const;
     int get_pixelWidth() const;
     std::map<std::string, std::string> get_exif_metadata() const;
+    std::map<std::string, std::string> get_iptc_metadata() const;
 };
 
 

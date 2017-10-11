@@ -25,7 +25,9 @@ PYBIND11_MODULE(core, m) {
             .def_property_readonly("filename", &Image2::getFilename)
             .def_property_readonly("pixelHeight", &Image2::get_pixelHeight)
             .def_property_readonly("pixelWidth", &Image2::get_pixelWidth)
-            .def_property_readonly("exif", &Image2::get_exif_metadata);
+            .def_property_readonly("exif", &Image2::get_exif_metadata)
+            .def_property_readonly("iptc", &Image2::get_iptc_metadata)
+            ;
 //            .def_property_readonly("filename", [](pybind11::object){ return &Image2::getFilename;});
 //    m.def()
 }
