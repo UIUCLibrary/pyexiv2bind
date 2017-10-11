@@ -58,6 +58,8 @@ pipeline {
             steps {
 //                virtualenv python_path: env.PYTHON3, requirements_file: "requirements-dev.txt", windows: true, "python setup.py bdist_wheel"
                 bat """${env.PYTHON3} -m venv venv
+                       dir
+                       dir venv\\
                        venv\\scripts\\activate.bat
                        pip install -r requirements-dev.txt
                        python setup.py bdist_wheel
