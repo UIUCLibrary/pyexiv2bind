@@ -3,34 +3,35 @@ pipeline {
         label "Windows"
     }
     stages {
-        stage("Building") {
+        stage("Checking Out from Source Control") {
             steps {
                 deleteDir()
                 checkout([
-                    $class: 'GitSCM',
-                    branches: [
-                            [name: "*/${env.BRANCH_NAME}"]
+                        $class                           : 'GitSCM',
+                        branches                         : [
+                                [name: "*/${env.BRANCH_NAME}"]
                         ],
-                    doGenerateSubmoduleConfigurations: false,
-                    extensions: [
-                        [
-                            $class: 'SubmoduleOption',
-                            disableSubmodules: false,
-                            parentCredentials: false,
-                            recursiveSubmodules: true,
-                            reference: '',
-                            trackingSubmodules: false
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions                       : [
+                                [
+                                        $class             : 'SubmoduleOption',
+                                        disableSubmodules  : false,
+                                        parentCredentials  : false,
+                                        recursiveSubmodules: true,
+                                        reference          : '',
+                                        trackingSubmodules : false
+                                ]
+                        ],
+                        submoduleCfg                     : [],
+                        userRemoteConfigs                : [
+                                [
+                                        credentialsId: 'ccb29ea2-6d0f-4bfa-926d-6b4edd8995a8',
+                                        url          : 'git@github.com:UIUCLibrary/pyexiv2bind.git'
+                                ]
                         ]
-                    ],
-                    submoduleCfg: [],
-                    userRemoteConfigs: [
-                        [
-                            credentialsId: 'ccb29ea2-6d0f-4bfa-926d-6b4edd8995a8',
-                            url: 'git@github.com:UIUCLibrary/pyexiv2bind.git'
-                        ]
-                    ]
                 ])
-                bat "${env.TOX}"
+            }
+
 //                bat 'mkdir build'
 //                dir('build') {
 //                    bat 'call "%vs140comntools%..\\..\\VC\\vcvarsall.bat" x86_amd64 && cmake .. -GNinja'
@@ -44,9 +45,10 @@ pipeline {
         }
         stage("Testing") {
             steps {
-                dir('build') {
-                    bat 'ctest --verbose'
-                }
+                bat "${env.TOX}"
+//                dir('build') {
+//                    bat 'ctest --verbose'
+//                }
 
 
             }
