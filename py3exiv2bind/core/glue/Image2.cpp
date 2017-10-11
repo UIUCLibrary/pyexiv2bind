@@ -6,6 +6,7 @@
 #include <cassert>
 #include "Image2.h"
 #include "glue.h"
+#include "MetadataProcessor.h"
 
 
 Image2::Image2(const std::string &filename) : filename(filename) {
@@ -27,47 +28,15 @@ int Image2::get_pixelWidth() const {
 }
 
 std::map<std::string, std::string> Image2::get_exif_metadata() const {
-    std::map<std::string, std::string> metadata;
-    try{
-        Exiv2::ExifData &exifData = image->exifData();
-        if(exifData.empty()){
-            return std::map<std::string, std::string>();
-        }
-
-        auto end = exifData.end();
-        for (auto md = exifData.begin(); md != end; md++){
-            metadata[md->key()] = md->value().toString();
-        }
-
-    }catch (Exiv2::AnyError &e){
-//        TODO: Handle errors
-        std::cerr << e.what() <<std::endl;
-        throw;
-    }
-//    TODO: return the metadata a vector
-    return metadata;
-}
+    MetadataProcessor processor;
+    processor.set_output_format(MetadataStrategies::EXIF);
+    processor.build(image);
+    return processor.getMetadata();
+};
 
 std::map<std::string, std::string> Image2::get_iptc_metadata() const {
-    std::map<std::string, std::string> metadata;
-    try{
-        Exiv2::IptcData &iptcData = image->iptcData();
-
-        if(iptcData.empty()){
-            return std::map<std::string, std::string>();
-        }
-
-        auto end = iptcData.end();
-        for (auto md = iptcData.begin(); md != end; md++){
-            metadata[md->key()] = md->value().toString();
-        }
-
-    }catch (Exiv2::AnyError &e){
-//        TODO: Handle errors
-        std::cerr << e.what() <<std::endl;
-        throw;
-    }
-//    TODO: return the metadata a vector
-    return metadata;
-//    return std::map<std::string, std::string>();
+    MetadataProcessor processor;
+    processor.set_output_format(MetadataStrategies::IPTC);
+    processor.build(image);
+    return processor.getMetadata();
 }
