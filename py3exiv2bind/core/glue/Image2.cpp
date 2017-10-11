@@ -28,7 +28,6 @@ int Image2::get_pixelWidth() const {
 
 std::map<std::string, std::string> Image2::get_exif_metadata() const {
     std::map<std::string, std::string> metadata;
-//    std::cout << "HEEEEEEEEEEEEEEEEER" << std::endl;
     try{
         using namespace Exiv2;
         ExifData &exifData = image->exifData();
@@ -47,8 +46,5 @@ std::map<std::string, std::string> Image2::get_exif_metadata() const {
         throw;
     }
 //    TODO: return the metadata a vector
-//    std::cout << "Returning\n";
     return metadata;
-//    return get_exif_metadata2(filename);
-//    return std::map<std::string, std::string>();
 }
