@@ -1,5 +1,6 @@
 #!groovy
-@Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
+@Library("ds-utils@v0.2.0")
+// Uses library from https://github.com/UIUCLibrary/Jenkins_utils
 import org.ds.*
 
 pipeline {
@@ -64,38 +65,38 @@ pipeline {
                        pip install -r requirements-dev.txt
                        python setup.py bdist_wheel
                        """
-                dir("dist"){
+                dir("dist") {
                     archiveArtifacts artifacts: "*.whl", fingerprint: true
                 }
             }
         }
-    }
-    stage("Deploying to Devpi") {
-        when {
-            expression { params.DEPLOY_DEVPI == true }
-        }
-        steps {
-            bat "devpi use http://devpy.library.illinois.edu"
-            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                bat "devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                bat "devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}"
-                script {
-                    try{
-                        bat "devpi upload --with-docs"
-
-                    } catch (exc) {
-                        echo "Unable to upload to devpi with docs. Trying without"
-                        bat "devpi upload"
-                    }
-                }
-//                bat "devpi test hsw"
+        stage("Deploying to Devpi") {
+            when {
+                expression { params.DEPLOY_DEVPI == true }
             }
+            steps {
+                bat "devpi use http://devpy.library.illinois.edu"
+                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                    bat "devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                    bat "devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                    script {
+                        try {
+                            bat "devpi upload --with-docs"
 
+                        } catch (exc) {
+                            echo "Unable to upload to devpi with docs. Trying without"
+                            bat "devpi upload"
+                        }
+                    }
+//                bat "devpi test hsw"
+                }
+
+            }
         }
-    }
-    post {
-        success {
-            echo "Cleaning up workspace"
+        post {
+            success {
+                echo "Cleaning up workspace"
+            }
         }
     }
 }
