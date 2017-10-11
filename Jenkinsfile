@@ -93,10 +93,10 @@ pipeline {
 
             }
         }
-        post {
-            success {
-                echo "Cleaning up workspace"
-            }
+    }
+    post {
+        success {
+            echo "Cleaning up workspace"
         }
     }
 }
