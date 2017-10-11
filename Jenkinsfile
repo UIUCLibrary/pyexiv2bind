@@ -30,7 +30,6 @@ pipeline {
                                 ]
                         ]
                 ])
-            }
 
 //                bat 'mkdir build'
 //                dir('build') {
