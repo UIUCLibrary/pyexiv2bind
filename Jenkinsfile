@@ -75,8 +75,6 @@ pipeline {
             expression { params.DEPLOY_DEVPI == true }
         }
         steps {
-            deleteDir()
-            unstash "Source"
             bat "devpi use http://devpy.library.illinois.edu"
             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                 bat "devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
