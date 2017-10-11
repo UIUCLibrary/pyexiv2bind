@@ -6,6 +6,9 @@ pipeline {
     agent {
         label "Windows"
     }
+    parameters {
+        booleanParam(name: "DEPLOY_DEVPI", defaultValue: true, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
+    }
     stages {
         stage("Checking Out from Source Control") {
             steps {
@@ -65,6 +68,31 @@ pipeline {
                     archiveArtifacts artifacts: "*.whl", fingerprint: true
                 }
             }
+        }
+    }
+    stage("Deploying to Devpi") {
+        when {
+            expression { params.DEPLOY_DEVPI == true }
+        }
+        steps {
+            deleteDir()
+            unstash "Source"
+            bat "devpi use http://devpy.library.illinois.edu"
+            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                bat "devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                bat "devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                script {
+                    try{
+                        bat "devpi upload --with-docs"
+
+                    } catch (exc) {
+                        echo "Unable to upload to devpi with docs. Trying without"
+                        bat "devpi upload"
+                    }
+                }
+//                bat "devpi test hsw"
+            }
+
         }
     }
     post {
