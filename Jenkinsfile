@@ -85,7 +85,7 @@ pipeline {
 
                         } catch (exc) {
                             echo "Unable to upload to devpi with docs. Trying without"
-                            bat "devpi upload --formats bdist_wheel sdist"
+                            bat "devpi upload --formats bdist_wheel,sdist"
                         }
                     }
 //                bat "devpi test hsw"
