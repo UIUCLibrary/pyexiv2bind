@@ -1,10 +1,9 @@
 include(GenerateExportHeader)
 pybind11_add_module(core core.cpp)
 
-add_library(glue STATIC glue.cpp glue.h)
+add_library(glue STATIC glue/glue.cpp glue/glue.h glue/Image2.cpp glue/Image2.h)
 
-#FIXME should have a better directory
-target_include_directories(glue PUBLIC .)
+target_include_directories(glue PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 set_target_properties(glue PROPERTIES
         CXX_STANDARD 14)
 GENERATE_EXPORT_HEADER(glue)
