@@ -31,7 +31,7 @@ std::map<std::string, std::string> Image2::get_exif_metadata() const {
 //    std::cout << "HEEEEEEEEEEEEEEEEER" << std::endl;
     try{
         using namespace Exiv2;
-        ExifData &exifData = imazge->exifData();
+        ExifData &exifData = image->exifData();
         if(exifData.empty()){
             return std::map<std::string, std::string>();
         }
