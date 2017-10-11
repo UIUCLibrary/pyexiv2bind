@@ -1,3 +1,7 @@
+#!groovy
+@Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
+import org.ds.*
+
 pipeline {
     agent {
         label "Windows"
@@ -52,8 +56,11 @@ pipeline {
         }
         stage("Packaging") {
             steps {
-                bat "${env.PYTHON3} setup.py bdist_wheel"
-                archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
+                virtualenv python_path: env.PYTHON3, requirements_file: "requirements.txt", windows: true, "python setup.py bdist_wheel"
+//                bat "${env.PYTHON3} setup.py bdist_wheel"
+                dir("dist"){
+                    archiveArtifacts artifacts: "*.whl", fingerprint: true
+                }
             }
         }
     }
