@@ -59,6 +59,7 @@ pipeline {
                 virtualenv python_path: env.PYTHON3, requirements_file: "requirements-dev.txt", windows: true, "python setup.py bdist_wheel"
 //                bat "${env.PYTHON3} setup.py bdist_wheel"
                 dir("dist"){
+                    bat "dir"
                     archiveArtifacts artifacts: "*.whl", fingerprint: true
                 }
             }
