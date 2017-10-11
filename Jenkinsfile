@@ -81,11 +81,11 @@ pipeline {
                     bat "devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                     script {
                         try {
-                            bat "devpi upload --with-docs"
+                            bat "devpi upload --with-docs --formats bdist_wheel sdist"
 
                         } catch (exc) {
                             echo "Unable to upload to devpi with docs. Trying without"
-                            bat "devpi upload"
+                            bat "devpi upload --formats bdist_wheel sdist"
                         }
                     }
 //                bat "devpi test hsw"
