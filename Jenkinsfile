@@ -30,7 +30,7 @@ pipeline {
                         ]
                     ]
                 ])
-                bat '${env.TOX}'
+                bat "${env.TOX}"
 //                bat 'mkdir build'
 //                dir('build') {
 //                    bat 'call "%vs140comntools%..\\..\\VC\\vcvarsall.bat" x86_amd64 && cmake .. -GNinja'
