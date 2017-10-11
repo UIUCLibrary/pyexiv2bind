@@ -30,12 +30,13 @@ pipeline {
                         ]
                     ]
                 ])
-                bat 'mkdir build'
-                dir('build') {
-                    bat 'call "%vs140comntools%..\\..\\VC\\vcvarsall.bat" x86_amd64 && cmake .. -GNinja'
-                    bat 'call "%vs140comntools%..\\..\\VC\\vcvarsall.bat" x86_amd64 && cmake --build . --target project_libexiv2 --config Release'
-                    bat 'call "%vs140comntools%..\\..\\VC\\vcvarsall.bat" x86_amd64 && cmake --build . --target add_tests --config Release'
-                }
+                bat '${env.TOX}'
+//                bat 'mkdir build'
+//                dir('build') {
+//                    bat 'call "%vs140comntools%..\\..\\VC\\vcvarsall.bat" x86_amd64 && cmake .. -GNinja'
+//                    bat 'call "%vs140comntools%..\\..\\VC\\vcvarsall.bat" x86_amd64 && cmake --build . --target project_libexiv2 --config Release'
+//                    bat 'call "%vs140comntools%..\\..\\VC\\vcvarsall.bat" x86_amd64 && cmake --build . --target add_tests --config Release'
+//                }
 
 
             }
