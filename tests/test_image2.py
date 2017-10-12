@@ -28,7 +28,7 @@ def test_image2_exif():
     my_image = Image2(sample_file)
     exivf_metadata = my_image.exif
     assert isinstance(exivf_metadata, dict)
-    print(exivf_metadata)
+    # print(exivf_metadata)
     assert exivf_metadata['Exif.Image.Artist'] == "University of Illinois Library"
 
 
@@ -39,7 +39,7 @@ def test_image2_iptc():
     my_image = Image2(sample_file)
     iptc_metadata = my_image.iptc
     assert isinstance(iptc_metadata, dict)
-    print(iptc_metadata)
+    # print(iptc_metadata)
     assert iptc_metadata['Iptc.Application2.ObjectName'] == "Mapping History - University Archives"
 
 
