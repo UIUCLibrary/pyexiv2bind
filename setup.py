@@ -10,5 +10,6 @@ setup(
     ],
     test_suite="tests",
     tests_require=['pytest'],
+    zip_safe=False,
 
 )
