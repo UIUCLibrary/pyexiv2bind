@@ -88,7 +88,7 @@ pipeline {
                             bat "devpi upload --formats bdist_wheel,sdist"
                         }
                     }
-//                bat "devpi test hsw"
+                bat "devpi test py3exiv2bind -s win"
                 }
 
             }
@@ -97,6 +97,7 @@ pipeline {
     post {
         success {
             echo "Cleaning up workspace"
+            deleteDir()
         }
     }
 }
