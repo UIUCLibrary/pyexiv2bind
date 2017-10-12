@@ -6,10 +6,10 @@
 #define PYEXIV2BIND_IMAGE2_H
 #include <exiv2/exiv2.hpp>
 
-struct Image2 {
+struct Image {
     std::string filename;
     Exiv2::Image::AutoPtr image;
-    Image2(const std::string &filename);
+    Image(const std::string &filename);
 
     const std::string &getFilename() const;
     int get_pixelHeight() const;
