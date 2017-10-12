@@ -11,5 +11,6 @@ setup(
     test_suite="tests",
     tests_require=['pytest'],
     zip_safe=False,
+    url="https://github.com/UIUCLibrary/pyexiv2bind",
 
 )
