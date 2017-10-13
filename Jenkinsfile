@@ -93,14 +93,14 @@ pipeline {
                     }
                 // bat "${tool 'Python3.6.3_Win64'} -m devpi test py3exiv2bind -s win"
                 }
-
-            }
-        }
-        stage("Test Devpi packages") {
-            when {
-                expression { params.DEPLOY_DEVPI == true }
-            }
-            steps {
+//
+//            }
+//        }
+//        stage("Test Devpi packages") {
+//            when {
+//                expression { params.DEPLOY_DEVPI == true }
+//            }
+//            steps {
                 parallel(
                         "Source": {
 
