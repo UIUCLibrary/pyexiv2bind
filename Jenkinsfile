@@ -95,13 +95,13 @@ pipeline {
 
             }
         }
-    }
-    stage("Test Devpi packages") {
-        when {
-            expression { params.DEPLOY_DEVPI == true }
-        }
-        steps {
-            echo "testing package in devpi"
+        stage("Test Devpi packages") {
+            when {
+                expression { params.DEPLOY_DEVPI == true }
+            }
+            steps {
+                echo "testing package in devpi"
+            }
         }
     }
     post {
