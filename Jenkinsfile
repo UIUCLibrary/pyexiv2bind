@@ -51,6 +51,7 @@ pipeline {
                 dir("tests") {
                     unstash 'sample_images'
                 }
+                stash includes: 'tests/**', name: 'tests'
                 bat "${tool 'Python3.6.3_Win64'} -m tox"
                 // bat "${env.TOX}"
 //                }
@@ -105,14 +106,20 @@ pipeline {
 
                             node("Windows"){
                                 echo "Testing Source package in devpi"
+                                bat "${tool 'Python3.6.3_Win64'} -m install py3exiv2bind"
+                                unstash "tests"
                                 bat "dir"
+                                bat "${tool 'Python3.6.3_Win64'} -m pytest"
                             }
                         },
                         "Whl": {
 
                             node("Windows"){
                                 echo "Testing Whl package in devpi"
+                                bat "${tool 'Python3.6.3_Win64'} -m install py3exiv2bind"
+                                unstash "tests"
                                 bat "dir"
+                                bat "${tool 'Python3.6.3_Win64'} -m pytest"
                             }
                         }
                 )
