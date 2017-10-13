@@ -109,10 +109,12 @@ pipeline {
                                     bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                                     bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                                     echo "Testing Source package in devpi"
-                                    bat "${tool 'Python3.6.3_Win64'} -m pip install py3exiv2bind"
+                                    bat "${tool 'Python3.6.3_Win64'} -m venv venv"
                                     unstash "tests"
                                     bat "dir"
-                                    bat "${tool 'Python3.6.3_Win64'} -m pytest"
+                                    bat """ ${tool 'Python3.6.3_Win64'} -m pip install py3exiv2bind
+                                            call venv\\Scripts\\activate.bat
+                                            ${tool 'Python3.6.3_Win64'} -m pytest"""
                                 }
                             }
                         },
@@ -123,10 +125,12 @@ pipeline {
                                     bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                                     bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                                     echo "Testing Whl package in devpi"
-                                    bat "${tool 'Python3.6.3_Win64'} -m pip install py3exiv2bind"
+                                    bat "${tool 'Python3.6.3_Win64'} -m venv venv"
                                     unstash "tests"
                                     bat "dir"
-                                    bat "${tool 'Python3.6.3_Win64'} -m pytest"
+                                    bat """ ${tool 'Python3.6.3_Win64'} -m pip install py3exiv2bind
+                                            call venv\\Scripts\\activate.bat
+                                            ${tool 'Python3.6.3_Win64'} -m pytest"""
                                 }
                             }
                         }
