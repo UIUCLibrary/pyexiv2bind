@@ -112,7 +112,7 @@ pipeline {
                                     bat "${tool 'Python3.6.3_Win64'} -m venv venv"
                                     unstash "tests"
                                     bat "dir"
-                                    bat """ ${tool 'Python3.6.3_Win64'} -m pip install py3exiv2bind
+                                    bat """ ${tool 'Python3.6.3_Win64'} -m pip install py3exiv2bind --no-cache-dir
                                             call venv\\Scripts\\activate.bat
                                             ${tool 'Python3.6.3_Win64'} -m pytest"""
                                 }
@@ -128,7 +128,7 @@ pipeline {
                                     bat "${tool 'Python3.6.3_Win64'} -m venv venv"
                                     unstash "tests"
                                     bat "dir"
-                                    bat """ ${tool 'Python3.6.3_Win64'} -m pip install py3exiv2bind
+                                    bat """ ${tool 'Python3.6.3_Win64'} -m pip install py3exiv2bind --no-cache-dir
                                             call venv\\Scripts\\activate.bat
                                             ${tool 'Python3.6.3_Win64'} -m pytest"""
                                 }
