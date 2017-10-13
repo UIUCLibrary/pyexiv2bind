@@ -51,7 +51,8 @@ pipeline {
                 dir("tests") {
                     unstash 'sample_images'
                 }
-                bat "${env.TOX}"
+                bat "${tool 'Python3.6.3_Win64'} -m tox"
+                // bat "${env.TOX}"
 //                }
 
 
@@ -60,7 +61,8 @@ pipeline {
         }
         stage("Packaging") {
             steps {
-                bat """${env.PYTHON3} -m venv venv
+                //bat """${env.PYTHON3} -m venv venv
+                bat """${tool 'Python3.6.3_Win64'} -m venv venv
                        call venv\\Scripts\\activate.bat
                        pip install -r requirements-dev.txt
                        python setup.py bdist_wheel
@@ -75,20 +77,20 @@ pipeline {
                 expression { params.DEPLOY_DEVPI == true }
             }
             steps {
-                bat "devpi use http://devpy.library.illinois.edu"
+                bat "${tool 'Python3.6.3_Win64'} -m devpi use http://devpy.library.illinois.edu"
                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                    bat "devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                    bat "devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                    bat "${tool 'Python3.6.3_Win64'} devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                    bat "${tool 'Python3.6.3_Win64'} devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                     script {
                         try {
-                            bat "devpi upload --with-docs --formats bdist_wheel,sdist"
+                            bat "${tool 'Python3.6.3_Win64'} devpi upload --with-docs --formats bdist_wheel,sdist"
 
                         } catch (exc) {
                             echo "Unable to upload to devpi with docs. Trying without"
-                            bat "devpi upload --formats bdist_wheel,sdist"
+                            bat "${tool 'Python3.6.3_Win64'} devpi upload --formats bdist_wheel,sdist"
                         }
                     }
-                bat "devpi test py3exiv2bind -s win"
+                // bat "${tool 'Python3.6.3_Win64'} devpi test py3exiv2bind -s win"
                 }
 
             }
