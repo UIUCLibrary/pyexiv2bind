@@ -100,7 +100,15 @@ pipeline {
                 expression { params.DEPLOY_DEVPI == true }
             }
             steps {
-                echo "testing package in devpi"
+                parallel(
+                        "Source": {
+                            echo "Testing Source package in devpi"            
+                        },
+                        "Whl": {
+                            echo "Testing Whl package in devpi"
+                        }
+                )
+                
             }
         }
     }
