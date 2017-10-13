@@ -105,21 +105,29 @@ pipeline {
                         "Source": {
 
                             node("Windows"){
-                                echo "Testing Source package in devpi"
-                                bat "${tool 'Python3.6.3_Win64'} -m install py3exiv2bind"
-                                unstash "tests"
-                                bat "dir"
-                                bat "${tool 'Python3.6.3_Win64'} -m pytest"
+                                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                                    bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                                    bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                                    echo "Testing Source package in devpi"
+                                    bat "${tool 'Python3.6.3_Win64'} -m install py3exiv2bind"
+                                    unstash "tests"
+                                    bat "dir"
+                                    bat "${tool 'Python3.6.3_Win64'} -m pytest"
+                                }
                             }
                         },
                         "Whl": {
 
                             node("Windows"){
-                                echo "Testing Whl package in devpi"
-                                bat "${tool 'Python3.6.3_Win64'} -m install py3exiv2bind"
-                                unstash "tests"
-                                bat "dir"
-                                bat "${tool 'Python3.6.3_Win64'} -m pytest"
+                                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                                    bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                                    bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                                    echo "Testing Whl package in devpi"
+                                    bat "${tool 'Python3.6.3_Win64'} -m install py3exiv2bind"
+                                    unstash "tests"
+                                    bat "dir"
+                                    bat "${tool 'Python3.6.3_Win64'} -m pytest"
+                                }
                             }
                         }
                 )
