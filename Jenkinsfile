@@ -102,10 +102,18 @@ pipeline {
             steps {
                 parallel(
                         "Source": {
-                            echo "Testing Source package in devpi"            
+
+                            node("Windows"){
+                                echo "Testing Source package in devpi"
+                                bat "dir"
+                            }
                         },
                         "Whl": {
-                            echo "Testing Whl package in devpi"
+
+                            node("Windows"){
+                                echo "Testing Whl package in devpi"
+                                bat "dir"
+                            }
                         }
                 )
                 
