@@ -93,14 +93,14 @@ pipeline {
                     }
                 // bat "${tool 'Python3.6.3_Win64'} -m devpi test py3exiv2bind -s win"
                 }
-//
-//            }
-//        }
-//        stage("Test Devpi packages") {
-//            when {
-//                expression { params.DEPLOY_DEVPI == true }
-//            }
-//            steps {
+
+            }
+        }
+        stage("Test Devpi packages") {
+            when {
+                expression { params.DEPLOY_DEVPI == true }
+            }
+            steps {
                 parallel(
                         "Source": {
 
@@ -128,7 +128,7 @@ pipeline {
                                     bat "${tool 'Python3.6.3_Win64'} -m venv venv"
                                     unstash "tests"
                                     bat "dir"
-                                    bat """ ${tool 'Python3.6.3_Win64'} -m pip install py3exiv2bind --no-cache-dir
+                                    bat """ ${tool 'Python3.6.3_Win64'} -m pip install py3exiv2bind --no-cache-dir  --only-binary bdist_wheel
                                             call venv\\Scripts\\activate.bat
                                             ${tool 'Python3.6.3_Win64'} -m pytest"""
                                 }
