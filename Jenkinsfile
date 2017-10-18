@@ -9,6 +9,7 @@ pipeline {
     }
     parameters {
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: true, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
+        choice(choices: 'None\nRelease', description: "Release the build to production")
     }
     stages {
         stage("Checking Out from Source Control") {
@@ -62,7 +63,6 @@ pipeline {
         }
         stage("Packaging") {
             steps {
-                //bat """${env.PYTHON3} -m venv venv
                 bat """${tool 'Python3.6.3_Win64'} -m venv venv
                        call venv\\Scripts\\activate.bat
                        pip install -r requirements-dev.txt
@@ -95,7 +95,6 @@ pipeline {
 //                            bat "${tool 'Python3.6.3_Win64'} -m devpi upload --formats bdist_wheel,sdist"
                         }
                     }
-                    // bat "${tool 'Python3.6.3_Win64'} -m devpi test py3exiv2bind -s win"
                 }
 
             }
