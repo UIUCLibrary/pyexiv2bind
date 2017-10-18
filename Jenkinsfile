@@ -9,7 +9,7 @@ pipeline {
     }
     parameters {
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: true, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
-        choice(choices: 'None\nrelease', description: "Release the build to production. Only available in the Master branch", name: RELEASE)
+//        choice(choices: 'None\nrelease', description: "Release the build to production. Only available in the Master branch", name: RELEASE)
     }
     stages {
         stage("Checking Out from Source Control") {
