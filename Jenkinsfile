@@ -66,10 +66,11 @@ pipeline {
                 bat """${tool 'Python3.6.3_Win64'} -m venv venv
                        call venv\\Scripts\\activate.bat
                        pip install -r requirements-dev.txt
-                       python setup.py bdist_wheel
+                       python setup.py sdist bdist_wheel
                        """
                 dir("dist") {
                     archiveArtifacts artifacts: "*.whl", fingerprint: true
+                    archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
                 }
             }
         }
