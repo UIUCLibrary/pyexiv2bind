@@ -1,7 +1,20 @@
 include(GenerateExportHeader)
 pybind11_add_module(core core.cpp)
 
-add_library(glue STATIC glue/glue.cpp glue/glue.h glue/Image2.cpp glue/Image2.h)
+add_library(glue STATIC
+        glue/glue.cpp
+        glue/glue.h
+        glue/Image.cpp
+        glue/Image.h
+        glue/MetadataStrategies.h
+        glue/MetadataProcessor.cpp
+        glue/MetadataProcessor.h
+        glue/IPTC_Strategy.cpp
+        glue/IPTC_Strategy.h
+        glue/ExifStrategy.cpp
+        glue/ExifStrategy.h
+        glue/AbsMetadataStrategy.h
+        )
 
 target_include_directories(glue PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 set_target_properties(glue PROPERTIES
