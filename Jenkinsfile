@@ -140,12 +140,16 @@ pipeline {
             post {
                 success {
                     echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
-                    bat "dir"
-                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                        bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                        bat "for /f %%i in ('${tool 'Python3.6.3_Win64'} setup.py --version') do ${tool 'Python3.6.3_Win64'} -m devpi push py3exiv2bind==%%i ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
-                        
+                    script{
+                        def version = bat "${tool 'Python3.6.3_Win64'} setup.py --version"
+                        echo "I got a version of ${version}"
+                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                            bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                            bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                            bat "for /f %%i in ('${tool 'Python3.6.3_Win64'} setup.py --version') do ${tool 'Python3.6.3_Win64'} -m devpi push py3exiv2bind==%%i ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+
+                        }
+
                     }
                 }
             }
