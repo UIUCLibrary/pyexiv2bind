@@ -85,11 +85,13 @@ pipeline {
 //                    bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                     script {
                         try {
-                            bat "${tool 'Python3.6.3_Win64'} -m devpi upload --with-docs --formats bdist_wheel,sdist"
+                            bat "${tool 'Python3.6.3_Win64'} -m devpi upload --with-docs dist"
+//                            bat "${tool 'Python3.6.3_Win64'} -m devpi upload --with-docs --formats bdist_wheel,sdist"
 
                         } catch (exc) {
                             echo "Unable to upload to devpi with docs. Trying without"
-                            bat "${tool 'Python3.6.3_Win64'} -m devpi upload --formats bdist_wheel,sdist"
+                            bat "${tool 'Python3.6.3_Win64'} -m devpi upload --from-dir dist"
+//                            bat "${tool 'Python3.6.3_Win64'} -m devpi upload --formats bdist_wheel,sdist"
                         }
                     }
                     // bat "${tool 'Python3.6.3_Win64'} -m devpi test py3exiv2bind -s win"
