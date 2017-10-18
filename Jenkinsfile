@@ -141,9 +141,9 @@ pipeline {
             post {
                 success {
                     echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
-                }
-                always {
-                    echo "Removing file from staging"
+                    bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                    bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                    bat "${tool 'Python3.6.3_Win64'} -m devpi push py3exiv2bind /${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                 }
             }
         }
