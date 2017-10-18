@@ -144,7 +144,7 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                         bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                         bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                        bat "for /f %%i in ('${tool 'Python3.6.3_Win64'} setup.py --version') do ${tool 'Python3.6.3_Win64'} -m devpi push py3exiv2bind=%%i ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                        bat "for /f %%i in ('${tool 'Python3.6.3_Win64'} setup.py --version') do ${tool 'Python3.6.3_Win64'} -m devpi push py3exiv2bind==%%i ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                         
                     }
                 }
