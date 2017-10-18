@@ -106,33 +106,37 @@ pipeline {
             steps {
                 parallel(
                         "Source": {
-
-                            node("Windows") {
-                                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                    bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                                    bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                                    echo "Testing Source package in devpi"
-                                    bat "${tool 'Python3.6.3_Win64'} -m venv venv"
-                                    unstash "tests"
-                                    bat """ ${tool 'Python3.6.3_Win64'} -m pip install py3exiv2bind --no-cache-dir --no-use-wheel
+                            script {
+                                node("Windows") {
+                                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                                        bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                                        bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                                        echo "Testing Source package in devpi"
+                                        bat "${tool 'Python3.6.3_Win64'} -m venv venv"
+                                        unstash "tests"
+                                        bat """ ${tool 'Python3.6.3_Win64'} -m pip install py3exiv2bind --no-cache-dir --no-use-wheel
                                             call venv\\Scripts\\activate.bat
                                             ${tool 'Python3.6.3_Win64'} -m pytest"""
+                                    }
                                 }
+
                             }
                         },
                         "Wheel": {
-
-                            node("Windows") {
-                                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                    bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                                    bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                                    echo "Testing Whl package in devpi"
-                                    bat "${tool 'Python3.6.3_Win64'} -m venv venv"
-                                    unstash "tests"
-                                    bat """ ${tool 'Python3.6.3_Win64'} -m pip install py3exiv2bind --no-cache-dir  --only-binary bdist_wheel
+                            script {
+                                node("Windows") {
+                                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                                        bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                                        bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                                        echo "Testing Whl package in devpi"
+                                        bat "${tool 'Python3.6.3_Win64'} -m venv venv"
+                                        unstash "tests"
+                                        bat """ ${tool 'Python3.6.3_Win64'} -m pip install py3exiv2bind --no-cache-dir  --only-binary bdist_wheel
                                             call venv\\Scripts\\activate.bat
                                             ${tool 'Python3.6.3_Win64'} -m pytest"""
+                                    }
                                 }
+
                             }
                         }
                 )
@@ -141,7 +145,7 @@ pipeline {
             post {
                 success {
                     echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
-                    script{
+                    script {
                         def name = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --name").trim()
                         def version = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --version").trim()
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
@@ -156,10 +160,10 @@ pipeline {
         }
         stage("Release to production") {
             when {
-                expression {params.RELEASE != "None" && env.BRANCH_NAME == "master"}
+                expression { params.RELEASE != "None" && env.BRANCH_NAME == "master" }
             }
             steps {
-                script{
+                script {
                     def name = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --name").trim()
                     def version = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --version").trim()
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
@@ -184,7 +188,7 @@ pipeline {
                         bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                         bat "${tool 'Python3.6.3_Win64'} -m devpi remove -y ${name}==${version}"
                     }
-                } catch (err){
+                } catch (err) {
                     echo "Unable to clean up ${env.BRANCH_NAME}_staging"
                 }
 
