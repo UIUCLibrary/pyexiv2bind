@@ -140,7 +140,10 @@ pipeline {
             }
             post {
                 success {
-                    echo "it Worked"
+                    echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
+                }
+                always {
+                    echo "Removing file from staging"
                 }
             }
         }
