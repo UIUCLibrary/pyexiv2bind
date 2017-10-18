@@ -163,6 +163,9 @@ pipeline {
             when {
                 expression {params.RELEASE != "None"}
             }
+            steps {
+                echo "I'm Releasing it!"
+            }
         }
 
     }
