@@ -1,6 +1,5 @@
 #!groovy
-@Library("ds-utils@v0.2.0")
-// Uses library from https://github.com/UIUCLibrary/Jenkins_utils
+@Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
 import org.ds.*
 
 pipeline {
@@ -83,16 +82,13 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                     bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                     bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-//                    bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                     script {
                         try {
                             bat "${tool 'Python3.6.3_Win64'} -m devpi upload --with-docs dist"
-//                            bat "${tool 'Python3.6.3_Win64'} -m devpi upload --with-docs --formats bdist_wheel,sdist"
 
                         } catch (exc) {
                             echo "Unable to upload to devpi with docs. Trying without"
                             bat "${tool 'Python3.6.3_Win64'} -m devpi upload --from-dir dist"
-//                            bat "${tool 'Python3.6.3_Win64'} -m devpi upload --formats bdist_wheel,sdist"
                         }
                     }
                 }
