@@ -92,7 +92,7 @@ pipeline {
                             bat "${tool 'Python3.6.3_Win64'} -m devpi upload --formats bdist_wheel,sdist"
                         }
                     }
-                // bat "${tool 'Python3.6.3_Win64'} -m devpi test py3exiv2bind -s win"
+                    // bat "${tool 'Python3.6.3_Win64'} -m devpi test py3exiv2bind -s win"
                 }
 
             }
@@ -105,7 +105,7 @@ pipeline {
                 parallel(
                         "Source": {
 
-                            node("Windows"){
+                            node("Windows") {
                                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                                     bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                                     bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
@@ -121,7 +121,7 @@ pipeline {
                         },
                         "Whl": {
 
-                            node("Windows"){
+                            node("Windows") {
                                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                                     bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                                     bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
@@ -136,14 +136,15 @@ pipeline {
                             }
                         }
                 )
-                
+
+            }
+            post {
+                success {
+                    echo "it Worked"
+                }
             }
         }
-        post {
-            success {
-                echo "it Worked"
-            }
-        }
+
     }
     post {
         success {
