@@ -43,7 +43,7 @@ pipeline {
         }
         stage("Testing") {
             steps {
-                node('!Windows') {
+                node('Linux') {
                     sh 'wget https://jenkins.library.illinois.edu/jenkins/userContent/sample_images.tar.gz'
                     sh 'tar -xzf sample_images.tar.gz'
                     stash includes: 'sample_images/**', name: 'sample_images'
@@ -81,7 +81,8 @@ pipeline {
                 bat "${tool 'Python3.6.3_Win64'} -m devpi use http://devpy.library.illinois.edu"
                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                     bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                    bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                    bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+//                    bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                     script {
                         try {
                             bat "${tool 'Python3.6.3_Win64'} -m devpi upload --with-docs --formats bdist_wheel,sdist"
@@ -107,7 +108,7 @@ pipeline {
                             node("Windows"){
                                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                                     bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                                    bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                                    bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                                     echo "Testing Source package in devpi"
                                     bat "${tool 'Python3.6.3_Win64'} -m venv venv"
                                     unstash "tests"
@@ -123,7 +124,7 @@ pipeline {
                             node("Windows"){
                                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                                     bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                                    bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                                    bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                                     echo "Testing Whl package in devpi"
                                     bat "${tool 'Python3.6.3_Win64'} -m venv venv"
                                     unstash "tests"
