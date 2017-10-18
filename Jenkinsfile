@@ -139,6 +139,11 @@ pipeline {
                 
             }
         }
+        post {
+            success {
+                echo "it Worked"
+            }
+        }
     }
     post {
         success {
