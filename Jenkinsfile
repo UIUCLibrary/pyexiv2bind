@@ -41,6 +41,13 @@ pipeline {
             }
 
         }
+        stage("Build Dependencies") {
+            steps {
+                dir("thirdparty") {
+                    bat 'build_exiv2.bat'
+                }
+            }
+        }
         stage("Testing") {
             steps {
                 node('Linux') {
