@@ -59,9 +59,9 @@ pipeline {
                     unstash 'sample_images'
                 }
                 stash includes: 'tests/**', name: 'tests'
-                withEnv(['EXIV2_DIR=thirdparty\\dist\\exiv2\\share\\exiv2\\cmake']){
+                //withEnv(['EXIV2_DIR=thirdparty\\dist\\exiv2\\share\\exiv2\\cmake']){
                     bat "${tool 'Python3.6.3_Win64'} -m tox"
-                }
+                //}
 
 
             }
@@ -69,7 +69,7 @@ pipeline {
         }
         stage("Packaging") {
             steps {
-                withEnv(['EXIV2_DIR=thirdparty\\dist\\exiv2\\share\\exiv2\\cmake']){
+                // withEnv(['EXIV2_DIR=thirdparty\\dist\\exiv2\\share\\exiv2\\cmake']){
                     bat """${tool 'Python3.6.3_Win64'} -m venv venv
                            call venv\\Scripts\\activate.bat
                            pip install -r requirements-dev.txt
@@ -79,7 +79,7 @@ pipeline {
                         archiveArtifacts artifacts: "*.whl", fingerprint: true
                         archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
                     }
-                }
+                // }
             }
         }
         stage("Deploying to Devpi") {
