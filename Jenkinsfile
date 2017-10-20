@@ -121,7 +121,7 @@ pipeline {
                                         echo "Testing Source package in devpi"
                                         bat "${tool 'Python3.6.3_Win64'} -m venv venv"
                                         unstash "tests"
-                                        bat """ ${tool 'Python3.6.3_Win64'} -m pip install -Iv ${name}==${version} -i http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging --no-cache-dir --no-binary :all:
+                                        bat """ ${tool 'Python3.6.3_Win64'} -m pip install -Iv ${name}==${version} -i http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging --no-cache-dir --no-binary :all: --trusted-host devpi.library.illinois.edu
                                             call venv\\Scripts\\activate.bat
                                             ${tool 'Python3.6.3_Win64'} -m pytest"""
                                     }
@@ -140,7 +140,7 @@ pipeline {
                                         echo "Testing Whl package in devpi"
                                         bat "${tool 'Python3.6.3_Win64'} -m venv venv"
                                         unstash "tests"
-                                        bat """ ${tool 'Python3.6.3_Win64'} -m pip install -Iv ${name}==${version} -i http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging --no-cache-dir  --only-binary bdist_wheel
+                                        bat """ ${tool 'Python3.6.3_Win64'} -m pip install -Iv ${name}==${version} -i http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging --no-cache-dir  --only-binary bdist_wheel --trusted-host devpi.library.illinois.edu
                                             call venv\\Scripts\\activate.bat
                                             ${tool 'Python3.6.3_Win64'} -m pytest"""
                                     }
