@@ -19,5 +19,6 @@ PYBIND11_MODULE(core, m) {
             .def_property_readonly("pixelWidth", &Image::get_pixelWidth)
             .def_property_readonly("exif", &Image::get_exif_metadata)
             .def_property_readonly("iptc", &Image::get_iptc_metadata)
+            .def_property_readonly("xmp", &Image::get_xmp_metadata)
             ;
 }
