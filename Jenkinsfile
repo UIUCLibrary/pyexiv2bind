@@ -59,9 +59,9 @@ pipeline {
                     unstash 'sample_images'
                 }
                 stash includes: 'tests/**', name: 'tests'
-                bat "${tool 'Python3.6.3_Win64'} -m tox"
-                // bat "${env.TOX}"
-//                }
+                withEnv(['EXIV2_DIR'="thirdparty\dist\exiv2\share\exiv2\cmake"]{
+                    bat "${tool 'Python3.6.3_Win64'} -m tox"
+                }
 
 
             }
@@ -69,14 +69,16 @@ pipeline {
         }
         stage("Packaging") {
             steps {
-                bat """${tool 'Python3.6.3_Win64'} -m venv venv
-                       call venv\\Scripts\\activate.bat
-                       pip install -r requirements-dev.txt
-                       python setup.py sdist bdist_wheel
-                       """
-                dir("dist") {
-                    archiveArtifacts artifacts: "*.whl", fingerprint: true
-                    archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
+                withEnv(['EXIV2_DIR'="thirdparty\dist\exiv2\share\exiv2\cmake"]{
+                    bat """${tool 'Python3.6.3_Win64'} -m venv venv
+                           call venv\\Scripts\\activate.bat
+                           pip install -r requirements-dev.txt
+                           python setup.py sdist bdist_wheel
+                           """
+                    dir("dist") {
+                        archiveArtifacts artifacts: "*.whl", fingerprint: true
+                        archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
+                    }
                 }
             }
         }
