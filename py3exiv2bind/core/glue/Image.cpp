@@ -40,3 +40,10 @@ std::map<std::string, std::string> Image::get_iptc_metadata() const {
     processor.build(image);
     return processor.getMetadata();
 }
+
+std::map<std::string, std::string> Image::get_xmp_metadata() const {
+    MetadataProcessor processor;
+    processor.set_output_format(MetadataStrategies::XMP);
+    processor.build(image);
+    return processor.getMetadata();
+}
