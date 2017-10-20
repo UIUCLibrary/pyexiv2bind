@@ -7,7 +7,7 @@ if "EXIV2_DIR" in os.environ:
         cmake_args.append('-DEXIV2_DIR:PATH={}'.format(os.environ['EXIV2_DIR']))
 setup(
     name="py3exiv2bind",
-    version="0.0.2",
+    version="0.0.2a",
     packages=['py3exiv2bind'],
     # package_data={'py3exiv2bind': ['*.pyd', '*.so']},
     setup_requires=[
