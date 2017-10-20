@@ -8,7 +8,8 @@
 
 enum class MetadataStrategies {
     IPTC,
-    EXIF
+    EXIF,
+    XMP
 };
 
 
