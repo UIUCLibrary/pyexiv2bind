@@ -16,10 +16,6 @@ else ()
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_image.py ${CMAKE_CURRENT_BINARY_DIR}
             )
 
-    add_test(NAME python_tests
-            COMMAND ${PYTHON_EXECUTABLE} -m tox
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            )
 
     add_library(Catch INTERFACE)
     target_include_directories(Catch INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/catch/include)
@@ -34,10 +30,6 @@ else ()
     add_test(NAME cpp_tests
             COMMAND test
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            )
-    add_custom_target(add_tests
-            COMMENT "Adding tests to ${CMAKE_BINARY_DIR}"
-            DEPENDS add_python_tests cpp_tests
             )
     include(ExternalProject)
     ExternalProject_Add(add_test_images
