@@ -47,3 +47,7 @@ std::map<std::string, std::string> Image::get_xmp_metadata() const {
     processor.build(image);
     return processor.getMetadata();
 }
+
+bool Image::is_good() const {
+    return image->good();
+}

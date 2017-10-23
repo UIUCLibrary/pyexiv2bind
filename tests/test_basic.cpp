@@ -9,6 +9,9 @@ TEST_CASE("Try Image", "[glue]"){
     const std::string filename = "tests/sample_images/dummy.jp2";
     Image i(filename);
     SECTION("File is correctly added"){
-        REQUIRE(i.filename == filename);
+        REQUIRE(i.getFilename() == filename);
+    }
+    SECTION("File is good"){
+        REQUIRE(i.is_good());
     }
 }
