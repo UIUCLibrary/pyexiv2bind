@@ -27,4 +27,7 @@ add_test(NAME tox
         COMMAND ${PYTHON_EXECUTABLE} -m tox --workdir ${CMAKE_BINARY_DIR}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         )
-#message(WARNING "PYTHON_PACKAGE_SOURCE = ${PYTHON_PACKAGE_SOURCE}")
+
+add_custom_target(Wheel
+        COMMAND ${PYTHON_EXECUTABLE} setup.py bdist_wheel -d ${CMAKE_BINARY_DIR} -b ${CMAKE_BINARY_DIR}/python_build
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
