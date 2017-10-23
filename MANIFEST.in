@@ -3,6 +3,7 @@ include tox.ini README.rst CMakeLists.txt tests/CMakeLists.txt requirements-dev.
 
 recursive-include tests *.py
 recursive-exclude * __pycache__
+recursive-exclude _skbuild *
 recursive-exclude tests/sample_images *
 recursive-include py3exiv2bind *
 recursive-exclude py3exiv2bind  *.pyd
