@@ -29,5 +29,5 @@ add_test(NAME tox
         )
 
 add_custom_target(Wheel
-        COMMAND ${PYTHON_EXECUTABLE} setup.py bdist_wheel -d ${CMAKE_BINARY_DIR} -b ${CMAKE_BINARY_DIR}/python_build
+        COMMAND ${PYTHON_EXECUTABLE} setup.py bdist_wheel -d ${CMAKE_BINARY_DIR}/dist -b ${CMAKE_BINARY_DIR}/python_build
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
