@@ -119,11 +119,12 @@ pipeline {
                                         bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                                         bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                                         echo "Testing Source package in devpi"
-                                        bat "${tool 'Python3.6.3_Win64'} -m venv venv"
-                                        unstash "tests"
-                                        bat """ ${tool 'Python3.6.3_Win64'} -m pip install -Iv ${name}==${version} -i http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging --no-cache-dir --no-binary :all: --trusted-host devpi.library.illinois.edu
-                                            call venv\\Scripts\\activate.bat
-                                            ${tool 'Python3.6.3_Win64'} -m pytest"""
+                                        bat """ ${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging py3exiv2bind -s tar.gz
+                                        // bat "${tool 'Python3.6.3_Win64'} -m venv venv"
+                                        // unstash "tests"
+                                        // bat """ ${tool 'Python3.6.3_Win64'} -m pip install -Iv ${name}==${version} -i http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging --no-cache-dir --no-binary :all: --trusted-host devpi.library.illinois.edu
+                                            // call venv\\Scripts\\activate.bat
+                                            // ${tool 'Python3.6.3_Win64'} -m pytest"""
                                     }
                                 }
 
@@ -138,11 +139,12 @@ pipeline {
                                         bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                                         bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                                         echo "Testing Whl package in devpi"
-                                        bat "${tool 'Python3.6.3_Win64'} -m venv venv"
-                                        unstash "tests"
-                                        bat """ ${tool 'Python3.6.3_Win64'} -m pip install -Iv ${name}==${version} -i http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging --no-cache-dir  --only-binary bdist_wheel --trusted-host devpi.library.illinois.edu
-                                            call venv\\Scripts\\activate.bat
-                                            ${tool 'Python3.6.3_Win64'} -m pytest"""
+                                        bat """ ${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging py3exiv2bind -s whl
+                                        // bat "${tool 'Python3.6.3_Win64'} -m venv venv"
+                                        // unstash "tests"
+                                        // bat """ ${tool 'Python3.6.3_Win64'} -m pip install -Iv ${name}==${version} -i http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging --no-cache-dir  --only-binary bdist_wheel --trusted-host devpi.library.illinois.edu
+//                                            call venv\\Scripts\\activate.bat
+  //                                          ${tool 'Python3.6.3_Win64'} -m pytest"""
                                     }
                                 }
 
