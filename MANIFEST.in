@@ -1,6 +1,7 @@
 # Include the license file
 include tox.ini README.rst CMakeLists.txt tests/CMakeLists.txt requirements-dev.txt pytest.ini
 
+recursive-include cmake *.cmake
 recursive-include tests *.py
 recursive-exclude * __pycache__
 recursive-exclude _skbuild *

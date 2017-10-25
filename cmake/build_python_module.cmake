@@ -2,9 +2,9 @@
 file(GLOB python_files RELATIVE ${CMAKE_SOURCE_DIR}/
         "${CMAKE_SOURCE_DIR}/py3exiv2bind/*.py")
 set(extra_python_files
-        setup.py
-        setup.cfg
-        tox.ini
+        ${PROJECT_SOURCE_DIR}/setup.py
+        ${PROJECT_SOURCE_DIR}/setup.cfg
+        ${PROJECT_SOURCE_DIR}/tox.ini
         )
 foreach (_file ${extra_python_files})
     list(APPEND PYTHON_PACKAGE_SOURCE ${_file})
