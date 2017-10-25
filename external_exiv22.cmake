@@ -1,24 +1,25 @@
 include(ExternalProject)
-ExternalProject_Add(project_zlib
-        URL https://zlib.net/zlib-1.2.11.tar.gz
-        URL_HASH SHA256=c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1
-        CMAKE_ARGS
-            -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-            -DCMAKE_BUILD_TYPE=Release
+if(pyexiv2bind_png)
+    ExternalProject_Add(project_zlib
+            URL https://zlib.net/zlib-1.2.11.tar.gz
+            URL_HASH SHA256=c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1
+            CMAKE_ARGS
+                -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+                -DCMAKE_BUILD_TYPE=Release
 
-        BUILD_BYPRODUCTS
-            <INSTALL_DIR>/lib/zlib${CMAKE_STATIC_LIBRARY_SUFFIX}
-            <INSTALL_DIR>/lib/zlibstatic${CMAKE_STATIC_LIBRARY_SUFFIX}
-            <INSTALL_DIR>/bin/zlibs${CMAKE_SHARED_LIBRARY_SUFFIX}
-        )
-ExternalProject_Get_Property(project_zlib install_dir)
-add_library(zlib::zlib STATIC IMPORTED)
-add_dependencies(zlib::zlib project_zlib)
-set_target_properties(zlib::zlib PROPERTIES
-        INCLUDE_DIRECTORIES ${install_dir}/include
-        IMPORTED_LOCATION_RELEASE ${install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}zlibstatic${CMAKE_STATIC_LIBRARY_SUFFIX}
-        )
-
+            BUILD_BYPRODUCTS
+                <INSTALL_DIR>/lib/zlib${CMAKE_STATIC_LIBRARY_SUFFIX}
+                <INSTALL_DIR>/lib/zlibstatic${CMAKE_STATIC_LIBRARY_SUFFIX}
+                <INSTALL_DIR>/bin/zlibs${CMAKE_SHARED_LIBRARY_SUFFIX}
+            )
+    ExternalProject_Get_Property(project_zlib install_dir)
+    add_library(zlib::zlib STATIC IMPORTED)
+    add_dependencies(zlib::zlib project_zlib)
+    set_target_properties(zlib::zlib PROPERTIES
+            INCLUDE_DIRECTORIES ${install_dir}/include
+            IMPORTED_LOCATION_RELEASE ${install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}zlibstatic${CMAKE_STATIC_LIBRARY_SUFFIX}
+            )
+endif()
 ###########################################################################################
 ExternalProject_Add(project_libexpat
         URL https://github.com/libexpat/libexpat/archive/R_2_2_3.zip
@@ -78,37 +79,42 @@ set(googletest_root ${install_dir})
 add_dependencies(googletest::googletest project_gtest)
 
 #########################################################################################
+if(pyexiv2bind_png)
+    list(APPEND libexiv2_args -DEXIV2_ENABLE_PNG:BOOL=ON)
+    list(APPEND libexiv2_args -DZLIB_LIBRARY=$<TARGET_FILE:zlib::zlib>)
+    list(APPEND libexiv2_args -DZLIB_INCLUDE_DIR=$<TARGET_PROPERTY:zlib::zlib,INCLUDE_DIRECTORIES>)
+    list(APPEND libexiv2_depends project_zlib)
+else()
+    list(APPEND libexiv2_args -DEXIV2_ENABLE_PNG:BOOL=OFF)
+endif()
+list(APPEND libexiv2_args -DCMAKE_BUILD_TYPE=$<CONFIG>)
+list(APPEND libexiv2_args -DEXIV2_BUILD_EXIV2_COMMAND:BOOL=ON)
+list(APPEND libexiv2_args -DEXIV2_ENABLE_DYNAMIC_RUNTIME=ON)
+list(APPEND libexiv2_args -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>)
+list(APPEND libexiv2_args -DBUILD_SHARED_LIBS:BOOL=OFF)
+list(APPEND libexiv2_args -DEXIV2_BUILD_SAMPLES:BOOL=OFF)
+list(APPEND libexiv2_args -DEXIV2_ENABLE_XMP:BOOL=ON)
+list(APPEND libexiv2_args -DEXIV2_BUILD_UNIT_TESTS=ON)
+list(APPEND libexiv2_args -DGTEST_ROOT="${googletest_root}")
+list(APPEND libexiv2_args -DGTEST_INCLUDE_DIR=$<TARGET_PROPERTY:googletest::googletest,INCLUDE_DIRECTORIES>)
+list(APPEND libexiv2_args -DGTEST_LIBRARY=$<TARGET_FILE:googletest::googletest>)
+list(APPEND libexiv2_args -DGTEST_MAIN_LIBRARY=$<TARGET_FILE:googletest::googletest_main>)
+list(APPEND libexiv2_args -DEXIV2_ENABLE_WIN_UNICODE:BOOL=ON)
+list(APPEND libexiv2_args -DEXPAT_INCLUDE_DIR=$<TARGET_PROPERTY:libexpat::libexpat,INCLUDE_DIRECTORIES>)
+list(APPEND libexiv2_args -DEXPAT_LIBRARY=$<TARGET_FILE:libexpat::libexpat>)
+list(APPEND libexiv2_depends project_gtest)
+list(APPEND libexiv2_depends project_libexpat)
+
+
 ExternalProject_Add(project_libexiv2
         GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
+
         CMAKE_ARGS
-            -DEXIV2_ENABLE_PNG:BOOL=OFF
-        CMAKE_ARGS
-            -DCMAKE_BUILD_TYPE=$<CONFIG>
-            -DEXIV2_BUILD_EXIV2_COMMAND:BOOL=ON
-            -DEXIV2_ENABLE_DYNAMIC_RUNTIME=ON
-            -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-            -DBUILD_SHARED_LIBS:BOOL=OFF
-            -DEXIV2_BUILD_SAMPLES:BOOL=OFF
-#            -DEXIV2_ENABLE_TOOLS:BOOL=OFF
-#            -DEXIV2_ENABLE_CURL:BOOL=ON
-#            -DEXIV2_ENABLE_PNG:BOOL=OFF
-            -DEXIV2_ENABLE_XMP:BOOL=ON
-            -DEXIV2_BUILD_UNIT_TESTS=ON
-            -DGTEST_ROOT="${googletest_root}"
-            -DGTEST_INCLUDE_DIR=$<TARGET_PROPERTY:googletest::googletest,INCLUDE_DIRECTORIES>
-            -DGTEST_LIBRARY=$<TARGET_FILE:googletest::googletest>
-            -DGTEST_MAIN_LIBRARY=$<TARGET_FILE:googletest::googletest_main>
-            -DEXIV2_ENABLE_WIN_UNICODE:BOOL=ON
-            -DEXPAT_INCLUDE_DIR=$<TARGET_PROPERTY:libexpat::libexpat,INCLUDE_DIRECTORIES>
-            -DEXPAT_LIBRARY=$<TARGET_FILE:libexpat::libexpat>
-            -DZLIB_INCLUDE_DIR=$<TARGET_PROPERTY:zlib::zlib,INCLUDE_DIRECTORIES>
-            -DZLIB_LIBRARY=$<TARGET_FILE:zlib::zlib>
+            ${libexiv2_args}
             # -DICONV_INCLUDE_DIR=""
             # -DICONV_LIBRARY=""
         DEPENDS
-            project_libexpat
-            project_zlib
-            project_gtest
+            ${libexiv2_depends}
 
         BUILD_BYPRODUCTS
             <INSTALL_DIR>/lib/exiv2${CMAKE_STATIC_LIBRARY_SUFFIX}
