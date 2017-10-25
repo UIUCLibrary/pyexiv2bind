@@ -6,6 +6,6 @@ recursive-include tests *.py
 recursive-exclude * __pycache__
 recursive-exclude _skbuild *
 recursive-exclude tests/sample_images *
-recursive-include py3exiv2bind *
+recursive-include py3exiv2bind *.py *.cpp *.h CMakeLists.txt
 recursive-exclude py3exiv2bind  *.pyd
 recursive-include thirdparty *
