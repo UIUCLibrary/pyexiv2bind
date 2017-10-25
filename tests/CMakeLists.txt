@@ -1,5 +1,5 @@
 if (SKBUILD)
-    message(INFO "Skipping tests")
+#    message(INFO "Skipping tests")
 else ()
     set(PYTHON_TEST_FILES test_core.py)
     find_package(PythonInterp 3 REQUIRED)
