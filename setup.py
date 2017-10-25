@@ -7,7 +7,7 @@ if "EXIV2_DIR" in os.environ:
         cmake_args.append('-DEXIV2_DIR:PATH={}'.format(os.environ['EXIV2_DIR']))
 setup(
     name="py3exiv2bind",
-    version="0.0.3a1",
+    version="0.0.3b1",
     # author="University of Illinois at Urbana Champaign",
     maintainer="Henry Borchers",
     maintainer_email="hborcher@illinois.edu",
