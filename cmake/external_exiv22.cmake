@@ -41,17 +41,16 @@ ExternalProject_Add(project_libexpat
         # TEST_BEFORE_INSTALL $<$<CONFIG:Debug>1, 0>
         LOG_CONFIGURE 1
         BUILD_BYPRODUCTS
-            <INSTALL_DIR>/lib/expat${CMAKE_STATIC_LIBRARY_SUFFIX}
+            <INSTALL_DIR>/lib/${CMAKE_STATIC_LIBRARY_PREFIX}expat${CMAKE_STATIC_LIBRARY_SUFFIX}
         )
 ExternalProject_Get_Property(project_libexpat install_dir)
 add_library(libexpat::libexpat STATIC IMPORTED)
 add_dependencies(libexpat::libexpat project_libexpat)
 set_target_properties(libexpat::libexpat PROPERTIES
         INCLUDE_DIRECTORIES ${install_dir}/include
-        IMPORTED_LOCATION_DEBUG ${install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}expatd${CMAKE_STATIC_LIBRARY_SUFFIX}
+        IMPORTED_LOCATION_DEBUG ${install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}expat${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
         IMPORTED_LOCATION_RELEASE ${install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}expat${CMAKE_STATIC_LIBRARY_SUFFIX}
         )
-
 
 ###########################################################################################
 # Google test build
@@ -60,37 +59,55 @@ set_target_properties(libexpat::libexpat PROPERTIES
 list(APPEND google_test_args -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>)
 list(APPEND google_test_args -DBUILD_GMOCK=OFF)
 list(APPEND google_test_args -DBUILD_GTEST=ON)
+
+list(APPEND google_test_args -DCMAKE_BUILD_TYPE=$<CONFIG>)
+
 if(MSVC)
     list(APPEND google_test_args -DBUILD_SHARED_LIBS=ON)
-        else()
+    list(APPEND google_test_byproducts <INSTALL_DIR>/lib/gtest${CMAKE_SHARED_LIBRARY_SUFFIX})
+    list(APPEND google_test_byproducts <INSTALL_DIR>/lib/gtest${CMAKE_LINK_LIBRARY_SUFFIX})
+    list(APPEND google_test_byproducts <INSTALL_DIR>/lib/gtest_main${CMAKE_SHARED_LIBRARY_SUFFIX})
+    list(APPEND google_test_byproducts <INSTALL_DIR>/lib/gtest_main${CMAKE_LINK_LIBRARY_SUFFIX})
+    add_library(googletest::googletest SHARED IMPORTED)
+    add_library(googletest::googletest_main SHARED IMPORTED)
+else()
+    add_library(googletest::googletest STATIC IMPORTED)
+    add_library(googletest::googletest_main STATIC IMPORTED)
     list(APPEND google_test_args -DBUILD_SHARED_LIBS=OFF)
+    list(APPEND google_test_byproducts <INSTALL_DIR>/lib/${CMAKE_STATIC_LIBRARY_PREFIX}gtest${CMAKE_STATIC_LIBRARY_SUFFIX})
+    list(APPEND google_test_byproducts <INSTALL_DIR>/lib/${CMAKE_STATIC_LIBRARY_PREFIX}gtest_main${CMAKE_STATIC_LIBRARY_SUFFIX})
 endif()
-list(APPEND google_test_args -DCMAKE_BUILD_TYPE=$<CONFIG>)
+
 
 ExternalProject_Add(project_gtest
         URL https://github.com/google/googletest/archive/release-1.8.0.tar.gz
         CMAKE_ARGS ${google_test_args}
         #        -Dgtest_force_shared_crt=ON
-        BUILD_BYPRODUCTS
-            <INSTALL_DIR>/lib/gtest${CMAKE_SHARED_LIBRARY_SUFFIX}
-            <INSTALL_DIR>/lib/gtest${CMAKE_LINK_LIBRARY_SUFFIX}
-            <INSTALL_DIR>/lib/gtest_main${CMAKE_SHARED_LIBRARY_SUFFIX}
-            <INSTALL_DIR>/lib/gtest_main${CMAKE_LINK_LIBRARY_SUFFIX}
+        BUILD_BYPRODUCTS ${google_test_byproducts}
         )
 
 ExternalProject_Get_Property(project_gtest install_dir)
-add_library(googletest::googletest SHARED IMPORTED)
-add_library(googletest::googletest_main SHARED IMPORTED)
-set_target_properties(googletest::googletest PROPERTIES
-        INCLUDE_DIRECTORIES ${install_dir}/include
-        IMPORTED_IMPLIB ${install_dir}/lib/gtest${CMAKE_IMPORT_LIBRARY_SUFFIX}
-        IMPORTED_LOCATION ${install_dir}/lib/gtest${CMAKE_SHARED_LIBRARY_SUFFIX}
-        )
-set_target_properties(googletest::googletest_main PROPERTIES
-        INCLUDE_DIRECTORIES ${install_dir}/include
-        IMPORTED_IMPLIB ${install_dir}/lib/gtest_main${CMAKE_IMPORT_LIBRARY_SUFFIX}
-        IMPORTED_LOCATION ${install_dir}/lib/gtest_main${CMAKE_SHARED_LIBRARY_SUFFIX}
-        )
+if(MSVC)
+    set_target_properties(googletest::googletest PROPERTIES
+            INCLUDE_DIRECTORIES ${install_dir}/include
+            IMPORTED_IMPLIB ${install_dir}/lib/gtest${CMAKE_IMPORT_LIBRARY_SUFFIX}
+            IMPORTED_LOCATION ${install_dir}/lib/gtest${CMAKE_SHARED_LIBRARY_SUFFIX}
+            )
+    set_target_properties(googletest::googletest_main PROPERTIES
+            INCLUDE_DIRECTORIES ${install_dir}/include
+            IMPORTED_IMPLIB ${install_dir}/lib/gtest_main${CMAKE_IMPORT_LIBRARY_SUFFIX}
+            IMPORTED_LOCATION ${install_dir}/lib/gtest_main${CMAKE_SHARED_LIBRARY_SUFFIX}
+            )
+else()
+    set_target_properties(googletest::googletest PROPERTIES
+            INCLUDE_DIRECTORIES ${install_dir}/include
+            IMPORTED_LOCATION ${install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}gtest${CMAKE_STATIC_LIBRARY_SUFFIX}
+            )
+    set_target_properties(googletest::googletest_main PROPERTIES
+            INCLUDE_DIRECTORIES ${install_dir}/include
+            IMPORTED_LOCATION ${install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}gtest_main${CMAKE_STATIC_LIBRARY_SUFFIX}
+            )
+endif()
 set(googletest_root ${install_dir})
 add_dependencies(googletest::googletest project_gtest)
 
@@ -120,6 +137,8 @@ list(APPEND libexiv2_args -DGTEST_LIBRARY=$<TARGET_LINKER_FILE:googletest::googl
 list(APPEND libexiv2_args -DEXPAT_INCLUDE_DIR=$<TARGET_PROPERTY:libexpat::libexpat,INCLUDE_DIRECTORIES>)
 list(APPEND libexiv2_args -DGTEST_MAIN_LIBRARY=$<TARGET_LINKER_FILE:googletest::googletest_main>)
 list(APPEND libexiv2_args -DEXPAT_LIBRARY=$<TARGET_FILE:libexpat::libexpat>)
+list(APPEND libexiv2_args -DICONV_INCLUDE_DIR="")
+list(APPEND libexiv2_args -DICONV_LIBRARY="")
 list(APPEND libexiv2_depends project_gtest)
 list(APPEND libexiv2_depends project_libexpat)
 
@@ -152,9 +171,9 @@ ExternalProject_Get_Property(project_libexiv2 install_dir)
 
 set_target_properties(exiv2lib PROPERTIES
         INCLUDE_DIRECTORIES ${install_dir}/include
-        IMPORTED_LOCATION_DEBUG ${install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}exiv2d${CMAKE_STATIC_LIBRARY_SUFFIX}
+        IMPORTED_LOCATION_DEBUG ${install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}exiv2${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
         IMPORTED_LOCATION_RELEASE ${install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}exiv2${CMAKE_STATIC_LIBRARY_SUFFIX}
-        INTERFACE_LINK_LIBRARIES "${install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}xmp$<$<CONFIG:Debug>:d>${CMAKE_STATIC_LIBRARY_SUFFIX};$<TARGET_FILE:libexpat::libexpat>"
+        INTERFACE_LINK_LIBRARIES "${install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}xmp$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>${CMAKE_STATIC_LIBRARY_SUFFIX};$<TARGET_FILE:libexpat::libexpat>"
         CXX_STANDARD 98
         )
 
