@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.8)
 project(pyexiv2bind)
 find_package(PythonInterp REQUIRED)
+find_package(PythonLibs)
 option(pyexiv2bind_build_exiv2 "Build Exiv2 from source" ON)
 option(pyexiv2bind_png "Build supporte for the png format" OFF)
 if (pyexiv2bind_build_exiv2)
@@ -10,7 +11,7 @@ else ()
 endif ()
 if (SKBUILD)
     message(STATUS "USING SCIKIT BUILD")
-    find_package(PythonLibs)
+
     find_package(PythonExtensions REQUIRED)
 
 else ()

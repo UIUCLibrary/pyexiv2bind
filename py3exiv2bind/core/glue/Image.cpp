@@ -51,3 +51,9 @@ std::map<std::string, std::string> Image::get_xmp_metadata() const {
 bool Image::is_good() const {
     return image->good();
 }
+
+void Image::foo() {
+    auto f = image->iccProfile();
+    auto i = image->iccProfileDefined();
+
+}
