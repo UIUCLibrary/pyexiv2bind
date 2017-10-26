@@ -41,8 +41,9 @@ ExternalProject_Add(project_libexpat
         # TEST_BEFORE_INSTALL $<$<CONFIG:Debug>1, 0>
         LOG_CONFIGURE 1
         BUILD_BYPRODUCTS
-            <INSTALL_DIR>/lib/${CMAKE_STATIC_LIBRARY_PREFIX}expat${CMAKE_STATIC_LIBRARY_SUFFIX}
+            <INSTALL_DIR>/lib/${CMAKE_STATIC_LIBRARY_PREFIX}expat${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
         )
+
 ExternalProject_Get_Property(project_libexpat install_dir)
 add_library(libexpat::libexpat STATIC IMPORTED)
 add_dependencies(libexpat::libexpat project_libexpat)
@@ -149,8 +150,8 @@ ExternalProject_Add(project_libexiv2
         CMAKE_ARGS ${libexiv2_args}
         DEPENDS ${libexiv2_depends}
         BUILD_BYPRODUCTS
-            <INSTALL_DIR>/lib/${CMAKE_STATIC_LIBRARY_PREFIX}exiv2${CMAKE_STATIC_LIBRARY_SUFFIX}
-            <INSTALL_DIR>/lib/${CMAKE_STATIC_LIBRARY_PREFIX}xmp${CMAKE_STATIC_LIBRARY_SUFFIX}
+            <INSTALL_DIR>/lib/${CMAKE_STATIC_LIBRARY_PREFIX}exiv2${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
+            <INSTALL_DIR>/lib/${CMAKE_STATIC_LIBRARY_PREFIX}xmp${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
         )
 ExternalProject_Add_Step(project_libexiv2 add_gtest_libs
         COMMENT "Adding GoogleTest libraries to BUILD PATH"
