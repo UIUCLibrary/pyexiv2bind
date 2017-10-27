@@ -1,18 +1,7 @@
 from . import core
+import collections
 
-
-class Image:
-    def __init__(self, filename):
-        self.filename = filename
-
-    @property
-    def exif(self):
-        return core.get_exif_metadata(self.filename)
-
-    @property
-    def pixelHeight(self):
-        return core.get_pixelHeight(self.filename)
-
-    @property
-    def pixelWidth(self):
-        return core.get_pixelWidth(self.filename)
+class Image(core.Image):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.metadata = collections.ChainMap(self.exif, self.iptc, self.xmp)
