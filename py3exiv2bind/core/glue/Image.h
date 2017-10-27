@@ -20,7 +20,7 @@ public:
     std::map<std::string, std::string> get_exif_metadata() const;
     std::map<std::string, std::string> get_iptc_metadata() const;
     std::map<std::string, std::string> get_xmp_metadata() const;
-    void foo();
+    std::string get_icc_profile() const;
 
 };
 
