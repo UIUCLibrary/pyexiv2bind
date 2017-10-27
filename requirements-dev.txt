@@ -1,2 +1,4 @@
 scikit-build
 wheel
+pytest
+pytest-runner
