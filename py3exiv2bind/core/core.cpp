@@ -8,7 +8,6 @@
 #include <glue/Image.h>
 
 
-
 PYBIND11_MODULE(core, m) {
     m.doc() = "Glue code";
     m.def("exiv2_version", &exiv2_version, "Just a exiv2_version check");
@@ -20,5 +19,8 @@ PYBIND11_MODULE(core, m) {
             .def_property_readonly("exif", &Image::get_exif_metadata)
             .def_property_readonly("iptc", &Image::get_iptc_metadata)
             .def_property_readonly("xmp", &Image::get_xmp_metadata)
-            ;
+            .def("get_icc_profile_data", [](const Image &i) {
+                return pybind11::bytes(i.get_icc_profile());
+                }
+            );
 }
