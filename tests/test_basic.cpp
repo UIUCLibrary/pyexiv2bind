@@ -14,13 +14,13 @@ TEST_CASE("Try jp2 Image", "[glue][jp2]"){
     SECTION("File is good"){
         REQUIRE(i.is_good());
     }
-    SECTION("foo"){
-        i.foo();
+    SECTION("get_icc_profile"){
+        i.get_icc_profile();
     }
 
 }
 TEST_CASE("Try tiff Image", "[glue][tiff]"){
-    const std::string filename = "tests/sample_images/000001_001.tif";
+    const std::string filename = "tests/sample_images/dummy.tif";
     Image i(filename);
     SECTION("File is correctly added"){
         REQUIRE(i.getFilename() == filename);
@@ -28,8 +28,9 @@ TEST_CASE("Try tiff Image", "[glue][tiff]"){
     SECTION("File is good"){
         REQUIRE(i.is_good());
     }
-    SECTION("foo"){
-        i.foo();
+    SECTION("get_icc_profile"){
+        std::string icc_profile = i.get_icc_profile();
+        REQUIRE(icc_profile.length() != 0);
     }
 
 }
