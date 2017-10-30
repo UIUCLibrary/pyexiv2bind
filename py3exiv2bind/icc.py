@@ -44,7 +44,7 @@ def build_ICC_empty_data(raw_data)->ICC_data:
     return new_value
 
 
-def add_decoded_value(icc_data: ICC_data, data:bytes):
+def add_decoded_value(icc_data: ICC_data, data: tuple):
     new_data = copy.deepcopy(icc_data)
     new_data.value = data
     return new_data
