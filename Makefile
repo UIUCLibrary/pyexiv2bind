@@ -4,7 +4,7 @@ build: venv _skbuild
 	@echo "Hello"
 
 wheel: venv
-	source venv/bin/activate && python setup.py bdist_wheel
+	@source venv/bin/activate && python setup.py bdist_wheel
 
 venv:
 	$(PYTHON) -m venv venv
@@ -29,7 +29,7 @@ clean:
 
 docs: venv
 	@echo building docs
-	source venv/bin/activate && cd docs && $(MAKE) html
+	@source venv/bin/activate && cd docs && $(MAKE) html
 
 _skbuild: venv
-	source venv/bin/activate && python setup.py build
+	@source venv/bin/activate && python setup.py build
