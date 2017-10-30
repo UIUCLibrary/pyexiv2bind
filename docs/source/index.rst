@@ -10,8 +10,8 @@ Welcome to py3exiv2bind's documentation for version |version|!
    :maxdepth: 2
    :caption: Contents:
 
+   examples
    modules
-
 
 
 Indices and tables
