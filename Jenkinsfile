@@ -7,6 +7,7 @@ pipeline {
         label "Windows"
     }
     parameters {
+        booleanParam(name: "ADDITIONAL_TESTS", defaultValue: true, description: "Run additional tests")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: true, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         choice(choices: 'None\nrelease', description: "Release the build to production. Only available in the Master branch", name: 'RELEASE')
     }
@@ -41,13 +42,6 @@ pipeline {
             }
 
         }
-        // stage("Build Dependencies") {
-//            steps {
-//                dir("thirdparty") {
-//                    bat 'build_exiv2.bat'
-//                }
-//            }
-//        }
         stage("Testing") {
             steps {
                 node('Linux') {
@@ -67,6 +61,34 @@ pipeline {
             }
 
         }
+        stage("Additional tests") {
+            when {
+                expression { params.ADDITIONAL_TESTS == true }
+            }
+
+            steps {
+                parallel(
+                        "Documentation": {
+                            script {
+                                def runner = new Tox(this)
+                                runner.env = "docs"
+                                runner.windows = false
+                                runner.stash = "Source"
+                                runner.label = "!Windows"
+                                runner.post = {
+                                    dir('.tox/dist/html/') {
+                                        stash includes: '**', name: "HTML Documentation", useDefaultExcludes: false
+                                    }
+                                }
+                                runner.run()
+
+                            }
+                        }
+                )
+            }
+
+        }
+
         stage("Packaging") {
             steps {
                 // withEnv(['EXIV2_DIR=thirdparty\\dist\\exiv2\\share\\exiv2\\cmake']){
