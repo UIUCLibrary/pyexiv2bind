@@ -7,7 +7,7 @@ Welcome to py3exiv2bind's documentation for version |version|!
 ==============================================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
    examples
