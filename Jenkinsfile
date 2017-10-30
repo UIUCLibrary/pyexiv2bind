@@ -6,9 +6,15 @@ pipeline {
     agent {
         label "Windows"
     }
+    environment {
+        mypy_args = "--junit-xml=mypy.xml"
+        pytest_args = "--junitxml=reports/junit-{env:OS:UNKNOWN_OS}-{envname}.xml --junit-prefix={env:OS:UNKNOWN_OS}  --basetemp={envtmpdir}"
+    }
     parameters {
+        booleanParam(name: "ADDITIONAL_TESTS", defaultValue: true, description: "Run additional tests")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: true, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         choice(choices: 'None\nrelease', description: "Release the build to production. Only available in the Master branch", name: 'RELEASE')
+        string(name: 'URL_SUBFOLDER', defaultValue: "py3exiv2bind", description: 'The directory that the docs should be saved under')
     }
     stages {
         stage("Checking Out from Source Control") {
@@ -52,25 +58,45 @@ pipeline {
                     unstash 'sample_images'
                 }
                 stash includes: 'tests/**', name: 'tests'
-                bat "${tool 'Python3.6.3_Win64'} -m tox"
-                // bat "${env.TOX}"
-//                }
+                //withEnv(['EXIV2_DIR=thirdparty\\dist\\exiv2\\share\\exiv2\\cmake']){
+                    bat "${tool 'Python3.6.3_Win64'} -m tox"
+                //}
 
 
             }
 
         }
+        stage("Additional tests") {
+            when {
+                expression { params.ADDITIONAL_TESTS == true }
+            }
+
+            steps {
+                parallel(
+                        "Documentation": {
+                            bat "${tool 'Python3.6.3_Win64'} -m tox -e docs"
+                            dir('.tox/dist/html/') {
+                                stash includes: '**', name: "HTML Documentation", useDefaultExcludes: false
+                            }
+                        }
+                )
+            }
+
+        }
+
         stage("Packaging") {
             steps {
-                bat """${tool 'Python3.6.3_Win64'} -m venv venv
-                       call venv\\Scripts\\activate.bat
-                       pip install -r requirements-dev.txt
-                       python setup.py sdist bdist_wheel
-                       """
-                dir("dist") {
-                    archiveArtifacts artifacts: "*.whl", fingerprint: true
-                    archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
-                }
+                // withEnv(['EXIV2_DIR=thirdparty\\dist\\exiv2\\share\\exiv2\\cmake']){
+                    bat """${tool 'Python3.6.3_Win64'} -m venv venv
+                           call venv\\Scripts\\activate.bat
+                           pip install -r requirements-dev.txt
+                           python setup.py sdist bdist_wheel
+                           """
+                    dir("dist") {
+                        archiveArtifacts artifacts: "*.whl", fingerprint: true
+                        archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
+                    }
+                // }
             }
         }
         stage("Deploying to Devpi") {
@@ -84,7 +110,7 @@ pipeline {
                     bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                     script {
                         try {
-                            bat "${tool 'Python3.6.3_Win64'} -m devpi upload --with-docs dist"
+                            bat "${tool 'Python3.6.3_Win64'} -m devpi upload --with-docs --from-dir dist"
 
                         } catch (exc) {
                             echo "Unable to upload to devpi with docs. Trying without"
@@ -104,16 +130,18 @@ pipeline {
                         "Source": {
                             script {
                                 def name = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --name").trim()
+                                def version = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --version").trim()
                                 node("Windows") {
                                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                                         bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                                         bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                                         echo "Testing Source package in devpi"
-                                        bat "${tool 'Python3.6.3_Win64'} -m venv venv"
-                                        unstash "tests"
-                                        bat """ ${tool 'Python3.6.3_Win64'} -m pip install ${name} --no-cache-dir --no-use-wheel
-                                            call venv\\Scripts\\activate.bat
-                                            ${tool 'Python3.6.3_Win64'} -m pytest"""
+                                        bat "${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging py3exiv2bind -s tar.gz"
+                                        // bat "${tool 'Python3.6.3_Win64'} -m venv venv"
+                                        // unstash "tests"
+                                        // bat """ ${tool 'Python3.6.3_Win64'} -m pip install -Iv ${name}==${version} -i http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging --no-cache-dir --no-binary :all: --trusted-host devpi.library.illinois.edu
+                                            // call venv\\Scripts\\activate.bat
+                                            // ${tool 'Python3.6.3_Win64'} -m pytest"""
                                     }
                                 }
 
@@ -122,16 +150,18 @@ pipeline {
                         "Wheel": {
                             script {
                                 def name = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --name").trim()
+                                def version = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --version").trim()
                                 node("Windows") {
                                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                                         bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                                         bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                                         echo "Testing Whl package in devpi"
-                                        bat "${tool 'Python3.6.3_Win64'} -m venv venv"
-                                        unstash "tests"
-                                        bat """ ${tool 'Python3.6.3_Win64'} -m pip install ${name} --no-cache-dir  --only-binary bdist_wheel
-                                            call venv\\Scripts\\activate.bat
-                                            ${tool 'Python3.6.3_Win64'} -m pytest"""
+                                        bat " ${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging py3exiv2bind -s whl"
+                                        // bat "${tool 'Python3.6.3_Win64'} -m venv venv"
+                                        // unstash "tests"
+                                        // bat """ ${tool 'Python3.6.3_Win64'} -m pip install -Iv ${name}==${version} -i http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging --no-cache-dir  --only-binary bdist_wheel --trusted-host devpi.library.illinois.edu
+//                                            call venv\\Scripts\\activate.bat
+  //                                          ${tool 'Python3.6.3_Win64'} -m pytest"""
                                     }
                                 }
 
@@ -170,6 +200,9 @@ pipeline {
                         bat "${tool 'Python3.6.3_Win64'} -m devpi push ${name}==${version} production/${params.RELEASE}"
                     }
 
+                }
+                node("Linux"){
+                    updateOnlineDocs url_subdomain: params.URL_SUBFOLDER, stash_name: "HTML Documentation"
                 }
             }
         }
