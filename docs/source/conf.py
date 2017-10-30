@@ -48,8 +48,11 @@ extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.doctest',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
+    'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.githubpages']
+
+autosummary_generate = True
 
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
