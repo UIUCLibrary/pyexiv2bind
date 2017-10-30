@@ -13,7 +13,7 @@ class ICC_data:
         if self.friendly_name:
             return self.friendly_name
         elif self.value:
-            return str(self.value)
+            return str(self.value, encoding="ascii")
         else:
             return str(self.raw_data)
 
