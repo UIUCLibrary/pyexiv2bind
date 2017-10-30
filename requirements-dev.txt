@@ -2,3 +2,5 @@ scikit-build
 wheel
 pytest
 pytest-runner
+tox
+sphinx
