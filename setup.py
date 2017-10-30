@@ -38,6 +38,7 @@ setup(
     tests_require=['pytest'],
     zip_safe=False,
     url=metadata["__url__"],
-    descriptions=metadata["__description__"]
+    description=metadata["__description__"],
+    long_description=readme,
 
 )
