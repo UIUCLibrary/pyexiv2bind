@@ -1,18 +1,29 @@
+import os
+
 from . import core
+from . import icc
+import collections
 
 
-class Image:
-    def __init__(self, filename):
-        self.filename = filename
+class Image(core.Image):
+    INVALID_FORMATS_FOR_ICC = [".jp2"]
 
-    @property
-    def exif(self):
-        return core.get_exif_metadata(self.filename)
+    def __init__(self, *args, **kwargs):
+        """
+        Loads the file to get information about it.
+        Args:
+            *args:
+            **kwargs:
+        """
+        if not os.path.exists(args[0]):
+            raise FileNotFoundError("Unable to locate {}.".format(args[0]))
+        super().__init__(*args, **kwargs)
+        self.metadata = collections.ChainMap(self.exif, self.iptc, self.xmp)
 
-    @property
-    def pixelHeight(self):
-        return core.get_pixelHeight(self.filename)
+    def icc(self):
+        extension = os.path.splitext(self.filename)[1].lower()
+        if extension in Image.INVALID_FORMATS_FOR_ICC:
+            raise AttributeError("{} files not currently supported for ICC data".format(extension))
+        unpacked = icc.unpack_binary(self.get_icc_profile_data())
 
-    @property
-    def pixelWidth(self):
-        return core.get_pixelWidth(self.filename)
+        return unpacked._asdict()

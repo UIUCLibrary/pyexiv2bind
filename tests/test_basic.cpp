@@ -3,26 +3,34 @@
 //
 #include <catch.hpp>
 #include <glue/glue.h>
-#include <glue/Image2.h>
+#include <glue/Image.h>
 
-
-TEST_CASE("get_exif_metadata", "[glue]") {
+TEST_CASE("Try jp2 Image", "[glue][jp2]"){
     const std::string filename = "tests/sample_images/dummy.jp2";
-    auto metadata = get_exif_metadata(filename);
-    REQUIRE(!metadata.empty());
-}
-
-TEST_CASE("get_exif_metadata2", "[glue]") {
-    const std::string filename = "tests/sample_images/dummy.jp2";
-    auto metadata = get_exif_metadata2(filename);
-
-    REQUIRE(!metadata.empty());
-}
-
-TEST_CASE("Try Image2", "[glue]"){
-    const std::string filename = "tests/sample_images/dummy.jp2";
-    Image2 i(filename);
+    Image i(filename);
     SECTION("File is correctly added"){
-        REQUIRE(i.filename == filename);
+        REQUIRE(i.getFilename() == filename);
     }
+    SECTION("File is good"){
+        REQUIRE(i.is_good());
+    }
+    SECTION("get_icc_profile"){
+        i.get_icc_profile();
+    }
+
+}
+TEST_CASE("Try tiff Image", "[glue][tiff]"){
+    const std::string filename = "tests/sample_images/dummy.tif";
+    Image i(filename);
+    SECTION("File is correctly added"){
+        REQUIRE(i.getFilename() == filename);
+    }
+    SECTION("File is good"){
+        REQUIRE(i.is_good());
+    }
+    SECTION("get_icc_profile"){
+        std::string icc_profile = i.get_icc_profile();
+        REQUIRE(icc_profile.length() != 0);
+    }
+
 }

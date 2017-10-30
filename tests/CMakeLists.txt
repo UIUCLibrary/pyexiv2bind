@@ -1,5 +1,5 @@
 if (SKBUILD)
-    message(INFO "Skipping tests")
+#    message(INFO "Skipping tests")
 else ()
     set(PYTHON_TEST_FILES test_core.py)
     find_package(PythonInterp 3 REQUIRED)
@@ -9,20 +9,17 @@ else ()
             )
     add_dependencies(add_python_tests add_test_images core)
     add_custom_command(TARGET add_python_tests
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/conftest.py ${CMAKE_CURRENT_BINARY_DIR}
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_core.py ${CMAKE_CURRENT_BINARY_DIR}
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_common.py ${CMAKE_CURRENT_BINARY_DIR}
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_image.py ${CMAKE_CURRENT_BINARY_DIR}
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_image2.py ${CMAKE_CURRENT_BINARY_DIR}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_image.py ${CMAKE_CURRENT_BINARY_DIR}
             )
 
-    add_test(NAME python_tests
-            COMMAND ${PYTHON_EXECUTABLE} -m tox
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            )
 
     add_library(Catch INTERFACE)
     target_include_directories(Catch INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/catch/include)
-    add_executable(cpp_tests test_basic.cpp tests-main.cpp)
+    add_executable(cpp_tests test_basic.cpp tests-main.cpp test_metadata_processor.cpp)
     add_dependencies(cpp_tests add_test_images)
     set_target_properties(cpp_tests PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -33,10 +30,6 @@ else ()
     add_test(NAME cpp_tests
             COMMAND test
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            )
-    add_custom_target(add_tests
-            COMMENT "Adding tests to ${CMAKE_BINARY_DIR}"
-            DEPENDS add_python_tests cpp_tests
             )
     include(ExternalProject)
     ExternalProject_Add(add_test_images
