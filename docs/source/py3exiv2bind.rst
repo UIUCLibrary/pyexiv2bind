@@ -20,14 +20,6 @@ py3exiv2bind\.image module
     :undoc-members:
     :show-inheritance:
 
-py3exiv2bind\.metadata module
------------------------------
-
-.. automodule:: py3exiv2bind.metadata
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 
 Module contents
 ---------------
