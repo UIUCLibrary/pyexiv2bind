@@ -14,6 +14,7 @@ pipeline {
         booleanParam(name: "ADDITIONAL_TESTS", defaultValue: true, description: "Run additional tests")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: true, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         choice(choices: 'None\nrelease', description: "Release the build to production. Only available in the Master branch", name: 'RELEASE')
+        string(name: 'URL_SUBFOLDER', defaultValue: "py3exiv2bind", description: 'The directory that the docs should be saved under')
     }
     stages {
         stage("Checking Out from Source Control") {
@@ -74,6 +75,9 @@ pipeline {
                 parallel(
                         "Documentation": {
                             bat "${tool 'Python3.6.3_Win64'} -m tox -e docs"
+                            dir('.tox/dist/html/') {
+                                stash includes: '**', name: "HTML Documentation", useDefaultExcludes: false
+                            }
                         }
                 )
             }
@@ -196,6 +200,9 @@ pipeline {
                         bat "${tool 'Python3.6.3_Win64'} -m devpi push ${name}==${version} production/${params.RELEASE}"
                     }
 
+                }
+                node("Linux"){
+                    updateOnlineDocs url_subdomain: params.URL_SUBFOLDER, stash_name: "HTML Documentation"
                 }
             }
         }
