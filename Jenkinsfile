@@ -69,7 +69,7 @@ pipeline {
             steps {
                 parallel(
                         "Documentation": {
-                            bat "${tool 'Python3.6.3_Win64'} -m tox docs"
+                            bat "${tool 'Python3.6.3_Win64'} -m tox -e docs"
                         }
                 )
             }
