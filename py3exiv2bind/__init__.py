@@ -1,1 +1,1 @@
-from .core import Image
+from .image import Image

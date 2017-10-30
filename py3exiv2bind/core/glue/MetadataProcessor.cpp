@@ -5,6 +5,7 @@
 #include "MetadataProcessor.h"
 #include "IPTC_Strategy.h"
 #include "ExifStrategy.h"
+#include "XmpStrategy.h"
 
 const std::map<std::string, std::string> &MetadataProcessor::getMetadata() const {
     return metadata;
@@ -21,6 +22,9 @@ void MetadataProcessor::set_output_format(MetadataStrategies metadata_type) {
             break;
         case MetadataStrategies::EXIF:
             metadata_strategy = std::make_unique<ExifStrategy>();
+            break;
+        case MetadataStrategies::XMP:
+            metadata_strategy = std::make_unique<XmpStrategy>();
             break;
     }
 }

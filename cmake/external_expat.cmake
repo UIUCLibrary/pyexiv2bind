@@ -26,9 +26,8 @@ add_dependencies(libexpat project_libexpat)
 #add_custom_target(dummy
 #        COMMENT ""
 #        )
-add_custom_target(dummy_expat)
-add_custom_command(TARGET dummy_expat
-        COMMENT "adfasdfasdddddddddddddf $<TARGET_FILE:libexpat>"
-        COMMAND ${CMAKE_COMMAND} -E echo $<TARGET_FILE:libexpat>
-        COMMAND ${CMAKE_COMMAND} -E echo $<TARGET_PROPERTY:libexpat,INCLUDE_DIRECTORIES>
-        )
+#add_custom_target(dummy_expat)
+#add_custom_command(TARGET dummy_expat
+#        COMMAND ${CMAKE_COMMAND} -E echo $<TARGET_FILE:libexpat>
+#        COMMAND ${CMAKE_COMMAND} -E echo $<TARGET_PROPERTY:libexpat,INCLUDE_DIRECTORIES>
+#        )
