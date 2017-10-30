@@ -102,7 +102,7 @@ pipeline {
                     bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                     script {
                         try {
-                            bat "${tool 'Python3.6.3_Win64'} -m devpi upload --with-docs dist"
+                            bat "${tool 'Python3.6.3_Win64'} -m devpi upload --with-docs --from-dir dist"
 
                         } catch (exc) {
                             echo "Unable to upload to devpi with docs. Trying without"
