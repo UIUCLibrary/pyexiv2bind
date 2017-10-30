@@ -69,19 +69,7 @@ pipeline {
             steps {
                 parallel(
                         "Documentation": {
-                            script {
-                                def runner = new Tox(this)
-                                runner.env = "docs"
-                                runner.windows = false
-                                runner.stash = "Source"
-                                runner.label = "!Windows"
-                                runner.post = {
-                                    dir('.tox/dist/html/') {
-                                        stash includes: '**', name: "HTML Documentation", useDefaultExcludes: false
-                                    }
-                                }
-                                runner.run()
-
+                            bat "${tool 'Python3.6.3_Win64'} -m tox docs"
                             }
                         }
                 )
