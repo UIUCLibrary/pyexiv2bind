@@ -135,7 +135,13 @@ pipeline {
                                         bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                                         bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                                         echo "Testing Source package in devpi"
-                                        bat "${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging py3exiv2bind -s tar.gz"
+                                        script {
+                                             def devpi_test = bat(returnStdout: true, script: "${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name} -s tar.gz").trim()
+                                             if(devpi_test =~ 'tox command failed') {
+                                                error("Tox command failed")
+                                            }
+                                        }
+                                        // bat "${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging py3exiv2bind -s tar.gz"
                                         // bat "${tool 'Python3.6.3_Win64'} -m venv venv"
                                         // unstash "tests"
                                         // bat """ ${tool 'Python3.6.3_Win64'} -m pip install -Iv ${name}==${version} -i http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging --no-cache-dir --no-binary :all: --trusted-host devpi.library.illinois.edu
@@ -155,7 +161,14 @@ pipeline {
                                         bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                                         bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                                         echo "Testing Whl package in devpi"
-                                        bat " ${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging py3exiv2bind -s whl"
+                                        script {
+                                            def devpi_test =  bat(returnStdout: true, script: "${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name} -s whl").trim()
+                                            if(devpi_test =~ 'tox command failed') {
+                                                error("Tox command failed")
+                                            }
+                                            
+                                        }
+                                        // bat " ${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging py3exiv2bind -s whl"
                                         // bat "${tool 'Python3.6.3_Win64'} -m venv venv"
                                         // unstash "tests"
                                         // bat """ ${tool 'Python3.6.3_Win64'} -m pip install -Iv ${name}==${version} -i http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging --no-cache-dir  --only-binary bdist_wheel --trusted-host devpi.library.illinois.edu
@@ -223,6 +236,15 @@ pipeline {
                 }
 
 
+            }
+        }
+        always {
+            script {
+                def name = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --name").trim()
+                def version = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --version").trim()
+                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                    bat "${tool 'Python3.6.3_Win64'} -m devpi remove -y ${name}==${version}"
+                }
             }
         }
         success {
