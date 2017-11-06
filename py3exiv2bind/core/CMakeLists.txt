@@ -15,7 +15,9 @@ add_library(glue STATIC
         glue/ExifStrategy.h
         glue/AbsMetadataStrategy.h
         glue/XmpStrategy.cpp
-        glue/XmpStrategy.h)
+        glue/XmpStrategy.h
+        glue/make_dictionary.h
+        )
 
 target_include_directories(glue PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 set_target_properties(glue PROPERTIES
