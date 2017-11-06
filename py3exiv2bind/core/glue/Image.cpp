@@ -12,14 +12,14 @@
 Image::Image(const std::string &filename) : filename(filename) {
     try {
         image = Exiv2::ImageFactory::open(filename);
+        assert(image.get() != 0); // Make sure it's able to read the file
+        image->readMetadata();
     } catch (Exiv2::AnyError &e) {
         std::cerr << e.what() << std::endl;
         throw std::runtime_error(e.what());
     }
 
 
-    assert(image.get() != 0); // Make sure it's able to read the file
-    image->readMetadata();
 }
 
 const std::string &Image::getFilename() const {
