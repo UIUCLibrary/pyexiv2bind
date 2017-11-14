@@ -59,7 +59,7 @@ pipeline {
                 }
                 stash includes: 'tests/**', name: 'tests'
                 //withEnv(['EXIV2_DIR=thirdparty\\dist\\exiv2\\share\\exiv2\\cmake']){
-                    bat "${tool 'Python3.6.3_Win64'} -m tox"
+                    bat "${tool 'Python3.6.3_Win64'} -m tox -e py36"
                 //}
 
 
