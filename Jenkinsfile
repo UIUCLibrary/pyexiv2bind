@@ -232,7 +232,7 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                         bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                         bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                        bat "${tool 'Python3.6.3_Win64'} -m devpi remove -y ${name}==${version}"
+                        bat "${tool 'Python3.6.3_Win64'} -m devpi remove -y ${name}"
                     }
                 } catch (err) {
                     echo "Unable to clean up ${env.BRANCH_NAME}_staging"
