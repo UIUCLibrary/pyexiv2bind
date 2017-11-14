@@ -11,7 +11,7 @@ private:
     std::string filename;
     Exiv2::Image::AutoPtr image;
 public:
-    Image(const std::string &filename);
+    explicit Image(const std::string &filename);
 
     const std::string &getFilename() const;
     int get_pixelHeight() const;
@@ -20,7 +20,7 @@ public:
     std::map<std::string, std::string> get_exif_metadata() const;
     std::map<std::string, std::string> get_iptc_metadata() const;
     std::map<std::string, std::string> get_xmp_metadata() const;
-    void foo();
+    std::string get_icc_profile() const;
 
 };
 
