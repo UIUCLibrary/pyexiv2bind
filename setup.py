@@ -10,12 +10,9 @@ if "EXIV2_DIR" in os.environ:
         cmake_args.append('-DEXIV2_DIR:PATH={}'.format(os.environ['EXIV2_DIR']))
 
 setup(
-    setup_requires=[
-        "pytest-runner"
-    ],
     packages=['py3exiv2bind'],
     cmake_args=cmake_args,
     test_suite="tests",
-    tests_require=['pytest'],
+    tests_require=['pytest', "pytest-runner"],
 
 )
