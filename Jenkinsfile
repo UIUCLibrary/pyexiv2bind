@@ -72,6 +72,7 @@ pipeline {
                 // withEnv(['EXIV2_DIR=thirdparty\\dist\\exiv2\\share\\exiv2\\cmake']){
                     bat """${tool 'Python3.6.3_Win64'} -m venv venv
                            call venv\\Scripts\\activate.bat
+                           pip install -r requirements.txt
                            pip install -r requirements-dev.txt
                            python setup.py sdist bdist_wheel
                            """
