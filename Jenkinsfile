@@ -139,7 +139,7 @@ pipeline {
                                         bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                                         echo "Testing Source package in devpi"
                                         script {
-                                             def devpi_test = bat(returnStdout: true, script: "${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name} --verbose -s tar.gz").trim()
+                                             def devpi_test = bat(returnStdout: true, script: "${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name}==${version} --verbose -s tar.gz").trim()
                                              if(devpi_test =~ 'tox command failed') {
                                                 echo "${devpi_test}"
                                                 error("Tox command failed")
@@ -167,7 +167,7 @@ pipeline {
                                         bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                                         echo "Testing Whl package in devpi"
                                         script {
-                                            def devpi_test =  bat(returnStdout: true, script: "${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name} --verbose -s whl").trim()
+                                            def devpi_test =  bat(returnStdout: true, script: "${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name}==${version} --verbose -s whl").trim()
                                             if(devpi_test =~ 'tox command failed') {
                                                 echo "${devpi_test}"
                                                 error("Tox command failed")
@@ -235,7 +235,7 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                         bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                         bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                        bat "${tool 'Python3.6.3_Win64'} -m devpi remove -y ${name}"
+                        bat "${tool 'Python3.6.3_Win64'} -m devpi remove -y ${name}==${version}"
                     }
                 } catch (err) {
                     echo "Unable to clean up ${env.BRANCH_NAME}_staging"
