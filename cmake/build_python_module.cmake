@@ -33,7 +33,7 @@ function(add_tox_tests)
     foreach(_test ${TOX_TESTS})
 
         add_test(NAME Tox_Test_${_test}
-                COMMAND ${PYTHON_EXECUTABLE} -m tox -e ${_test} --workdir ${CMAKE_BINARY_DIR}
+                COMMAND ${PYTHON_EXECUTABLE} -m tox -e ${_test}
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
                 )
         message(STATUS "Added Tox_Test_${_test} to CTest")
