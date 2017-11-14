@@ -91,9 +91,11 @@ pipeline {
                            call venv\\Scripts\\activate.bat
                            pip install -r requirements.txt
                            pip install -r requirements-dev.txt
+                           pip list > installed_packages.txt
                            python setup.py sdist bdist_wheel
                            """
                     dir("dist") {
+                        archiveArtifacts artifacts: "installed_packages.txt"
                         archiveArtifacts artifacts: "*.whl", fingerprint: true
                         archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
                     }
@@ -137,7 +139,7 @@ pipeline {
                                         bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                                         echo "Testing Source package in devpi"
                                         script {
-                                             def devpi_test = bat(returnStdout: true, script: "${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name} -s tar.gz").trim()
+                                             def devpi_test = bat(returnStdout: true, script: "${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name} --verbose -s tar.gz").trim()
                                              if(devpi_test =~ 'tox command failed') {
                                                 error("Tox command failed")
                                             }
@@ -157,7 +159,7 @@ pipeline {
                             script {
                                 def name = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --name").trim()
                                 def version = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --version").trim()
-                                echo("using ${name} for name and ${version} for version")
+                                echo "using ${name} for name and ${version} for version"
                                 node("Windows") {
 
                                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
@@ -165,7 +167,7 @@ pipeline {
                                         bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                                         echo "Testing Whl package in devpi"
                                         script {
-                                            def devpi_test =  bat(returnStdout: true, script: "${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name} -s whl").trim()
+                                            def devpi_test =  bat(returnStdout: true, script: "${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name} --verbose -s whl").trim()
                                             if(devpi_test =~ 'tox command failed') {
                                                 error("Tox command failed")
                                             }
