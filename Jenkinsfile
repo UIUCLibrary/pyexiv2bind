@@ -51,7 +51,7 @@ pipeline {
         stage("Testing") {
             steps {
                 node('Linux') {
-                    sh 'wget https://jenkins.library.illinois.edu/jenkins/userContent/sample_images.tar.gz'
+                    sh 'wget -N https://jenkins.library.illinois.edu/jenkins/userContent/sample_images.tar.gz'
                     sh 'tar -xzf sample_images.tar.gz'
                     stash includes: 'sample_images/**', name: 'sample_images'
                 }
