@@ -1,10 +1,13 @@
 import os
+import sys
 try:
     from skbuild import setup
 except ImportError:
     print("scikit-build required to install")
     raise
 
+needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
+pytest_runner = ['pytest-runner'] if needs_pytest else []
 
 cmake_args = ["-Dpyexiv2bind_experimental_jp2_support=ON"]
 
@@ -15,8 +18,10 @@ if "EXIV2_DIR" in os.environ:
 
 setup(
     packages=['py3exiv2bind'],
+    python_requires=">=3.6",
+    setup_requires=pytest_runner,
     cmake_args=cmake_args,
     test_suite="tests",
-    tests_require=['pytest', "pytest-runner"],
+    tests_require=['pytest'],
 
 )
