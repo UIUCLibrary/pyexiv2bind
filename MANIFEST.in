@@ -3,6 +3,8 @@ include tox.ini README.rst CMakeLists.txt tests/CMakeLists.txt requirements.txt 
 
 recursive-include cmake *.cmake
 recursive-include tests *.py
+recursive-include docs/source *.*
+include docs/make.bat docs/Makefile
 recursive-exclude tests/sample_images *
 recursive-include py3exiv2bind *.py *.cpp *.h CMakeLists.txt
 recursive-exclude py3exiv2bind  *.pyd *.so
