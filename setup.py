@@ -30,12 +30,9 @@ setup(
     maintainer=metadata["__maintainer__"],
     maintainer_email=metadata["__maintainer_email__"],
     packages=['py3exiv2bind'],
-    setup_requires=[
-        "pytest-runner"
-    ],
     cmake_args=cmake_args,
     test_suite="tests",
-    tests_require=['pytest'],
+    tests_require=['pytest', "pytest-runner"],
     zip_safe=False,
     url=metadata["__url__"],
     description=metadata["__description__"],
