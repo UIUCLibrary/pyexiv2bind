@@ -2,7 +2,8 @@
 include tox.ini README.rst CMakeLists.txt tests/CMakeLists.txt requirements.txt requirements-dev.txt pytest.ini
 
 recursive-include cmake *.cmake
-recursive-include tests *.py
+recursive-include tests *.py *.cpp
+recursive-include tests/thirdparty *.*
 recursive-include docs/source *.*
 include docs/make.bat docs/Makefile
 recursive-exclude tests/sample_images *
