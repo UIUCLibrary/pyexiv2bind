@@ -183,7 +183,7 @@ set_target_properties(exiv2lib PROPERTIES
         IMPORTED_LOCATION_DEBUG ${install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}exiv2${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX}
         IMPORTED_LOCATION_RELEASE ${install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}exiv2${CMAKE_STATIC_LIBRARY_SUFFIX}
         INTERFACE_LINK_LIBRARIES "${install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}xmp$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>${CMAKE_STATIC_LIBRARY_SUFFIX};$<TARGET_FILE:libexpat::libexpat>"
-        CXX_STANDARD 98
+        CXX_STANDARD 11
         )
 
 add_dependencies(exiv2lib project_libexiv2)
