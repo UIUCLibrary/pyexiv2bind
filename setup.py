@@ -1,5 +1,9 @@
 import os
-from skbuild import setup
+try:
+    from skbuild import setup
+except ImportError:
+    print("scikit-build required to install")
+    raise
 
 
 cmake_args = ["-Dpyexiv2bind_experimental_jp2_support=ON"]
