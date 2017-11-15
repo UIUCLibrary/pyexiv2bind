@@ -94,8 +94,8 @@ pipeline {
                            pip list > installed_packages.txt
                            python setup.py sdist bdist_wheel
                            """
+                    archiveArtifacts artifacts: "installed_packages.txt"
                     dir("dist") {
-                        archiveArtifacts artifacts: "installed_packages.txt"
                         archiveArtifacts artifacts: "*.whl", fingerprint: true
                         archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
                     }
@@ -140,6 +140,7 @@ pipeline {
                                         bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                                         echo "Testing Source package in devpi"
                                         script {
+                                            bat "dir"
                                              def devpi_test = bat(returnStdout: true, script: "${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name}==${version} --verbose -s tar.gz").trim()
                                              if(devpi_test =~ 'tox command failed') {
                                                 echo "${devpi_test}"
@@ -169,6 +170,7 @@ pipeline {
                                         bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                                         echo "Testing Whl package in devpi"
                                         script {
+                                            bat "dir"
                                             def devpi_test =  bat(returnStdout: true, script: "${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name}==${version} --verbose -s whl").trim()
                                             if(devpi_test =~ 'tox command failed') {
                                                 echo "${devpi_test}"
