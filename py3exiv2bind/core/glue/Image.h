@@ -11,7 +11,7 @@ private:
     std::string filename;
     Exiv2::Image::AutoPtr image;
 public:
-    Image(const std::string &filename);
+    explicit Image(const std::string &filename);
 
     const std::string &getFilename() const;
     int get_pixelHeight() const;

@@ -1,5 +1,18 @@
 include(GenerateExportHeader)
-pybind11_add_module(core core.cpp)
+#pybind11_add_module(core core.cpp)
+add_library(core MODULE core.cpp)
+
+
+if (SKBUILD)
+    python_extension_module(core)
+endif()
+set_target_properties(core PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/py3exiv2bind
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/py3exiv2bind
+        PREFIX "${PYTHON_MODULE_PREFIX}"
+        SUFFIX "${PYTHON_MODULE_EXTENSION}"
+        )
+target_link_libraries(core pybind11::module)
 
 add_library(glue STATIC
         glue/glue.cpp
@@ -15,7 +28,9 @@ add_library(glue STATIC
         glue/ExifStrategy.h
         glue/AbsMetadataStrategy.h
         glue/XmpStrategy.cpp
-        glue/XmpStrategy.h)
+        glue/XmpStrategy.h
+        glue/make_dictionary.h
+        )
 
 target_include_directories(glue PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 set_target_properties(glue PROPERTIES
@@ -23,12 +38,6 @@ set_target_properties(glue PROPERTIES
 GENERATE_EXPORT_HEADER(glue)
 
 target_include_directories(glue PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(core PUBLIC glue)
-set_target_properties(core PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/py3exiv2bind
-        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/py3exiv2bind
-        )
-
-
 target_link_libraries(glue PUBLIC exiv2lib)
-install(TARGETS core DESTINATION py3exiv2bind)
+target_link_libraries(core glue)
+install(TARGETS core LIBRARY DESTINATION py3exiv2bind)

@@ -9,6 +9,7 @@ set(extra_python_files
 foreach (_file ${extra_python_files})
     list(APPEND PYTHON_PACKAGE_SOURCE ${_file})
 endforeach ()
+
 foreach (_file ${python_files})
     list(APPEND PYTHON_PACKAGE_SOURCE ${_file})
 endforeach ()
@@ -22,12 +23,23 @@ foreach (python_file ${PYTHON_PACKAGE_SOURCE})
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/${python_file} ${CMAKE_BINARY_DIR}/${python_file}
             )
 endforeach ()
+function(add_tox_tests)
+    message(STATUS "Getting tox tests")
+    execute_process(
+            COMMAND ${PYTHON_EXECUTABLE} -m tox -l
+            OUTPUT_VARIABLE TOX_TESTS
+    )
+    string(REPLACE "\n" ";" TOX_TESTS ${TOX_TESTS})
+    foreach(_test ${TOX_TESTS})
 
-add_test(NAME tox
-        COMMAND ${PYTHON_EXECUTABLE} -m tox --workdir ${CMAKE_BINARY_DIR}
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        )
-
+        add_test(NAME Tox_Test_${_test}
+                COMMAND ${PYTHON_EXECUTABLE} -m tox -e ${_test}
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                )
+        message(STATUS "Added Tox_Test_${_test} to CTest")
+    endforeach()
+endfunction()
+add_tox_tests()
 add_custom_target(Wheel
         COMMAND ${PYTHON_EXECUTABLE} setup.py bdist_wheel -d ${CMAKE_BINARY_DIR}/dist -b ${CMAKE_BINARY_DIR}/python_build
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

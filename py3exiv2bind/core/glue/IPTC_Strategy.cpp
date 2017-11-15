@@ -3,27 +3,13 @@
 //
 
 #include "IPTC_Strategy.h"
-
+#include "make_dictionary.h"
 std::map<std::string, std::string> IPTC_Strategy::load(const Exiv2::Image::AutoPtr &image) {
-    std::map<std::string, std::string> metadata;
     try{
-        Exiv2::IptcData &iptcData = image->iptcData();
-
-        if(iptcData.empty()){
-
-            return std::map<std::string, std::string>();
-        }
-
-        auto end = iptcData.end();
-        for (auto md = iptcData.begin(); md != end; md++){
-            metadata[md->key()] = md->value().toString();
-        }
-
+        return make_dictionary(image->iptcData());
     }catch (Exiv2::AnyError &e){
 //        TODO: Handle errors
         std::cerr << e.what() <<std::endl;
         throw;
     }
-//    TODO: return the metadata a vector
-    return metadata;
 }
