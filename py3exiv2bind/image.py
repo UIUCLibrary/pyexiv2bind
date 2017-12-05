@@ -6,7 +6,7 @@ import collections
 
 
 class Image(core.Image):
-    _INVALID_FORMATS_FOR_ICC = [".jp2"]
+    _INVALID_FORMATS_FOR_ICC = []
 
     def __init__(self, *args, **kwargs):
         """Loads the file to get information about it."""
