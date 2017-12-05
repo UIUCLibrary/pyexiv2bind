@@ -143,14 +143,8 @@ list(APPEND libexiv2_args -DICONV_LIBRARY="")
 list(APPEND libexiv2_depends project_gtest)
 list(APPEND libexiv2_depends project_libexpat)
 
-if(pyexiv2bind_experimental_jp2_support)
-    set(exiv2_git_url https://github.com/D4N/exiv2.git)
-    set(exiv2_git_tag jp2Image_Robins_changes)
-    message(WARNING "jp2000 support is currently experimental and uses the source from a pull request")
-else()
-    set(exiv2_git_url https://github.com/Exiv2/exiv2.git)
-    set(exiv2_git_tag)
-endif()
+set(exiv2_git_url https://github.com/Exiv2/exiv2.git)
+
 
 ExternalProject_Add(project_libexiv2
         GIT_REPOSITORY ${exiv2_git_url}
