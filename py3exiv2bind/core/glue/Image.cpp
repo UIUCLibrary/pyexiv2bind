@@ -8,9 +8,30 @@
 #include "Image.h"
 #include "glue.h"
 #include "MetadataProcessor.h"
+#include <exiv2/error.hpp>
+
+std::ostringstream warning_log;
+std::ostringstream error_log;
 
 Image::Image(const std::string &filename) : filename(filename) {
+    warning_log.clear();
+    error_log.clear();
+//    warning_log.str("");
     try {
+        Exiv2::LogMsg::setHandler([](int level, const char *msg) {
+            switch((Exiv2::LogMsg::Level)level){
+
+                case Exiv2::LogMsg::debug:break;
+                case Exiv2::LogMsg::info:break;
+                case Exiv2::LogMsg::warn:
+                    warning_log << msg;
+                    break;
+                case Exiv2::LogMsg::error:
+                    error_log << msg;
+                    break;
+                case Exiv2::LogMsg::mute:break;
+            }
+        });
         image = Exiv2::ImageFactory::open(filename);
         assert(image.get() != 0); // Make sure it's able to read the file
         image->readMetadata();
@@ -18,7 +39,17 @@ Image::Image(const std::string &filename) : filename(filename) {
         std::cerr << e.what() << std::endl;
         throw std::runtime_error(e.what());
     }
+    std::string warning_msg = warning_log.str();
+    std::string error_msg = error_log.str();
 
+    if(not warning_msg.empty()){
+        warning_logs.push_back(warning_msg);
+    }
+    if(not error_msg.empty()){
+        error_logs.push_back(error_log.str());
+    }
+    warning_log.clear();
+    error_log.clear();
 
 }
 
@@ -59,16 +90,24 @@ bool Image::is_good() const {
     return image->good();
 }
 
-std::string Image::get_icc_profile() const{
+std::string Image::get_icc_profile() const {
     std::string profile;
     std::stringstream data;
-    if(!image->iccProfileDefined()){
+    if (!image->iccProfileDefined()) {
         throw std::exception();
 
     }
-    const Exiv2::DataBuf* f = image->iccProfile();
-    data.write(reinterpret_cast<char*>(f->pData_), f->size_);
+    const Exiv2::DataBuf *f = image->iccProfile();
+    data.write(reinterpret_cast<char *>(f->pData_), f->size_);
     data << std::endl;
     return data.str();
 
+}
+
+const std::list<std::string> &Image::getWarning_logs() const {
+    return warning_logs;
+}
+
+const std::list<std::string> &Image::getError_logs() const {
+    return error_logs;
 }

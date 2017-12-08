@@ -10,6 +10,8 @@ struct Image {
 private:
     std::string filename;
     Exiv2::Image::AutoPtr image;
+    std::list<std::string> warning_logs;
+    std::list<std::string> error_logs;
 public:
     explicit Image(const std::string &filename);
 
@@ -21,6 +23,10 @@ public:
     std::map<std::string, std::string> get_iptc_metadata() const;
     std::map<std::string, std::string> get_xmp_metadata() const;
     std::string get_icc_profile() const;
+
+    const std::list<std::string> &getWarning_logs() const;
+
+    const std::list<std::string> &getError_logs() const;
 
 };
 

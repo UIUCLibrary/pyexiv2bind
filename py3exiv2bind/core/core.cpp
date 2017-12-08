@@ -26,6 +26,8 @@ PYBIND11_MODULE(core, m) {
             .def_property_readonly("exif",          &Image::get_exif_metadata, "Embedded Exif metadata")
             .def_property_readonly("iptc",          &Image::get_iptc_metadata, "Embedded IPTC metadata")
             .def_property_readonly("xmp",           &Image::get_xmp_metadata,  "Embedded XMP metadata")
+            .def_property_readonly("error_logs",    &Image::getError_logs,     "Errors produced by Exiv2 library")
+            .def_property_readonly("warnings_logs", &Image::getWarning_logs,   "Warnings produced by Exiv2 library")
             .def("get_icc_profile_data",            [](const Image &i) {
                      return pybind11::bytes(i.get_icc_profile());
                  },                                                            "Get the icc profile data"
