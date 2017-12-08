@@ -16,7 +16,8 @@ std::ostringstream error_log;
 Image::Image(const std::string &filename) : filename(filename) {
     warning_log.clear();
     error_log.clear();
-//    warning_log.str("");
+    warning_log.str("");
+    error_log.str("");
     try {
         Exiv2::LogMsg::setHandler([](int level, const char *msg) {
             switch((Exiv2::LogMsg::Level)level){
