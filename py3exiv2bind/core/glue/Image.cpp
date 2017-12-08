@@ -42,10 +42,10 @@ Image::Image(const std::string &filename) : filename(filename) {
     std::string warning_msg = warning_log.str();
     std::string error_msg = error_log.str();
 
-    if(not warning_msg.empty()){
+    if(!warning_msg.empty()){
         warning_logs.push_back(warning_msg);
     }
-    if(not error_msg.empty()){
+    if(!error_msg.empty()){
         error_logs.push_back(error_log.str());
     }
     warning_log.clear();
