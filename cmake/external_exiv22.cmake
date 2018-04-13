@@ -21,6 +21,22 @@ endif ()
 # libexpat build
 ###########################################################################################
 
+FetchContent_Declare(expat
+        URL https://github.com/libexpat/libexpat/archive/R_2_2_4.zip
+        )
+
+FetchContent_GetProperties(expat)
+if (NOT expat_POPULATED)
+    FetchContent_Populate(expat)
+    option(BUILD_examples "" OFF)
+    option(BUILD_shared "" OFF)
+    option(BUILD_tests "" NO)
+    option(BUILD_tools "" NO)
+
+    add_subdirectory(${expat_SOURCE_DIR}/expat ${expat_BINARY_DIR})
+endif ()
+
+
 list(APPEND expat_args -DBUILD_examples=off)
 list(APPEND expat_args -DBUILD_shared=off)
 list(APPEND expat_args -DBUILD_tests=off)
@@ -78,11 +94,12 @@ if (NOT libexiv2_POPULATED)
     set(BUILD_SHARED_LIBS OFF)
     option(EXIV2_BUILD_UNIT_TESTS "" ON)
     option(EXIV2_ENABLE_DYNAMIC_RUNTIME "" ON)
-    set(EXPAT_LIBRARY ${install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}expat${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX})
+    set(EXPAT_LIBRARY $<TARGET_FILE:expat>)
+#    set(EXPAT_LIBRARY ${install_dir}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}expat${CMAKE_DEBUG_POSTFIX}${CMAKE_STATIC_LIBRARY_SUFFIX})
 
-    set(EXPAT_INCLUDE_DIR $<TARGET_PROPERTY:libexpat::libexpat,INCLUDE_DIRECTORIES>)
+    set(EXPAT_INCLUDE_DIR $<TARGET_PROPERTY:expat,INCLUDE_DIRECTORIES>)
     set(ZLIB_INCLUDE_DIR $<TARGET_PROPERTY:zlibstatic,INCLUDE_DIRECTORIES>)
-    set(ZLIB_LIBRARY "$<TARGET_FILE:zlibstatic>")
+    set(ZLIB_LIBRARY $<TARGET_FILE:zlibstatic>)
     set(GTEST_INCLUDE_DIR $<TARGET_PROPERTY:gtest,INCLUDE_DIRECTORIES>)
     set(GTEST_LIBRARY $<TARGET_LINKER_FILE:gtest>)
     set(GTEST_MAIN_LIBRARY $<TARGET_LINKER_FILE:gtest_main>)
@@ -91,7 +108,7 @@ if (NOT libexiv2_POPULATED)
         add_dependencies(exiv2lib zlibstatic)
     add_dependencies(unit_tests gtest gtest_main)
 endif ()
-add_dependencies(xmp project_libexpat)
+add_dependencies(xmp expat)
 
 
 #########################################################################################
