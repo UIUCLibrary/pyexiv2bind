@@ -4,11 +4,19 @@ import org.ds.*
 
 pipeline {
     agent {
-        label "Windows"
+        label "Windows && VS2015 && Python3"
+    }
+    
+    triggers {
+        cron('@daily')
+    }
+
+    options {
+        disableConcurrentBuilds()  //each branch has 1 job running at a time
+        timeout(20)  // Timeout after 20 minutes. This shouldn't take this long but it hangs for some reason
     }
     environment {
-        mypy_args = "--junit-xml=mypy.xml"
-        pytest_args = "--junitxml=reports/junit-{env:OS:UNKNOWN_OS}-{envname}.xml --junit-prefix={env:OS:UNKNOWN_OS}  --basetemp={envtmpdir}"
+        build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
     }
     parameters {
         booleanParam(name: "ADDITIONAL_TESTS", defaultValue: true, description: "Run additional tests")
@@ -17,84 +25,78 @@ pipeline {
         string(name: 'URL_SUBFOLDER', defaultValue: "py3exiv2bind", description: 'The directory that the docs should be saved under')
     }
     stages {
-        stage("Checking Out from Source Control") {
+        stage("Configure") {
             steps {
-                deleteDir()
-                checkout([
-                        $class                           : 'GitSCM',
-                        branches                         : [
-                                [name: "*/${env.BRANCH_NAME}"]
-                        ],
-                        doGenerateSubmoduleConfigurations: false,
-                        extensions                       : [
-                                [
-                                        $class             : 'SubmoduleOption',
-                                        disableSubmodules  : false,
-                                        parentCredentials  : false,
-                                        recursiveSubmodules: true,
-                                        reference          : '',
-                                        trackingSubmodules : false
-                                ]
-                        ],
-                        submoduleCfg                     : [],
-                        userRemoteConfigs                : [
-                                [
-                                        credentialsId: 'ccb29ea2-6d0f-4bfa-926d-6b4edd8995a8',
-                                        url          : 'git@github.com:UIUCLibrary/pyexiv2bind.git'
-                                ]
-                        ]
-                ])
+                bat "${tool 'CPython-3.6'} -m venv venv"
+                bat "venv\\Scripts\\pip.exe install devpi-client -r requirements.txt -r requirements-dev.txt"
+            }
+
+        }
+        stage("Build") {
+            environment {
+                PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
+            }
+            steps {
+                bat "venv\\Scripts\\python.exe setup.py build"
             }
 
         }
         stage("Testing") {
+            environment {
+                PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
+            }
             steps {
-                node('Linux') {
-                    sh 'wget -N https://jenkins.library.illinois.edu/jenkins/userContent/sample_images.tar.gz'
-                    sh 'tar -xzf sample_images.tar.gz'
-                    stash includes: 'sample_images/**', name: 'sample_images'
-                }
-                dir("tests") {
-                    unstash 'sample_images'
-                }
-                stash includes: 'tests/**', name: 'tests'
-                //withEnv(['EXIV2_DIR=thirdparty\\dist\\exiv2\\share\\exiv2\\cmake']){
-                    bat "${tool 'Python3.6.3_Win64'} -m tox -e py36"
-                //}
+                bat "venv\\Scripts\\tox.exe"
+                // node('Linux') {
+                //     sh 'wget -N https://jenkins.library.illinois.edu/jenkins/userContent/sample_images.tar.gz'
+                //     sh 'tar -xzf sample_images.tar.gz'
+                //     stash includes: 'sample_images/**', name: 'sample_images'
+                // }
+                // dir("tests") {
+                //     unstash 'sample_images'
+                // }
+                // stash includes: 'tests/**', name: 'tests'
+                // //withEnv(['EXIV2_DIR=thirdparty\\dist\\exiv2\\share\\exiv2\\cmake']){
+                //     bat "${tool 'Python3.6.3_Win64'} -m tox -e py36"
+                // //}
 
 
             }
 
         }
-        stage("Additional tests") {
-            when {
-                expression { params.ADDITIONAL_TESTS == true }
-            }
+        // stage("Additional tests") {
+        //     when {
+        //         expression { params.ADDITIONAL_TESTS == true }
+        //     }
 
-            steps {
-                parallel(
-                        "Documentation": {
-                            bat "${tool 'Python3.6.3_Win64'} -m tox -e docs"
-                            dir('.tox/dist/html/') {
-                                stash includes: '**', name: "HTML Documentation", useDefaultExcludes: false
-                            }
-                        }
-                )
-            }
+        //     steps {
+        //         parallel(
+        //                 "Documentation": {
+        //                     bat "${tool 'Python3.6.3_Win64'} -m tox -e docs"
+        //                     dir('.tox/dist/html/') {
+        //                         stash includes: '**', name: "HTML Documentation", useDefaultExcludes: false
+        //                     }
+        //                 }
+        //         )
+        //     }
 
-        }
+        // }
 
         stage("Packaging") {
+            environment {
+                PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
+            }
             steps {
+                bat "venv\\Scripts\\python.exe setup.py bdist_wheel sdist"
                 // withEnv(['EXIV2_DIR=thirdparty\\dist\\exiv2\\share\\exiv2\\cmake']){
-                    bat """${tool 'Python3.6.3_Win64'} -m venv venv
-                           call venv\\Scripts\\activate.bat
-                           pip install -r requirements.txt
-                           pip install -r requirements-dev.txt
-                           pip list > installed_packages.txt
-                           python setup.py sdist bdist_wheel
-                           """
-                    archiveArtifacts artifacts: "installed_packages.txt"
+                    // bat """${tool 'Python3.6.3_Win64'} -m venv venv
+                    //        call venv\\Scripts\\activate.bat
+                    //        pip install -r requirements.txt
+                    //        pip install -r requirements-dev.txt
+                    //        pip list > installed_packages.txt
+                    //        python setup.py sdist bdist_wheel
+                    //        """
+                    // archiveArtifacts artifacts: "installed_packages.txt"
                     dir("dist") {
                         archiveArtifacts artifacts: "*.whl", fingerprint: true
                         archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
@@ -102,104 +104,209 @@ pipeline {
                 // }
             }
         }
-        stage("Deploying to Devpi staging index") {
+        // stage("Deploying to Devpi staging index") {
+        //     when {
+        //         expression { params.DEPLOY_DEVPI == true }
+        //     }
+        //     steps {
+        //         bat "venv\\Scripts\\devpi.exe use http://devpy.library.illinois.edu"
+        //         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+        //             bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+        //             bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+        //             script {
+        //                 bat "venv\\Scripts\\devpi.exe upload --from-dir dist"
+        //                 try {
+        //                     bat "venv\\Scripts\\devpi.exe upload --only-docs --from-dir dist"
+        //                 } catch (exc) {
+        //                     echo "Unable to upload docs."
+        //                 }
+        //             }
+        //         }
+
+        //     }
+        // }
+//         stage("Test Devpi packages") {
+//             when {
+//                 expression { params.DEPLOY_DEVPI == true }
+//             }
+//             steps {
+//                 parallel(
+//                         "Source": {
+//                             script {
+//                                 def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+//                                 def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+//                                 node("Windows") {
+//                                     deleteDir()
+//                                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+//                                         bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+//                                         bat "${tool 'CPython-3.6'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+//                                         echo "Testing Source package in devpi"
+//                                         script {
+//                                              def devpi_test = bat(returnStdout: true, script: "${tool 'CPython-3.6'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name}==${version} --verbose -s tar.gz").trim()
+//                                              if(devpi_test =~ 'tox command failed') {
+//                                                 echo "${devpi_test}"
+//                                                 error("Tox command failed")
+//                                             }
+//                                         }
+//                                         // bat "${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging py3exiv2bind -s tar.gz"
+//                                         // bat "${tool 'Python3.6.3_Win64'} -m venv venv"
+//                                         // unstash "tests"
+//                                         // bat """ ${tool 'Python3.6.3_Win64'} -m pip install -Iv ${name}==${version} -i http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging --no-cache-dir --no-binary :all: --trusted-host devpi.library.illinois.edu
+//                                             // call venv\\Scripts\\activate.bat
+//                                             // ${tool 'Python3.6.3_Win64'} -m pytest"""
+//                                     }
+//                                 }
+
+//                             }
+//                         },
+//                         "Wheel": {
+//                             script {
+//                                 def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+//                                 def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+//                                 node("Windows") {
+//                                     deleteDir()
+
+//                                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+//                                         bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+//                                         bat "${tool 'CPython-3.6'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+//                                         echo "Testing Whl package in devpi"
+//                                         script {
+//                                             def devpi_test =  bat(returnStdout: true, script: "${tool 'CPython-3.6'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name}==${version} --verbose -s whl").trim()
+//                                             if(devpi_test =~ 'tox command failed') {
+//                                                 echo "${devpi_test}"
+//                                                 error("Tox command failed")
+//                                             }
+                                            
+//                                         }
+//                                         // bat " ${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging py3exiv2bind -s whl"
+//                                         // bat "${tool 'Python3.6.3_Win64'} -m venv venv"
+//                                         // unstash "tests"
+//                                         // bat """ ${tool 'Python3.6.3_Win64'} -m pip install -Iv ${name}==${version} -i http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging --no-cache-dir  --only-binary bdist_wheel --trusted-host devpi.library.illinois.edu
+// //                                            call venv\\Scripts\\activate.bat
+//   //                                          ${tool 'Python3.6.3_Win64'} -m pytest"""
+//                                     }
+//                                 }
+
+//                             }
+//                         }
+//                 )
+
+//             }
+//             post {
+//                 success {
+//                     echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
+//                     script {
+//                         def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+//                         def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+//                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+//                             bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+//                             bat "${tool 'CPython-3.6'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+//                             bat "${tool 'CPython-3.6'} -m devpi push ${name}==${version} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+//                         }
+
+//                     }
+//                 }
+//             }
+        // }
+                stage("Deploy to Devpi Staging") {
+            // when {
+            //     expression { params.DEPLOY_DEVPI == true && (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev")}
+            // }
             when {
-                expression { params.DEPLOY_DEVPI == true }
+                allOf{
+                    equals expected: true, actual: params.DEPLOY_DEVPI
+                    anyOf {
+                        equals expected: "master", actual: env.BRANCH_NAME
+                        equals expected: "dev", actual: env.BRANCH_NAME
+                    }
+                }
             }
             steps {
-                bat "${tool 'Python3.6.3_Win64'} -m devpi use http://devpy.library.illinois.edu"
+                bat "devpi use https://devpi.library.illinois.edu"
                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                    bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                    bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                    bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                    bat "${tool 'CPython-3.6'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                     script {
-                        bat "${tool 'Python3.6.3_Win64'} -m devpi upload --from-dir dist"
+                        bat "${tool 'CPython-3.6'} -m devpi upload --from-dir dist"
                         try {
-                            bat "${tool 'Python3.6.3_Win64'} -m devpi upload --only-docs"
+                            bat "${tool 'CPython-3.6'} -m devpi upload --only-docs --from-dir dist"
                         } catch (exc) {
-                            echo "Unable to upload docs."
+                            echo "Unable to upload to devpi with docs."
                         }
                     }
                 }
 
             }
         }
-        stage("Test Devpi packages") {
+        stage("Test DevPi packages") {
             when {
-                expression { params.DEPLOY_DEVPI == true }
+                allOf{
+                    equals expected: true, actual: params.DEPLOY_DEVPI
+                    anyOf {
+                        equals expected: "master", actual: env.BRANCH_NAME
+                        equals expected: "dev", actual: env.BRANCH_NAME
+                    }
+                }
             }
-            steps {
-                parallel(
-                        "Source": {
-                            script {
-                                def name = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --name").trim()
-                                def version = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --version").trim()
-                                node("Windows") {
-                                    deleteDir()
-                                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                        bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                                        bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                                        echo "Testing Source package in devpi"
-                                        script {
-                                             def devpi_test = bat(returnStdout: true, script: "${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name}==${version} --verbose -s tar.gz").trim()
-                                             if(devpi_test =~ 'tox command failed') {
-                                                echo "${devpi_test}"
-                                                error("Tox command failed")
-                                            }
-                                        }
-                                        // bat "${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging py3exiv2bind -s tar.gz"
-                                        // bat "${tool 'Python3.6.3_Win64'} -m venv venv"
-                                        // unstash "tests"
-                                        // bat """ ${tool 'Python3.6.3_Win64'} -m pip install -Iv ${name}==${version} -i http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging --no-cache-dir --no-binary :all: --trusted-host devpi.library.illinois.edu
-                                            // call venv\\Scripts\\activate.bat
-                                            // ${tool 'Python3.6.3_Win64'} -m pytest"""
-                                    }
-                                }
 
-                            }
-                        },
-                        "Wheel": {
-                            script {
-                                def name = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --name").trim()
-                                def version = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --version").trim()
-                                node("Windows") {
-                                    deleteDir()
-
-                                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                        bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                                        bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                                        echo "Testing Whl package in devpi"
-                                        script {
-                                            def devpi_test =  bat(returnStdout: true, script: "${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name}==${version} --verbose -s whl").trim()
-                                            if(devpi_test =~ 'tox command failed') {
-                                                echo "${devpi_test}"
-                                                error("Tox command failed")
-                                            }
-                                            
-                                        }
-                                        // bat " ${tool 'Python3.6.3_Win64'} -m devpi test --index http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging py3exiv2bind -s whl"
-                                        // bat "${tool 'Python3.6.3_Win64'} -m venv venv"
-                                        // unstash "tests"
-                                        // bat """ ${tool 'Python3.6.3_Win64'} -m pip install -Iv ${name}==${version} -i http://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging --no-cache-dir  --only-binary bdist_wheel --trusted-host devpi.library.illinois.edu
-//                                            call venv\\Scripts\\activate.bat
-  //                                          ${tool 'Python3.6.3_Win64'} -m pytest"""
-                                    }
-                                }
-
+            // when {
+            //     expression { params.DEPLOY_DEVPI == true && (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev")}
+            // }
+            parallel {
+                stage("Source Distribution: .tar.gz") {
+                    steps {
+                        script {
+                            def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+                            def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                                    bat "devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                                    bat "devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                                    echo "Testing Source package in devpi"
+                                    bat "devpi test --index https://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name} -s tar.gz"
                             }
                         }
-                )
+                    }
+                }
+                stage("Source Distribution: .zip") {
+                    steps {
+                        script {
+                            def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+                            def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                                    bat "devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                                    bat "devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                                    echo "Testing Source package in devpi"
+                                    bat "devpi test --index https://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name} -s zip"
+                                }
+                        }
+                    }
+                }
+                stage("Built Distribution: .whl") {
+                    steps {
+                        script {
+                            def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+                            def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                                bat "devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                                bat "devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                                echo "Testing Whl package in devpi"
+                                bat "devpi test --index https://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name} -s whl"
+                            }
+                        }
 
+                    }
+                }
             }
             post {
                 success {
                     echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
                     script {
-                        def name = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --name").trim()
-                        def version = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --version").trim()
+                        def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+                        def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                            bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                            bat "${tool 'Python3.6.3_Win64'} -m devpi push ${name}==${version} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                            bat "devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                            bat "devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                            bat "devpi push ${name}==${version} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                         }
 
                     }
@@ -212,12 +319,12 @@ pipeline {
             }
             steps {
                 script {
-                    def name = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --name").trim()
-                    def version = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --version").trim()
+                    def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+                    def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                        bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                        bat "${tool 'Python3.6.3_Win64'} -m devpi push ${name}==${version} production/${params.RELEASE}"
+                        bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                        bat "${tool 'CPython-3.6'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                        bat "${tool 'CPython-3.6'} -m devpi push ${name}==${version} production/${params.RELEASE}"
                     }
 
                 }
@@ -231,13 +338,13 @@ pipeline {
     post {
         always {
             script {
-                def name = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --name").trim()
-                def version = bat(returnStdout: true, script: "@${tool 'Python3.6.3_Win64'} setup.py --version").trim()
+                def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+                def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
                 try {
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        bat "${tool 'Python3.6.3_Win64'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                        bat "${tool 'Python3.6.3_Win64'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                        bat "${tool 'Python3.6.3_Win64'} -m devpi remove -y ${name}==${version}"
+                        bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                        bat "${tool 'CPython-3.6'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                        bat "${tool 'CPython-3.6'} -m devpi remove -y ${name}==${version}"
                     }
                 } catch (err) {
                     echo "Unable to clean up ${env.BRANCH_NAME}_staging"
