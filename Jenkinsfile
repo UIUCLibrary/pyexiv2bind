@@ -28,7 +28,7 @@ pipeline {
         stage("Configure") {
             steps {
                 bat "${tool 'CPython-3.6'} -m venv venv"
-                bat "venv\\Scripts\\pip.exe install -r requirements.txt -r requirements-dev.txt"
+                bat "venv\\Scripts\\pip.exe install devpi-client -r requirements.txt -r requirements-dev.txt"
             }
 
         }
