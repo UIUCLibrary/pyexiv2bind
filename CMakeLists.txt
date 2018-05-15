@@ -1,24 +1,50 @@
 cmake_minimum_required(VERSION 3.11)
 project(pyexiv2bind)
+
 find_package(PythonInterp REQUIRED)
 find_package(PythonLibs)
+
 if (WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_DEBUG_POSTFIX "d")
 endif ()
+
 option(pyexiv2bind_build_exiv2 "Build Exiv2 from source" ON)
 option(pyexiv2bind_png "Build support for the png format" OFF)
+
 if (pyexiv2bind_build_exiv2)
     include(cmake/external_exiv22.cmake)
 else ()
     find_package(EXIV2 REQUIRED)
 endif ()
+
 if (SKBUILD)
     message(STATUS "USING SCIKIT BUILD")
 
     find_package(PythonExtensions REQUIRED)
 
 else ()
+
     include(cmake/build_python_module.cmake)
+
+    create_venv(
+            DESTINATION ${PROJECT_BINARY_DIR}/venv
+            REQUIREMENTS
+                ${PROJECT_SOURCE_DIR}/requirements.txt
+                ${PROJECT_SOURCE_DIR}/requirements-dev.txt
+    )
+
+    add_custom_target(py3exiv2bind
+            DEPENDS ${PYTHON_PACKAGE_SOURCE} core
+            )
+
+#    update_python_binary_dir(${CMAKE_SOURCE_DIR}/py3exiv2bind)
+    if(WIN32)
+        add_tox_tests(TOXPATH ${PROJECT_BINARY_DIR}/venv/Scripts/tox.exe)
+        else()
+        add_tox_tests(TOXPATH ${PROJECT_BINARY_DIR}/venv/bin/tox)
+    endif()
+
+    add_python_wheel()
 
 endif ()
 
