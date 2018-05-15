@@ -37,7 +37,7 @@ pipeline {
                 PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
             }
             steps {
-                bat "venv/Scripts/python.exe setup.py build"
+                bat "venv\\Scripts\\python.exe setup.py build"
             }
 
         }
@@ -46,7 +46,7 @@ pipeline {
                 PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
             }
             steps {
-                bat "venv/Scripts/tox.exe"
+                bat "venv\\Scripts\\tox.exe"
                 // node('Linux') {
                 //     sh 'wget -N https://jenkins.library.illinois.edu/jenkins/userContent/sample_images.tar.gz'
                 //     sh 'tar -xzf sample_images.tar.gz'
@@ -87,7 +87,7 @@ pipeline {
                 PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
             }
             steps {
-                bat "venv/Scripts/python.exe setup.py bdist_wheel sdist"
+                bat "venv\\Scripts\\python.exe setup.py bdist_wheel sdist"
                 // withEnv(['EXIV2_DIR=thirdparty\\dist\\exiv2\\share\\exiv2\\cmake']){
                     // bat """${tool 'Python3.6.3_Win64'} -m venv venv
                     //        call venv\\Scripts\\activate.bat
@@ -109,14 +109,14 @@ pipeline {
                 expression { params.DEPLOY_DEVPI == true }
             }
             steps {
-                bat "venv/Scripts/devpi.exe use http://devpy.library.illinois.edu"
+                bat "venv\\Scripts\\devpi.exe use http://devpy.library.illinois.edu"
                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                    bat "venv/Scripts/devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                    bat "venv/Scripts/devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                    bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                     script {
-                        bat "venv/Scripts/devpi.exe upload --from-dir dist"
+                        bat "venv\\Scripts\\devpi.exe upload --from-dir dist"
                         try {
-                            bat "venv/Scripts/devpi.exe upload --only-docs --from-dir dist"
+                            bat "venv\\Scripts\\devpi.exe upload --only-docs --from-dir dist"
                         } catch (exc) {
                             echo "Unable to upload docs."
                         }
