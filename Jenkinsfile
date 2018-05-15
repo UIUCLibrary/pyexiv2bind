@@ -38,53 +38,51 @@ pipeline {
             }
 
         }
-        stage("Build") {
-            parallel{
-                stage("Python Package"){
-                    environment {
-                        PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
-                    }
-                    steps {
-                        tee('build.log') {
-                            bat "venv\\Scripts\\python.exe setup.py build"
-                        }
-                    }
-                    post{
-                        always{
-                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'build.log']]
-                            archiveArtifacts artifacts: 'build.log'
-                        }
-                    }
+        stage("Python Package"){
+            environment {
+                PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
+            }
+            steps {
+                tee('build.log') {
+                    bat "venv\\Scripts\\python.exe setup.py build"
                 }
-                stage("Sphinx documentation"){
-                    when {
-                        equals expected: true, actual: params.BUILD_DOCS
-                    }
-                    steps {
-                        bat 'mkdir "build/docs/html"'
-                        echo "Building docs on ${env.NODE_NAME}"
-                        tee('build_sphinx.log') {
-                            bat script: "venv\\Scripts\\python.exe setup.py build_sphinx"                            
-                        }
-                    }
-                    post{
-                        always {
-                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'build_sphinx.log']]
-                        }
-                        success{
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            script{
-                                // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
-                                def alljob = env.JOB_NAME.tokenize("/") as String[]
-                                def project_name = alljob[0]
-                                dir('build/docs/') {
-                                    zip archive: true, dir: 'html', glob: '', zipFile: "${project_name}-${env.BRANCH_NAME}-docs-html-${env.GIT_COMMIT.substring(0,7)}.zip"
-                                }
-                            }
+            }
+            post{
+                always{
+                    // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'build.log']]
+                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: 'build.log']]
+                    archiveArtifacts artifacts: 'build.log'
+                }
+            }
+        }
+        stage("Sphinx documentation"){
+            when {
+                equals expected: true, actual: params.BUILD_DOCS
+            }
+            steps {
+                bat 'mkdir "build/docs/html"'
+                echo "Building docs on ${env.NODE_NAME}"
+                tee('build_sphinx.log') {
+                    bat script: "venv\\Scripts\\python.exe setup.py build_sphinx"                            
+                }
+            }
+            post{
+                always {
+                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'build_sphinx.log']]
+                }
+                success{
+                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+                    script{
+                        // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
+                        def alljob = env.JOB_NAME.tokenize("/") as String[]
+                        def project_name = alljob[0]
+                        dir('build/docs/') {
+                            zip archive: true, dir: 'html', glob: '', zipFile: "${project_name}-${env.BRANCH_NAME}-docs-html-${env.GIT_COMMIT.substring(0,7)}.zip"
                         }
                     }
                 }
             }
+        
         }
         stage("Testing") {
             parallel {
@@ -94,23 +92,6 @@ pipeline {
                     }
                     steps {
                         bat "venv\\Scripts\\tox.exe"
-                    }
-                }
-                stage("Run Pytest Unit Tests"){
-                    when {
-                       equals expected: true, actual: params.TEST_RUN_PYTEST
-                    }
-                    environment{
-                        junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
-                    }
-                    steps{
-                        bat "venv\\Scripts\\py.test.exe --junitxml=reports/pytest/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:reports/pytestcoverage/ --cov=speedwagon"
-                    }
-                    post {
-                        always {
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/pytestcoverage', reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
-                            junit "reports/pytest/${junit_filename}"
-                        }
                     }
                 }
                 stage("Run Doctest Tests"){
@@ -225,8 +206,8 @@ pipeline {
                     }
                     steps {
                         script {
-                            def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                            def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                            def name = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --name").trim()
+                            def version = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --version").trim()
                             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                                     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                                     bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
@@ -242,8 +223,8 @@ pipeline {
                     }
                     steps {
                         script {
-                            def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                            def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                            def name = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --name").trim()
+                            def version = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --version").trim()
                             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                                     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                                     bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
@@ -256,8 +237,8 @@ pipeline {
                 stage("Built Distribution: .whl") {
                     steps {
                         script {
-                            def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                            def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                            def name = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --name").trim()
+                            def version = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --version").trim()
                             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                                 bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                                 bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
@@ -273,8 +254,8 @@ pipeline {
                 success {
                     echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
                     script {
-                        def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                        def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                        def name = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --name").trim()
+                        def version = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --version").trim()
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                             bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                             bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
@@ -291,8 +272,8 @@ pipeline {
             }
             steps {
                 script {
-                    def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                    def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                    def name = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --name").trim()
+                    def version = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --version").trim()
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                         bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                         bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
@@ -310,8 +291,8 @@ pipeline {
     post {
         always {
             script {
-                def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                def name = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --name").trim()
+                def version = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --version").trim()
                 try {
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                         bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
