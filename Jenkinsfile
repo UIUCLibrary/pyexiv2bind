@@ -35,6 +35,8 @@ pipeline {
             steps {
                 bat "${tool 'CPython-3.6'} -m venv venv"
                 bat "venv\\Scripts\\pip.exe install devpi-client -r requirements.txt -r requirements-dev.txt"
+                bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu"
+                bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
             }
 
         }
@@ -169,7 +171,7 @@ pipeline {
                 }
             }
             steps {
-                bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
+                // bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                     bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
@@ -206,8 +208,8 @@ pipeline {
                     }
                     steps {
                         script {
-                            def name = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --name").trim()
-                            def version = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --version").trim()
+                            def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+                            def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
                             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                                     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                                     bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
@@ -223,10 +225,10 @@ pipeline {
                     }
                     steps {
                         script {
-                            def name = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --name").trim()
-                            def version = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --version").trim()
+                            def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+                            def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --version").trim()
                             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                                    // bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                                     bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                                     echo "Testing Source package in devpi"
                                     bat "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name} -s zip"
@@ -237,8 +239,8 @@ pipeline {
                 stage("Built Distribution: .whl") {
                     steps {
                         script {
-                            def name = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --name").trim()
-                            def version = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --version").trim()
+                            def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
+                            def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
                             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                                 bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                                 bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
@@ -254,8 +256,8 @@ pipeline {
                 success {
                     echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
                     script {
-                        def name = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --name").trim()
-                        def version = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --version").trim()
+                        def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+                        def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                             bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                             bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
@@ -272,8 +274,8 @@ pipeline {
             }
             steps {
                 script {
-                    def name = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --name").trim()
-                    def version = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --version").trim()
+                    def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+                    def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                         bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                         bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
@@ -289,23 +291,41 @@ pipeline {
 
     }
     post {
-        always {
+        cleanup{
             script {
-                def name = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --name").trim()
-                def version = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --version").trim()
-                try {
+                if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
+                    def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+                    def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                        bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                        bat "venv\\Scripts\\devpi.exe remove -y ${name}==${version}"
+                        bat "devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                        bat "devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                        try {
+                            bat "devpi remove -y ${name}==${version}"
+                        } catch (Exception ex) {
+                            echo "Failed to remove ${name}==${version} from ${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                        }
+                        
                     }
-                } catch (err) {
-                    echo "Unable to clean up ${env.BRANCH_NAME}_staging"
                 }
-
-
             }
         }
+        // always {
+        //     script {
+        //         def name = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --name").trim()
+        //         def version = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --version").trim()
+        //         try {
+        //             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+        //                 bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+        //                 bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+        //                 bat "venv\\Scripts\\devpi.exe remove -y ${name}==${version}"
+        //             }
+        //         } catch (err) {
+        //             echo "Unable to clean up ${env.BRANCH_NAME}_staging"
+        //         }
+
+
+        //     }
+        // }
         
         success {
             echo "Cleaning up workspace"
