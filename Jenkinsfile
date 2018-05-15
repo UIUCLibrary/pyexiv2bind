@@ -19,7 +19,13 @@ pipeline {
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
     }
     parameters {
-        booleanParam(name: "ADDITIONAL_TESTS", defaultValue: true, description: "Run additional tests")
+        booleanParam(name: "BUILD_DOCS", defaultValue: true, description: "Build documentation")
+        booleanParam(name: "TEST_RUN_DOCTEST", defaultValue: true, description: "Test documentation")
+        booleanParam(name: "TEST_RUN_FLAKE8", defaultValue: true, description: "Run Flake8 static analysis")
+        booleanParam(name: "TEST_RUN_MYPY", defaultValue: true, description: "Run MyPy static analysis")
+        booleanParam(name: "TEST_RUN_TOX", defaultValue: true, description: "Run Tox Tests")
+        
+        // booleanParam(name: "ADDITIONAL_TESTS", defaultValue: true, description: "Run additional tests")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: true, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         choice(choices: 'None\nrelease', description: "Release the build to production. Only available in the Master branch", name: 'RELEASE')
         string(name: 'URL_SUBFOLDER', defaultValue: "py3exiv2bind", description: 'The directory that the docs should be saved under')
@@ -109,7 +115,7 @@ pipeline {
                 }
                 stage("Run Doctest Tests"){
                     when {
-                       equals expected: true, actual: params.TEST_RUN_FLAKE8
+                       equals expected: true, actual: params.TEST_RUN_DOCTEST
                     }
                     steps {
                         bat "venv\\Scripts\\sphinx-build.exe -b doctest -d build/docs/doctrees docs/source reports/doctest"
@@ -214,6 +220,9 @@ pipeline {
             // }
             parallel {
                 stage("Source Distribution: .tar.gz") {
+                    environment {
+                        PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
+                    }
                     steps {
                         script {
                             def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
@@ -228,6 +237,9 @@ pipeline {
                     }
                 }
                 stage("Source Distribution: .zip") {
+                    environment {
+                        PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
+                    }
                     steps {
                         script {
                             def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
