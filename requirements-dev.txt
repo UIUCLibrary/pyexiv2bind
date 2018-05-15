@@ -4,3 +4,5 @@ pytest
 pytest-runner
 tox
 sphinx
+mypy
+flake8
