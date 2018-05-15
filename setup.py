@@ -9,7 +9,9 @@ except ImportError:
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
 pytest_runner = ['pytest-runner'] if needs_pytest else []
 
+
 cmake_args = []
+cmake_args.append("-DBUILD_SHARED_LIBS=NO")
 # cmake_args = ["-Dpyexiv2bind_experimental_jp2_support=ON"]
 
 if "EXIV2_DIR" in os.environ:

@@ -51,7 +51,25 @@ endif ()
 option(pyexiv2bind_build_tests "build test suite" ON)
 include_directories(${CMAKE_BINARY_DIR})
 #include_directories(${install_dir}/include)
-add_subdirectory(thirdparty/pybind11)
+
+
+FetchContent_Declare(libpybind11
+        GIT_REPOSITORY https://github.com/pybind/pybind11.git
+        GIT_TAG 8edc147
+        )
+
+FetchContent_GetProperties(libpybind11)
+if (NOT libpybind11_POPULATED)
+    FetchContent_Populate(libpybind11)
+#    option(BUILD_examples "" OFF)
+#    option(BUILD_shared "" OFF)
+#    option(BUILD_tests "" NO)
+#    option(BUILD_tools "" NO)
+
+    add_subdirectory(${libpybind11_SOURCE_DIR} ${libpybind11_BINARY_DIR})
+endif ()
+
+#add_subdirectory(thirdparty/pybind11)
 add_subdirectory(py3exiv2bind/core)
 enable_testing()
 add_subdirectory(tests)

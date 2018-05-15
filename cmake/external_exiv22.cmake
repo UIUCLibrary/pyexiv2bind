@@ -64,6 +64,7 @@ FetchContent_Declare(
 FetchContent_GetProperties(libexiv2)
 if (NOT libexiv2_POPULATED)
     FetchContent_Populate(libexiv2)
+#    option(BUILD_SHARED_LIBS "" OFF)
     set(BUILD_SHARED_LIBS OFF)
     option(EXIV2_BUILD_UNIT_TESTS "" OFF)
     option(EXIV2_ENABLE_DYNAMIC_RUNTIME "" ON)
