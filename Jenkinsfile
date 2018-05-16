@@ -1,7 +1,8 @@
 #!groovy
 @Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
 import org.ds.*
-
+def name = "unknown"
+def version = "unknown"
 pipeline {
     agent {
         label "Windows && VS2015 && Python3"
@@ -34,8 +35,8 @@ pipeline {
         stage("Configure") {
             steps {
                 script {
-                    def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
-                    def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                    name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
+                    version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
                 }
 
                 tee("pippackages_system_${NODE_NAME}.log") {
@@ -66,6 +67,9 @@ pipeline {
                 PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
             }
             steps {
+                echo "name = ${name}"
+                echo "version = ${version}"
+
                 tee('build.log') {
                     bat "venv\\Scripts\\python.exe setup.py build"
                 }
@@ -273,8 +277,8 @@ pipeline {
                         //     bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                         // }
                         script {
-                            def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                            def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --version").trim()
+                            // def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+                            // def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --version").trim()
                             def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s zip --verbose"
                             echo "return code was ${devpi_test_return_code}"
                         }
