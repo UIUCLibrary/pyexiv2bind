@@ -33,11 +33,26 @@ pipeline {
     stages {
         stage("Configure") {
             steps {
+                tee("pippackages_system_${NODE_NAME}.log") {
+                    bat "${tool 'CPython-3.6'} -m pip list"
+                }
+                
                 bat "${tool 'CPython-3.6'} -m venv venv"
                 bat "venv\\Scripts\\pip.exe install devpi-client -r requirements.txt -r requirements-dev.txt"
+
+                tee("pippackages_venv_${NODE_NAME}.log") {
+                    bat "venv\\Scripts\\pip.exe list"
+                }
+
                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                     bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu"
                     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                }
+            }
+            post{
+                always{
+                    archiveArtifacts artifacts: "pippackages_system_${NODE_NAME}.log"
+                    archiveArtifacts artifacts: "pippackages_venv_${NODE_NAME}.log"
                 }
             }
 
