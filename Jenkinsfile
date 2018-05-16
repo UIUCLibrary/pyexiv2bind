@@ -220,6 +220,12 @@ pipeline {
                             }
                         }
                     }
+                    post {
+                        failure {
+                            echo "Tests for .tar.gz source on DevPi failed."
+                        }
+                    }
+
                 }
                 stage("Source Distribution: .zip") {
                     environment {
@@ -237,6 +243,11 @@ pipeline {
                                 }
                         }
                     }
+                    post {
+                        failure {
+                            echo "Tests for .zip source on DevPi failed."
+                        }
+                    }
                 }
                 stage("Built Distribution: .whl") {
                     steps {
@@ -251,6 +262,11 @@ pipeline {
                             }
                         }
 
+                    }
+                    post {
+                        failure {
+                            echo "Tests for whl on DevPi failed."
+                        }
                     }
                 }
             }
@@ -267,6 +283,9 @@ pipeline {
                         }
 
                     }
+                }
+                failure {
+                    echo "At least one package format on DevPi failed."
                 }
             }
         }
