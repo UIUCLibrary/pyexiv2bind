@@ -294,6 +294,11 @@ pipeline {
     }
     post {
         cleanup{
+            echo "Cleaning up."
+            // anyOf {
+            //     equals expected: "master", actual: env.BRANCH_NAME
+            //     equals expected: "dev", actual: env.BRANCH_NAME
+            // }
             script {
                 if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
                     def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
