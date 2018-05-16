@@ -224,18 +224,18 @@ pipeline {
                         PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
                     }
                     steps {
+                        echo "Testing Source tar.gz package in devpi"
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            script {
-                                def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                                def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()                            
-                                bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                                bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                                echo "Testing Source package in devpi"
-                                def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name} -s tar.gz  --verbose"
-                                echo "return code was ${devpi_test_return_code}"
-                                }
-                            echo "Finished testing Source Distribution: .tar.gz"
+                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                            bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                         }
+                        script {
+                            def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+                            def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()                            
+                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name} -s tar.gz  --verbose"
+                            echo "return code was ${devpi_test_return_code}"
+                        }
+                        echo "Finished testing Source Distribution: .tar.gz"
                     }
                     post {
                         failure {
@@ -249,18 +249,18 @@ pipeline {
                         PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
                     }
                     steps {
+                        echo "Testing Source zip package in devpi"
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            script {
-                                def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                                def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --version").trim()
-                                bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                                bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                                echo "Testing Source package in devpi"
-                                def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s zip --verbose"
-                                echo "return code was ${devpi_test_return_code}"
-                                }
-                            echo "Finished testing Source Distribution: .zip"
+                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                            bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
                         }
+                        script {
+                            def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+                            def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --version").trim()
+                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s zip --verbose"
+                            echo "return code was ${devpi_test_return_code}"
+                        }
+                        echo "Finished testing Source Distribution: .zip"
                     }
                     post {
                         failure {
@@ -270,18 +270,16 @@ pipeline {
                 }
                 stage("Built Distribution: .whl") {
                     steps {
+                        echo "Testing Whl package in devpi"
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            script {
-                                def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
-                                def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
-                                
-                                bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                                bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                                echo "Testing Whl package in devpi"
-                                def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s whl  --verbose"
-                                echo "return code was ${devpi_test_return_code}"
-                            }
-                                
+                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                            bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                        }
+                        script{
+                            def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
+                            def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s whl  --verbose"
+                            echo "return code was ${devpi_test_return_code}"
                         }
                         echo "Finished testing Built Distribution: .whl"
                     }
