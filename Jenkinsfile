@@ -15,6 +15,7 @@ pipeline {
     options {
         disableConcurrentBuilds()  //each branch has 1 job running at a time
         timeout(20)  // Timeout after 20 minutes. This shouldn't take this long but it hangs for some reason
+        checkoutToSubdirectory("source")
     }
     environment {
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
@@ -34,9 +35,22 @@ pipeline {
     stages {
         stage("Configure") {
             steps {
+                dir("logs"){
+                    echo "Cleaning out logs directory"
+                    deleteDir()
+                }
+                
+                dir("build"){
+                    echo "Cleaning out build directory"
+                    deleteDir()
+                }
+                bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
+                
                 script {
-                    name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
-                    version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                    dir("source"){
+                        name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
+                        version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                    }
                 }
 
                 tee("pippackages_system_${NODE_NAME}.log") {
@@ -70,15 +84,18 @@ pipeline {
                 echo "name = ${name}"
                 echo "version = ${version}"
 
-                tee('build.log') {
-                    bat "venv\\Scripts\\python.exe setup.py build"
+                tee('logs/build.log') {
+                    dir("source"){
+                            bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build -b ${WORKSPACE}\\build"
+                    }
+                
                 }
             }
             post{
                 always{
                     // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'build.log']]
-                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: 'build.log']]
-                    archiveArtifacts artifacts: 'build.log'
+                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: 'logs/build.log']]
+                    archiveArtifacts artifacts: 'logs/build.log'
                 }
             }
         }
@@ -89,13 +106,16 @@ pipeline {
             steps {
                 bat 'mkdir "build/docs/html"'
                 echo "Building docs on ${env.NODE_NAME}"
-                tee('build_sphinx.log') {
-                    bat script: "venv\\Scripts\\python.exe setup.py build_sphinx"                            
+                tee('logs/build_sphinx.log') {
+                    dir("source"){
+                        bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs"
+                    }
                 }
             }
             post{
                 always {
-                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'build_sphinx.log']]
+                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
+                    archiveArtifacts artifacts: 'logs/build_sphinx.log'
                 }
                 success{
                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
@@ -121,7 +141,10 @@ pipeline {
                         PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
                     }
                     steps {
-                        bat "venv\\Scripts\\tox.exe"
+                        dir("source"){
+                            bat "${WORKSPACE}\\venv\\Scripts\\tox.exe --workdir ${WORKSPACE}\\.tox"
+                        }
+                        
                     }
                 }
                 stage("Run Doctest Tests"){
@@ -129,11 +152,14 @@ pipeline {
                        equals expected: true, actual: params.TEST_RUN_DOCTEST
                     }
                     steps {
-                        bat "venv\\Scripts\\sphinx-build.exe -b doctest -d build/docs/doctrees docs/source reports/doctest"
+                        dir("source"){
+                            bat "venv\\Scripts\\sphinx-build.exe -b doctest doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
+                        }
+                        bat "move build\\docs\\output.txt ${WORKSPACE}\\reports\\doctest.txt"
                     }
                     post{
                         always {
-                            archiveArtifacts artifacts: 'reports/doctest/output.txt'
+                            archiveArtifacts artifacts: 'reports/doctest.txt'
                         }
                     }
                 }
@@ -145,17 +171,28 @@ pipeline {
                         bat 'mkdir "reports\\mypy\\html"'
                         script{
                             try{
-                                tee('mypy.log') {
-                                    def mypy_returnCode = bat returnStatus: true, script: "venv\\Scripts\\mypy.exe -p py3exiv2bind --html-report reports/mypy/html"
+                                tee('logs/mypy.log') {
+                                    dir("source"){
+                                        bat "pipenv run mypy -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html"
+                                    }
                                 }
                             } catch (exc) {
                                 echo "MyPy found some warnings"
                             }      
                         }
+                        // script{
+                        //     try{
+                        //         tee('mypy.log') {
+                        //             def mypy_returnCode = bat returnStatus: true, script: "venv\\Scripts\\mypy.exe -p py3exiv2bind --html-report reports/mypy/html"
+                        //         }
+                        //     } catch (exc) {
+                        //         echo "MyPy found some warnings"
+                        //     }      
+                        // }
                     }
                     post {
                         always {
-                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'mypy.log']], unHealthy: ''
+                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                         }
                     }
@@ -168,7 +205,10 @@ pipeline {
                 PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
             }
             steps {
-                bat "venv\\Scripts\\python.exe setup.py bdist_wheel sdist"
+                dir("source"){
+                    bat "${WORKSPACE}venv\\Scripts\\python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist bdist_wheel -d ${WORKSPACE}\\dist"
+                }
+                
                 // withEnv(['EXIV2_DIR=thirdparty\\dist\\exiv2\\share\\exiv2\\cmake']){
                     // bat """${tool 'Python3.6.3_Win64'} -m venv venv
                     //        call venv\\Scripts\\activate.bat
@@ -393,6 +433,8 @@ pipeline {
                     }
                 }
             }
+            bat "dir"
+            deleteDir()
         }
         // always {
         //     script {
@@ -414,7 +456,7 @@ pipeline {
         
         success {
             echo "Cleaning up workspace"
-            deleteDir()
+            // deleteDir()
         }
     }
 }
