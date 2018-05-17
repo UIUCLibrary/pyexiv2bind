@@ -45,6 +45,7 @@ pipeline {
                     deleteDir()
                     echo "Cleaned out build directory"
                 }
+
                 bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
                 
                 script {
@@ -162,8 +163,6 @@ pipeline {
                         dir("source"){
                             bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
                         }
-                        bat "dir /s/b build\\"
-                        bat "dir ${WORKSPACE}\\build\\docs"
                         bat "move ${WORKSPACE}\\build\\docs\\output.txt ${WORKSPACE}\\reports\\doctest.txt"
                     }
                     post{
@@ -444,8 +443,8 @@ pipeline {
                     }
                 }
             }
-            bat "dir"
-            // deleteDir()
+            // bat "dir"
+            // 
         }
         // always {
         //     script {
@@ -468,6 +467,10 @@ pipeline {
         success {
             echo "Cleaning up workspace"
             // deleteDir()
+        }
+        failure{
+            echo "Failed. Purging workspace"
+            deleteDir()
         }
     }
 }
