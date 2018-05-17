@@ -127,13 +127,13 @@ pipeline {
                 }
                 echo "Building docs on ${env.NODE_NAME}"
                 tee('logs/build_sphinx.log') {
-                    dir("source/docs"){
-                        withEnv(["PYTHONPATH=${WORKSPACE}\\build\\lib"]) {
-                            bat "set"
-                            // bat "${WORKSPACE}\\venv\\Scripts\\python -c \"import sys; print(sys.path)\""
-                            bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe -m sphinx source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
-                        }
+                    // dir("source/docs"){
+                    withEnv(["PYTHONPATH=build\\lib"]) {
+                        bat "set"
+                        bat "${WORKSPACE}\\venv\\Scripts\\python -c \"import sys; print(sys.path)\""
+                        bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe -m sphinx source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
                     }
+                    // }
                 }
             }
             post{
