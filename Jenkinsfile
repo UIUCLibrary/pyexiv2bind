@@ -19,6 +19,7 @@ pipeline {
     }
     environment {
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
+        PIP_CACHE_DIR="${WORKSPACE}\\pipcache\\"
     }
     parameters {
         booleanParam(name: "BUILD_DOCS", defaultValue: true, description: "Build documentation")
@@ -67,6 +68,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
                     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                 }
+                bat "dir"
             }
             post{
                 always{
