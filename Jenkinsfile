@@ -102,7 +102,7 @@ pipeline {
 
                 tee('logs/build.log') {
                     dir("source"){
-                            bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build -b ${WORKSPACE}\\build"
+                            bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build -b ${WORKSPACE}\\build -j ${NUMBER_OF_PROCESSORS}"
                     }
                 
                 }
@@ -172,6 +172,9 @@ pipeline {
                        equals expected: true, actual: params.TEST_RUN_DOCTEST
                     }
                     steps {
+                        dir("reports"){
+                            echo "Running doctest"
+                        }
                         dir("source"){
                             bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
                             bat "dir ${WORKSPACE}\\build\\docs"
