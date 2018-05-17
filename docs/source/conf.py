@@ -21,6 +21,7 @@ import os
 import re
 import sys
 sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath('../../_skbuild/setuptools/lib'))
 
 from setuptools.config import read_configuration
 
