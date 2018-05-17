@@ -130,8 +130,8 @@ pipeline {
                     dir("source/docs"){
                         withEnv(["PYTHONPATH=${WORKSPACE}\\build\\lib"]) {
                             bat "set"
-                            bat "${WORKSPACE}\\venv\\Scripts\\python -c \"import sys; print(sys.path)\""
-                            bat script: "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
+                            // bat "${WORKSPACE}\\venv\\Scripts\\python -c \"import sys; print(sys.path)\""
+                            bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe -m sphinx source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
                         }
                     }
                 }
