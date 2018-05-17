@@ -162,6 +162,7 @@ pipeline {
                         dir("source"){
                             bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
                         }
+                        bat "dir /s/b build\\"
                         bat "move build\\docs\\output.txt ${WORKSPACE}\\reports\\doctest.txt"
                     }
                     post{
