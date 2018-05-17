@@ -58,7 +58,7 @@ pipeline {
                 }
                 
                 bat "${tool 'CPython-3.6'} -m venv venv"
-                bat "venv\\Scripts\\pip.exe install devpi-client -r requirements.txt -r requirements-dev.txt"
+                bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt"
 
                 tee("pippackages_venv_${NODE_NAME}.log") {
                     bat "venv\\Scripts\\pip.exe list"
