@@ -37,13 +37,13 @@ pipeline {
         stage("Configure") {
             steps {
                 dir("logs"){
-                    echo "Cleaning out logs directory"
                     deleteDir()
+                    echo "Cleaned out logs directory"
                 }
                 
                 dir("build"){
-                    echo "Cleaning out build directory"
                     deleteDir()
+                    echo "Cleaned out build directory"
                 }
                 bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
                 
@@ -54,14 +54,15 @@ pipeline {
                     }
                 }
 
-                tee("pippackages_system_${NODE_NAME}.log") {
+                tee("logs/pippackages_system_${NODE_NAME}.log") {
                     bat "${tool 'CPython-3.6'} -m pip list"
                 }
                 
                 bat "${tool 'CPython-3.6'} -m venv venv"
+                bat "venv\\Scripts\\python.exe -m pip install -U pip"
                 bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt"
 
-                tee("pippackages_venv_${NODE_NAME}.log") {
+                tee("logs/pippackages_venv_${NODE_NAME}.log") {
                     bat "venv\\Scripts\\pip.exe list"
                 }
                 bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu"
@@ -72,8 +73,8 @@ pipeline {
             }
             post{
                 always{
-                    archiveArtifacts artifacts: "pippackages_system_${NODE_NAME}.log"
-                    archiveArtifacts artifacts: "pippackages_venv_${NODE_NAME}.log"
+                    archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
+                    archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
                 }
             }
 
@@ -106,7 +107,11 @@ pipeline {
                 equals expected: true, actual: params.BUILD_DOCS
             }
             steps {
-                bat 'mkdir "build/docs/html"'
+                dir("build/docs/html"){
+                    deleteDir()
+                    echo "Cleaned out build/docs/html dirctory"
+
+                }
                 echo "Building docs on ${env.NODE_NAME}"
                 tee('logs/build_sphinx.log') {
                     dir("source"){
