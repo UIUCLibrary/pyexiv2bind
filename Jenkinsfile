@@ -128,9 +128,9 @@ pipeline {
                 echo "Building docs on ${env.NODE_NAME}"
                 tee('logs/build_sphinx.log') {
                     dir("source/docs"){
-                        withEnv(["PYTHONPATH=\"${WORKSPACE}\\build\""]) {
-                            bat "set"
-                            bat script: "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe --build-dir ${WORKSPACE}\\build\\docs"
+                        withEnv(["PYTHONPATH=${WORKSPACE}"]) {
+                            // bat "set"
+                            bat script: "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe source --build-dir ${WORKSPACE}\\build\\docs"
                         }
                     }
                 }
