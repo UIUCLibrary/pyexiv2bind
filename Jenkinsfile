@@ -128,6 +128,7 @@ pipeline {
                 echo "Building docs on ${env.NODE_NAME}"
                 tee('logs/build_sphinx.log') {
                     dir("source"){
+                        bat "dir"
                         bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs"
                     }
                 }
@@ -205,6 +206,7 @@ pipeline {
                                 try{
                                     dir("source"){
                                         bat "dir"
+                                        bat "dir _skbuild\\"
                                         bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe _skbuild\\setuptools\\lib\\py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html"
                                     }
                                 } catch (exc) {
