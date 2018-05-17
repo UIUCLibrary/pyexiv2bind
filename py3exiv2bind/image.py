@@ -5,6 +5,7 @@ from . import icc
 import collections
 import typing
 
+
 class Image(core.Image):
     _INVALID_FORMATS_FOR_ICC: typing.List[str] = []
 
