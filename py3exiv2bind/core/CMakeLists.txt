@@ -32,12 +32,13 @@ add_library(glue STATIC
         glue/make_dictionary.h
         )
 
-target_include_directories(glue PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(glue PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(glue PROPERTIES
-        CXX_STANDARD 14)
+        CXX_STANDARD 14
+        )
 GENERATE_EXPORT_HEADER(glue)
 
-target_include_directories(glue PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+#target_include_directories(glue PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(glue PUBLIC exiv2lib)
 target_link_libraries(core glue)
 install(TARGETS core LIBRARY DESTINATION py3exiv2bind)

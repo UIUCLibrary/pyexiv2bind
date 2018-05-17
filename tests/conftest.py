@@ -32,5 +32,5 @@ def my_own_session_run_at_beginning(request):
         return
     else:
         print("Downloading sample images")
-        download_images(url="https://jenkins.library.illinois.edu/jenkins/userContent/sample_images.tar.gz",
+        download_images(url="https://jenkins.library.illinois.edu/userContent/sample_images.tar.gz",
                         destination=test_path)
