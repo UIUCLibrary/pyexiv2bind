@@ -45,6 +45,10 @@ pipeline {
                     deleteDir()
                     echo "Cleaned out build directory"
                 }
+                dir("reports"){
+                    deleteDir()
+                    echo "Cleaned out reports directory"
+                }
                 lock("system_python"){
                     bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
                 }
@@ -169,7 +173,11 @@ pipeline {
                             bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
                             bat "dir ${WORKSPACE}\\build\\docs"
                         }
-                        bat "move ${WORKSPACE}\\build\\docs\\output.txt ${WORKSPACE}\\reports\\doctest.txt"
+                        dir("build/docs/"){
+                            bat "dir"
+                            bat "move output.txt ${WORKSPACE}\\reports\\doctest.txt"
+                        }
+                        
                     }
                     post{
                         always {
