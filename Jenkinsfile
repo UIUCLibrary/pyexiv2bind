@@ -39,15 +39,18 @@ pipeline {
                 dir("logs"){
                     deleteDir()
                     echo "Cleaned out logs directory"
+                    bat "dir"
                 }
                 
                 dir("build"){
                     deleteDir()
                     echo "Cleaned out build directory"
+                    bat "dir"
                 }
                 dir("reports"){
                     deleteDir()
                     echo "Cleaned out reports directory"
+                    bat "dir"
                 }
                 lock("system_python"){
                     bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
