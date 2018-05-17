@@ -45,8 +45,10 @@ pipeline {
                     deleteDir()
                     echo "Cleaned out build directory"
                 }
+                lock("system_python"){
+                    bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
+                }
 
-                bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
                 
                 script {
                     dir("source"){
