@@ -204,6 +204,7 @@ pipeline {
                             tee('logs/mypy.log') {
                                 try{
                                     dir("source"){
+                                        bat "dir"
                                         bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe _skbuild\\setuptools\\lib\\py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html"
                                     }
                                 } catch (exc) {
