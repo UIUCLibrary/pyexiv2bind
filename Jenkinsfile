@@ -163,7 +163,7 @@ pipeline {
                             bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
                         }
                         bat "dir /s/b build\\"
-                        bat "${WORKSPACE}\\build\\docs"
+                        bat "dir ${WORKSPACE}\\build\\docs"
                         bat "move ${WORKSPACE}\\build\\docs\\output.txt ${WORKSPACE}\\reports\\doctest.txt"
                     }
                     post{
@@ -445,7 +445,7 @@ pipeline {
                 }
             }
             bat "dir"
-            deleteDir()
+            // deleteDir()
         }
         // always {
         //     script {
