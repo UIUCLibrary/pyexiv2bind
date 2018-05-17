@@ -132,7 +132,7 @@ pipeline {
                         bat "set"
                         bat "${WORKSPACE}\\venv\\Scripts\\python -c \"import sys; print(sys.path)\""
                         bat "dir C:\\Jenkins\\workspace\\pyexiv2bind2\\dev\\build\\lib"
-                        bat "${WORKSPACE}\\venv\\Scripts\\python -c 'import py3exiv2bind;print(py3exiv2bind.__name__)'"
+                        bat "${WORKSPACE}\\venv\\Scripts\\python -c \"import py3exiv2bind; print(py3exiv2bind.__name__)\""
                         bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe -m sphinx source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
                     }
                     // }
