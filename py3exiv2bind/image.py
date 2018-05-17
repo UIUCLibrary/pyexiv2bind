@@ -3,10 +3,10 @@ import os
 from . import core # type: ignore
 from . import icc
 import collections
-
+import typing
 
 class Image(core.Image):
-    _INVALID_FORMATS_FOR_ICC = []
+    _INVALID_FORMATS_FOR_ICC: typing.List[str] = []
 
     def __init__(self, *args, **kwargs):
         """Loads the file to get information about it."""

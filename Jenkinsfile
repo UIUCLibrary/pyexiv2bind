@@ -203,7 +203,7 @@ pipeline {
                             tee('logs/mypy.log') {
                                 try{
                                     dir("source"){
-                                        bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html"
+                                        bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe _skbuild\\setuptools\\lib\\py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html"
                                     }
                                 } catch (exc) {
                                     echo "MyPy found some warnings"
