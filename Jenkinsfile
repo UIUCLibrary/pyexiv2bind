@@ -489,9 +489,5 @@ pipeline {
             echo "Cleaning up workspace"
             // deleteDir()
         }
-        failure{
-            echo "Failed. Purging workspace"
-            deleteDir()
-        }
     }
 }
