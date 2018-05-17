@@ -62,7 +62,6 @@ pipeline {
                 }
                 
                 bat "${tool 'CPython-3.6'} -m venv venv"
-                bat "dir"
                 bat "venv\\Scripts\\python.exe -m pip install -U pip"
                 bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt"
 
@@ -79,6 +78,9 @@ pipeline {
                 always{
                     archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
                     archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
+                }
+                failure {
+                    deleteDir()
                 }
             }
 
