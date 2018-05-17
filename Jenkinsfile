@@ -130,7 +130,7 @@ pipeline {
                     dir("source/docs"){
                         withEnv(["PYTHONPATH=\"${WORKSPACE}\\build\""]) {
                             bat "set"
-                            bat script: "${WORKSPACE}\\venv\\Scripts\\build_sphinx.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs"
+                            bat script: "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe --build-dir ${WORKSPACE}\\build\\docs"
                         }
                     }
                 }
