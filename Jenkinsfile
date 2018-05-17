@@ -196,8 +196,9 @@ pipeline {
                         equals expected: true, actual: params.TEST_RUN_MYPY
                     }
                     steps{
-                        dir("reports\\mypy\\html"){
+                        dir("reports/mypy/html"){
                             deleteDir()
+                            bat "dir"
                         }
                         script{
                             tee('logs/mypy.log') {
