@@ -168,17 +168,19 @@ pipeline {
                         equals expected: true, actual: params.TEST_RUN_MYPY
                     }
                     steps{
-                        bat 'mkdir "reports\\mypy\\html"'
+                        dir("reports\\mypy\\html"){
+                            deleteDir()
+                        }
                         script{
-                            try{
-                                tee('logs/mypy.log') {
+                            tee('logs/mypy.log') {
+                                try{
                                     dir("source"){
-                                        bat "pipenv run mypy -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html"
+                                        bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html"
                                     }
+                                } catch (exc) {
+                                    echo "MyPy found some warnings"
                                 }
-                            } catch (exc) {
-                                echo "MyPy found some warnings"
-                            }      
+                            }
                         }
                         // script{
                         //     try{
@@ -206,7 +208,7 @@ pipeline {
             }
             steps {
                 dir("source"){
-                    bat "${WORKSPACE}venv\\Scripts\\python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist bdist_wheel -d ${WORKSPACE}\\dist"
+                    bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist bdist_wheel -d ${WORKSPACE}\\dist"
                 }
                 
                 // withEnv(['EXIV2_DIR=thirdparty\\dist\\exiv2\\share\\exiv2\\cmake']){
