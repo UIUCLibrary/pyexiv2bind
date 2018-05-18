@@ -139,7 +139,7 @@ pipeline {
                     // Add a line to config file so auto docs look in the build folder
                     def sphinx_config_file = 'source/docs/source/conf.py'
                     def extra_line = "sys.path.insert(0, os.path.abspath('${WORKSPACE}/build/lib'))"
-                    def readContent = readFile ${sphinx_config_file}
+                    def readContent = readFile "${sphinx_config_file}"
                     echo "Adding \"${extra_line}\" to ${sphinx_config_file}."
                     writeFile file: "${sphinx_config_file}", text: readContent+"\r\n${extra_line}\r\n"
 
