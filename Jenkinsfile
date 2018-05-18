@@ -43,9 +43,10 @@ pipeline {
                         checkout scm
                     }
                 }
+                echo "looking in ${pwd tmp: true}"
+                bat "dir ${pwd tmp: true}"
+                
                 dir("logs"){
-                    echo "looking in ${pwd tmp: true}"
-                    bat "dir ${pwd tmp: true}"
                     deleteDir()
                     echo "Cleaned out logs directory"
                     bat "dir"
@@ -527,6 +528,8 @@ pipeline {
         always {
             touch file: "${pwd tmp: true}/test.txt", timestamp: 0
             bat "dir /s/b *.*"
+            echo "looking in ${pwd tmp: true}"
+            bat "dir ${pwd tmp: true}"
         //     // echo "Cleaning up workspace"
         //     // deleteDir()
         }
