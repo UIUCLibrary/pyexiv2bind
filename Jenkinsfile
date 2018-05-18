@@ -54,8 +54,6 @@ pipeline {
                 }
                 dir("logs"){
                     deleteDir()
-                    echo "Cleaned out logs directory"
-                    bat "dir"
                 }
                 
                 dir("build"){
@@ -282,8 +280,8 @@ pipeline {
                         always {
                             dir(pwd(tmp: true)){
                                 warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
-                                publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                             }
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                         }
                     }
                 }
