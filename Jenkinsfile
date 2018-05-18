@@ -490,7 +490,7 @@ pipeline {
             script {
                 if(fileExists('source/setup.py')){
                     dir("source"){
-                        bat "venv\\Scripts\\python.exe setup.py clean --all"
+                        bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py clean --all"
                     }
                 }
             }
