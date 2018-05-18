@@ -95,6 +95,7 @@ pipeline {
             }
             post{
                 always{
+                    bat "dir /s/b ${pwd tmp: true}"
                     archiveArtifacts artifacts: "${pwd tmp: true}\\logs\\pippackages_system_${NODE_NAME}.log"
                     archiveArtifacts artifacts: "${pwd tmp: true}\\logs\\pippackages_venv_${NODE_NAME}.log"
                 }
@@ -531,7 +532,7 @@ pipeline {
             touch file: "${pwd tmp: true}/test.txt", timestamp: 0
             bat "dir /s/b *.*"
             echo "looking in ${pwd tmp: true}"
-            bat "dir ${pwd tmp: true}"
+            bat "dir /s/b ${pwd tmp: true}"
         //     // echo "Cleaning up workspace"
         //     // deleteDir()
         }
