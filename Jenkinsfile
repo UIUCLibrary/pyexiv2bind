@@ -127,18 +127,25 @@ pipeline {
                 }
                 echo "Building docs on ${env.NODE_NAME}"
                 tee('logs/build_sphinx.log') {
-                    // dir("source/docs"){
-                    withEnv(["PYTHONPATH=build\\lib"]) {
-                        bat "set"
-                        bat "${WORKSPACE}\\venv\\Scripts\\python -c \"import sys; print(sys.path)\""
-                        bat "dir C:\\Jenkins\\workspace\\pyexiv2bind2\\dev\\build\\lib"
-                        bat "${WORKSPACE}\\venv\\Scripts\\python -c \"import py3exiv2bind; print(py3exiv2bind.__name__)\""
-                        bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe -m sphinx source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
+                    dir("source"){
+                        bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py develop"
+                        bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs"
+                    }
+                        
+                        // bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe -m sphinx source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
                     }
                     // }
                 }
             }
             post{
+                cleanup{
+                    bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py develop --uninstall"
+                    
+                    dir("py3exiv2bind"){
+                        bat "del *.pyd"
+                    }
+                    
+                }
                 always {
                     warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
                     archiveArtifacts artifacts: 'logs/build_sphinx.log'
