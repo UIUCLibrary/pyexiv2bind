@@ -101,7 +101,7 @@ pipeline {
             }
             post{
                 always{
-                    bat "dir /s/b ${pwd tmp: true}"
+                    
                     dir(pwd(tmp: true)){
                     // archiveArtifacts artifacts: "${pwd tmp: true}\\logs\\pippackages_system_${NODE_NAME}.log"
                     // archiveArtifacts artifacts: "${pwd tmp: true}\\logs\\pippackages_venv_${NODE_NAME}.log"
@@ -124,7 +124,7 @@ pipeline {
                 echo "Package name: ${name}"
                 echo "Version     : ${version}"
 
-                tee('logs/build.log') {
+                tee("${pwd tmp: true}/logs/build.log") {
                     dir("source"){
                             bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build -b ${WORKSPACE}\\build -j ${NUMBER_OF_PROCESSORS}"
                     }
@@ -134,8 +134,10 @@ pipeline {
             post{
                 always{
                     // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'build.log']]
-                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: 'logs/build.log']]
-                    archiveArtifacts artifacts: 'logs/build.log'
+                    dir(pwd(tmp: true)){
+                        warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: 'logs/build.log']]
+                        archiveArtifacts artifacts: 'logs/build.log'
+                    }
                 }
             }
         }
@@ -164,7 +166,7 @@ pipeline {
                 }
                 echo "Building docs on ${env.NODE_NAME}"
                 bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe --version"
-                tee('logs/build_sphinx.log') {
+                tee("${pwd tmp: true}/logs/build_sphinx.log") {
                     dir("build/lib"){
                         bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
     
@@ -180,19 +182,11 @@ pipeline {
                 }
             }
             post{
-                // cleanup{
-                //     dir("source"){
-                //         // bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py develop --uninstall"
-                //         // dir("py3exiv2bind"){
-                //             // bat "del *.pyd"
-                            
-                //         // }
-                //     }
-                    
-                // }
                 always {
-                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
-                    archiveArtifacts artifacts: 'logs/build_sphinx.log'
+                    dir(pwd(tmp: true)){
+                        warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
+                        archiveArtifacts artifacts: 'logs/build_sphinx.log'
+                    }
                 }
                 success{
                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
@@ -263,7 +257,7 @@ pipeline {
                             bat "dir"
                         }
                         script{
-                            tee('logs/mypy.log') {
+                            tee("${pwd tmp: true}/logs/mypy.log") {
                                 try{
                                     dir("source"){
                                         bat "dir"
@@ -286,8 +280,10 @@ pipeline {
                     }
                     post {
                         always {
-                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                            dir(pwd(tmp: true)){
+                                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
+                                publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                            }
                         }
                     }
                 }
