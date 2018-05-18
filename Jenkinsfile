@@ -162,7 +162,7 @@ pipeline {
                 bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe --version"
                 tee("${pwd tmp: true}/logs/build_sphinx.log") {
                     dir("build/lib"){
-                        bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
+                        bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
     
                     }
                 }
