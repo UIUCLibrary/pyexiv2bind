@@ -43,9 +43,15 @@ pipeline {
                         checkout scm
                     }
                 }
-                echo "looking in ${pwd tmp: true}"
-                bat "dir ${pwd tmp: true}"
+                // echo "looking in ${pwd tmp: true}"
+                // bat "dir ${pwd tmp: true}"
                 
+                dir(pwd(tmp: true)){
+                    dir("logs"){
+                        deleteDir()
+                    }
+                
+                }
                 dir("logs"){
                     deleteDir()
                     echo "Cleaned out logs directory"
