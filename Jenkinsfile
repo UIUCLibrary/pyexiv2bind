@@ -305,7 +305,7 @@ pipeline {
                 script {
                         bat "venv\\Scripts\\devpi.exe upload --from-dir dist"
                         try {
-                            bat "venv\\Scripts\\devpi.exe upload --only-docs --from-dir dist"
+                            bat "venv\\Scripts\\devpi.exe upload --only-docs --from-dir build"
                         } catch (exc) {
                             echo "Unable to upload to devpi with docs."
                         }
