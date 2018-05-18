@@ -145,7 +145,9 @@ pipeline {
                     dir("source"){
                         bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py develop --uninstall"
                         dir("py3exiv2bind"){
+                            bat "dir"
                             bat "del *.pyd"
+                            bat "dir"
                         }
                     }
                     
