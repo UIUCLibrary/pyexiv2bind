@@ -151,7 +151,6 @@ pipeline {
                 bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe --version"
                 tee('logs/build_sphinx.log') {
                     dir("build/lib"){
-                        bat "dir /s/b *.*"
                         bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
     
                     }
@@ -522,7 +521,7 @@ pipeline {
             }
         } 
         always {
-            bat "dir"
+            bat "dir /s/b *.*"
         //     // echo "Cleaning up workspace"
         //     // deleteDir()
         }
