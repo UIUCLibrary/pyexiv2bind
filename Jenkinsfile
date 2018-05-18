@@ -133,7 +133,7 @@ pipeline {
                     }
                         
                         // bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe -m sphinx source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
-                    }
+                    // }
                     // }
                 }
             }
