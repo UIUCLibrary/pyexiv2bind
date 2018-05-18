@@ -145,9 +145,8 @@ pipeline {
                     dir("source"){
                         bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py develop --uninstall"
                         dir("py3exiv2bind"){
-                            bat "dir"
                             bat "del *.pyd"
-                            bat "dir"
+                            
                         }
                     }
                     
@@ -199,9 +198,9 @@ pipeline {
                         dir("reports"){
                             echo "Running doctest"
                         }
-                        dir("source"){
-                            bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
-                            bat "dir ${WORKSPACE}\\build\\docs"
+                        dir("build/lib"){
+                            bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
+        
                         }
                         dir("build/docs/"){
                             bat "dir"
