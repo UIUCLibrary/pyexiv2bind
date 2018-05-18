@@ -96,8 +96,13 @@ pipeline {
             post{
                 always{
                     bat "dir /s/b ${pwd tmp: true}"
-                    archiveArtifacts artifacts: "${pwd tmp: true}\\logs\\pippackages_system_${NODE_NAME}.log"
-                    archiveArtifacts artifacts: "${pwd tmp: true}\\logs\\pippackages_venv_${NODE_NAME}.log"
+                    dir(pwd(tmp: true)){
+                    // archiveArtifacts artifacts: "${pwd tmp: true}\\logs\\pippackages_system_${NODE_NAME}.log"
+                    // archiveArtifacts artifacts: "${pwd tmp: true}\\logs\\pippackages_venv_${NODE_NAME}.log"
+                        archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
+                        archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
+
+                    }
                 }
                 failure {
                     deleteDir()
