@@ -29,7 +29,6 @@ pipeline {
         booleanParam(name: "TEST_RUN_MYPY", defaultValue: true, description: "Run MyPy static analysis")
         booleanParam(name: "TEST_RUN_TOX", defaultValue: true, description: "Run Tox Tests")
         
-        // booleanParam(name: "ADDITIONAL_TESTS", defaultValue: true, description: "Run additional tests")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         choice(choices: 'None\nrelease', description: "Release the build to production. Only available in the Master branch", name: 'RELEASE')
         string(name: 'URL_SUBFOLDER', defaultValue: "py3exiv2bind", description: 'The directory that the docs should be saved under')
@@ -43,8 +42,7 @@ pipeline {
                         checkout scm
                     }
                 }
-                // echo "looking in ${pwd tmp: true}"
-                // bat "dir ${pwd tmp: true}"
+
                 
                 dir(pwd(tmp: true)){
                     dir("logs"){
@@ -101,8 +99,6 @@ pipeline {
                 always{
                     
                     dir(pwd(tmp: true)){
-                    // archiveArtifacts artifacts: "${pwd tmp: true}\\logs\\pippackages_system_${NODE_NAME}.log"
-                    // archiveArtifacts artifacts: "${pwd tmp: true}\\logs\\pippackages_venv_${NODE_NAME}.log"
                         archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
                         archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
 
@@ -169,14 +165,6 @@ pipeline {
                         bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
     
                     }
-                    // dir("source"){
-                    //     bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py develop -b ${WORKSPACE}\\build"
-                    //     bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs"
-                    // }
-                        
-                        // bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe -m sphinx source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
-                    // }
-                    // }
                 }
             }
             post{
@@ -266,15 +254,6 @@ pipeline {
                                 }
                             }
                         }
-                        // script{
-                        //     try{
-                        //         tee('mypy.log') {
-                        //             def mypy_returnCode = bat returnStatus: true, script: "venv\\Scripts\\mypy.exe -p py3exiv2bind --html-report reports/mypy/html"
-                        //         }
-                        //     } catch (exc) {
-                        //         echo "MyPy found some warnings"
-                        //     }      
-                        // }
                     }
                     post {
                         always {
@@ -296,27 +275,15 @@ pipeline {
                 dir("source"){
                     bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist bdist_wheel -d ${WORKSPACE}\\dist"
                 }
-                
-                // withEnv(['EXIV2_DIR=thirdparty\\dist\\exiv2\\share\\exiv2\\cmake']){
-                    // bat """${tool 'Python3.6.3_Win64'} -m venv venv
-                    //        call venv\\Scripts\\activate.bat
-                    //        pip install -r requirements.txt
-                    //        pip install -r requirements-dev.txt
-                    //        pip list > installed_packages.txt
-                    //        python setup.py sdist bdist_wheel
-                    //        """
-                    // archiveArtifacts artifacts: "installed_packages.txt"
-                    dir("dist") {
-                        archiveArtifacts artifacts: "*.whl", fingerprint: true
-                        archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
-                    }
-                // }
+
+                dir("dist") {
+                    archiveArtifacts artifacts: "*.whl", fingerprint: true
+                    archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
+                }
             }
         }
         stage("Deploy to Devpi Staging") {
-            // when {
-            //     expression { params.DEPLOY_DEVPI == true && (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev")}
-            // }
+
             when {
                 allOf{
                     equals expected: true, actual: params.DEPLOY_DEVPI
@@ -355,9 +322,7 @@ pipeline {
                 }
             }
 
-            // when {
-            //     expression { params.DEPLOY_DEVPI == true && (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev")}
-            // }
+
             parallel {
                 stage("Source Distribution: .tar.gz") {
                     environment {
@@ -370,13 +335,8 @@ pipeline {
                     
                         }
                         bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                        // withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        //     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                        //     bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                        // }
-                        script {
-                            // def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                            // def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()                            
+
+                        script {                          
                             def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s tar.gz  --verbose"
                             echo "return code was ${devpi_test_return_code}"
                         }
@@ -397,16 +357,9 @@ pipeline {
                         echo "Testing Source zip package in devpi"
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                             bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                            
                         }
                         bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                        // withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        //     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                        //     bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                        // }
                         script {
-                            // def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                            // def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --version").trim()
                             def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s zip --verbose"
                             echo "return code was ${devpi_test_return_code}"
                         }
@@ -435,10 +388,6 @@ pipeline {
                             bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"                        
                         }
                         bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                        // withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        //     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                        //     bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                        // }
                         script{
                             def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s whl  --verbose"
                             echo "return code was ${devpi_test_return_code}"
@@ -456,8 +405,6 @@ pipeline {
                 success {
                     echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
                     script {
-                        // def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                        // def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                             bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                             bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
@@ -477,8 +424,6 @@ pipeline {
             }
             steps {
                 script {
-                    // def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                    // def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                         bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                         bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
@@ -506,41 +451,17 @@ pipeline {
                             deleteDir()
                         }   
                     }
-                }
-            }
-            // anyOf {
-            //     equals expected: "master", actual: env.BRANCH_NAME
-            //     equals expected: "dev", actual: env.BRANCH_NAME
-            // }
-
-            script {
-                
+                }                
                 if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                         bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
                         bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
                     }
 
-                    // def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                    // def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
-
-                    try {
-                        def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${name}==${version}"
-                        echo "Devpi remove exited with code ${devpi_remove_return_code}"
-
-                    } catch (Exception ex) {
-                        echo "Failed to remove ${name}==${version} from DS_Jenkins/${env.BRANCH_NAME}_staging"                       
-                    }
+                    def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${name}==${version}"
+                    echo "Devpi remove exited with code ${devpi_remove_return_code}."
                 }
             }
         } 
-        always {
-            touch file: "${pwd tmp: true}/test.txt", timestamp: 0
-            bat "dir /s/b *.*"
-            echo "looking in ${pwd tmp: true}"
-            bat "dir /s/b ${pwd tmp: true}"
-        //     // echo "Cleaning up workspace"
-        //     // deleteDir()
-        }
     }
 }
