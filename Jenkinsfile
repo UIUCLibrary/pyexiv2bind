@@ -488,8 +488,12 @@ pipeline {
     post {
         cleanup{
             echo "Cleaning up."
-            dir("source"){
-                bat "venv\\Scripts\\python.exe setup.py clean --all"
+            script {
+                if(fileExists('source/setup.py')){
+                    dir("source"){
+                        bat "venv\\Scripts\\python.exe setup.py clean --all"
+                    }
+                }
             }
             // anyOf {
             //     equals expected: "master", actual: env.BRANCH_NAME
@@ -517,9 +521,10 @@ pipeline {
                 }
             }
         } 
-        success {
-            echo "Cleaning up workspace"
-            // deleteDir()
+        always {
+            bat "dir"
+        //     // echo "Cleaning up workspace"
+        //     // deleteDir()
         }
     }
 }
