@@ -30,8 +30,10 @@ pipeline {
         booleanParam(name: "TEST_RUN_TOX", defaultValue: true, description: "Run Tox Tests")
         
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: true, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
-        choice(choices: 'None\nrelease', description: "Release the build to production. Only available in the Master branch", name: 'RELEASE')
+        booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to https://devpi.library.illinois.edu/production/release")
+        // choice(choices: 'None\nrelease', description: "Release the build to production. Only available in the Master branch", name: 'RELEASE')
         string(name: 'URL_SUBFOLDER', defaultValue: "py3exiv2bind", description: 'The directory that the docs should be saved under')
+        booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation")
     }
     stages {
         stage("Configure") {
@@ -418,24 +420,91 @@ pipeline {
                 }
             }
         }
-        stage("Release to production") {
-            when {
-                expression { params.RELEASE != "None" && env.BRANCH_NAME == "master" }
-            }
-            steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                        bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                        bat "venv\\Scripts\\devpi.exe push ${name}==${version} production/${params.RELEASE}"
+        stage("Deploy"){
+            parallel {
+                stage("Deploy Online Documentation") {
+                    when{
+                        equals expected: true, actual: params.DEPLOY_DOCS
                     }
-
+                    steps{
+                        script {
+                            if(!params.BUILD_DOCS){
+                                bat "pipenv run python setup.py build_sphinx"
+                            }
+                        }
+                        
+                        dir("build/docs/html/"){
+                            input 'Update project documentation?'
+                            sshPublisher(
+                                publishers: [
+                                    sshPublisherDesc(
+                                        configName: 'apache-ns - lib-dccuser-updater', 
+                                        sshLabel: [label: 'Linux'], 
+                                        transfers: [sshTransfer(excludes: '', 
+                                        execCommand: '', 
+                                        execTimeout: 120000, 
+                                        flatten: false, 
+                                        makeEmptyDirs: false, 
+                                        noDefaultExcludes: false, 
+                                        patternSeparator: '[, ]+', 
+                                        remoteDirectory: "${params.DEPLOY_DOCS_URL_SUBFOLDER}", 
+                                        remoteDirectorySDF: false, 
+                                        removePrefix: '', 
+                                        sourceFiles: '**')], 
+                                    usePromotionTimestamp: false, 
+                                    useWorkspaceInPromotion: false, 
+                                    verbose: true
+                                    )
+                                ]
+                            )
+                        }
+                    }
                 }
-                node("Linux"){
-                    updateOnlineDocs url_subdomain: params.URL_SUBFOLDER, stash_name: "HTML Documentation"
+                stage("Deploy to DevPi Production") {
+                    when {
+                        allOf{
+                            equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
+                            equals expected: true, actual: params.DEPLOY_DEVPI
+                            branch "master"
+                        }
+                    }
+                    steps {
+                        script {
+                            input "Release ${name} ${version} to DevPi Production?"
+                            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                                bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"         
+                            }
+                            bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                            bat "venv\\Scripts\\devpi.exe push ${name}==${version} production/release"
+
+                            // withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                            //     bat "devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                            //     bat "devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                            //     bat "devpi push ${name}==${version} production/release"
+                            // }
+                        }
+                    }
                 }
             }
         }
+        // stage("Release to production") {
+        //     when {
+        //         expression { params.RELEASE != "None" && env.BRANCH_NAME == "master" }
+        //     }
+        //     steps {
+        //         script {
+        //             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+        //                 bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+        //                 bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+        //                 bat "venv\\Scripts\\devpi.exe push ${name}==${version} production/${params.RELEASE}"
+        //             }
+
+        //         }
+        //         node("Linux"){
+        //             updateOnlineDocs url_subdomain: params.URL_SUBFOLDER, stash_name: "HTML Documentation"
+        //         }
+        //     }
+        // }
 
     }
     post {
