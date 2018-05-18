@@ -78,7 +78,7 @@ pipeline {
                     bat "${tool 'CPython-3.6'} -m pip list"
                 }
                 bat "dir ${pwd tmp: true}"
-                bat "dir ${pwd tmp: true}/logs"
+                bat "dir ${pwd tmp: true}\\logs"
                 
                 bat "${tool 'CPython-3.6'} -m venv venv"
                 bat "venv\\Scripts\\python.exe -m pip install -U pip"
@@ -95,8 +95,8 @@ pipeline {
             }
             post{
                 always{
-                    archiveArtifacts artifacts: "${pwd tmp: true}/logs/pippackages_system_${NODE_NAME}.log"
-                    archiveArtifacts artifacts: "${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log"
+                    archiveArtifacts artifacts: "${pwd tmp: true}\\logs\\pippackages_system_${NODE_NAME}.log"
+                    archiveArtifacts artifacts: "${pwd tmp: true}\\logs\\pippackages_venv_${NODE_NAME}.log"
                 }
                 failure {
                     deleteDir()
