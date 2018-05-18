@@ -77,6 +77,8 @@ pipeline {
                 tee("${pwd tmp: true}/logs/pippackages_system_${NODE_NAME}.log") {
                     bat "${tool 'CPython-3.6'} -m pip list"
                 }
+                bat "dir ${pwd tmp: true}"
+                bat "dir ${pwd tmp: true}/logs"
                 
                 bat "${tool 'CPython-3.6'} -m venv venv"
                 bat "venv\\Scripts\\python.exe -m pip install -U pip"
