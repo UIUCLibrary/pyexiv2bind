@@ -73,7 +73,7 @@ pipeline {
                     }
                 }
 
-                tee("logs/pippackages_system_${NODE_NAME}.log") {
+                tee("${pwd tmp: true}/logs/pippackages_system_${NODE_NAME}.log") {
                     bat "${tool 'CPython-3.6'} -m pip list"
                 }
                 
@@ -81,7 +81,7 @@ pipeline {
                 bat "venv\\Scripts\\python.exe -m pip install -U pip"
                 bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
 
-                tee("logs/pippackages_venv_${NODE_NAME}.log") {
+                tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
                     bat "venv\\Scripts\\pip.exe list"
                 }
                 bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu"
@@ -92,8 +92,8 @@ pipeline {
             }
             post{
                 always{
-                    archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
-                    archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
+                    archiveArtifacts artifacts: "${pwd tmp: true}/logs/pippackages_system_${NODE_NAME}.log"
+                    archiveArtifacts artifacts: "${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log"
                 }
                 failure {
                     deleteDir()
