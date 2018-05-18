@@ -44,6 +44,8 @@ pipeline {
                     }
                 }
                 dir("logs"){
+                    echo "looking in ${pwd tmp: true}"
+                    bat "dir ${pwd tmp: true}"
                     deleteDir()
                     echo "Cleaned out logs directory"
                     bat "dir"
