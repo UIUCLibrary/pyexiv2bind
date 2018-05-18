@@ -119,6 +119,9 @@ pipeline {
             when {
                 equals expected: true, actual: params.BUILD_DOCS
             }
+            environment {
+                PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
+            }
             steps {
                 dir("build/docs/html"){
                     deleteDir()
@@ -453,6 +456,9 @@ pipeline {
     post {
         cleanup{
             echo "Cleaning up."
+            dir("source"){
+                bat "venv\\Scripts\\python.exe setup.py clean --all"
+            }
             // anyOf {
             //     equals expected: "master", actual: env.BRANCH_NAME
             //     equals expected: "dev", actual: env.BRANCH_NAME
@@ -478,27 +484,7 @@ pipeline {
                     }
                 }
             }
-            // bat "dir"
-            // 
-        }
-        // always {
-        //     script {
-        //         def name = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --name").trim()
-        //         def version = bat(returnStdout: true, script: "venv\\Scripts\\python.exe setup.py --version").trim()
-        //         try {
-        //             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-        //                 bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-        //                 bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-        //                 bat "venv\\Scripts\\devpi.exe remove -y ${name}==${version}"
-        //             }
-        //         } catch (err) {
-        //             echo "Unable to clean up ${env.BRANCH_NAME}_staging"
-        //         }
-
-
-        //     }
-        // }
-        
+        } 
         success {
             echo "Cleaning up workspace"
             // deleteDir()
