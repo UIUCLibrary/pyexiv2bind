@@ -183,6 +183,11 @@ pipeline {
                         }
                         
                     }
+                    post {
+                        failure {
+                            bat "@RD /S /Q ${WORKSPACE}\\.tox"
+                        }
+                    }
                 }
                 stage("Run Doctest Tests"){
                     when {
