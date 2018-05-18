@@ -22,6 +22,7 @@ pipeline {
         PIP_CACHE_DIR="${WORKSPACE}\\pipcache\\"
     }
     parameters {
+        booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
         booleanParam(name: "BUILD_DOCS", defaultValue: true, description: "Build documentation")
         booleanParam(name: "TEST_RUN_DOCTEST", defaultValue: true, description: "Test documentation")
         booleanParam(name: "TEST_RUN_FLAKE8", defaultValue: true, description: "Run Flake8 static analysis")
@@ -36,7 +37,12 @@ pipeline {
     stages {
         stage("Configure") {
             steps {
-                deleteDir()
+                script{
+                    if (params.FRESH_WORKSPACE == true){
+                        deleteDir()
+                        checkout scm
+                    }
+                }
                 dir("logs"){
                     deleteDir()
                     echo "Cleaned out logs directory"
