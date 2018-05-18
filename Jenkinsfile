@@ -129,8 +129,10 @@ pipeline {
 
                 }
                 echo "Building docs on ${env.NODE_NAME}"
+                bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe --version"
                 tee('logs/build_sphinx.log') {
                     dir("build/lib"){
+                        bat "dir"
                         bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
     
                     }
