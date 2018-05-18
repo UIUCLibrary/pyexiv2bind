@@ -97,8 +97,8 @@ pipeline {
                 PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
             }
             steps {
-                echo "name = ${name}"
-                echo "version = ${version}"
+                echo "Package name: ${name}"
+                echo "Version     : ${version}"
 
                 tee('logs/build.log') {
                     dir("source"){
