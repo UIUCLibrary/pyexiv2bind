@@ -525,6 +525,7 @@ pipeline {
             }
         } 
         always {
+            touch file: "${pwd tmp: true}/test.txt", timestamp: 0
             bat "dir /s/b *.*"
         //     // echo "Cleaning up workspace"
         //     // deleteDir()
