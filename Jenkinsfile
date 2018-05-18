@@ -502,6 +502,7 @@ pipeline {
                         try{
                             bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py clean --all"
                         } catch (Exception ex) {
+                            echo "Unable to succesfully run clean. Purging source directory."
                             deleteDir()
                         }   
                     }
