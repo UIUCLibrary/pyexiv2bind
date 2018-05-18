@@ -130,10 +130,14 @@ pipeline {
                 }
                 echo "Building docs on ${env.NODE_NAME}"
                 tee('logs/build_sphinx.log') {
-                    dir("source"){
-                        bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py develop -b ${WORKSPACE}\\build"
-                        bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs"
+                    dir("build/lib"){
+                        bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
+    
                     }
+                    // dir("source"){
+                    //     bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py develop -b ${WORKSPACE}\\build"
+                    //     bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs"
+                    // }
                         
                         // bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe -m sphinx source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
                     // }
@@ -141,16 +145,16 @@ pipeline {
                 }
             }
             post{
-                cleanup{
-                    dir("source"){
-                        bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py develop --uninstall"
-                        dir("py3exiv2bind"){
-                            bat "del *.pyd"
+                // cleanup{
+                //     dir("source"){
+                //         // bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py develop --uninstall"
+                //         // dir("py3exiv2bind"){
+                //             // bat "del *.pyd"
                             
-                        }
-                    }
+                //         // }
+                //     }
                     
-                }
+                // }
                 always {
                     warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
                     archiveArtifacts artifacts: 'logs/build_sphinx.log'
