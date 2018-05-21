@@ -85,7 +85,7 @@ pipeline {
                 bat "dir ${pwd tmp: true}\\logs"
                 
                 bat "${tool 'CPython-3.6'} -m venv venv"
-                bat "venv\\Scripts\\python.exe -m pip install -U pip"
+                bat "call venv\\Scripts\\activate.bat && python -m pip install -U pip"
                 bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
 
                 tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
