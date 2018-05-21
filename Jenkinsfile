@@ -87,10 +87,11 @@ pipeline {
                 bat "${tool 'CPython-3.6'} -m venv venv"
                 script {
                     try {
-                        bat "call venv\\Scripts\\activate.bat && python -m pip install -U pip"
+                        bat "call venv\\Scripts\\python.exe -m pip install -U pip"
                     }
                     catch (exc) {
-                        bat "call venv\\Scripts\\activate.bat && python -m pip install -U pip --no-cache-dir"
+                        bat "${tool 'CPython-3.6'} -m venv venv"
+                        bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                     }
                     
 
