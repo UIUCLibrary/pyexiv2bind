@@ -85,7 +85,18 @@ pipeline {
                 bat "dir ${pwd tmp: true}\\logs"
                 
                 bat "${tool 'CPython-3.6'} -m venv venv"
-                bat "venv\\Scripts\\python.exe -m pip install -U pip"
+                script {
+                    try {
+                        bat "call venv\\Scripts\\python.exe -m pip install -U pip"
+                    }
+                    catch (exc) {
+                        bat "${tool 'CPython-3.6'} -m venv venv"
+                        bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+                    }
+                    
+
+                }
+                
                 bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
 
                 tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
@@ -305,7 +316,7 @@ pipeline {
                 script {
                         bat "venv\\Scripts\\devpi.exe upload --from-dir dist"
                         try {
-                            bat "venv\\Scripts\\devpi.exe upload --only-docs --from-dir dist"
+                            bat "venv\\Scripts\\devpi.exe upload --only-docs --from-dir build"
                         } catch (exc) {
                             echo "Unable to upload to devpi with docs."
                         }

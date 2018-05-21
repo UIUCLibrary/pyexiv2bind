@@ -59,7 +59,9 @@ endif ()
 
 FetchContent_Declare(
         libexiv2
-        GIT_REPOSITORY https://github.com/UIUCLibrary/exiv2.git
+        GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
+#        GIT_REPOSITORY https://github.com/UIUCLibrary/exiv2.git
+        PATCH_COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/Make_Subproject_possible.patch
 )
 FetchContent_GetProperties(libexiv2)
 if (NOT libexiv2_POPULATED)
