@@ -4,6 +4,7 @@ import org.ds.*
 def PKG_NAME = "unknown"
 def PKG_VERSION = "unknown"
 def DOC_ZIP_FILENAME = "doc.zip"
+def junit_filename = "junit.xml"
 def REPORT_DIR = ""
 def VENV_ROOT = ""
 def VENV_PYTHON = ""
@@ -88,6 +89,11 @@ pipeline {
                     }
                 }
 
+                script{
+                    DOC_ZIP_FILENAME = "${PKG_NAME}-${PKG_VERSION}.doc.zip"
+                    junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
+                }
+
                 tee("${pwd tmp: true}/logs/pippackages_system_${NODE_NAME}.log") {
                     bat "${tool 'CPython-3.6'} -m pip list"
                 }
@@ -95,6 +101,13 @@ pipeline {
                 bat "dir ${pwd tmp: true}\\logs"
                 
                 bat "${tool 'CPython-3.6'} -m venv venv"
+                
+                script{
+                    VENV_ROOT = "${WORKSPACE}\\venv\\"
+                    VENV_PYTHON = "${WORKSPACE}\\venv\\Scripts\\python.exe"
+                    VENV_PIP = "${WORKSPACE}\\venv\\Scripts\\pip.exe"
+                }
+
                 script {
                     try {
                         bat "call venv\\Scripts\\python.exe -m pip install -U pip"
