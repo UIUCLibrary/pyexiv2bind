@@ -3,6 +3,7 @@
 import org.ds.*
 def PKG_NAME = "unknown"
 def PKG_VERSION = "unknown"
+def DOC_ZIP_FILENAME = "doc.zip"
 def REPORT_DIR = ""
 def VENV_ROOT = ""
 def VENV_PYTHON = ""
