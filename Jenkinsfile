@@ -548,29 +548,76 @@ VirtualEnv Pip executable       = ${VENV_PIP}
 
     }
     post {
-        cleanup{
-            echo "Cleaning up."
+        cleanup {
+            dir('_skbuild\\cmake-build\\_deps') {
+                deleteDir()
+            }
+            // bat "venv\\Scripts\\python.exe setup.py clean --all"
+            
+            dir('dist') {
+                deleteDir()
+            }
+
+            dir('build') {
+                deleteDir()
+            }
             script {
                 if(fileExists('source/setup.py')){
                     dir("source"){
                         try{
-                            bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py clean --all"
-                        } catch (Exception ex) {
-                            echo "Unable to succesfully run clean. Purging source directory."
-                            deleteDir()
-                        }   
+                            bat "${VENV_PYTHON} setup.py clean --all"
+                            } catch (Exception ex) {
+                            // echo "Unable to succesfully run clean. Purging source directory."
+                                dir("_skbuild"){
+                                    deleteDir()
+                                }
+                                try{
+                                    bat "${VENV_PYTHON} setup.py clean --all"
+                                } catch (Exception ex2) {
+                                    echo "Unable to succesfully run clean. Purging source directory."
+                                }
+                                deleteDir()
+                            }
+                        bat "dir"
                     }
                 }                
                 if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
-                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
-                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                    }
+                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                    bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
+                    bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                }
 
-                    def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
-                    echo "Devpi remove exited with code ${devpi_remove_return_code}."
+                def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
+                echo "Devpi remove exited with code ${devpi_remove_return_code}."
                 }
             }
-        } 
+            bat "dir"
+        }
     }
+    // post {
+    //     cleanup{
+    //         echo "Cleaning up."
+    //         script {
+    //             if(fileExists('source/setup.py')){
+    //                 dir("source"){
+    //                     try{
+    //                         bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py clean --all"
+    //                     } catch (Exception ex) {
+    //                         echo "Unable to succesfully run clean. Purging source directory."
+    //                         deleteDir()
+    //                     }   
+    //                 }
+    //             }                
+    //             if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
+    //                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+    //                     bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
+    //                     bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+    //                 }
+
+    //                 def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
+    //                 echo "Devpi remove exited with code ${devpi_remove_return_code}."
+    //             }
+    //         }
+    //     } 
+    // }
 }
