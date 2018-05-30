@@ -144,6 +144,7 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
 Python virtual environment path = ${VENV_ROOT}
 VirtualEnv Python executable    = ${VENV_PYTHON}
 VirtualEnv Pip executable       = ${VENV_PIP}
+junit_filename                  = ${junit_filename}
 """  
                     
                     dir(pwd(tmp: true)){
