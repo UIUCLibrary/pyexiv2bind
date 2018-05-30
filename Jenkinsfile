@@ -104,8 +104,12 @@ pipeline {
                 
                 script{
                     VENV_ROOT = "${WORKSPACE}\\venv\\"
+
                     VENV_PYTHON = "${WORKSPACE}\\venv\\Scripts\\python.exe"
+                    bat "${VENV_PYTHON} --version"
+
                     VENV_PIP = "${WORKSPACE}\\venv\\Scripts\\pip.exe"
+                    bat "${VENV_PIP} --version"
                 }
 
                 script {
@@ -159,9 +163,6 @@ VirtualEnv Pip executable       = ${VENV_PIP}
                 PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
             }
             steps {
-                echo "Package name: ${PKG_NAME}"
-                echo "Version     : ${PKG_VERSION}"
-
                 tee("${pwd tmp: true}/logs/build.log") {
                     dir("source"){
                             bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build -b ${WORKSPACE}\\build -j ${NUMBER_OF_PROCESSORS}"
@@ -243,7 +244,7 @@ VirtualEnv Pip executable       = ${VENV_PIP}
                     }
                     steps {
                         dir("source"){
-                            bat "${VENV_PYTHON} -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov=py3exiv2bind"
+                            bat "${VENV_PYTHON} -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=py3exiv2bind"
                             // bat "${WORKSPACE}\\venv\\Scripts\\tox.exe --workdir ${WORKSPACE}\\.tox"
                         }
                         
@@ -272,19 +273,30 @@ VirtualEnv Pip executable       = ${VENV_PIP}
                             echo "Cleaning doctest reports directory"
                             deleteDir()
                         }
-                        dir("build/lib"){
-                            bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
+                        dir("source"){
+                            dir("${REPORT_DIR}/doctests"){
+                                echo "Cleaning doctest reports directory"
+                                deleteDir()
+                            }
+                            bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v" 
+                        }
+                        bat "move ${WORKSPACE}\\build\\docs\\output.txt ${REPORT_DIR}\\doctest.txt"
+                        // dir("build/lib"){
+                        //     bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
         
-                        }
-                        dir("build/docs/"){
-                            bat "dir"
-                            bat "move output.txt ${REPORT_DIR}\\doctest.txt"
-                        }
+                        // }
+                        // dir("build/docs/"){
+                        //     bat "dir"
+                        //     bat "move output.txt ${REPORT_DIR}\\doctest.txt"
+                        // }
                         
                     }
                     post{
                         always {
-                            archiveArtifacts artifacts: "reports/doctest.txt"
+                            dir("${REPORT_DIR}"){
+                                archiveArtifacts artifacts: "doctest.txt"
+                            }
+                            // archiveArtifacts artifacts: "reports/doctest.txt"
                         }
                     }
                 }
