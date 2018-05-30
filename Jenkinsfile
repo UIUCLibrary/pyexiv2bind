@@ -3,6 +3,10 @@
 import org.ds.*
 def PKG_NAME = "unknown"
 def PKG_VERSION = "unknown"
+def REPORT_DIR = ""
+def VENV_ROOT = ""
+def VENV_PYTHON = ""
+def VENV_PIP = ""
 pipeline {
     agent {
         label "Windows && VS2015 && Python3"
@@ -38,6 +42,11 @@ pipeline {
     stages {
         stage("Configure") {
             steps {
+                // Set up the reports directory variable 
+                script{
+                    REPORT_DIR = "${pwd tmp: true}\\reports"
+                }
+                
                 script{
                     if (params.FRESH_WORKSPACE == true){
                         deleteDir()
@@ -110,6 +119,14 @@ pipeline {
             }
             post{
                 always{
+                    echo """Name                            = ${PKG_NAME}
+Version                         = ${PKG_VERSION}
+Report Directory                = ${REPORT_DIR}
+documentation zip file          = ${DOC_ZIP_FILENAME}
+Python virtual environment path = ${VENV_ROOT}
+VirtualEnv Python executable    = ${VENV_PYTHON}
+VirtualEnv Pip executable       = ${VENV_PIP}
+"""  
                     
                     dir(pwd(tmp: true)){
                         archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
@@ -212,13 +229,23 @@ pipeline {
                     }
                     steps {
                         dir("source"){
-                            bat "${WORKSPACE}\\venv\\Scripts\\tox.exe --workdir ${WORKSPACE}\\.tox"
+                            bat "${VENV_PYTHON} -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov=py3exiv2bind"
+                            // bat "${WORKSPACE}\\venv\\Scripts\\tox.exe --workdir ${WORKSPACE}\\.tox"
                         }
                         
                     }
                     post {
+                        always{
+                            dir("${REPORT_DIR}"){
+                                junit "${junit_filename}"
+                            }              
+                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
+                        }
                         failure {
-                            bat "@RD /S /Q ${WORKSPACE}\\.tox"
+                            echo "Tox test failed. Removing ${WORKSPACE}\\.tox\\PyTest"
+                            dir("${WORKSPACE}\\.tox\\PyTest"){
+                                deleteDir()
+                            }
                         }
                     }
                 }
@@ -227,8 +254,9 @@ pipeline {
                        equals expected: true, actual: params.TEST_RUN_DOCTEST
                     }
                     steps {
-                        dir("reports"){
-                            echo "Running doctest"
+                        dir("${REPORT_DIR}/doctests"){
+                            echo "Cleaning doctest reports directory"
+                            deleteDir()
                         }
                         dir("build/lib"){
                             bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
@@ -236,13 +264,13 @@ pipeline {
                         }
                         dir("build/docs/"){
                             bat "dir"
-                            bat "move output.txt ${WORKSPACE}\\reports\\doctest.txt"
+                            bat "move output.txt ${REPORT_DIR}\\doctest.txt"
                         }
                         
                     }
                     post{
                         always {
-                            archiveArtifacts artifacts: 'reports/doctest.txt'
+                            archiveArtifacts artifacts: "reports/doctest.txt"
                         }
                     }
                 }
@@ -251,7 +279,7 @@ pipeline {
                         equals expected: true, actual: params.TEST_RUN_MYPY
                     }
                     steps{
-                        dir("reports/mypy/html"){
+                        dir("${REPORT_DIR}/mypy/html"){
                             deleteDir()
                             bat "dir"
                         }
@@ -260,7 +288,7 @@ pipeline {
                                 try{
                                     dir("source"){
                                         bat "dir"
-                                        bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe ${WORKSPACE}\\build\\lib\\py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html"
+                                        bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe ${WORKSPACE}\\build\\lib\\py3exiv2bind --html-report ${REPORT_DIR}\\mypy\\html"
                                     }
                                 } catch (exc) {
                                     echo "MyPy found some warnings"
@@ -273,7 +301,7 @@ pipeline {
                             dir(pwd(tmp: true)){
                                 warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
                             }
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                         }
                     }
                 }
