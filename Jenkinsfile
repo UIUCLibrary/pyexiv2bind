@@ -253,6 +253,7 @@ junit_filename                  = ${junit_filename}
                     post {
                         always{
                             dir("${REPORT_DIR}"){
+                                bat "dir"
                                 junit "${junit_filename}"
                             }              
                             publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
