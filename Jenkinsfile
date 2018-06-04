@@ -1,8 +1,14 @@
 #!groovy
 @Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
 import org.ds.*
-def name = "unknown"
-def version = "unknown"
+def PKG_NAME = "unknown"
+def PKG_VERSION = "unknown"
+def DOC_ZIP_FILENAME = "doc.zip"
+def junit_filename = "junit.xml"
+def REPORT_DIR = ""
+def VENV_ROOT = ""
+def VENV_PYTHON = ""
+def VENV_PIP = ""
 pipeline {
     agent {
         label "Windows && VS2015 && Python3"
@@ -38,6 +44,11 @@ pipeline {
     stages {
         stage("Configure") {
             steps {
+                // Set up the reports directory variable 
+                script{
+                    REPORT_DIR = "${pwd tmp: true}\\reports"
+                }
+                
                 script{
                     if (params.FRESH_WORKSPACE == true){
                         deleteDir()
@@ -61,21 +72,28 @@ pipeline {
                     echo "Cleaned out build directory"
                     bat "dir"
                 }
-                dir("reports"){
+                
+                dir("${REPORT_DIR}"){
                     deleteDir()
                     echo "Cleaned out reports directory"
                     bat "dir"
                 }
                 lock("system_python"){
                     bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
+                    bat "${tool 'CPython-3.6'} -m pip install scikit-build --quiet"
                 }
 
                 
                 script {
                     dir("source"){
-                        name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
-                        version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                        PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
+                        PKG_VERSION = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
                     }
+                }
+
+                script{
+                    DOC_ZIP_FILENAME = "${PKG_NAME}-${PKG_VERSION}.doc.zip"
+                    junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
                 }
 
                 tee("${pwd tmp: true}/logs/pippackages_system_${NODE_NAME}.log") {
@@ -85,6 +103,17 @@ pipeline {
                 bat "dir ${pwd tmp: true}\\logs"
                 
                 bat "${tool 'CPython-3.6'} -m venv venv"
+                
+                script{
+                    VENV_ROOT = "${WORKSPACE}\\venv\\"
+
+                    VENV_PYTHON = "${WORKSPACE}\\venv\\Scripts\\python.exe"
+                    bat "${VENV_PYTHON} --version"
+
+                    VENV_PIP = "${WORKSPACE}\\venv\\Scripts\\pip.exe"
+                    bat "${VENV_PIP} --version"
+                }
+
                 script {
                     try {
                         bat "call venv\\Scripts\\python.exe -m pip install -U pip"
@@ -110,6 +139,15 @@ pipeline {
             }
             post{
                 always{
+                    echo """Name                            = ${PKG_NAME}
+Version                         = ${PKG_VERSION}
+Report Directory                = ${REPORT_DIR}
+documentation zip file          = ${DOC_ZIP_FILENAME}
+Python virtual environment path = ${VENV_ROOT}
+VirtualEnv Python executable    = ${VENV_PYTHON}
+VirtualEnv Pip executable       = ${VENV_PIP}
+junit_filename                  = ${junit_filename}
+"""  
                     
                     dir(pwd(tmp: true)){
                         archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
@@ -128,9 +166,6 @@ pipeline {
                 PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
             }
             steps {
-                echo "Package name: ${name}"
-                echo "Version     : ${version}"
-
                 tee("${pwd tmp: true}/logs/build.log") {
                     dir("source"){
                             bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build -b ${WORKSPACE}\\build -j ${NUMBER_OF_PROCESSORS}"
@@ -212,13 +247,26 @@ pipeline {
                     }
                     steps {
                         dir("source"){
-                            bat "${WORKSPACE}\\venv\\Scripts\\tox.exe --workdir ${WORKSPACE}\\.tox"
+                            bat "${VENV_PYTHON} -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=py3exiv2bind"
+                            bat "dir ${REPORT_DIR}"
+
+                            // bat "${WORKSPACE}\\venv\\Scripts\\tox.exe --workdir ${WORKSPACE}\\.tox"
                         }
                         
                     }
                     post {
+                        always{
+                            dir("${REPORT_DIR}"){
+                                bat "dir"
+                                junit "${junit_filename}"
+                            }              
+                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
+                        }
                         failure {
-                            bat "@RD /S /Q ${WORKSPACE}\\.tox"
+                            echo "Tox test failed. Removing ${WORKSPACE}\\.tox\\PyTest"
+                            dir("${WORKSPACE}\\.tox\\PyTest"){
+                                deleteDir()
+                            }
                         }
                     }
                 }
@@ -227,22 +275,34 @@ pipeline {
                        equals expected: true, actual: params.TEST_RUN_DOCTEST
                     }
                     steps {
-                        dir("reports"){
-                            echo "Running doctest"
+                        dir("${REPORT_DIR}/doctests"){
+                            echo "Cleaning doctest reports directory"
+                            deleteDir()
                         }
-                        dir("build/lib"){
-                            bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
+                        dir("source"){
+                            dir("${REPORT_DIR}/doctests"){
+                                echo "Cleaning doctest reports directory"
+                                deleteDir()
+                            }
+                            bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v" 
+                        }
+                        bat "move ${WORKSPACE}\\build\\docs\\output.txt ${REPORT_DIR}\\doctest.txt"
+                        // dir("build/lib"){
+                        //     bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
         
-                        }
-                        dir("build/docs/"){
-                            bat "dir"
-                            bat "move output.txt ${WORKSPACE}\\reports\\doctest.txt"
-                        }
+                        // }
+                        // dir("build/docs/"){
+                        //     bat "dir"
+                        //     bat "move output.txt ${REPORT_DIR}\\doctest.txt"
+                        // }
                         
                     }
                     post{
                         always {
-                            archiveArtifacts artifacts: 'reports/doctest.txt'
+                            dir("${REPORT_DIR}"){
+                                archiveArtifacts artifacts: "doctest.txt"
+                            }
+                            // archiveArtifacts artifacts: "reports/doctest.txt"
                         }
                     }
                 }
@@ -251,7 +311,7 @@ pipeline {
                         equals expected: true, actual: params.TEST_RUN_MYPY
                     }
                     steps{
-                        dir("reports/mypy/html"){
+                        dir("${REPORT_DIR}/mypy/html"){
                             deleteDir()
                             bat "dir"
                         }
@@ -260,7 +320,7 @@ pipeline {
                                 try{
                                     dir("source"){
                                         bat "dir"
-                                        bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe ${WORKSPACE}\\build\\lib\\py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html"
+                                        bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe ${WORKSPACE}\\build\\lib\\py3exiv2bind --html-report ${REPORT_DIR}\\mypy\\html"
                                     }
                                 } catch (exc) {
                                     echo "MyPy found some warnings"
@@ -273,7 +333,7 @@ pipeline {
                             dir(pwd(tmp: true)){
                                 warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
                             }
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                         }
                     }
                 }
@@ -350,7 +410,7 @@ pipeline {
                         bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
 
                         script {                          
-                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s tar.gz  --verbose"
+                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s tar.gz  --verbose"
                             echo "return code was ${devpi_test_return_code}"
                         }
                         echo "Finished testing Source Distribution: .tar.gz"
@@ -373,7 +433,7 @@ pipeline {
                         }
                         bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
                         script {
-                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s zip --verbose"
+                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s zip --verbose"
                             echo "return code was ${devpi_test_return_code}"
                         }
                         echo "Finished testing Source Distribution: .zip"
@@ -402,7 +462,7 @@ pipeline {
                         }
                         bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
                         script{
-                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s whl  --verbose"
+                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s whl  --verbose"
                             echo "return code was ${devpi_test_return_code}"
                         }
                         echo "Finished testing Built Distribution: .whl"
@@ -421,7 +481,7 @@ pipeline {
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                             bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                             bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                            bat "venv\\Scripts\\devpi.exe push ${name}==${version} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                            bat "venv\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                         }
 
                     }
@@ -481,18 +541,18 @@ pipeline {
                     }
                     steps {
                         script {
-                            input "Release ${name} ${version} to DevPi Production?"
+                            input "Release ${PKG_NAME} ${PKG_VERSION} to DevPi Production?"
                             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                                 bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"         
                             }
 
                             bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                            bat "venv\\Scripts\\devpi.exe push ${name}==${version} production/release"
+                            bat "venv\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/release"
 
                             // withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                             //     bat "devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                             //     bat "devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                            //     bat "devpi push ${name}==${version} production/release"
+                            //     bat "devpi push ${PKG_NAME}==${PKG_VERSION} production/release"
                             // }
                         }
                     }
@@ -508,7 +568,7 @@ pipeline {
         //             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
         //                 bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
         //                 bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-        //                 bat "venv\\Scripts\\devpi.exe push ${name}==${version} production/${params.RELEASE}"
+        //                 bat "venv\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/${params.RELEASE}"
         //             }
 
         //         }
@@ -520,29 +580,79 @@ pipeline {
 
     }
     post {
-        cleanup{
-            echo "Cleaning up."
+        cleanup {
+            dir('_skbuild\\cmake-build\\_deps') {
+                deleteDir()
+            }
+            // bat "venv\\Scripts\\python.exe setup.py clean --all"
+            
+            dir('dist') {
+                deleteDir()
+            }
+
+            dir('build') {
+                deleteDir()
+            }
+            dir("${REPORT_DIR}") {
+                deleteDir()
+            }
             script {
                 if(fileExists('source/setup.py')){
                     dir("source"){
                         try{
-                            bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py clean --all"
-                        } catch (Exception ex) {
-                            echo "Unable to succesfully run clean. Purging source directory."
-                            deleteDir()
-                        }   
+                            bat "${VENV_PYTHON} setup.py clean --all"
+                            } catch (Exception ex) {
+                            // echo "Unable to succesfully run clean. Purging source directory."
+                                dir("_skbuild"){
+                                    deleteDir()
+                                }
+                                try{
+                                    bat "${VENV_PYTHON} setup.py clean --all"
+                                } catch (Exception ex2) {
+                                    echo "Unable to succesfully run clean. Purging source directory."
+                                }
+                                deleteDir()
+                            }
+                        bat "dir"
                     }
                 }                
                 if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
-                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
-                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                    }
+                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                    bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
+                    bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                }
 
-                    def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${name}==${version}"
-                    echo "Devpi remove exited with code ${devpi_remove_return_code}."
+                def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
+                echo "Devpi remove exited with code ${devpi_remove_return_code}."
                 }
             }
-        } 
+            bat "dir"
+        }
     }
+    // post {
+    //     cleanup{
+    //         echo "Cleaning up."
+    //         script {
+    //             if(fileExists('source/setup.py')){
+    //                 dir("source"){
+    //                     try{
+    //                         bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py clean --all"
+    //                     } catch (Exception ex) {
+    //                         echo "Unable to succesfully run clean. Purging source directory."
+    //                         deleteDir()
+    //                     }   
+    //                 }
+    //             }                
+    //             if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
+    //                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+    //                     bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
+    //                     bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+    //                 }
+
+    //                 def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
+    //                 echo "Devpi remove exited with code ${devpi_remove_return_code}."
+    //             }
+    //         }
+    //     } 
+    // }
 }
