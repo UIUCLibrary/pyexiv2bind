@@ -72,7 +72,8 @@ pipeline {
                     echo "Cleaned out build directory"
                     bat "dir"
                 }
-                dir("reports"){
+                
+                dir("${REPORT_DIR}"){
                     deleteDir()
                     echo "Cleaned out reports directory"
                     bat "dir"
