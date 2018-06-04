@@ -79,6 +79,7 @@ pipeline {
                 }
                 lock("system_python"){
                     bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
+                    bat "${tool 'CPython-3.6'} -m pip install scikit-build --quiet"
                 }
 
                 
