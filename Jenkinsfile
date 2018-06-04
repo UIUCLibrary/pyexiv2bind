@@ -246,7 +246,8 @@ junit_filename                  = ${junit_filename}
                     }
                     steps {
                         dir("source"){
-                            bat "${VENV_PYTHON} -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=py3exiv2bind"
+                            bat "${VENV_PYTHON} -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                            // --cov-report html:${REPORT_DIR}/coverage/ --cov=py3exiv2bind"
                             bat "dir ${WORKSPACE}"
                             bat "dir ${REPORT_DIR}"
 
