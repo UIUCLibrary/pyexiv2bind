@@ -411,7 +411,9 @@ junit_filename                  = ${junit_filename}
 
                         script {                          
                             def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s tar.gz  --verbose"
-                            echo "return code was ${devpi_test_return_code}"
+                            if(devpi_remove_return_code != 0){   
+                                echo "return code was ${devpi_test_return_code}"
+                            }
                         }
                         echo "Finished testing Source Distribution: .tar.gz"
                     }
@@ -434,7 +436,9 @@ junit_filename                  = ${junit_filename}
                         bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
                         script {
                             def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s zip --verbose"
-                            echo "return code was ${devpi_test_return_code}"
+                            if(devpi_remove_return_code != 0){   
+                                echo "return code was ${devpi_test_return_code}"
+                            }
                         }
                         echo "Finished testing Source Distribution: .zip"
                     }
