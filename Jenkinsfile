@@ -224,14 +224,14 @@ junit_filename                  = ${junit_filename}
                 }
                 success{
                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                    script{
+                    // script{
                         // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
-                        def alljob = env.JOB_NAME.tokenize("/") as String[]
-                        def project_name = alljob[0]
-                        dir('build/docs/') {
-                            zip archive: true, dir: 'html', glob: '', zipFile: "${project_name}-${env.BRANCH_NAME}-docs-html-${env.GIT_COMMIT.substring(0,7)}.zip"
-                        }
+                        // def alljob = env.JOB_NAME.tokenize("/") as String[]
+                        // def project_name = alljob[0]
+                    dir('build/docs/') {
+                        zip archive: true, dir: 'html', glob: '', zipFile: "${DOC_ZIP_FILENAME}"
                     }
+                    // }
                 }
             }
         
