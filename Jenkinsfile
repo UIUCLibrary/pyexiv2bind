@@ -161,7 +161,7 @@ junit_filename                  = ${junit_filename}
             }
 
         }
-        stage("Python Package"){
+        stage("Building Python Package"){
             environment {
                 PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
             }
@@ -183,7 +183,7 @@ junit_filename                  = ${junit_filename}
                 }
             }
         }
-        stage("Sphinx documentation"){
+        stage("Building Sphinx Documentation"){
             when {
                 equals expected: true, actual: params.BUILD_DOCS
             }
@@ -436,7 +436,7 @@ junit_filename                  = ${junit_filename}
                         bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
                         script {
                             def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s zip --verbose"
-                            if(devpi_remove_return_code != 0){   
+                            if(devpi_test_return_code != 0){   
                                 error "Devpi exit code for zip was ${devpi_test_return_code}"
                             }
                         }
