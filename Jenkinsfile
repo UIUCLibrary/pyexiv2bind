@@ -207,11 +207,16 @@ junit_filename                  = ${junit_filename}
 
                 }
                 echo "Building docs on ${env.NODE_NAME}"
-                bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe --version"
+                // bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe --version"
+                // tee("${pwd tmp: true}/logs/build_sphinx.log") {
+                //     dir("build/lib"){
+                //         bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
+    
+                //     }
+                // }
                 tee("${pwd tmp: true}/logs/build_sphinx.log") {
                     dir("build/lib"){
                         bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
-    
                     }
                 }
             }
@@ -224,13 +229,16 @@ junit_filename                  = ${junit_filename}
                 }
                 success{
                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+                    dir("${WORKSPACE}/dist"){
+                      zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "${DOC_ZIP_FILENAME}"
+                    }
                     // script{
                         // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
                         // def alljob = env.JOB_NAME.tokenize("/") as String[]
                         // def project_name = alljob[0]
-                    dir('build/docs/') {
-                        zip archive: true, dir: 'html', glob: '', zipFile: "${DOC_ZIP_FILENAME}"
-                    }
+                    // dir('build/docs/') {
+                    //     zip archive: true, dir: 'html', glob: '', zipFile: "${DOC_ZIP_FILENAME}"
+                    // }
                     // }
                 }
             }
@@ -376,7 +384,7 @@ junit_filename                  = ${junit_filename}
                 script {
                         bat "venv\\Scripts\\devpi.exe upload --from-dir dist"
                         try {
-                            bat "venv\\Scripts\\devpi.exe upload --only-docs --from-dir build"
+                            bat "venv\\Scripts\\devpi.exe upload --only-docs ${WORKSPACE}\\dist\\${DOC_ZIP_FILENAME}"
                         } catch (exc) {
                             echo "Unable to upload to devpi with docs."
                         }
