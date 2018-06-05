@@ -20,7 +20,7 @@ pipeline {
 
     options {
         disableConcurrentBuilds()  //each branch has 1 job running at a time
-        timeout(20)  // Timeout after 20 minutes. This shouldn't take this long but it hangs for some reason
+        timeout(60)  // Timeout after 60 minutes. This shouldn't take this long but it hangs for some reason
         checkoutToSubdirectory("source")
     }
     environment {
@@ -207,11 +207,16 @@ junit_filename                  = ${junit_filename}
 
                 }
                 echo "Building docs on ${env.NODE_NAME}"
-                bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe --version"
+                // bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe --version"
+                // tee("${pwd tmp: true}/logs/build_sphinx.log") {
+                //     dir("build/lib"){
+                //         bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
+    
+                //     }
+                // }
                 tee("${pwd tmp: true}/logs/build_sphinx.log") {
                     dir("build/lib"){
                         bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
-    
                     }
                 }
             }
@@ -224,14 +229,17 @@ junit_filename                  = ${junit_filename}
                 }
                 success{
                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                    script{
-                        // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
-                        def alljob = env.JOB_NAME.tokenize("/") as String[]
-                        def project_name = alljob[0]
-                        dir('build/docs/') {
-                            zip archive: true, dir: 'html', glob: '', zipFile: "${project_name}-${env.BRANCH_NAME}-docs-html-${env.GIT_COMMIT.substring(0,7)}.zip"
-                        }
+                    dir("${WORKSPACE}/dist"){
+                      zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "${DOC_ZIP_FILENAME}"
                     }
+                    // script{
+                        // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
+                        // def alljob = env.JOB_NAME.tokenize("/") as String[]
+                        // def project_name = alljob[0]
+                    // dir('build/docs/') {
+                    //     zip archive: true, dir: 'html', glob: '', zipFile: "${DOC_ZIP_FILENAME}"
+                    // }
+                    // }
                 }
             }
         
@@ -376,7 +384,7 @@ junit_filename                  = ${junit_filename}
                 script {
                         bat "venv\\Scripts\\devpi.exe upload --from-dir dist"
                         try {
-                            bat "venv\\Scripts\\devpi.exe upload --only-docs --from-dir build"
+                            bat "venv\\Scripts\\devpi.exe upload --only-docs ${WORKSPACE}\\dist\\${DOC_ZIP_FILENAME}"
                         } catch (exc) {
                             echo "Unable to upload to devpi with docs."
                         }
@@ -511,29 +519,37 @@ junit_filename                  = ${junit_filename}
                         }
                         
                         dir("build/docs/html/"){
-                            input 'Update project documentation?'
-                            sshPublisher(
-                                publishers: [
-                                    sshPublisherDesc(
-                                        configName: 'apache-ns - lib-dccuser-updater', 
-                                        sshLabel: [label: 'Linux'], 
-                                        transfers: [sshTransfer(excludes: '', 
-                                        execCommand: '', 
-                                        execTimeout: 120000, 
-                                        flatten: false, 
-                                        makeEmptyDirs: false, 
-                                        noDefaultExcludes: false, 
-                                        patternSeparator: '[, ]+', 
-                                        remoteDirectory: "${params.DEPLOY_DOCS_URL_SUBFOLDER}", 
-                                        remoteDirectorySDF: false, 
-                                        removePrefix: '', 
-                                        sourceFiles: '**')], 
-                                    usePromotionTimestamp: false, 
-                                    useWorkspaceInPromotion: false, 
-                                    verbose: true
+                            script{
+                                try{
+                                    timeout(30) {
+                                        input 'Update project documentation?'
+                                    }
+                                    sshPublisher(
+                                        publishers: [
+                                            sshPublisherDesc(
+                                                configName: 'apache-ns - lib-dccuser-updater', 
+                                                sshLabel: [label: 'Linux'], 
+                                                transfers: [sshTransfer(excludes: '', 
+                                                execCommand: '', 
+                                                execTimeout: 120000, 
+                                                flatten: false, 
+                                                makeEmptyDirs: false, 
+                                                noDefaultExcludes: false, 
+                                                patternSeparator: '[, ]+', 
+                                                remoteDirectory: "${params.DEPLOY_DOCS_URL_SUBFOLDER}", 
+                                                remoteDirectorySDF: false, 
+                                                removePrefix: '', 
+                                                sourceFiles: '**')], 
+                                            usePromotionTimestamp: false, 
+                                            useWorkspaceInPromotion: false, 
+                                            verbose: true
+                                            )
+                                        ]
                                     )
-                                ]
-                            )
+                                } catch(exc){
+                                    echo "User response timed out. Documentation not published."
+                                }
+                            }
                         }
                     }
                 }
@@ -547,13 +563,20 @@ junit_filename                  = ${junit_filename}
                     }
                     steps {
                         script {
-                            input "Release ${PKG_NAME} ${PKG_VERSION} to DevPi Production?"
-                            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"         
+                            try{
+                                timeout(30) {
+                                    input "Release ${PKG_NAME} ${PKG_VERSION} to DevPi Production?"
+                                }
+                                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"         
+                                }
+
+                                bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                                bat "venv\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/release"
+                            } catch(err){
+                                echo "User response timed out. Packages not deployed to DevPi Production."
                             }
 
-                            bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                            bat "venv\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/release"
 
                             // withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                             //     bat "devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
