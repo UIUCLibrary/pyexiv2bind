@@ -63,7 +63,6 @@ FetchContent_Declare(
 #        GIT_REPOSITORY https://github.com/UIUCLibrary/exiv2.git
         PATCH_COMMAND
             COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/Make_Subproject_possible.patch
-            COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/don't_install_docs.patch
 )
 FetchContent_GetProperties(libexiv2)
 if (NOT libexiv2_POPULATED)

@@ -565,7 +565,7 @@ junit_filename                  = ${junit_filename}
                         script {
                             try{
                                 timeout(30) {
-                                    input "Release ${PKG_NAME} ${PKG_VERSION} to DevPi Production?"
+                                    input "Release ${PKG_NAME} ${PKG_VERSION} (https://devpi.library.illinois.edu//DS_Jenkins/${env.BRANCH_NAME}_staging/${PKG_NAME}/${PKG_VERSION}) to DevPi Production? "
                                 }
                                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                                     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"         
