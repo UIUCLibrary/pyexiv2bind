@@ -7,6 +7,7 @@
 #include <cassert>
 #include "Image.h"
 #include "glue.h"
+#include "glue_execeptions.h"
 #include "MetadataProcessor.h"
 #include <exiv2/error.hpp>
 
@@ -95,8 +96,7 @@ std::string Image::get_icc_profile() const {
     std::string profile;
     std::stringstream data;
     if (!image->iccProfileDefined()) {
-        throw std::exception();
-
+        throw NoIccError();
     }
     const Exiv2::DataBuf *f = image->iccProfile();
     data.write(reinterpret_cast<char *>(f->pData_), f->size_);
