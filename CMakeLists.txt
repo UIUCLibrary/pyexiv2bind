@@ -71,6 +71,7 @@ endif ()
 
 #add_subdirectory(thirdparty/pybind11)
 add_subdirectory(py3exiv2bind/core)
+set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${PROJECT_SOURCE_DIR}/_skbuild)
 enable_testing()
 add_subdirectory(tests)
 #message(WARNING "CMAKE_DEBUG_POSTFIX = ${CMAKE_DEBUG_POSTFIX}")
