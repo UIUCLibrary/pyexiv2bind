@@ -5,7 +5,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include "glue/glue.h"
-#include <glue/Image.h>
+#include "glue/Image.h"
 
 
 PYBIND11_MODULE(core, m) {

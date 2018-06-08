@@ -1,20 +1,6 @@
 include(GenerateExportHeader)
 #pybind11_add_module(core core.cpp)
-add_library(core MODULE core.cpp)
-
-
-if (SKBUILD)
-    python_extension_module(core)
-endif()
-set_target_properties(core PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/py3exiv2bind
-        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/py3exiv2bind
-        PREFIX "${PYTHON_MODULE_PREFIX}"
-        SUFFIX "${PYTHON_MODULE_EXTENSION}"
-        )
-target_link_libraries(core pybind11::module)
-
-add_library(glue STATIC
+add_library(glue OBJECT
         glue/glue.cpp
         glue/glue.h
         glue/Image.cpp
@@ -31,14 +17,33 @@ add_library(glue STATIC
         glue/XmpStrategy.h
         glue/make_dictionary.h
         )
-
-target_include_directories(glue PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+#exiv2lib
+target_include_directories(glue PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
+        PRIVATE
+        $<TARGET_PROPERTY:exiv2lib,INCLUDE_DIRECTORIES>
+        )
 set_target_properties(glue PROPERTIES
         CXX_STANDARD 14
         )
-GENERATE_EXPORT_HEADER(glue)
-
+#GENERATE_EXPORT_HEADER(glue)
+#add_custom_target(d COMMAND ${CMAKE_COMMAND} -E echo "the anser is $<TARGET_PROPERTY:exiv2lib,INCLUDE_DIRECTORIES>")
 #target_include_directories(glue PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(glue PUBLIC exiv2lib)
-target_link_libraries(core glue)
+#target_link_libraries(glue PUBLIC exiv2lib)
+
+add_library(core MODULE core.cpp $<TARGET_OBJECTS:glue>)
+
+
+if (SKBUILD)
+    python_extension_module(core)
+endif()
+set_target_properties(core PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/py3exiv2bind
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/py3exiv2bind
+        PREFIX "${PYTHON_MODULE_PREFIX}"
+        SUFFIX "${PYTHON_MODULE_EXTENSION}"
+        )
+target_link_libraries(core pybind11::module exiv2lib)
+
+
+#target_link_libraries(core glue)
 install(TARGETS core LIBRARY DESTINATION py3exiv2bind)
