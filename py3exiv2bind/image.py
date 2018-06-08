@@ -16,7 +16,7 @@ class Image(core.Image):
             raise FileNotFoundError("Unable to locate {}.".format(args[0]))
         super().__init__(*args, **kwargs)
         for warning in self.warnings_logs:
-            warnings.warn(warning, Warning)
+            warnings.warn(warning.strip(), Warning)
 
 
     @property
