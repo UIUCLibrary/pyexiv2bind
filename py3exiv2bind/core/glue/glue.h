@@ -7,7 +7,7 @@
 
 #include <string>
 #include <map>
-#include "glue_export.h"
+//#include "glue_export.h"
 
 struct metadata_chunk {
 
