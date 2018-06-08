@@ -4,6 +4,7 @@ from . import core # type: ignore
 from . import icc
 import collections
 import typing
+import warnings
 
 
 class Image(core.Image):
@@ -14,6 +15,9 @@ class Image(core.Image):
         if not os.path.exists(args[0]):
             raise FileNotFoundError("Unable to locate {}.".format(args[0]))
         super().__init__(*args, **kwargs)
+        for warning in self.warnings_logs:
+            warnings.warn(warning, Warning)
+
 
     @property
     def metadata(self) -> dict:
