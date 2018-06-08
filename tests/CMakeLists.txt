@@ -22,6 +22,7 @@ else ()
     add_executable(cpp_tests
             test_basic.cpp
             tests-main.cpp
+            $<TARGET_OBJECTS:glue>
 #            test_metadata_processor.cpp
             )
 
@@ -29,7 +30,8 @@ else ()
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
             RUNTIME_OUTPUT_NAME test
             )
-    target_link_libraries(cpp_tests PRIVATE Catch glue)
+        target_include_directories(cpp_tests PRIVATE ${PROJECT_SOURCE_DIR}/py3exiv2bind/core)
+    target_link_libraries(cpp_tests PRIVATE Catch exiv2lib)
 #    target_link_libraries(cpp_tests PRIVATE Catch glue)
 
     add_test(NAME cpp_tests

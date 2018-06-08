@@ -5,7 +5,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include "glue/glue.h"
-#include <glue/Image.h>
+#include "glue/Image.h"
+#include "glue/glue_execeptions.h"
 
 
 PYBIND11_MODULE(core, m) {
@@ -32,4 +33,5 @@ PYBIND11_MODULE(core, m) {
                      return pybind11::bytes(i.get_icc_profile());
                  },                                                            "Get the icc profile data"
             );
+    pybind11::register_exception<NoIccError>(m, "NoICCError");
 }
