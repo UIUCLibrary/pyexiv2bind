@@ -15,6 +15,7 @@ FetchContent_Declare(zlib
 FetchContent_GetProperties(zlib)
 if (NOT zlib_POPULATED)
     FetchContent_Populate(zlib)
+    set(SKIP_INSTALL_LIBRARIES YES CACHE BOOL "")
     add_subdirectory(${zlib_SOURCE_DIR} ${zlib_BINARY_DIR})
 endif ()
 
