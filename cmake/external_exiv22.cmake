@@ -35,6 +35,7 @@ if (NOT expat_POPULATED)
     option(BUILD_shared "" OFF)
     option(BUILD_tests "" NO)
     option(BUILD_tools "" NO)
+    option(INSTALL "" NO)
 
     add_subdirectory(${expat_SOURCE_DIR}/expat ${expat_BINARY_DIR})
 endif ()
