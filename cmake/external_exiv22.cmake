@@ -63,6 +63,7 @@ endif ()
 FetchContent_Declare(
         libexiv2
         GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
+        GIT_TAG 0d6abb5b5130fbce8bdc398b6728d225838bb382
 #        GIT_REPOSITORY https://github.com/UIUCLibrary/exiv2.git
         PATCH_COMMAND
             COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/Make_Subproject_possible.patch
