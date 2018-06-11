@@ -168,7 +168,7 @@ junit_filename                  = ${junit_filename}
             steps {
                 tee("${pwd tmp: true}/logs/build.log") {
                     dir("source"){
-                            bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build -b ${WORKSPACE}\\build -j ${NUMBER_OF_PROCESSORS}"
+                        bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build -b ${WORKSPACE}\\build -j ${NUMBER_OF_PROCESSORS}"
                     }
                 
                 }
@@ -180,6 +180,12 @@ junit_filename                  = ${junit_filename}
                         warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: 'logs/build.log']]
                         archiveArtifacts artifacts: 'logs/build.log'
                     }
+                    dir("source/_skbuild/cmake-build/CMakeFiles"){
+                        bat "dir"
+                        archiveArtifacts artifacts: 'CMakeError.log', allowEmptyArchive: true
+                        archiveArtifacts artifacts: 'CMakeOutput.log', allowEmptyArchive: true
+                    }
+
                 }
             }
         }

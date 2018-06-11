@@ -1,7 +1,9 @@
 import os
 from pprint import pprint
 import pytest
-from py3exiv2bind import Image
+from py3exiv2bind import Image, core
+
+
 
 def test_icc_file():
     sample_file = os.path.join(os.path.dirname(__file__), "sample_images/dummy.tif")
@@ -14,6 +16,6 @@ def test_icc_file():
 def test_icc_on_jp2_file():
     sample_file = os.path.join(os.path.dirname(__file__), "sample_images/dummy.jp2")
     my_image = Image(sample_file)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(core.NoICCError):
         icc = my_image.icc()
         print(icc)
