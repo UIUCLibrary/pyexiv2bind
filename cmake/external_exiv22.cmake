@@ -1,7 +1,7 @@
 include(FetchContent)
 include(ExternalProject)
 
-set(EXIV2_VERSION_TAG 0d6abb5b5130fbce8bdc398b6728d225838bb382 CACHE STRING "Git tag of version of exiv2 to build")
+set(EXIV2_VERSION_TAG "" CACHE STRING "Git tag of version of exiv2 to build")
 
 ###########################################################################################
 # Google ZLIB
