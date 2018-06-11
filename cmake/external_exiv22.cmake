@@ -38,13 +38,24 @@ if (NOT expat_POPULATED)
     add_subdirectory(${expat_SOURCE_DIR}/expat ${expat_BINARY_DIR})
 endif ()
 
-FetchContent_Declare(
-        libexiv2
-        GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
-        GIT_TAG ${EXIV2_VERSION_TAG}
-        PATCH_COMMAND
-            COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/Make_Subproject_possible.patch
-)
+if(EXIV2_VERSION_TAG)
+    FetchContent_Declare(
+            libexiv2
+            GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
+            GIT_TAG ${EXIV2_VERSION_TAG}
+            PATCH_COMMAND
+                COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/Make_Subproject_possible.patch
+    )
+else()
+    message(STATUS "Checking out HEAD from exiv2 source")
+    FetchContent_Declare(
+            libexiv2
+            GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
+            PATCH_COMMAND
+                COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/Make_Subproject_possible.patch
+    )
+endif()
+
 FetchContent_GetProperties(libexiv2)
 if (NOT libexiv2_POPULATED)
     FetchContent_Populate(libexiv2)
