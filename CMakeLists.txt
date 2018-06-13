@@ -38,12 +38,13 @@ else ()
             )
 
 #    update_python_binary_dir(${CMAKE_SOURCE_DIR}/py3exiv2bind)
-    if(WIN32)
-        add_tox_tests(TOXPATH ${PROJECT_BINARY_DIR}/venv/Scripts/tox.exe)
-        else()
-        add_tox_tests(TOXPATH ${PROJECT_BINARY_DIR}/venv/bin/tox)
-    endif()
 
+     find_program(VENV_TOX
+             NAMES tox
+             PATHS ${PROJECT_BINARY_DIR}/venv/Scripts/
+             NO_DEFAULT_PATH
+             )
+    add_tox_tests(TOXPATH ${VENV_TOX})
     add_python_wheel()
 
 endif ()
@@ -72,6 +73,7 @@ endif ()
 #add_subdirectory(thirdparty/pybind11)
 add_subdirectory(py3exiv2bind/core)
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${PROJECT_SOURCE_DIR}/_skbuild)
-enable_testing()
+#enable_testing()
+include(CTest)
 add_subdirectory(tests)
 #message(WARNING "CMAKE_DEBUG_POSTFIX = ${CMAKE_DEBUG_POSTFIX}")
