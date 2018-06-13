@@ -1,7 +1,5 @@
 include(FetchContent)
-if (SKBUILD)
-#    message(INFO "Skipping tests")
-else ()
+if (BUILD_TESTING)
     set(PYTHON_TEST_FILES test_core.py)
     find_package(PythonInterp 3 REQUIRED)
     add_custom_target(add_python_tests
@@ -35,7 +33,7 @@ else ()
 #    target_link_libraries(cpp_tests PRIVATE Catch glue)
 
     add_test(NAME cpp_tests
-            COMMAND test
+            COMMAND $<TARGET_FILE:cpp_tests>
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
             )
     FetchContent_Declare(test_images
