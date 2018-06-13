@@ -10,13 +10,24 @@ set(EXIV2_VERSION_TAG "" CACHE STRING "Git tag of version of exiv2 to build")
 FetchContent_Declare(zlib
         URL https://zlib.net/zlib-1.2.11.tar.gz
         URL_HASH SHA256=c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1
-)
-
+        PATCH_COMMAND ${CMAKE_COMMAND} -P ${PROJECT_BINARY_DIR}/patch_zlib.cmake
+        )
 FetchContent_GetProperties(zlib)
+configure_file(${PROJECT_SOURCE_DIR}/patches/patch_zlib.cmake patch_zlib.cmake @ONLY)
+
 if (NOT zlib_POPULATED)
     FetchContent_Populate(zlib)
     set(SKIP_INSTALL_LIBRARIES YES CACHE BOOL "")
+    set(BUILD_examples NO CACHE BOOL "")
+#
     add_subdirectory(${zlib_SOURCE_DIR} ${zlib_BINARY_DIR})
+    get_directory_property(zlib_targets DIRECTORY ${zlib_SOURCE_DIR} BUILDSYSTEM_TARGETS )
+    foreach(target ${zlib_targets})
+        if(${target} STREQUAL example)
+            message(FATAL_ERROR "ZLib imported the \"${target}\" Target.")
+        endif()
+    endforeach()
+#    set_tests_properties(example PROPERTIES DISABLED ON)
 endif ()
 
 
