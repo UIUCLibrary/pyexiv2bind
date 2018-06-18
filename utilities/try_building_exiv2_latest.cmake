@@ -13,7 +13,12 @@ set(CTEST_CMAKE_GENERATOR "Visual Studio 15 2017 Win64")
 
 ProcessorCount(N)
 if(NOT N EQUAL 0)
-  set(CTEST_BUILD_FLAGS /maxcpucount:${N})
+    if(CTEST_CMAKE_GENERATOR MATCHES "Visual Studio")
+        set(CTEST_BUILD_FLAGS /maxcpucount:${N})
+    elseif(CTEST_CMAKE_GENERATOR MATCHES "Makefile")
+        set(CTEST_BUILD_FLAGS -j${N})
+    endif()
+
 endif()
 
 ctest_start(Experimental)
@@ -77,10 +82,19 @@ find_path(GTEST_INCLUDE_DIR
 )
 # TODO: find thise files instead of hard coding them
 #find_library(GTEST)
-
-set(GTEST_DLL ${gtest_BINARY_DIR}/installed/lib/gtest.dll)
-set(GTEST_MAIN_DLL ${gtest_BINARY_DIR}/installed/lib/gtest_main.dll)
- 
+if(WIN32)
+    find_file(GTEST_DLL
+            NAMES gtest.dll
+            PATHS ${gtest_BINARY_DIR}/installed/lib
+            NO_DEFAULT_PATH
+            )
+    find_file(GTEST_MAIN_DLL
+            NAMES gtest_main.dll
+            PATHS ${gtest_BINARY_DIR}/installed/lib
+            NO_DEFAULT_PATH
+            )
+#    set(GTEST_MAIN_DLL ${gtest_BINARY_DIR}/installed/lib/gtest_main.dll)
+endif()
 # find_package(GTest)
 # message(FATAL_ERROR "GTEST_INCLUDE_DIR = ${GTEST_INCLUDE_DIR}")
 
@@ -211,7 +225,10 @@ ctest_build(
     PROJECT_NAME exiv2
     BUILD ${exiv2_BINARY_DIR} 
     )
-file(COPY ${GTEST_DLL} ${GTEST_MAIN_DLL} DESTINATION "${exiv2_BINARY_DIR}/bin")
+
+if (WIN32)
+    file(COPY ${GTEST_DLL} ${GTEST_MAIN_DLL} DESTINATION "${exiv2_BINARY_DIR}/bin")
+endif ()
 
 find_program(UNIT_TESTS
         NAMES unit_tests
