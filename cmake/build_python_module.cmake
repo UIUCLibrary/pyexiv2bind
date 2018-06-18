@@ -15,7 +15,7 @@ function(create_venv)
             RESULT_VARIABLE VENV_CREATED
             )
     if(NOT "${VENV_CREATED}" STREQUAL "0")
-        message(SEND_ERROR "Unable to make a Python virtual environment")
+        message(SEND_ERROR "Unable to make a Python virtual environment. Reason: ${VENV_CREATED}")
     endif()
     find_program(VENV_PYTHON
             NAMES python
