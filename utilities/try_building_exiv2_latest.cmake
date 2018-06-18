@@ -76,6 +76,8 @@ find_path(GTEST_INCLUDE_DIR
     # PATH_SUFFIXES gtest
 )
 # TODO: find thise files instead of hard coding them
+#find_library(GTEST)
+
 set(GTEST_DLL ${gtest_BINARY_DIR}/installed/lib/gtest.dll)
 set(GTEST_MAIN_DLL ${gtest_BINARY_DIR}/installed/lib/gtest_main.dll)
  
@@ -210,8 +212,16 @@ ctest_build(
     BUILD ${exiv2_BINARY_DIR} 
     )
 file(COPY ${GTEST_DLL} ${GTEST_MAIN_DLL} DESTINATION "${exiv2_BINARY_DIR}/bin")
-execute_process(COMMAND "unit_tests"
-    RESULT_VARIABLE return_code
-    WORKING_DIRECTORY ${exiv2_BINARY_DIR}/bin
-    )
+
+find_program(UNIT_TESTS
+        NAMES unit_tests
+        PATHS ${exiv2_BINARY_DIR}/bin
+        NO_DEFAULT_PATH)
+
+execute_process(
+        COMMAND ${UNIT_TESTS}
+        RESULT_VARIABLE return_code
+        WORKING_DIRECTORY ${exiv2_BINARY_DIR}/bin
+)
+
 message(STATUS "return_code = ${return_code}")
