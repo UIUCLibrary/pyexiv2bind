@@ -108,9 +108,10 @@ FetchContent_Populate(zlib
     SOURCE_DIR      deps/zlib-source
     BINARY_DIR      ${CTEST_BINARY_DIRECTORY}/zlib-build
     SUBBUILD_DIR    ${CTEST_BINARY_DIRECTORY}/zlib-subbuild
-)
 
-list(APPEND zlib_OPTIONS "-DCMAKE_INSTALL_PREFIX=./installed")
+        )
+
+list(APPEND zlib_OPTIONS "-DCMAKE_INSTALL_PREFIX=${zlib_BINARY_DIR}/installed")
 ctest_configure(
     BUILD ${zlib_BINARY_DIR} 
     SOURCE ${zlib_SOURCE_DIR}
