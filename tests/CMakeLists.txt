@@ -27,6 +27,7 @@ if (BUILD_TESTING)
     set_target_properties(cpp_tests PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
             RUNTIME_OUTPUT_NAME test
+            CXX_STANDARD 11
             )
         target_include_directories(cpp_tests PRIVATE ${PROJECT_SOURCE_DIR}/py3exiv2bind/core)
     target_link_libraries(cpp_tests PRIVATE Catch exiv2lib)
