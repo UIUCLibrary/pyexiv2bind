@@ -10,6 +10,7 @@ set(CTEST_SOURCE_DIRECTORY .)
 set(CTEST_BINARY_DIRECTORY build)
 set(CTEST_CONFIGURATION_TYPE Debug)
 set(CTEST_CMAKE_GENERATOR "Visual Studio 15 2017 Win64")
+#set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 
 ProcessorCount(N)
 if(NOT N EQUAL 0)
@@ -129,7 +130,9 @@ find_library(ZLIB_LIBRARY
     NAMES 
         zlibstatic 
         zlibstaticd
+        zlib.a
     HINTS ${zlib_BINARY_DIR}/installed/lib
+    NO_DEFAULT_PATH
     )
 
 find_path(ZLIB_INCLUDE 
