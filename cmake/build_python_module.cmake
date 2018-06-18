@@ -19,14 +19,19 @@ function(create_venv)
     endif()
     find_program(VENV_PYTHON
             NAMES python
-            PATHS ${PROJECT_BINARY_DIR}/venv/Scripts/
+            PATHS
+                ${PROJECT_BINARY_DIR}/venv/Scripts/
+                ${PROJECT_BINARY_DIR}/venv/bin/
             NO_DEFAULT_PATH
             )
     find_program(VENV_PIP
             NAMES pip
-            PATHS ${PROJECT_BINARY_DIR}/venv/Scripts/
+            PATHS
+                ${PROJECT_BINARY_DIR}/venv/Scripts/
+                ${PROJECT_BINARY_DIR}/venv/bin
             NO_DEFAULT_PATH
             )
+        message(WARNING "VENV_PIP = ${VENV_PIP}")
     if(VENV_PYTHON)
 
         foreach(requirement_text ${VENV_ARGS_REQUIREMENTS})
@@ -41,7 +46,7 @@ function(create_venv)
             RESULT_VARIABLE VENV_DEPS_INSTALLED)
 
     if(NOT "${VENV_DEPS_INSTALLED}" STREQUAL "0")
-        message(SEND_ERROR "Error installing Python virtual environment dependencies")
+        message(SEND_ERROR "Error installing Python virtual environment dependencies. Reason: ${VENV_DEPS_INSTALLED}")
     endif()
 
 endfunction()

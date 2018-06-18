@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.11)
 project(pyexiv2bind)
 
-find_package(PythonInterp REQUIRED)
+find_package(PythonInterp 3 REQUIRED)
 find_package(PythonLibs)
 
 if (WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -41,7 +41,9 @@ else ()
 
      find_program(VENV_TOX
              NAMES tox
-             PATHS ${PROJECT_BINARY_DIR}/venv/Scripts/
+             PATHS
+                ${PROJECT_BINARY_DIR}/venv/Scripts/
+                ${PROJECT_BINARY_DIR}/venv/bin/
              NO_DEFAULT_PATH
              )
     add_tox_tests(TOXPATH ${VENV_TOX})
