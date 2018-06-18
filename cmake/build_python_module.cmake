@@ -31,14 +31,14 @@ function(create_venv)
                 ${PROJECT_BINARY_DIR}/venv/bin
             NO_DEFAULT_PATH
             )
-        message(WARNING "VENV_PIP = ${VENV_PIP}")
-    if(VENV_PYTHON)
 
+    if(VENV_PYTHON)
         foreach(requirement_text ${VENV_ARGS_REQUIREMENTS})
             list(APPEND requirements_args -r)
             list(APPEND requirements_args ${requirement_text})
         endforeach()
     endif()
+
     message(STATUS "Setting up the dependencies for the Python virtual environment")
 
 
