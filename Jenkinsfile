@@ -11,7 +11,7 @@ def VENV_PYTHON = ""
 def VENV_PIP = ""
 pipeline {
     agent {
-        label "Windows && VS2015 && Python3"
+        label "Windows && VS2015 && Python3 && longfilenames"
     }
     
     triggers {
