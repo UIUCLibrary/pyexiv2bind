@@ -208,7 +208,7 @@ junit_filename                  = ${junit_filename}
         }
         stage("Building Python Package"){
             environment {
-                PATH = "${tool 'cmake3.11.2'}//..//;$PATH"
+                PATH = "${tool 'cmake3.11.2'}\\..\\;$PATH"
             }
             steps {
                 bat "set"
@@ -415,7 +415,7 @@ junit_filename                  = ${junit_filename}
         }
         stage("Packaging") {
             environment {
-                PATH = "${tool 'cmake3.11.2'}//..//;$PATH"
+                PATH = "${tool 'cmake3.11.2'}\\..\\;$PATH"
             }
             steps {
                 dir("source"){
@@ -472,7 +472,7 @@ junit_filename                  = ${junit_filename}
             parallel {
                 stage("Source Distribution: .tar.gz") {
                     environment {
-                        PATH = "${tool 'cmake3.11.2'}//..//;$PATH"
+                        PATH = "${tool 'cmake3.11.2'}\\..\\;$PATH"
                     }
                     steps {
                         echo "Testing Source tar.gz package in devpi"
