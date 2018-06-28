@@ -211,6 +211,7 @@ junit_filename                  = ${junit_filename}
                 PATH = "${tool 'cmake3.11.2'}//..//;$PATH"
             }
             steps {
+                bat "set"
                 bat "where cmake"
                 tee("logs/build.log") {
                     dir("source"){
