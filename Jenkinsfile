@@ -114,6 +114,7 @@ pipeline {
                     }
                     post{
                         failure {
+                            bat "dir /s/b *.txt"
                             deleteDir()
                         }
                     }
