@@ -43,99 +43,103 @@ pipeline {
     }
     stages {
         stage("Configure") {
-            steps {
-                // Set up the reports directory variable 
-                script{
-                    REPORT_DIR = "${pwd tmp: true}\\reports"
-                }
-                
-                script{
-                    if (params.FRESH_WORKSPACE == true){
-                        deleteDir()
-                        checkout scm
-                    }
-                }
+            stages{
+                stage("Cleanup"){
+                    steps {
+                        // Set up the reports directory variable 
+                        script{
+                            REPORT_DIR = "${pwd tmp: true}\\reports"
+                        }
+                        
+                        script{
+                            if (params.FRESH_WORKSPACE == true){
+                                deleteDir()
+                                checkout scm
+                            }
+                        }
 
-                
-                dir(pwd(tmp: true)){
-                    dir("logs"){
-                        deleteDir()
-                    }
-                
-                }
-                dir("logs"){
-                    deleteDir()
-                }
-                
-                dir("build"){
-                    deleteDir()
-                    echo "Cleaned out build directory"
-                    bat "dir"
-                }
-                
-                dir("${REPORT_DIR}"){
-                    deleteDir()
-                    echo "Cleaned out reports directory"
-                    bat "dir"
-                }
-                lock("system_python"){
-                    bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
-                    bat "${tool 'CPython-3.6'} -m pip install scikit-build --quiet"
-                }
+                        
+                        dir(pwd(tmp: true)){
+                            dir("logs"){
+                                deleteDir()
+                            }
+                        
+                        }
+                        dir("logs"){
+                            deleteDir()
+                        }
+                        
+                        dir("build"){
+                            deleteDir()
+                            echo "Cleaned out build directory"
+                            bat "dir"
+                        }
+                        
+                        dir("${REPORT_DIR}"){
+                            deleteDir()
+                            echo "Cleaned out reports directory"
+                            bat "dir"
+                        }
+                        lock("system_python"){
+                            bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
+                            bat "${tool 'CPython-3.6'} -m pip install scikit-build --quiet"
+                        }
 
-                
-                script {
-                    dir("source"){
-                        PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
-                        PKG_VERSION = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
-                    }
-                }
+                        
+                        script {
+                            dir("source"){
+                                PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
+                                PKG_VERSION = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                            }
+                        }
 
-                script{
-                    DOC_ZIP_FILENAME = "${PKG_NAME}-${PKG_VERSION}.doc.zip"
-                    junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
-                }
+                        script{
+                            DOC_ZIP_FILENAME = "${PKG_NAME}-${PKG_VERSION}.doc.zip"
+                            junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
+                        }
 
-                tee("${pwd tmp: true}/logs/pippackages_system_${NODE_NAME}.log") {
-                    bat "${tool 'CPython-3.6'} -m pip list"
-                }
-                bat "dir ${pwd tmp: true}"
-                bat "dir ${pwd tmp: true}\\logs"
-                
-                bat "${tool 'CPython-3.6'} -m venv venv"
-                
-                script{
-                    VENV_ROOT = "${WORKSPACE}\\venv\\"
-
-                    VENV_PYTHON = "${WORKSPACE}\\venv\\Scripts\\python.exe"
-                    bat "${VENV_PYTHON} --version"
-
-                    VENV_PIP = "${WORKSPACE}\\venv\\Scripts\\pip.exe"
-                    bat "${VENV_PIP} --version"
-                }
-
-                script {
-                    try {
-                        bat "call venv\\Scripts\\python.exe -m pip install -U pip"
-                    }
-                    catch (exc) {
+                        tee("${pwd tmp: true}/logs/pippackages_system_${NODE_NAME}.log") {
+                            bat "${tool 'CPython-3.6'} -m pip list"
+                        }
+                        bat "dir ${pwd tmp: true}"
+                        bat "dir ${pwd tmp: true}\\logs"
+                        
                         bat "${tool 'CPython-3.6'} -m venv venv"
-                        bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+                        
+                        script{
+                            VENV_ROOT = "${WORKSPACE}\\venv\\"
+
+                            VENV_PYTHON = "${WORKSPACE}\\venv\\Scripts\\python.exe"
+                            bat "${VENV_PYTHON} --version"
+
+                            VENV_PIP = "${WORKSPACE}\\venv\\Scripts\\pip.exe"
+                            bat "${VENV_PIP} --version"
+                        }
+
+                        script {
+                            try {
+                                bat "call venv\\Scripts\\python.exe -m pip install -U pip"
+                            }
+                            catch (exc) {
+                                bat "${tool 'CPython-3.6'} -m venv venv"
+                                bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+                            }
+                            
+
+                        }
+                        
+                        bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
+
+                        tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
+                            bat "venv\\Scripts\\pip.exe list"
+                        }
+                        bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu"
+                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
+                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                        }
+                        bat "dir"
                     }
-                    
-
                 }
-                
-                bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
-
-                tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
-                    bat "venv\\Scripts\\pip.exe list"
-                }
-                bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu"
-                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
-                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                }
-                bat "dir"
             }
             post{
                 always{
