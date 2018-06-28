@@ -106,7 +106,7 @@ pipeline {
 
                         }
                         
-                        bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
+                        bat "venv\\Scripts\\pip.exe install devpi-client -r ${WORKSPACE}\\source\\requirements.txt -r ${WORKSPACE}\\source\\requirements-dev.txt --upgrade-strategy only-if-needed"
 
                         tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
                             bat "venv\\Scripts\\pip.exe list"
