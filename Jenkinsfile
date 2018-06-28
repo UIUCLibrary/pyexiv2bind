@@ -81,13 +81,38 @@ pipeline {
                         }
                     }
                 }
-                stage("Installing required build environment"){
+                stage("Installing required system level dependencies"){
                     steps{
                         lock("system_python"){
                             bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
                             bat "${tool 'CPython-3.6'} -m pip install scikit-build --quiet"
+                            bat "${tool 'CPython-3.6'} -m pip install --upgrade pipenv --quiet"
                         }
+                        tee("logs/pippackages_system_${NODE_NAME}.log") {
+                            bat "${tool 'CPython-3.6'} -m pip list"
+                        }       
+                    }
+                    post{
+                        always{
+                            dir("logs"){
+                                script{
+                                    def log_files = findFiles glob: '**/pippackages*.log'
+                                    log_files.each { log_file ->
+                                        echo "Found ${log_file}"
+                                        archiveArtifacts artifacts: "${log_file}"
+                                        bat "del ${log_file}"
+                                    }
+                                }
+                            }
+                        }
+                        failure {
+                            deleteDir()
+                        }
+                    }
 
+                }
+                stage("Creating virtualenv for building"){
+                    steps {
                         bat "${tool 'CPython-3.6'} -m venv venv"
                         
                         script {
@@ -97,18 +122,12 @@ pipeline {
                             catch (exc) {
                                 bat "${tool 'CPython-3.6'} -m venv venv"
                                 bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
-                            }
-                            
-
+                            }                           
                         }
                         
                         bat "venv\\Scripts\\pip.exe install devpi-client -r ${WORKSPACE}\\source\\requirements.txt -r ${WORKSPACE}\\source\\requirements-dev.txt --upgrade-strategy only-if-needed"
                         
-                        tee("${pwd tmp: true}/logs/pippackages_system_${NODE_NAME}.log") {
-                            bat "${tool 'CPython-3.6'} -m pip list"
-                        }
-                        bat "dir ${pwd tmp: true}"
-                        bat "dir ${pwd tmp: true}\\logs"                    
+           
                         tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
                             bat "venv\\Scripts\\pip.exe list"
                         }
@@ -124,8 +143,6 @@ pipeline {
                                         bat "del ${log_file}"
                                     }
                                 }
-                                // archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
-                                // archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
                             }
                         }
                         failure {
