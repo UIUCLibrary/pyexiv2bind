@@ -116,7 +116,9 @@ pipeline {
                         timeout(5)
                     }
                     steps {
-                        bat "${tool 'CPython-3.6'} -m pipenv install --dev"           
+                        dir("source"){
+                            bat "${tool 'CPython-3.6'} -m pipenv install --dev"
+                        }
                     }
                 }
                 stage("Creating virtualenv for building"){
