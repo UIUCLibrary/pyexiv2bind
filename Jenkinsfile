@@ -211,7 +211,7 @@ junit_filename                  = ${junit_filename}
                 PATH = "${tool 'cmake3.11.2'}//..//;$PATH"
             }
             steps {
-                tee("${pwd tmp: true}/logs/build.log") {
+                tee("logs/build.log") {
                     dir("source"){
                         bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build -b ${WORKSPACE}\\build -j ${NUMBER_OF_PROCESSORS}"
                     }
@@ -221,16 +221,28 @@ junit_filename                  = ${junit_filename}
             post{
                 always{
                     // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'build.log']]
-                    dir(pwd(tmp: true)){
-                        warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: 'logs/build.log']]
-                        archiveArtifacts artifacts: 'logs/build.log'
-                    }
-                    dir("source/_skbuild/cmake-build/CMakeFiles"){
-                        bat "dir"
-                        archiveArtifacts artifacts: 'CMakeError.log', allowEmptyArchive: true
-                        archiveArtifacts artifacts: 'CMakeOutput.log', allowEmptyArchive: true
+                    // dir(pwd(tmp: true)){
+                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: 'logs/build.log']]
+                    archiveArtifacts artifacts: 'logs/build.log'
+                    // }
+                    
+                    script{
+                        def log_files = findFiles glob: 'source/_skbuild/**/*.log'
+                        log_files.each { log_file ->
+                            echo "Found ${log_file}"
+                            archiveArtifacts artifacts: "${log_file}"
+                            bat "del ${log_file}"
+                        }                                            
                     }
 
+                    script{
+                        def log_files = findFiles glob: 'logs/**/*.log'
+                        log_files.each { log_file ->
+                            echo "Found ${log_file}"
+                            archiveArtifacts artifacts: "${log_file}"
+                            bat "del ${log_file}"
+                        }                                            
+                    }
                 }
             }
         }
