@@ -316,7 +316,7 @@ junit_filename                  = ${junit_filename}
                        equals expected: true, actual: params.TEST_RUN_TOX
                     }
                     environment {
-                        PATH = "${tool 'cmake3.11.2'}//..//;$PATH"
+                        PATH = "${tool 'cmake3.11.2'}\\..\\;$PATH"
                     }
                     steps {
                         dir("source"){
