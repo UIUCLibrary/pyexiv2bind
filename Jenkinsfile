@@ -254,68 +254,69 @@ junit_filename                  = ${junit_filename}
                     }
                 }
             }
-        }
-        stage("Building Sphinx Documentation"){
-            when {
-                equals expected: true, actual: params.BUILD_DOCS
-            }
-            environment {
-                PATH = "${tool 'cmake3.11.2'}//..//;$PATH"
-            }
-            steps {
-                dir("build/docs/html"){
-                    deleteDir()
-                    echo "Cleaned out build/docs/html dirctory"
+            stage("Building Sphinx Documentation"){
+                when {
+                    equals expected: true, actual: params.BUILD_DOCS
+                }
+                environment {
+                    PATH = "${tool 'cmake3.11.2'}\\;$PATH"
+                }
+                steps {
+                    dir("build/docs/html"){
+                        deleteDir()
+                        echo "Cleaned out build/docs/html dirctory"
 
-                }
-                script{
-                    // Add a line to config file so auto docs look in the build folder
-                    def sphinx_config_file = 'source/docs/source/conf.py'
-                    def extra_line = "sys.path.insert(0, os.path.abspath('${WORKSPACE}/build/lib'))"
-                    def readContent = readFile "${sphinx_config_file}"
-                    echo "Adding \"${extra_line}\" to ${sphinx_config_file}."
-                    writeFile file: "${sphinx_config_file}", text: readContent+"\r\n${extra_line}\r\n"
+                    }
+                    script{
+                        // Add a line to config file so auto docs look in the build folder
+                        def sphinx_config_file = 'source/docs/source/conf.py'
+                        def extra_line = "sys.path.insert(0, os.path.abspath('${WORKSPACE}/build/lib'))"
+                        def readContent = readFile "${sphinx_config_file}"
+                        echo "Adding \"${extra_line}\" to ${sphinx_config_file}."
+                        writeFile file: "${sphinx_config_file}", text: readContent+"\r\n${extra_line}\r\n"
 
 
-                }
-                echo "Building docs on ${env.NODE_NAME}"
-                // bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe --version"
-                // tee("${pwd tmp: true}/logs/build_sphinx.log") {
-                //     dir("build/lib"){
-                //         bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
-    
-                //     }
-                // }
-                tee("${pwd tmp: true}/logs/build_sphinx.log") {
-                    dir("build/lib"){
-                        bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
                     }
-                }
-            }
-            post{
-                always {
-                    dir(pwd(tmp: true)){
-                        warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
-                        archiveArtifacts artifacts: 'logs/build_sphinx.log'
-                    }
-                }
-                success{
-                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                    dir("${WORKSPACE}/dist"){
-                      zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "${DOC_ZIP_FILENAME}"
-                    }
-                    // script{
-                        // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
-                        // def alljob = env.JOB_NAME.tokenize("/") as String[]
-                        // def project_name = alljob[0]
-                    // dir('build/docs/') {
-                    //     zip archive: true, dir: 'html', glob: '', zipFile: "${DOC_ZIP_FILENAME}"
-                    // }
-                    // }
-                }
-            }
+                    echo "Building docs on ${env.NODE_NAME}"
+                    // bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe --version"
+                    // tee("${pwd tmp: true}/logs/build_sphinx.log") {
+                    //     dir("build/lib"){
+                    //         bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
         
+                    //     }
+                    // }
+                    tee("${pwd tmp: true}/logs/build_sphinx.log") {
+                        dir("build/lib"){
+                            bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
+                        }
+                    }
+                }
+                post{
+                    always {
+                        dir(pwd(tmp: true)){
+                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
+                            archiveArtifacts artifacts: 'logs/build_sphinx.log'
+                        }
+                    }
+                    success{
+                        publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+                        dir("${WORKSPACE}/dist"){
+                        zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "${DOC_ZIP_FILENAME}"
+                        }
+                        // script{
+                            // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
+                            // def alljob = env.JOB_NAME.tokenize("/") as String[]
+                            // def project_name = alljob[0]
+                        // dir('build/docs/') {
+                        //     zip archive: true, dir: 'html', glob: '', zipFile: "${DOC_ZIP_FILENAME}"
+                        // }
+                        // }
+                    }
+                }
+            
+            }
         }
+        
         stage("Testing") {
             parallel {
                 stage("Run Tox test") {
