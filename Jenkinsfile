@@ -44,6 +44,15 @@ pipeline {
     stages {
         stage("Configure") {
             stages{
+                stage("Purge all existing data in workspace"){
+                    when{
+                        equals expected: true, actual: params.FRESH_WORKSPACE
+                    }
+                    steps{
+                        deleteDir()
+                        checkout scm
+                    }
+                }
                 stage("Cleanup"){
                     steps {
                         // Set up the reports directory variable 
@@ -51,12 +60,7 @@ pipeline {
                             REPORT_DIR = "${pwd tmp: true}\\reports"
                         }
                         
-                        script{
-                            if (params.FRESH_WORKSPACE == true){
-                                deleteDir()
-                                checkout scm
-                            }
-                        }
+
 
                         
                         dir(pwd(tmp: true)){
