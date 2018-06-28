@@ -103,15 +103,32 @@ pipeline {
                         }
                         
                         bat "venv\\Scripts\\pip.exe install devpi-client -r ${WORKSPACE}\\source\\requirements.txt -r ${WORKSPACE}\\source\\requirements-dev.txt --upgrade-strategy only-if-needed"
-
+                        
+                        tee("${pwd tmp: true}/logs/pippackages_system_${NODE_NAME}.log") {
+                            bat "${tool 'CPython-3.6'} -m pip list"
+                        }
+                        bat "dir ${pwd tmp: true}"
+                        bat "dir ${pwd tmp: true}\\logs"                    
                         tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
                             bat "venv\\Scripts\\pip.exe list"
                         }
                     }
                     post{
+                        always{
+                            dir(pwd(tmp: true)){
+                                script{
+                                    def log_files = findFiles glob: '**/pippackages*.log'
+                                    log_files.each { log_file ->
+                                        echo "Found ${log_file}"
+                                        archiveArtifacts artifacts: "${log_file}"
+                                        bat "del ${log_file}"
+                                    }
+                                }
+                                // archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
+                                // archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
+                            }
+                        }
                         failure {
-                            bat "dir"
-                            bat "dir /s/b *.txt"
                             deleteDir()
                         }
                     }
@@ -133,12 +150,7 @@ pipeline {
                             junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
                         }
 
-                        tee("${pwd tmp: true}/logs/pippackages_system_${NODE_NAME}.log") {
-                            bat "${tool 'CPython-3.6'} -m pip list"
-                        }
-                        bat "dir ${pwd tmp: true}"
-                        bat "dir ${pwd tmp: true}\\logs"
-                        
+
                         
                         
                         script{
@@ -170,13 +182,8 @@ Python virtual environment path = ${VENV_ROOT}
 VirtualEnv Python executable    = ${VENV_PYTHON}
 VirtualEnv Pip executable       = ${VENV_PIP}
 junit_filename                  = ${junit_filename}
-"""  
-                    
-                    dir(pwd(tmp: true)){
-                        archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
-                        archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
+"""           
 
-                    }
                 }
                 
             }
