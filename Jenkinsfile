@@ -206,47 +206,51 @@ junit_filename                  = ${junit_filename}
             }
 
         }
-        stage("Building Python Package"){
-            environment {
-                PATH = "${tool 'cmake3.11.2'}\\;$PATH"
-            }
-            steps {
-                tee("logs/build.log") {
-                    dir("source"){
-                        bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build -b ${WORKSPACE}\\build -j ${NUMBER_OF_PROCESSORS}"
+        stage("Building") {
+            stages{     
+                stage("Building Python Package"){
+                    environment {
+                        PATH = "${tool 'cmake3.11.2'}\\;$PATH"
                     }
-                
-                }
-            }
-            post{
-                always{
-                    // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'build.log']]
-                    // dir(pwd(tmp: true)){
-                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: 'logs/build.log']]
-                    archiveArtifacts artifacts: 'logs/build.log'
-                    // }
-                    
-                    script{
-                        def log_files = findFiles glob: 'source/_skbuild/**/*.log'
-                        log_files.each { log_file ->
-                            echo "Found ${log_file}"
-                            archiveArtifacts artifacts: "${log_file}"
-                            bat "del ${log_file}"
-                        }                                            
+                    steps {
+                        tee("logs/build.log") {
+                            dir("source"){
+                                bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build -b ${WORKSPACE}\\build -j ${NUMBER_OF_PROCESSORS}"
+                            }
+                        
+                        }
                     }
+                    post{
+                        always{
+                            // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'build.log']]
+                            // dir(pwd(tmp: true)){
+                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: 'logs/build.log']]
+                            archiveArtifacts artifacts: 'logs/build.log'
+                            // }
+                            
+                            script{
+                                def log_files = findFiles glob: 'source/_skbuild/**/*.log'
+                                log_files.each { log_file ->
+                                    echo "Found ${log_file}"
+                                    archiveArtifacts artifacts: "${log_file}"
+                                    bat "del ${log_file}"
+                                }                                            
+                            }
 
-                    script{
-                        def log_files = findFiles glob: 'logs/**/*.log'
-                        log_files.each { log_file ->
-                            echo "Found ${log_file}"
-                            archiveArtifacts artifacts: "${log_file}"
-                            bat "del ${log_file}"
-                        }                                            
-                    }
-                }
-                cleanup{
-                    dir("source/_skbuild"){
-                        deleteDir()
+                            script{
+                                def log_files = findFiles glob: 'logs/**/*.log'
+                                log_files.each { log_file ->
+                                    echo "Found ${log_file}"
+                                    archiveArtifacts artifacts: "${log_file}"
+                                    bat "del ${log_file}"
+                                }                                            
+                            }
+                        }
+                        cleanup{
+                            dir("source/_skbuild"){
+                                deleteDir()
+                            }
+                        }
                     }
                 }
             }
