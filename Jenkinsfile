@@ -333,6 +333,10 @@ junit_filename                  = ${junit_filename}
                     }
                     post {
                         always{
+                            bat "dir"
+                            dir("source"){
+                                bat "dir"
+                            }
                             dir("${REPORT_DIR}"){
                                 bat "dir"
                                 junit "${junit_filename}"
