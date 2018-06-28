@@ -78,10 +78,6 @@ pipeline {
                             echo "Cleaned out reports directory"
                             bat "dir"
                         }
-                        lock("system_python"){
-                            bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
-                            bat "${tool 'CPython-3.6'} -m pip install scikit-build --quiet"
-                        }
                     }
                     post{
                         failure {
@@ -89,42 +85,15 @@ pipeline {
                         }
                     }
                 }
-                stage("Setting variables used by the rest of the build"){
+                stage("Installing required build environment"){
                     steps{
-                        script{
-                            REPORT_DIR = "${pwd tmp: true}\\reports"
-                        }
-                        
-                        script {
-                            dir("source"){
-                                PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
-                                PKG_VERSION = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
-                            }
+                        lock("system_python"){
+                            bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
+                            bat "${tool 'CPython-3.6'} -m pip install scikit-build --quiet"
                         }
 
-                        script{
-                            DOC_ZIP_FILENAME = "${PKG_NAME}-${PKG_VERSION}.doc.zip"
-                            junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
-                        }
-
-                        tee("${pwd tmp: true}/logs/pippackages_system_${NODE_NAME}.log") {
-                            bat "${tool 'CPython-3.6'} -m pip list"
-                        }
-                        bat "dir ${pwd tmp: true}"
-                        bat "dir ${pwd tmp: true}\\logs"
-                        
                         bat "${tool 'CPython-3.6'} -m venv venv"
                         
-                        script{
-                            VENV_ROOT = "${WORKSPACE}\\venv\\"
-
-                            VENV_PYTHON = "${WORKSPACE}\\venv\\Scripts\\python.exe"
-                            bat "${VENV_PYTHON} --version"
-
-                            VENV_PIP = "${WORKSPACE}\\venv\\Scripts\\pip.exe"
-                            bat "${VENV_PIP} --version"
-                        }
-
                         script {
                             try {
                                 bat "call venv\\Scripts\\python.exe -m pip install -U pip"
@@ -142,6 +111,48 @@ pipeline {
                         tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
                             bat "venv\\Scripts\\pip.exe list"
                         }
+                    }
+                    post{
+                        failure {
+                            deleteDir()
+                        }
+                    }
+                }
+                stage("Setting variables used by the rest of the build"){
+                    steps{
+                        
+                        script {
+                            REPORT_DIR = "${pwd tmp: true}\\reports"
+                            dir("source"){
+                                PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
+                                PKG_VERSION = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                            }
+                        }
+
+                        script{
+                            DOC_ZIP_FILENAME = "${PKG_NAME}-${PKG_VERSION}.doc.zip"
+                            junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
+                        }
+
+                        tee("${pwd tmp: true}/logs/pippackages_system_${NODE_NAME}.log") {
+                            bat "${tool 'CPython-3.6'} -m pip list"
+                        }
+                        bat "dir ${pwd tmp: true}"
+                        bat "dir ${pwd tmp: true}\\logs"
+                        
+                        
+                        
+                        script{
+                            VENV_ROOT = "${WORKSPACE}\\venv\\"
+
+                            VENV_PYTHON = "${WORKSPACE}\\venv\\Scripts\\python.exe"
+                            bat "${VENV_PYTHON} --version"
+
+                            VENV_PIP = "${WORKSPACE}\\venv\\Scripts\\pip.exe"
+                            bat "${VENV_PIP} --version"
+                        }
+
+                        
                         bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu"
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
                             bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
