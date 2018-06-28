@@ -55,8 +55,8 @@ pipeline {
                 }
                 stage("Cleanup"){
                     steps {
-                        // Set up the reports directory variable 
-                                                
+                        
+                        bat "dir"                        
                         dir(pwd(tmp: true)){
                             dir("logs"){
                                 deleteDir()
@@ -124,6 +124,7 @@ pipeline {
                     steps{
                         
                         script {
+                            // Set up the reports directory variable 
                             REPORT_DIR = "${pwd tmp: true}\\reports"
                             dir("source"){
                                 PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
