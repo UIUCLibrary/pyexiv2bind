@@ -208,7 +208,7 @@ junit_filename                  = ${junit_filename}
         }
         stage("Building Python Package"){
             environment {
-                PATH = "${tool 'cmake3.11.2'}\\..\\;$PATH"
+                PATH = "${tool 'cmake3.11.2'}\;$PATH"
             }
             steps {
                 bat "set"
