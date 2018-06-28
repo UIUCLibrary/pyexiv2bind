@@ -338,7 +338,13 @@ junit_filename                  = ${junit_filename}
                             }
                             dir("${REPORT_DIR}"){
                                 bat "dir"
-                                junit "${junit_filename}"
+                                script {
+                                    def xml_files = findFiles glob: "**/*.xml"
+                                    xml_files.each { junit_xml_file ->
+                                        echo "Found ${junit_xml_file}"
+                                        junit "${junit_xml_file}"
+                                    }
+                                }
                             }              
                             publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
                         }
