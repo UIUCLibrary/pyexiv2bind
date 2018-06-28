@@ -63,17 +63,13 @@ pipeline {
                             }
                         
                         }
-                        dir("logs"){
-                            deleteDir()
-                        }
-                        
                         dir("build"){
                             deleteDir()
                             echo "Cleaned out build directory"
                             bat "dir"
                         }
                         
-                        dir("${REPORT_DIR}"){
+                        dir("${pwd tmp: true}\\reports"){
                             deleteDir()
                             echo "Cleaned out reports directory"
                             bat "dir"
