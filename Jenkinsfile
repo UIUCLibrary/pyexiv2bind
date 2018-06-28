@@ -211,6 +211,7 @@ junit_filename                  = ${junit_filename}
                 PATH = "${tool 'cmake3.11.2'}//..//;$PATH"
             }
             steps {
+                bat "where cmake"
                 tee("logs/build.log") {
                     dir("source"){
                         bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build -b ${WORKSPACE}\\build -j ${NUMBER_OF_PROCESSORS}"
