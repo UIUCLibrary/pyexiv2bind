@@ -222,26 +222,12 @@ junit_filename                  = ${junit_filename}
                     }
                     post{
                         always{
-                            // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'build.log']]
-                            // dir(pwd(tmp: true)){
-                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: 'logs/build.log']]
-                            archiveArtifacts artifacts: 'logs/build.log'
-                            // }
-                            
                             script{
-                                def log_files = findFiles glob: 'source/_skbuild/**/*.log'
+                                def log_files = findFiles glob: '**/*.log'
                                 log_files.each { log_file ->
                                     echo "Found ${log_file}"
                                     archiveArtifacts artifacts: "${log_file}"
-                                    bat "del ${log_file}"
-                                }                                            
-                            }
-
-                            script{
-                                def log_files = findFiles glob: 'logs/**/*.log'
-                                log_files.each { log_file ->
-                                    echo "Found ${log_file}"
-                                    archiveArtifacts artifacts: "${log_file}"
+                                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: "${log_file}"]]
                                     bat "del ${log_file}"
                                 }                                            
                             }
@@ -284,7 +270,7 @@ junit_filename                  = ${junit_filename}
             
                         //     }
                         // }
-                        tee("${pwd tmp: true}/logs/build_sphinx.log") {
+                        tee("logs/build_sphinx.log") {
                             dir("build/lib"){
                                 bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
                             }
@@ -292,10 +278,20 @@ junit_filename                  = ${junit_filename}
                     }
                     post{
                         always {
-                            dir(pwd(tmp: true)){
-                                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
-                                archiveArtifacts artifacts: 'logs/build_sphinx.log'
+                            dir("logs"){
+                                script{
+                                    def log_files = findFiles glob: '**/*.log'
+                                    log_files.each { log_file ->
+                                        echo "Found ${log_file}"
+                                        archiveArtifacts artifacts: "${log_file}"
+                                        bat "del ${log_file}"
+                                    }
+                                }
                             }
+                            // dir(pwd(tmp: true)){
+                            //     warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
+                            //     archiveArtifacts artifacts: 'logs/build_sphinx.log'
+                            // }
                         }
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
