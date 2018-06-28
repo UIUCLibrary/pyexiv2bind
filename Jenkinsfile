@@ -56,13 +56,7 @@ pipeline {
                 stage("Cleanup"){
                     steps {
                         // Set up the reports directory variable 
-                        script{
-                            REPORT_DIR = "${pwd tmp: true}\\reports"
-                        }
-                        
-
-
-                        
+                                                
                         dir(pwd(tmp: true)){
                             dir("logs"){
                                 deleteDir()
@@ -88,7 +82,18 @@ pipeline {
                             bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
                             bat "${tool 'CPython-3.6'} -m pip install scikit-build --quiet"
                         }
-
+                    }
+                    post{
+                        failure {
+                            deleteDir()
+                        }
+                    }
+                }
+                stage("Setting variables used by the rest of the build"){
+                    steps{
+                        script{
+                            REPORT_DIR = "${pwd tmp: true}\\reports"
+                        }
                         
                         script {
                             dir("source"){
@@ -163,9 +168,7 @@ junit_filename                  = ${junit_filename}
 
                     }
                 }
-                failure {
-                    deleteDir()
-                }
+                
             }
 
         }
