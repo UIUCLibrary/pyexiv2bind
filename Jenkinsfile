@@ -333,9 +333,8 @@ junit_filename                  = ${junit_filename}
                     }
                     post {
                         always{
-                            bat "dir"
-                            dir("source"){
-                                bat "dir"
+                            dir("source/_skbuild"){
+                                deleteDir()
                             }
                             dir("${REPORT_DIR}"){
                                 bat "dir"
