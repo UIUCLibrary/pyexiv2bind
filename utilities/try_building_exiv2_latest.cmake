@@ -10,10 +10,16 @@ set(CTEST_SOURCE_DIRECTORY .)
 set(CTEST_BINARY_DIRECTORY build)
 set(CTEST_CONFIGURATION_TYPE Debug)
 set(CTEST_CMAKE_GENERATOR "Visual Studio 15 2017 Win64")
+#set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 
 ProcessorCount(N)
 if(NOT N EQUAL 0)
-  set(CTEST_BUILD_FLAGS /maxcpucount:${N})
+    if(CTEST_CMAKE_GENERATOR MATCHES "Visual Studio")
+        set(CTEST_BUILD_FLAGS /maxcpucount:${N})
+    elseif(CTEST_CMAKE_GENERATOR MATCHES "Makefile")
+        set(CTEST_BUILD_FLAGS -j${N})
+    endif()
+
 endif()
 
 ctest_start(Experimental)
@@ -76,9 +82,20 @@ find_path(GTEST_INCLUDE_DIR
     # PATH_SUFFIXES gtest
 )
 # TODO: find thise files instead of hard coding them
-set(GTEST_DLL ${gtest_BINARY_DIR}/installed/lib/gtest.dll)
-set(GTEST_MAIN_DLL ${gtest_BINARY_DIR}/installed/lib/gtest_main.dll)
- 
+#find_library(GTEST)
+if(WIN32)
+    find_file(GTEST_DLL
+            NAMES gtest.dll
+            PATHS ${gtest_BINARY_DIR}/installed/lib
+            NO_DEFAULT_PATH
+            )
+    find_file(GTEST_MAIN_DLL
+            NAMES gtest_main.dll
+            PATHS ${gtest_BINARY_DIR}/installed/lib
+            NO_DEFAULT_PATH
+            )
+#    set(GTEST_MAIN_DLL ${gtest_BINARY_DIR}/installed/lib/gtest_main.dll)
+endif()
 # find_package(GTest)
 # message(FATAL_ERROR "GTEST_INCLUDE_DIR = ${GTEST_INCLUDE_DIR}")
 
@@ -92,9 +109,10 @@ FetchContent_Populate(zlib
     SOURCE_DIR      deps/zlib-source
     BINARY_DIR      ${CTEST_BINARY_DIRECTORY}/zlib-build
     SUBBUILD_DIR    ${CTEST_BINARY_DIRECTORY}/zlib-subbuild
-)
 
-list(APPEND zlib_OPTIONS "-DCMAKE_INSTALL_PREFIX=./installed")
+        )
+
+list(APPEND zlib_OPTIONS "-DCMAKE_INSTALL_PREFIX=${zlib_BINARY_DIR}/installed")
 ctest_configure(
     BUILD ${zlib_BINARY_DIR} 
     SOURCE ${zlib_SOURCE_DIR}
@@ -112,7 +130,9 @@ find_library(ZLIB_LIBRARY
     NAMES 
         zlibstatic 
         zlibstaticd
+        zlib.a
     HINTS ${zlib_BINARY_DIR}/installed/lib
+    NO_DEFAULT_PATH
     )
 
 find_path(ZLIB_INCLUDE 
@@ -209,9 +229,20 @@ ctest_build(
     PROJECT_NAME exiv2
     BUILD ${exiv2_BINARY_DIR} 
     )
-file(COPY ${GTEST_DLL} ${GTEST_MAIN_DLL} DESTINATION "${exiv2_BINARY_DIR}/bin")
-execute_process(COMMAND "unit_tests"
-    RESULT_VARIABLE return_code
-    WORKING_DIRECTORY ${exiv2_BINARY_DIR}/bin
-    )
+
+if (WIN32)
+    file(COPY ${GTEST_DLL} ${GTEST_MAIN_DLL} DESTINATION "${exiv2_BINARY_DIR}/bin")
+endif ()
+
+find_program(UNIT_TESTS
+        NAMES unit_tests
+        PATHS ${exiv2_BINARY_DIR}/bin
+        NO_DEFAULT_PATH)
+
+execute_process(
+        COMMAND ${UNIT_TESTS}
+        RESULT_VARIABLE return_code
+        WORKING_DIRECTORY ${exiv2_BINARY_DIR}/bin
+)
+
 message(STATUS "return_code = ${return_code}")
