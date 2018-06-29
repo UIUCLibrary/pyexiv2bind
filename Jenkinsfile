@@ -717,11 +717,6 @@ junit_filename                  = ${junit_filename}
     }
     post {
         cleanup {
-            dir('_skbuild\\cmake-build\\_deps') {
-                deleteDir()
-            }
-            // bat "venv\\Scripts\\python.exe setup.py clean --all"
-            
             dir('dist') {
                 deleteDir()
             }
@@ -743,7 +738,9 @@ junit_filename                  = ${junit_filename}
                                     deleteDir()
                                 }
                                 try{
-                                    bat "${VENV_PYTHON} setup.py clean --all"
+                                    retry(3) {
+                                        bat "${VENV_PYTHON} setup.py clean --all"
+                                    }
                                 } catch (Exception ex2) {
                                     echo "Unable to succesfully run clean. Purging source directory."
                                     deleteDir()
