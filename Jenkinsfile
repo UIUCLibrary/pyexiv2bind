@@ -352,15 +352,19 @@ junit_filename                  = ${junit_filename}
                         PATH = "${tool 'CMake_3.11.4'}\\;$PATH"
                     }
                     steps {
+                        bat "${tool 'CPython-3.6'} -m venv venv"
+                        bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
+                        bat "venv\\Scripts\\pip.exe install --upgrade tox scikit-build setuptools"
+                        
                         dir("source"){
                             script{
                                 try{
-                                    bat "${VENV_PYTHON} -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=py3exiv2bind"
+                                    bat "venv\\Scripts\\python.exe -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=py3exiv2bind"
                                     bat "dir ${REPORT_DIR}"
 
                                 } catch (exc) {
                                     echo "MyPy found some warnings"
-                                    bat "${VENV_PYTHON} -m tox --recreate --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=py3exiv2bind"
+                                    bat "venv\\Scripts\\python.exe -m tox --recreate --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=py3exiv2bind"
                                 }
                             }
                             
