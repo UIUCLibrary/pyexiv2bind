@@ -239,7 +239,7 @@ junit_filename                  = ${junit_filename}
             stages{     
                 stage("Building Python Package"){
                     environment {
-                        PATH = "${tool 'cmake3.11.2'}\\;$PATH"
+                        PATH = "${tool 'CMake_3.11.4'}\\;$PATH"
                     }
                     steps {
                         tee("logs/build.log") {
@@ -268,7 +268,7 @@ junit_filename                  = ${junit_filename}
                         equals expected: true, actual: params.BUILD_DOCS
                     }
                     environment {
-                        PATH = "${tool 'cmake3.11.2'}\\;$PATH"
+                        PATH = "${tool 'CMake_3.11.4'}\\;$PATH"
                     }
                     steps {
                         dir("build/docs/html"){
@@ -344,12 +344,21 @@ junit_filename                  = ${junit_filename}
                        equals expected: true, actual: params.TEST_RUN_TOX
                     }
                     environment {
-                        PATH = "${tool 'cmake3.11.2'}\\;$PATH"
+                        PATH = "${tool 'CMake_3.11.4'}\\;$PATH"
                     }
                     steps {
                         dir("source"){
-                            bat "${VENV_PYTHON} -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=py3exiv2bind"
-                            bat "dir ${REPORT_DIR}"
+                            script{
+                                try{
+                                    bat "${VENV_PYTHON} -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=py3exiv2bind"
+                                    bat "dir ${REPORT_DIR}"
+
+                                } catch (exc) {
+                                    echo "MyPy found some warnings"
+                                    bat "${VENV_PYTHON} -m tox --recreate --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=py3exiv2bind"
+                                }
+                            }
+                            
 
                             // bat "${WORKSPACE}\\venv\\Scripts\\tox.exe --workdir ${WORKSPACE}\\.tox"
                         }
@@ -452,7 +461,7 @@ junit_filename                  = ${junit_filename}
         }
         stage("Packaging") {
             environment {
-                PATH = "${tool 'cmake3.11.2'}\\;$PATH"
+                PATH = "${tool 'CMake_3.11.4'}\\;$PATH"
             }
             steps {
                 dir("source"){
@@ -509,7 +518,7 @@ junit_filename                  = ${junit_filename}
             parallel {
                 stage("Source Distribution: .tar.gz") {
                     environment {
-                        PATH = "${tool 'cmake3.11.2'}\\;$PATH"
+                        PATH = "${tool 'CMake_3.11.4'}\\;$PATH"
                     }
                     steps {
                         echo "Testing Source tar.gz package in devpi"
@@ -536,7 +545,7 @@ junit_filename                  = ${junit_filename}
                 }
                 stage("Source Distribution: .zip") {
                     environment {
-                        PATH = "${tool 'cmake3.11.2'}\\..\\;$PATH"
+                        PATH = "${tool 'CMake_3.11.4'}\\..\\;$PATH"
                     }
                     steps {
                         echo "Testing Source zip package in devpi"
