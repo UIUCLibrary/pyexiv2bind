@@ -742,21 +742,21 @@ junit_filename                  = ${junit_filename}
                 if(fileExists('source/setup.py')){
                     dir("source"){
                         try{
-                            bat "${VENV_PYTHON} setup.py clean --all"
-                            } catch (Exception ex) {
-                            // echo "Unable to succesfully run clean. Purging source directory."
-                                dir("_skbuild"){
-                                    deleteDir()
-                                }
-                                try{
-                                    retry(3) {
-                                        bat "${VENV_PYTHON} setup.py clean --all"
-                                    }
-                                } catch (Exception ex2) {
-                                    echo "Unable to successfully run clean. Purging source directory."
-                                    deleteDir()
-                                }
+                            retry(3) {
+                                bat "pipenv run python setup.py clean --all"
                             }
+                        } catch (Exception ex) {
+                        // echo "Unable to succesfully run clean. Purging source directory."
+                            dir("_skbuild"){
+                                deleteDir()
+                            }
+                            try{
+                                bat "pipenv run python setup.py clean --all"
+                            } catch (Exception ex2) {
+                                echo "Unable to successfully run clean. Purging source directory."
+                                deleteDir()
+                            }
+                        }
                         bat "dir"
                     }
                 }                
