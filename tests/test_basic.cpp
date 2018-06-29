@@ -6,7 +6,7 @@
 #include <glue/Image.h>
 
 TEST_CASE("Try jp2 Image", "[glue][jp2]"){
-    const std::string filename = "tests/sample_images/dummy.jp2";
+    const std::string filename = TEST_IMAGE_PATH "/dummy.jp2";
     Image i(filename);
     SECTION("File is correctly added"){
         REQUIRE(i.getFilename() == filename);
@@ -36,7 +36,7 @@ TEST_CASE("Try jp2 Image", "[glue][jp2]"){
 
 }
 TEST_CASE("Try tiff Image", "[glue][tiff]"){
-    const std::string filename = "tests/sample_images/dummy.tif";
+    const std::string filename = TEST_IMAGE_PATH"/dummy.tif";
     Image i(filename);
 
     SECTION("File is correctly added"){

@@ -15,27 +15,38 @@ function(create_venv)
             RESULT_VARIABLE VENV_CREATED
             )
     if(NOT "${VENV_CREATED}" STREQUAL "0")
-        message(SEND_ERROR "Unable to make a Python virtual environment")
+        message(SEND_ERROR "Unable to make a Python virtual environment. Reason: ${VENV_CREATED}")
     endif()
+    find_program(VENV_PYTHON
+            NAMES python
+            PATHS
+                ${PROJECT_BINARY_DIR}/venv/Scripts/
+                ${PROJECT_BINARY_DIR}/venv/bin/
+            NO_DEFAULT_PATH
+            )
+    find_program(VENV_PIP
+            NAMES pip
+            PATHS
+                ${PROJECT_BINARY_DIR}/venv/Scripts/
+                ${PROJECT_BINARY_DIR}/venv/bin
+            NO_DEFAULT_PATH
+            )
 
-    foreach(requirement_text ${VENV_ARGS_REQUIREMENTS})
-        list(APPEND requirements_args -r)
-        list(APPEND requirements_args ${requirement_text})
-    endforeach()
+    if(VENV_PYTHON)
+        foreach(requirement_text ${VENV_ARGS_REQUIREMENTS})
+            list(APPEND requirements_args -r)
+            list(APPEND requirements_args ${requirement_text})
+        endforeach()
+    endif()
 
     message(STATUS "Setting up the dependencies for the Python virtual environment")
 
-    if(WIN32)
-        set(PIP_PATH ${PROJECT_BINARY_DIR}/venv/scripts/pip.exe)
-    else()
-        set(PIP_PATH ${PROJECT_BINARY_DIR}/venv/bin/pip)
-    endif()
 
-    execute_process(COMMAND ${PIP_PATH} install ${requirements_args}
+    execute_process(COMMAND ${VENV_PIP} install ${requirements_args} --upgrade-strategy only-if-needed
             RESULT_VARIABLE VENV_DEPS_INSTALLED)
 
     if(NOT "${VENV_DEPS_INSTALLED}" STREQUAL "0")
-        message(SEND_ERROR "Error installing Python virtual environment dependencies")
+        message(SEND_ERROR "Error installing Python virtual environment dependencies. Reason: ${VENV_DEPS_INSTALLED}")
     endif()
 
 endfunction()
