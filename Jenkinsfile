@@ -340,6 +340,11 @@ junit_filename                  = ${junit_filename}
         stage("Testing") {
             parallel {
                 stage("Run Tox test") {
+                    agent{
+                        node {
+                            label "Windows && VS2015 && Python3 && longfilenames"    
+                        }
+                    }
                     when {
                        equals expected: true, actual: params.TEST_RUN_TOX
                     }
@@ -366,9 +371,6 @@ junit_filename                  = ${junit_filename}
                     }
                     post {
                         always{
-                            dir("source/_skbuild"){
-                                deleteDir()
-                            }
                             dir("${REPORT_DIR}"){
                                 bat "dir"
                                 script {
