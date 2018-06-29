@@ -117,7 +117,7 @@ pipeline {
                     }
                     steps {
                         dir("source"){
-                            bat "${tool 'CPython-3.6'} -m pipenv install --dev"
+                            bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
                             
                         }
                         tee("logs/pippackages_pipenv_${NODE_NAME}.log") {
