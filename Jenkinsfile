@@ -261,11 +261,6 @@ junit_filename                  = ${junit_filename}
                                 }                                            
                             }
                         }
-                        cleanup{
-                            dir("source/_skbuild"){
-                                deleteDir()
-                            }
-                        }
                     }
                 }
                 stage("Building Sphinx Documentation"){
