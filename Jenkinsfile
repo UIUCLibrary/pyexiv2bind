@@ -288,13 +288,6 @@ junit_filename                  = ${junit_filename}
 
                         }
                         echo "Building docs on ${env.NODE_NAME}"
-                        // bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe --version"
-                        // tee("${pwd tmp: true}/logs/build_sphinx.log") {
-                        //     dir("build/lib"){
-                        //         bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
-            
-                        //     }
-                        // }
                         tee("logs/build_sphinx.log") {
                             dir("build/lib"){
                                 bat "pipenv run sphinx-build -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
@@ -313,24 +306,12 @@ junit_filename                  = ${junit_filename}
                                     }
                                 }
                             }
-                            // dir(pwd(tmp: true)){
-                            //     warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
-                            //     archiveArtifacts artifacts: 'logs/build_sphinx.log'
-                            // }
                         }
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
                             dir("${WORKSPACE}/dist"){
                             zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "${DOC_ZIP_FILENAME}"
                             }
-                            // script{
-                                // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
-                                // def alljob = env.JOB_NAME.tokenize("/") as String[]
-                                // def project_name = alljob[0]
-                            // dir('build/docs/') {
-                            //     zip archive: true, dir: 'html', glob: '', zipFile: "${DOC_ZIP_FILENAME}"
-                            // }
-                            // }
                         }
                     }
                 
@@ -354,9 +335,6 @@ junit_filename                  = ${junit_filename}
                     }
                     steps {
                         
-                        // bat "${tool 'CPython-3.6'} -m venv venv"
-                        // bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
-                        // bat "venv\\Scripts\\pip.exe install --upgrade tox scikit-build setuptools"
                         dir("source"){
                             bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
                             script{
@@ -368,9 +346,6 @@ junit_filename                  = ${junit_filename}
                                     bat "pipenv run tox --recreate --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=py3exiv2bind"
                                 }
                             }
-                            
-
-                            // bat "${WORKSPACE}\\venv\\Scripts\\tox.exe --workdir ${WORKSPACE}\\.tox"
                         }
                         
                     }
@@ -412,23 +387,13 @@ junit_filename                  = ${junit_filename}
                             }
                             bat "pipenv run sphinx-build -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v" 
                         }
-                        bat "move ${WORKSPACE}\\build\\docs\\output.txt ${REPORT_DIR}\\doctest.txt"
-                        // dir("build/lib"){
-                        //     bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
-        
-                        // }
-                        // dir("build/docs/"){
-                        //     bat "dir"
-                        //     bat "move output.txt ${REPORT_DIR}\\doctest.txt"
-                        // }
-                        
+                        bat "move ${WORKSPACE}\\build\\docs\\output.txt ${REPORT_DIR}\\doctest.txt"                      
                     }
                     post{
                         always {
                             dir("${REPORT_DIR}"){
                                 archiveArtifacts artifacts: "doctest.txt"
                             }
-                            // archiveArtifacts artifacts: "reports/doctest.txt"
                         }
                     }
                 }
@@ -694,37 +659,11 @@ junit_filename                  = ${junit_filename}
                             } catch(err){
                                 echo "User response timed out. Packages not deployed to DevPi Production."
                             }
-
-
-                            // withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            //     bat "devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                            //     bat "devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                            //     bat "devpi push ${PKG_NAME}==${PKG_VERSION} production/release"
-                            // }
                         }
                     }
                 }
             }
         }
-        // stage("Release to production") {
-        //     when {
-        //         expression { params.RELEASE != "None" && env.BRANCH_NAME == "master" }
-        //     }
-        //     steps {
-        //         script {
-        //             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-        //                 bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-        //                 bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-        //                 bat "venv\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/${params.RELEASE}"
-        //             }
-
-        //         }
-        //         node("Linux"){
-        //             updateOnlineDocs url_subdomain: params.URL_SUBFOLDER, stash_name: "HTML Documentation"
-        //         }
-        //     }
-        // }
-
     }
     post {
         cleanup {
