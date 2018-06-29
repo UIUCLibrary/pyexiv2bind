@@ -753,7 +753,7 @@ junit_filename                  = ${junit_filename}
                                         bat "${VENV_PYTHON} setup.py clean --all"
                                     }
                                 } catch (Exception ex2) {
-                                    echo "Unable to succesfully run clean. Purging source directory."
+                                    echo "Unable to successfully run clean. Purging source directory."
                                     deleteDir()
                                 }
                             }
