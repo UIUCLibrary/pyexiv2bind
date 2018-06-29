@@ -359,12 +359,12 @@ junit_filename                  = ${junit_filename}
                         dir("source"){
                             script{
                                 try{
-                                    bat "venv\\Scripts\\python.exe -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=py3exiv2bind"
+                                    bat "..\\venv\\Scripts\\python.exe -m tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=py3exiv2bind"
                                     bat "dir ${REPORT_DIR}"
 
                                 } catch (exc) {
                                     echo "MyPy found some warnings"
-                                    bat "venv\\Scripts\\python.exe -m tox --recreate --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=py3exiv2bind"
+                                    bat "..\\venv\\Scripts\\python.exe -m tox --recreate --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=py3exiv2bind"
                                 }
                             }
                             
