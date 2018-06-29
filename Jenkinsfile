@@ -541,7 +541,7 @@ junit_filename                  = ${junit_filename}
                 }
                 stage("Source Distribution: .zip") {
                     environment {
-                        PATH = "${tool 'cmake3.11.2'}//..//;$PATH"
+                        PATH = "${tool 'cmake3.11.2'}\\..\\;$PATH"
                     }
                     steps {
                         echo "Testing Source zip package in devpi"
