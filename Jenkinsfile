@@ -326,7 +326,8 @@ junit_filename                  = ${junit_filename}
                 stage("Run Tox test") {
                     agent{
                         node {
-                            label "Windows && VS2015 && Python3 && longfilenames"    
+                            label "Windows && VS2015 && Python3 && longfilenames"
+                            customWorkspace "c:/Jenkins/temp/${JOB_NAME}/tox/"
                         }
                     }
                     when {
