@@ -3,10 +3,9 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
-[packages]
 
 [dev-packages]
-scikit-build = "*"
+scikit-build = ">=0.8.0"
 pytest = "*"
 pytest-runner = "*"
 tox = "*"

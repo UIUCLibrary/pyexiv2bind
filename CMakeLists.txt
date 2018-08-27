@@ -57,8 +57,8 @@ include_directories(${CMAKE_BINARY_DIR})
 
 
 FetchContent_Declare(libpybind11
-        GIT_REPOSITORY https://github.com/pybind/pybind11.git
-        GIT_TAG 8edc147
+        URL https://github.com/pybind/pybind11/archive/v2.2.3.tar.gz
+        URL_HASH SHA1=0acaeb967f09dbef53a1e2a4366780548597beba
         )
 
 FetchContent_GetProperties(libpybind11)

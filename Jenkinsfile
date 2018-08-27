@@ -51,7 +51,9 @@ pipeline {
                     }
                     steps{
                         deleteDir()
-                        checkout scm
+                        dir("source"){
+                            checkout scm
+                        }
                     }
                 }
                 stage("Cleanup"){
@@ -240,7 +242,7 @@ junit_filename                  = ${junit_filename}
             stages{     
                 stage("Building Python Package"){
                     environment {
-                        PATH = "${tool 'CMake_3.11.4'}\\;$PATH"
+                        PATH = "${tool 'cmake3.12'}\\;$PATH"
                     }
                     steps {
                         tee("logs/build.log") {
@@ -269,7 +271,7 @@ junit_filename                  = ${junit_filename}
                         equals expected: true, actual: params.BUILD_DOCS
                     }
                     environment {
-                        PATH = "${tool 'CMake_3.11.4'}\\;$PATH"
+                        PATH = "${tool 'cmake3.12'}\\;$PATH"
                     }
                     steps {
                         dir("build/docs/html"){
@@ -324,14 +326,15 @@ junit_filename                  = ${junit_filename}
                 stage("Run Tox test") {
                     agent{
                         node {
-                            label "Windows && VS2015 && Python3 && longfilenames"    
+                            label "Windows && VS2015 && Python3 && longfilenames"
+                            customWorkspace "c:/Jenkins/temp/${JOB_NAME}/tox/"
                         }
                     }
                     when {
                        equals expected: true, actual: params.TEST_RUN_TOX
                     }
                     environment {
-                        PATH = "${tool 'CMake_3.11.4'}\\;$PATH"
+                        PATH = "${tool 'cmake3.12'}\\;$PATH"
                     }
                     steps {
                         
@@ -433,7 +436,7 @@ junit_filename                  = ${junit_filename}
         }
         stage("Packaging") {
             environment {
-                PATH = "${tool 'CMake_3.11.4'}\\;$PATH"
+                PATH = "${tool 'cmake3.12'}\\;$PATH"
             }
             steps {
                 dir("source"){
@@ -490,7 +493,7 @@ junit_filename                  = ${junit_filename}
             parallel {
                 stage("Source Distribution: .tar.gz") {
                     environment {
-                        PATH = "${tool 'CMake_3.11.4'}\\;$PATH"
+                        PATH = "${tool 'cmake3.12'}\\;$PATH"
                     }
                     steps {
                         echo "Testing Source tar.gz package in devpi"
@@ -517,7 +520,7 @@ junit_filename                  = ${junit_filename}
                 }
                 stage("Source Distribution: .zip") {
                     environment {
-                        PATH = "${tool 'CMake_3.11.4'}\\;$PATH"
+                        PATH = "${tool 'cmake3.12'}\\;$PATH"
                     }
                     steps {
                         echo "Testing Source zip package in devpi"
