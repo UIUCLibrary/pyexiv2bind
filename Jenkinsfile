@@ -335,10 +335,10 @@ junit_filename                  = ${junit_filename}
                             bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
                             script{
                                 try{
-                                    bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=py3exiv2bind"
+                                    bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
 
                                 } catch (exc) {
-                                    bat "pipenv run tox --recreate --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=py3exiv2bind"
+                                    bat "pipenv run tox --recreate --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
                                 }
                             }
                         }
@@ -351,14 +351,14 @@ junit_filename                  = ${junit_filename}
                                     publishCoverage
                                         autoDetectPath: 'coverage*/*.xml'
                                         adapters: [
-                                            cobertura(coberturaReportFile:"reports/coverage.xml")
+                                            cobertura(coberturaReportFile:"reports/tox_coverage.xml")
                                         ]
                                 } catch(exc){
                                     echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
-                                    cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "reports/coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
+                                    cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "reports/tox_coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
                                 }
-                                archiveArtifacts artifacts: "reports/coverage.xml"
-                                bat "del reports\\coverage.xml"
+                                archiveArtifacts artifacts: "reports/tox_coverage.xml"
+                                bat "del reports\\tox_coverage.xml"
                             }
                             dir("reports}"){
                                 bat "dir"
