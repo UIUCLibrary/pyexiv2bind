@@ -60,19 +60,17 @@ pipeline {
                     steps {
                         
                         bat "dir"                        
-                        dir(pwd(tmp: true)){
-                            dir("logs"){
-                                deleteDir()
-                            }
-                        
+                        dir("logs"){
+                            deleteDir()
                         }
+
                         dir("build"){
                             deleteDir()
                             echo "Cleaned out build directory"
                             bat "dir"
                         }
                         
-                        dir("${pwd tmp: true}\\reports"){
+                        dir("reports"){
                             deleteDir()
                             echo "Cleaned out reports directory"
                             bat "dir"
@@ -160,20 +158,18 @@ pipeline {
                         bat "venv\\Scripts\\pip.exe install devpi-client --upgrade-strategy only-if-needed"
                         
            
-                        tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
+                        tee("logs/pippackages_venv_${NODE_NAME}.log") {
                             bat "venv\\Scripts\\pip.exe list"
                         }
                     }
                     post{
                         always{
-                            dir(pwd(tmp: true)){
-                                script{
-                                    def log_files = findFiles glob: '**/pippackages_venv_*.log'
-                                    log_files.each { log_file ->
-                                        echo "Found ${log_file}"
-                                        archiveArtifacts artifacts: "${log_file}"
-                                        bat "del ${log_file}"
-                                    }
+                            script{
+                                def log_files = findFiles glob: '**/pippackages_venv_*.log'
+                                log_files.each { log_file ->
+                                    echo "Found ${log_file}"
+                                    archiveArtifacts artifacts: "${log_file}"
+                                    bat "del ${log_file}"
                                 }
                             }
                         }
@@ -187,7 +183,7 @@ pipeline {
                         
                         script {
                             // Set up the reports directory variable 
-                            REPORT_DIR = "${pwd tmp: true}\\reports"
+                            REPORT_DIR = "${WORKSPACE}\\reports"
                             dir("source"){
                                 PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
                                 PKG_VERSION = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
@@ -423,7 +419,7 @@ junit_filename                  = ${junit_filename}
                             bat "dir"
                         }
                         script{
-                            tee("${pwd tmp: true}/logs/mypy.log") {
+                            tee("logs/mypy.log") {
                                 try{
                                     dir("source"){
                                         bat "dir"
@@ -437,9 +433,7 @@ junit_filename                  = ${junit_filename}
                     }
                     post {
                         always {
-                            dir(pwd(tmp: true)){
-                                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
-                            }
+                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                         }
                     }
