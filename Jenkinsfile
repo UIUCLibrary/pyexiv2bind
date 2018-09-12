@@ -342,11 +342,11 @@ junit_filename                  = ${junit_filename}
                             bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
                             script{
                                 try{
-                                    bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=py3exiv2bind"
+                                    bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov-report xml:${REPORT_DIR}/coverage.xml --cov=py3exiv2bind"
                                     bat "dir ${REPORT_DIR}"
 
                                 } catch (exc) {
-                                    bat "pipenv run tox --recreate --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov=py3exiv2bind"
+                                    bat "pipenv run tox --recreate --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov-report xml:${REPORT_DIR}/coverage.xml --cov=py3exiv2bind"
                                 }
                             }
                         }
@@ -356,6 +356,19 @@ junit_filename                  = ${junit_filename}
                         always{
                             dir("${REPORT_DIR}"){
                                 bat "dir"
+                                script {
+                                    try{
+                                        publishCoverage
+                                            autoDetectPath: 'coverage*/*.xml'
+                                            adapters: [
+                                                cobertura(coberturaReportFile:"${REPORT_DIR}/coverage.xml")
+                                            ]
+                                    } catch(exc){
+                                        echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
+                                        cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "${REPORT_DIR}/coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
+                                    }
+                                    bat "del reports\\coverage.xml"
+                                }
                                 script {
                                     def xml_files = findFiles glob: "**/*.xml"
                                     xml_files.each { junit_xml_file ->
