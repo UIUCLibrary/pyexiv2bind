@@ -5,7 +5,6 @@ def PKG_NAME = "unknown"
 def PKG_VERSION = "unknown"
 def DOC_ZIP_FILENAME = "doc.zip"
 def junit_filename = "junit.xml"
-//def REPORT_DIR = ""
 def VENV_ROOT = ""
 def VENV_PYTHON = ""
 def VENV_PIP = ""
@@ -220,7 +219,6 @@ pipeline {
                 always{
                     echo """Name                            = ${PKG_NAME}
 Version                         = ${PKG_VERSION}
-//Report Directory                = ${REPORT_DIR}
 documentation zip file          = ${DOC_ZIP_FILENAME}
 Python virtual environment path = ${VENV_ROOT}
 VirtualEnv Python executable    = ${VENV_PYTHON}
