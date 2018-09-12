@@ -345,7 +345,7 @@ junit_filename                  = ${junit_filename}
                         
                     }
                     post {
-                        always{
+                        success{
                             script {
                                 try{
                                     publishCoverage
@@ -357,6 +357,7 @@ junit_filename                  = ${junit_filename}
                                     echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
                                     cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "reports/coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
                                 }
+                                archiveArtifacts artifacts: "reports/coverage.xml"
                                 bat "del reports\\coverage.xml"
                             }
                             dir("reports}"){
