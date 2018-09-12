@@ -5,7 +5,7 @@ def PKG_NAME = "unknown"
 def PKG_VERSION = "unknown"
 def DOC_ZIP_FILENAME = "doc.zip"
 def junit_filename = "junit.xml"
-def REPORT_DIR = ""
+//def REPORT_DIR = ""
 def VENV_ROOT = ""
 def VENV_PYTHON = ""
 def VENV_PIP = ""
@@ -183,7 +183,6 @@ pipeline {
                         
                         script {
                             // Set up the reports directory variable 
-                            REPORT_DIR = "${WORKSPACE}\\reports"
                             dir("source"){
                                 PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
                                 PKG_VERSION = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
@@ -221,7 +220,7 @@ pipeline {
                 always{
                     echo """Name                            = ${PKG_NAME}
 Version                         = ${PKG_VERSION}
-Report Directory                = ${REPORT_DIR}
+//Report Directory                = ${REPORT_DIR}
 documentation zip file          = ${DOC_ZIP_FILENAME}
 Python virtual environment path = ${VENV_ROOT}
 VirtualEnv Python executable    = ${VENV_PYTHON}
@@ -338,11 +337,10 @@ junit_filename                  = ${junit_filename}
                             bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
                             script{
                                 try{
-                                    bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov-report xml:${REPORT_DIR}/coverage.xml --cov=py3exiv2bind"
-                                    bat "dir ${REPORT_DIR}"
+                                    bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=py3exiv2bind"
 
                                 } catch (exc) {
-                                    bat "pipenv run tox --recreate --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${REPORT_DIR}\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${REPORT_DIR}/coverage/ --cov-report xml:${REPORT_DIR}/coverage.xml --cov=py3exiv2bind"
+                                    bat "pipenv run tox --recreate --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=py3exiv2bind"
                                 }
                             }
                         }
@@ -350,21 +348,22 @@ junit_filename                  = ${junit_filename}
                     }
                     post {
                         always{
-                            dir("${REPORT_DIR}"){
-                                bat "dir"
-                                script {
-                                    try{
-                                        publishCoverage
-                                            autoDetectPath: 'coverage*/*.xml'
-                                            adapters: [
-                                                cobertura(coberturaReportFile:"${REPORT_DIR}/coverage.xml")
-                                            ]
-                                    } catch(exc){
-                                        echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
-                                        cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "${REPORT_DIR}/coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
-                                    }
-                                    bat "del reports\\coverage.xml"
+                            script {
+                                try{
+                                    publishCoverage
+                                        autoDetectPath: 'coverage*/*.xml'
+                                        adapters: [
+                                            cobertura(coberturaReportFile:"reports/coverage.xml")
+                                        ]
+                                } catch(exc){
+                                    echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
+                                    cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "reports/coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
                                 }
+                                bat "del reports\\coverage.xml"
+                            }
+                            dir("reports}"){
+                                bat "dir"
+
                                 script {
                                     def xml_files = findFiles glob: "**/*.xml"
                                     xml_files.each { junit_xml_file ->
@@ -373,7 +372,7 @@ junit_filename                  = ${junit_filename}
                                     }
                                 }
                             }              
-                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
+                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
                         }
                         failure {
                             echo "Tox test failed. Removing ${WORKSPACE}\\.tox\\PyTest"
@@ -388,22 +387,22 @@ junit_filename                  = ${junit_filename}
                        equals expected: true, actual: params.TEST_RUN_DOCTEST
                     }
                     steps {
-                        dir("${REPORT_DIR}/doctests"){
+                        dir("reports/doctests"){
+                            echo "Cleaning doctest reports directory"
+                            deleteDir()
+                        }
+                        dir("${WORKSPACE}/reports/doctests"){
                             echo "Cleaning doctest reports directory"
                             deleteDir()
                         }
                         dir("source"){
-                            dir("${REPORT_DIR}/doctests"){
-                                echo "Cleaning doctest reports directory"
-                                deleteDir()
-                            }
-                            bat "pipenv run sphinx-build -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v" 
+                            bat "pipenv run sphinx-build -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v"
                         }
-                        bat "move ${WORKSPACE}\\build\\docs\\output.txt ${REPORT_DIR}\\doctest.txt"                      
+                        bat "move ${WORKSPACE}\\build\\docs\\output.txt ${WORKSPACE}\\reports\\doctest.txt"
                     }
                     post{
                         always {
-                            dir("${REPORT_DIR}"){
+                            dir("reports"){
                                 archiveArtifacts artifacts: "doctest.txt"
                             }
                         }
@@ -414,7 +413,7 @@ junit_filename                  = ${junit_filename}
                         equals expected: true, actual: params.TEST_RUN_MYPY
                     }
                     steps{
-                        dir("${REPORT_DIR}/mypy/html"){
+                        dir("reports/mypy/html"){
                             deleteDir()
                             bat "dir"
                         }
@@ -423,7 +422,7 @@ junit_filename                  = ${junit_filename}
                                 try{
                                     dir("source"){
                                         bat "dir"
-                                        bat "pipenv run mypy ${WORKSPACE}\\build\\lib\\py3exiv2bind --html-report ${REPORT_DIR}\\mypy\\html"
+                                        bat "pipenv run mypy ${WORKSPACE}\\build\\lib\\py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html"
                                     }
                                 } catch (exc) {
                                     echo "MyPy found some warnings"
@@ -434,7 +433,7 @@ junit_filename                  = ${junit_filename}
                     post {
                         always {
                             warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "${REPORT_DIR}/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                         }
                     }
                 }
@@ -684,7 +683,7 @@ junit_filename                  = ${junit_filename}
             dir('build') {
                 deleteDir()
             }
-            dir("${REPORT_DIR}") {
+            dir("reports") {
                 deleteDir()
             }
             script {
