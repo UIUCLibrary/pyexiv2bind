@@ -1,13 +1,15 @@
 //
 // Created by hborcher on 10/4/2017.
 //
-#include <exiv2/exiv2.hpp>
+//#include <exiv2/exiv2.hpp>
+#include <exiv2.hpp>
 #include <iostream>
 #include <cassert>
 #include "glue.h"
 std::string exiv2_version() {
-    return Exiv2::version();
+    return Exiv2::versionString();
 }
+
 //
 //const std::vector<metadata_chunk> get_exif_metadata(const std::string &filename) {
 ////    std::cout << "getting exif metadata of " << filename << std::endl;
