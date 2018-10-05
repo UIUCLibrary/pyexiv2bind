@@ -83,7 +83,7 @@ pipeline {
                 }
                 stage("Installing required system level dependencies"){
                     options{
-                        lock("system_python_${NODE_NAME}")
+                        lock("system_python_${env.NODE_NAME}")
                     }
                     steps{
                         bat "${tool 'CPython-3.6'} -m pip install pip==18.0 --quiet"
