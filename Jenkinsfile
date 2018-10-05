@@ -330,8 +330,11 @@ junit_filename                  = ${junit_filename}
                     environment {
                         PATH = "${tool 'cmake3.12'}\\;$PATH"
                     }
+                    options{
+                        lock("system_python_${env.NODE_NAME}")
+                    }
                     steps {
-                        
+                        bat "${tool 'CPython-3.6'} -m pip install pip==18.0 --quiet"
                         dir("source"){
                             bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
                             script{
