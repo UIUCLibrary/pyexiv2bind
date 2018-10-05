@@ -705,7 +705,7 @@ junit_filename                  = ${junit_filename}
                                 bat "pipenv run python setup.py clean --all"
                             } catch (Exception ex2) {
                                 echo "Unable to successfully run clean. Purging source directory."
-//                                deleteDir()
+                                deleteDir()
                             }
                         }
                         bat "dir"
