@@ -84,7 +84,7 @@ pipeline {
                 stage("Installing required system level dependencies"){
                     steps{
                         lock("system_python"){
-                            bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
+                            bat "${tool 'CPython-3.6'} -m pip install pip==18.0 --quiet"
                             bat "${tool 'CPython-3.6'} -m pip install scikit-build --quiet"
                             bat "${tool 'CPython-3.6'} -m pip install --upgrade pipenv --quiet"
                         }
