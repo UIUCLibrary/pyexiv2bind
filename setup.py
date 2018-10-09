@@ -60,10 +60,10 @@ class BuildCMakeExt(build_ext):
         self.announce("Configuring CMake Project", level=3)
         os.makedirs(self.build_temp, exist_ok=True)
 
-        if self.inplace == 1:
-            install_prefix = os.path.abspath(os.path.dirname(__file__))
+        if self.debug:
+            build_configuration_name = 'Debug'
         else:
-            install_prefix = self.build_lib
+            build_configuration_name = 'Release'
 
         configure_command = [
             CMAKE,
@@ -71,13 +71,20 @@ class BuildCMakeExt(build_ext):
             f'-B{self.build_temp}',
             f'-G{self.get_build_generator_name()}'
         ]
-        if self.debug:
-            configure_command.append('-DCMAKE_BUILD_TYPE=Debug')
-        else:
-            configure_command.append('-DCMAKE_BUILD_TYPE=Release')
-        configure_command.append(f'-DCMAKE_INSTALL_PREFIX={install_prefix}')
+
+        package_source = os.path.join(source_dir, "py3exiv2bind")
+
+        if self.inplace == 1:
+            configure_command.append(
+                f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{build_configuration_name.upper()}={package_source}')
+
+
+        configure_command.append(f'-DCMAKE_BUILD_TYPE={build_configuration_name}')
+
+        configure_command.append(f'-DCMAKE_INSTALL_PREFIX={self.build_lib}')
 
         configure_command += self.extra_cmake_options
+
         if sys.gettrace():
             print("Running as a debug", file=sys.stderr)
             subprocess.check_call(configure_command)
