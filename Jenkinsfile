@@ -395,9 +395,7 @@ junit_filename                  = ${junit_filename}
                     }
                     post{
                         always {
-                            dir("reports"){
-                                archiveArtifacts artifacts: "doctest.txt"
-                            }
+                            archiveArtifacts artifacts: "reports/doctest.txt"
                         }
                     }
                 }
