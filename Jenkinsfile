@@ -229,13 +229,13 @@ junit_filename                  = ${junit_filename}
         stage("Building") {
             stages{     
                 stage("Building Python Package"){
-                    environment {
-                        PATH = "${tool 'cmake3.12'}\\;$PATH"
-                    }
+//                    environment {
+//                        PATH = "${tool 'cmake3.12'}\\;$PATH"
+//                    }
                     steps {
                         tee("logs/setuptools_build_${env.NODE_NAME}.log") {
                             dir("source"){
-                                bat script: "pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --inplace"
+                                bat script: "pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --inplace --cmake-path=${tool 'cmake3.12'}\\cmake.exe --cmake-path=${tool 'cmake3.12'}\\cmake.exe"
                             }
                         
                         }
