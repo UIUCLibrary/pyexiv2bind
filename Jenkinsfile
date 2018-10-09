@@ -302,9 +302,7 @@ junit_filename                  = ${junit_filename}
                         }
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            dir("${WORKSPACE}/dist"){
-                            zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "${DOC_ZIP_FILENAME}"
-                            }
+                            zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "${WORKSPACE}/dist/${DOC_ZIP_FILENAME}"
                         }
                     }
                 
