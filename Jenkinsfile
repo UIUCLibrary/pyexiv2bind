@@ -310,10 +310,10 @@ junit_filename                  = ${junit_filename}
                             bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
                             script{
                                 try{
-                                    bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
+                                    bat "pipenv run tox --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
 
                                 } catch (exc) {
-                                    bat "pipenv run tox --recreate --workdir ${WORKSPACE}\\.tox\\PyTest -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
+                                    bat "pipenv run tox --recreate --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
                                 }
                             }
                         }
