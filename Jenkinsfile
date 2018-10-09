@@ -82,29 +82,30 @@ pipeline {
                     }
                 }
                 stage("Installing required system level dependencies"){
-                    options{
-                        lock("system_python_${env.NODE_NAME}")
-                    }
                     steps{
-                        bat "${tool 'CPython-3.6'} -m pip install pip==18.0 --quiet"
-                        bat "${tool 'CPython-3.6'} -m pip install scikit-build --quiet"
-                        bat "${tool 'CPython-3.6'} -m pip install --upgrade pipenv --quiet"
-                        tee("logs/pippackages_system_${NODE_NAME}.log") {
-                            bat "${tool 'CPython-3.6'} -m pip list"
-                        }       
+                        lock("system_python_${env.NODE_NAME}"){
+                            bat "${tool 'CPython-3.6'} -m pip install pip --upgrade --quiet"
+                            bat "${tool 'CPython-3.6'} -m pip install scikit-build --quiet"
+                            bat "${tool 'CPython-3.6'} -m pip install --upgrade pipenv --quiet"
+                            tee("logs/pippackages_system_${NODE_NAME}.log") {
+                                bat "${tool 'CPython-3.6'} -m pip list"
+                            }
+                        }
+
                     }
                     post{
                         always{
-                            dir("logs"){
-                                script{
-                                    def log_files = findFiles glob: '**/pippackages_system_*.log'
-                                    log_files.each { log_file ->
-                                        echo "Found ${log_file}"
-                                        archiveArtifacts artifacts: "${log_file}"
-                                        bat "del ${log_file}"
-                                    }
-                                }
-                            }
+                            archiveArtifacts artifacts: "system_python_${env.NODE_NAME}"
+//                            dir(){
+//                            script{
+//                                def log_files = findFiles glob: 'logs/pippackages_system_*.log'
+//                                log_files.each { log_file ->
+//                                    echo "Found ${log_file}"
+//                                    archiveArtifacts artifacts: "${log_file}"
+//                                    bat "del ${log_file}"
+//                                }
+//                            }
+//                            }
                         }
                         failure {
                             deleteDir()
@@ -128,16 +129,9 @@ pipeline {
                     }
                     post{
                         always{
-                            dir("logs"){
-                                script{
-                                    def log_files = findFiles glob: '**/pippackages_pipenv_*.log'
-                                    log_files.each { log_file ->
-                                        echo "Found ${log_file}"
-                                        archiveArtifacts artifacts: "${log_file}"
-                                        bat "del ${log_file}"
-                                    }
-                                }
-                            }
+                            archiveArtifacts artifacts: "logs/pippackages_pipenv_${NODE_NAME}.log"
+//                                }
+//                            }
                         }
                     }
                 }
@@ -334,7 +328,7 @@ junit_filename                  = ${junit_filename}
                         lock("system_python_${env.NODE_NAME}")
                     }
                     steps {
-                        bat "${tool 'CPython-3.6'} -m pip install pip==18.0 --quiet"
+                        bat "${tool 'CPython-3.6'} -m pip install pip --upgrade--quiet"
                         dir("source"){
                             bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
                             script{
