@@ -30,6 +30,7 @@ pipeline {
     parameters {
         booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
         booleanParam(name: "BUILD_DOCS", defaultValue: true, description: "Build documentation")
+        booleanParam(name: "TEST_UNIT_TESTS", defaultValue: true, description: "Run automated unit tests")
         booleanParam(name: "TEST_RUN_DOCTEST", defaultValue: true, description: "Test documentation")
         booleanParam(name: "TEST_RUN_FLAKE8", defaultValue: true, description: "Run Flake8 static analysis")
         booleanParam(name: "TEST_RUN_MYPY", defaultValue: true, description: "Run MyPy static analysis")
@@ -149,7 +150,7 @@ pipeline {
                             }                           
                         }
                         
-                        bat "venv\\Scripts\\pip.exe install devpi-client flake8 pytest pytest-cov --upgrade-strategy only-if-needed"
+                        bat "venv\\Scripts\\pip.exe install devpi-client flake8 pytest pytest-cov --upgrade-strategy only-if-needed --quiet"
                         
            
                         tee("logs/pippackages_venv_${NODE_NAME}.log") {
@@ -424,6 +425,33 @@ junit_filename                  = ${junit_filename}
                   post {
                     always {
                       warnings parserConfigurations: [[parserName: 'PyLint', pattern: 'reports/flake8.log']], unHealthy: ''
+                    }
+                  }
+                }
+                stage("Running Unit Tests"){
+                  when {
+                    equals expected: true, actual: params.TEST_UNIT_TESTS
+                  }
+                  steps{
+                    unstash "${NODE_NAME}_built_source"
+                    dir("source"){
+                      bat "${WORKSPACE}\\venv\\Scripts\\python.exe -m pytest --cov py3exiv2bind --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/pytest/ --cov-report xml:${WORKSPACE}/reports/coverage.xml"
+                    }
+                  }
+                  post{
+                    always{
+                      publishCoverage adapters: [
+                            coberturaAdapter('reports/coverage.xml')
+                            ],
+                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+                        tag: 'coverage'
+
+                      dir("reports"){
+                        junit "${junit_filename}"
+                        // deleteDir()
+                      }
+                      bat "del reports\\coverage.xml"
+                      publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage/pytest", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
                     }
                   }
                 }
