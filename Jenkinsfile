@@ -235,7 +235,8 @@ junit_filename                  = ${junit_filename}
                     steps {
                         tee("logs/setuptools_build_{env.NODE_NAME}.log") {
                             dir("source"){
-                                bat "pipenv run python setup.py build -b ${WORKSPACE}\\build -j ${NUMBER_OF_PROCESSORS}"
+                                bat script: "pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp"
+                                bat script: "pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --inplace"
                             }
                         
                         }
@@ -244,15 +245,10 @@ junit_filename                  = ${junit_filename}
                         always{
                            archiveArtifacts artifacts: "logs/setuptools_build_{env.NODE_NAME}.log"
                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: "logs/setuptools_build_{env.NODE_NAME}.log"]]
-//                            script{
-//                                def log_files = findFiles glob: '**/*.log'
-//                                log_files.each { log_file ->
-//                                    echo "Found ${log_file}"
-//                                    archiveArtifacts artifacts: "${log_file}"
-//                                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: "${log_file}"]]
-//                                    bat "del ${log_file}"
-//                                }
-//                            }
+                        }
+                        success{
+                          stash includes: 'build/lib/**', name: "${NODE_NAME}_build"
+                          stash includes: 'source/py3exiv2bind/**/*.dll,source/py3exiv2bind/**/*.pyd,source/py3exiv2bind/**/*.exe"', name: "${NODE_NAME}_built_source"
                         }
                     }
                 }
@@ -692,16 +688,8 @@ junit_filename                  = ${junit_filename}
                                 bat "pipenv run python setup.py clean --all"
                             }
                         } catch (Exception ex) {
-                        // echo "Unable to succesfully run clean. Purging source directory."
-                            dir("_skbuild"){
-                                deleteDir()
-                            }
-                            try{
-                                bat "pipenv run python setup.py clean --all"
-                            } catch (Exception ex2) {
-                                echo "Unable to successfully run clean. Purging source directory."
-                                deleteDir()
-                            }
+                            echo "Unable to successfully run clean. Purging source directory."
+                            deleteDir()
                         }
                         bat "dir"
                     }
