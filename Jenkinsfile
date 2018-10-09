@@ -264,23 +264,11 @@ junit_filename                  = ${junit_filename}
                             echo "Cleaned out build/docs/html dirctory"
 
                         }
-//                        script{
-//                            // Add a line to config file so auto docs look in the build folder
-//                            def sphinx_config_file = 'source/docs/source/conf.py'
-//                            def extra_line = "sys.path.insert(0, os.path.abspath('${WORKSPACE}/build/lib'))"
-//                            def readContent = readFile "${sphinx_config_file}"
-//                            echo "Adding \"${extra_line}\" to ${sphinx_config_file}."
-//                            writeFile file: "${sphinx_config_file}", text: readContent+"\r\n${extra_line}\r\n"
 //
-//
-//                        }
                         echo "Building docs on ${env.NODE_NAME}"
                         tee("logs/build_sphinx_${env.NODE_NAME}.log") {
                             dir("source"){
-                                bat "pipenv run python setup.py build_sphinx  --build-dir ${WORKSPACE}\\build\\docs\\html"
-//                            dir("build/lib"){
-//                                bat "pipenv run sphinx-build -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
-//                                bat "pipenv run sphinx-build -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
+                                bat "pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html"
                             }
                         }
                     }
@@ -382,7 +370,7 @@ junit_filename                  = ${junit_filename}
                             deleteDir()
                         }
                         dir("source"){
-                            bat "pipenv run sphinx-build -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v"
+                            bat "pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html -b doctest"
                         }
                         bat "move ${WORKSPACE}\\build\\docs\\output.txt ${WORKSPACE}\\reports\\doctest.txt"
                     }
