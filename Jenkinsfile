@@ -440,7 +440,7 @@ junit_filename                  = ${junit_filename}
             }
             steps {
                 dir("source"){
-                    bat "pipenv run python setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist bdist_wheel -d ${WORKSPACE}\\dist"
+                    bat "pipenv run python setup.py setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp bdist_wheel sdist -d ${WORKSPACE}\\dist bdist_wheel -d ${WORKSPACE}\\dist"
                 }
 
                 dir("dist") {
@@ -693,7 +693,14 @@ junit_filename                  = ${junit_filename}
                         }
                         bat "dir"
                     }
-                }                
+                dir("source"){
+                    def binary_files = findFiles glob: "**/*.dll,**/*.pyd,**/*.exe"
+                    binary_files.each { binary_file ->
+                        bat "del ${binary_file}"
+                    }
+                  }
+                }
+
                 if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                         bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
