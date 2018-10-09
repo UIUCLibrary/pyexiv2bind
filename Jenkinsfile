@@ -95,7 +95,7 @@ pipeline {
                     }
                     post{
                         always{
-                            archiveArtifacts artifacts: "system_python_${env.NODE_NAME}"
+                            archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
 //                            dir(){
 //                            script{
 //                                def log_files = findFiles glob: 'logs/pippackages_system_*.log'
