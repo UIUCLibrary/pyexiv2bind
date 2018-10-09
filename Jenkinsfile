@@ -449,7 +449,7 @@ junit_filename                  = ${junit_filename}
                 }
             }
         }
-        stage("Deploy to Devpi Staging") {
+        stage("Deploy to DevPi Staging") {
 
             when {
                 allOf{
