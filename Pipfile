@@ -5,7 +5,6 @@ name = "pypi"
 
 
 [dev-packages]
-scikit-build = ">=0.8.0"
 pytest = "*"
 pytest-runner = "*"
 tox = "*"

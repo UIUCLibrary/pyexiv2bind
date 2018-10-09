@@ -233,26 +233,21 @@ junit_filename                  = ${junit_filename}
                         PATH = "${tool 'cmake3.12'}\\;$PATH"
                     }
                     steps {
-                        tee("logs/setuptools_build_{env.NODE_NAME}.log") {
+                        tee("logs/setuptools_build_${env.NODE_NAME}.log") {
                             dir("source"){
-                                bat "pipenv run python setup.py build -b ${WORKSPACE}\\build -j ${NUMBER_OF_PROCESSORS}"
+                                bat script: "pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --inplace"
                             }
                         
                         }
                     }
                     post{
                         always{
-                           archiveArtifacts artifacts: "logs/setuptools_build_{env.NODE_NAME}.log"
-                           warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: "logs/setuptools_build_{env.NODE_NAME}.log"]]
-//                            script{
-//                                def log_files = findFiles glob: '**/*.log'
-//                                log_files.each { log_file ->
-//                                    echo "Found ${log_file}"
-//                                    archiveArtifacts artifacts: "${log_file}"
-//                                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: "${log_file}"]]
-//                                    bat "del ${log_file}"
-//                                }
-//                            }
+                           archiveArtifacts artifacts: "logs/setuptools_build_${env.NODE_NAME}.log"
+                           warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: "logs/setuptools_build_${env.NODE_NAME}.log"]]
+                        }
+                        success{
+                          stash includes: 'build/lib/**', name: "${NODE_NAME}_build"
+                          stash includes: 'source/py3exiv2bind/**/*.dll,source/py3exiv2bind/**/*.pyd,source/py3exiv2bind/**/*.exe"', name: "${NODE_NAME}_built_source"
                         }
                     }
                 }
@@ -302,7 +297,7 @@ junit_filename                  = ${junit_filename}
                         }
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "${WORKSPACE}/dist/${DOC_ZIP_FILENAME}"
+                            zip archive: true, dir: "build/docs/html", glob: '*.*', zipFile: "dist/${DOC_ZIP_FILENAME}"
                         }
                     }
                 
@@ -400,9 +395,7 @@ junit_filename                  = ${junit_filename}
                     }
                     post{
                         always {
-                            dir("reports"){
-                                archiveArtifacts artifacts: "doctest.txt"
-                            }
+                            archiveArtifacts artifacts: "reports/doctest.txt"
                         }
                     }
                 }
@@ -444,16 +437,13 @@ junit_filename                  = ${junit_filename}
             }
             steps {
                 dir("source"){
-                    bat "pipenv run python setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist bdist_wheel -d ${WORKSPACE}\\dist"
+                    bat "pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp bdist_wheel sdist -d ${WORKSPACE}\\dist bdist_wheel -d ${WORKSPACE}\\dist"
                 }
 
-                dir("dist") {
-                    archiveArtifacts artifacts: "*.whl", fingerprint: true
-                    archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
-                }
+                archiveArtifacts artifacts: "dist/*.whl,dist/*.tar.gz,dist/*.zip", fingerprint: true
             }
         }
-        stage("Deploy to Devpi Staging") {
+        stage("Deploy to DevPi Staging") {
 
             when {
                 allOf{
@@ -692,20 +682,19 @@ junit_filename                  = ${junit_filename}
                                 bat "pipenv run python setup.py clean --all"
                             }
                         } catch (Exception ex) {
-                        // echo "Unable to succesfully run clean. Purging source directory."
-                            dir("_skbuild"){
-                                deleteDir()
-                            }
-                            try{
-                                bat "pipenv run python setup.py clean --all"
-                            } catch (Exception ex2) {
-                                echo "Unable to successfully run clean. Purging source directory."
-                                deleteDir()
-                            }
+                            echo "Unable to successfully run clean. Purging source directory."
+                            deleteDir()
                         }
                         bat "dir"
                     }
-                }                
+                dir("source"){
+                    def binary_files = findFiles glob: "**/*.dll,**/*.pyd,**/*.exe"
+                    binary_files.each { binary_file ->
+                        bat "del ${binary_file}"
+                    }
+                  }
+                }
+
                 if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                         bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"

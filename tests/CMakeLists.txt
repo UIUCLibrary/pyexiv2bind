@@ -34,7 +34,9 @@ if (BUILD_TESTING)
             tests-main.cpp
             $<TARGET_OBJECTS:glue>
 #            test_metadata_processor.cpp
+#            test_editing.cpp
             )
+	string(REPLACE "\\" "/" TEST_IMAGE_PATH ${TEST_IMAGE_PATH})
     target_compile_definitions(cpp_tests PRIVATE TEST_IMAGE_PATH="${TEST_IMAGE_PATH}")
     set_target_properties(cpp_tests PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -49,5 +51,17 @@ if (BUILD_TESTING)
             COMMAND $<TARGET_FILE:cpp_tests>
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
             )
+    add_executable(test_editing
+            test_editing.cpp
+#            test_simple_edit.cpp
+            tests-main.cpp
+            )
+
+    set_target_properties(test_editing PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+            CXX_STANDARD 11
+            )
+    target_link_libraries(test_editing PRIVATE exiv2lib Catch)
+    target_compile_definitions(test_editing PRIVATE TEST_IMAGE_PATH="${TEST_IMAGE_PATH}")
 
 endif ()

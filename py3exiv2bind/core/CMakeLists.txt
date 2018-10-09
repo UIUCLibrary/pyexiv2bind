@@ -8,18 +8,20 @@ include(GenerateExportHeader)
 add_subdirectory(glue)
 add_library(core MODULE core.cpp $<TARGET_OBJECTS:glue>)
 
+if (pyexiv2bind_generate_python_bindings)
+    if (SKBUILD)
+        python_extension_module(core)
+    endif()
+    set_target_properties(core PROPERTIES
+            CXX_STANDARD 11
+            LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/py3exiv2bind
+            RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/py3exiv2bind
+            PREFIX "${PYTHON_MODULE_PREFIX}"
+            SUFFIX "${PYTHON_MODULE_EXTENSION}"
+            )
+    target_link_libraries(core pybind11::module exiv2lib)
 
-if (SKBUILD)
-    python_extension_module(core)
-endif()
-set_target_properties(core PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/py3exiv2bind
-        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/py3exiv2bind
-        PREFIX "${PYTHON_MODULE_PREFIX}"
-        SUFFIX "${PYTHON_MODULE_EXTENSION}"
-        )
-target_link_libraries(core pybind11::module exiv2lib)
 
-
-#target_link_libraries(core glue)
-install(TARGETS core LIBRARY DESTINATION py3exiv2bind)
+    #target_link_libraries(core glue)
+    install(TARGETS core LIBRARY DESTINATION py3exiv2bind)
+endif (pyexiv2bind_generate_python_bindings)

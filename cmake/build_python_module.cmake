@@ -9,7 +9,7 @@ function(create_venv)
             ${ARGN}
             )
 
-    message(STATUS "Creating a Python virtual environment")
+    message(STATUS "Creating a Python virtual environment based on ${PYTHON_EXECUTABLE}")
     execute_process(COMMAND ${PYTHON_EXECUTABLE} -m venv ${VENV_ARGS_DESTINATION}
             WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
             RESULT_VARIABLE VENV_CREATED
@@ -46,7 +46,7 @@ function(create_venv)
             RESULT_VARIABLE VENV_DEPS_INSTALLED)
 
     if(NOT "${VENV_DEPS_INSTALLED}" STREQUAL "0")
-        message(SEND_ERROR "Error installing Python virtual environment dependencies. Reason: ${VENV_DEPS_INSTALLED}")
+        message(SEND_ERROR "Error installing Python virtual environment dependencies. Reason: Return code ${VENV_DEPS_INSTALLED}")
     endif()
 
 endfunction()
