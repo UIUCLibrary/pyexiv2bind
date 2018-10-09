@@ -233,7 +233,7 @@ junit_filename                  = ${junit_filename}
                         PATH = "${tool 'cmake3.12'}\\;$PATH"
                     }
                     steps {
-                        tee("logs/setuptools_build_{env.NODE_NAME}.log") {
+                        tee("logs/setuptools_build_${env.NODE_NAME}.log") {
                             dir("source"){
                                 bat script: "pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --inplace"
                             }
