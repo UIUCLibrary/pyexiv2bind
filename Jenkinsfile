@@ -331,7 +331,7 @@ junit_filename                  = ${junit_filename}
                         lock("system_python_${env.NODE_NAME}")
                     }
                     steps {
-                        bat "${tool 'CPython-3.6'} -m pip install pip --upgrade--quiet"
+                        bat "${tool 'CPython-3.6'} -m pip install pip --upgrade --quiet"
                         dir("source"){
                             bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
                             script{
