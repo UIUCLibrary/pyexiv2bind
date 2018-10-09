@@ -310,10 +310,10 @@ junit_filename                  = ${junit_filename}
                             bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
                             script{
                                 try{
-                                    bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
+                                    bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
 
                                 } catch (exc) {
-                                    bat "pipenv run tox --recreate --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
+                                    bat "pipenv run tox --recreate --workdir ${WORKSPACE}\\.tox\\PyTest -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
                                 }
                             }
                         }
@@ -400,6 +400,32 @@ junit_filename                  = ${junit_filename}
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                         }
                     }
+                }
+                stage("Flake8") {
+                  when {
+                      equals expected: true, actual: params.TEST_RUN_FLAKE8
+                  }
+                  options{
+                    timeout(2)
+                  }
+                  steps{
+                    unstash "${NODE_NAME}_built_source"
+                    script{
+                      try{
+                        dir("source"){
+                            bat "${WORKSPACE}\\venv\\Scripts\\flake8.exe py3exiv2bind --format=pylint --tee --output-file ${WORKSPACE}/reports/flake8.txt"
+                        }
+                      } catch (exc) {
+                        echo "Flake8 found some warnings."
+                        // currentBuild.result = 'UNSTABLE'
+                      }
+                    }
+                  }
+                  post {
+                    always {
+                      warnings parserConfigurations: [[parserName: 'PyLint', pattern: 'reports/flake8.log']], unHealthy: ''
+                    }
+                  }
                 }
             }
 
