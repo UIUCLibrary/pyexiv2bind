@@ -13,7 +13,7 @@ pytest_runner = ['pytest-runner'] if needs_pytest else []
 cmake_args = []
 cmake_args.append("-DBUILD_SHARED_LIBS:BOOL=NO")
 cmake_args.append("-DBUILD_TESTING:BOOL=NO")
-cmake_args.append('-DEXIV2_VERSION_TAG:STRING=0d6abb5b5130fbce8bdc398b6728d225838bb382')
+cmake_args.append('-DEXIV2_VERSION_TAG:STRING=11e66c6c9eceeddd2263c3591af6317cbd05c1b6')
 
 # cmake_args = ["-Dpyexiv2bind_experimental_jp2_support=ON"]
 
