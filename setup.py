@@ -8,21 +8,36 @@ import subprocess
 
 CMAKE = shutil.which("cmake")
 
-
-
 class CMakeExtension(Extension):
     def __init__(self, name, sources=None):
         # don't invoke the original build_ext for this special extension
         super().__init__(name, sources=sources if sources is not None else [])
 
 
-
-
 class BuildCMakeExt(build_ext):
+    user_options = build_ext.user_options + [
+        ('cmake-path=', None,
+         "Location of CMake. Defaults of CMake located on path")
+    ]
+
+    def initialize_options(self):
+        super().initialize_options()
+        self.cmake_path = shutil.which("cmake")
+        pass
 
     def __init__(self, dist):
         super().__init__(dist)
         self.extra_cmake_options = []
+
+    def finalize_options(self):
+        super().finalize_options()
+
+        if self.cmake_path is None:
+
+            raise Exception("CMake path not located on path")
+
+        if not os.path.exists(self.cmake_path):
+            raise Exception("CMake path not located at {}".format(self.cmake_path))
 
     @staticmethod
     def get_build_generator_name():
@@ -66,7 +81,7 @@ class BuildCMakeExt(build_ext):
             build_configuration_name = 'Release'
 
         configure_command = [
-            CMAKE,
+            self.cmake_path,
             f'-H{source_dir}',
             f'-B{self.build_temp}',
             f'-G{self.get_build_generator_name()}'
@@ -78,8 +93,8 @@ class BuildCMakeExt(build_ext):
             configure_command.append(
                 f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{build_configuration_name.upper()}={package_source}')
 
-
-        configure_command.append(f'-DCMAKE_BUILD_TYPE={build_configuration_name}')
+        configure_command.append(
+            f'-DCMAKE_BUILD_TYPE={build_configuration_name}')
 
         configure_command.append(f'-DCMAKE_INSTALL_PREFIX={self.build_lib}')
 
@@ -94,8 +109,9 @@ class BuildCMakeExt(build_ext):
 
     def build_cmake(self, extension: Extension):
         self.announce("Building binaries", level=3)
+
         build_command = [
-            "cmake",
+            self.cmake_path,
             "--build",
             self.build_temp,
         ]
@@ -122,7 +138,8 @@ class BuildCMakeExt(build_ext):
         self.announce("Adding binaries to Python build path", level=3)
 
         install_command = [
-            "cmake", "--build", self.build_temp
+            self.cmake_path,
+            "--build", self.build_temp
         ]
 
         install_command.append("--config")
