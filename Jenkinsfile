@@ -95,7 +95,7 @@ pipeline {
                     }
                     post{
                         always{
-                            archiveArtifacts artifacts: "system_python_${env.NODE_NAME}"
+                            archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
 //                            dir(){
 //                            script{
 //                                def log_files = findFiles glob: 'logs/pippackages_system_*.log'
@@ -233,7 +233,7 @@ junit_filename                  = ${junit_filename}
                         PATH = "${tool 'cmake3.12'}\\;$PATH"
                     }
                     steps {
-                        tee("logs/build.log") {
+                        tee("logs/setuptools_build_{env.NODE_NAME}.log") {
                             dir("source"){
                                 bat "pipenv run python setup.py build -b ${WORKSPACE}\\build -j ${NUMBER_OF_PROCESSORS}"
                             }
@@ -242,15 +242,17 @@ junit_filename                  = ${junit_filename}
                     }
                     post{
                         always{
-                            script{
-                                def log_files = findFiles glob: '**/*.log'
-                                log_files.each { log_file ->
-                                    echo "Found ${log_file}"
-                                    archiveArtifacts artifacts: "${log_file}"
-                                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: "${log_file}"]]
-                                    bat "del ${log_file}"
-                                }                                            
-                            }
+                           archiveArtifacts artifacts: "logs/setuptools_build_{env.NODE_NAME}.log"
+                           warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: "logs/setuptools_build_{env.NODE_NAME}.log"]]
+//                            script{
+//                                def log_files = findFiles glob: '**/*.log'
+//                                log_files.each { log_file ->
+//                                    echo "Found ${log_file}"
+//                                    archiveArtifacts artifacts: "${log_file}"
+//                                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: "${log_file}"]]
+//                                    bat "del ${log_file}"
+//                                }
+//                            }
                         }
                     }
                 }
@@ -278,7 +280,7 @@ junit_filename                  = ${junit_filename}
 
                         }
                         echo "Building docs on ${env.NODE_NAME}"
-                        tee("logs/build_sphinx.log") {
+                        tee("logs/build_sphinx_${env.NODE_NAME}.log") {
                             dir("build/lib"){
                                 bat "pipenv run sphinx-build -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
                             }
@@ -286,16 +288,17 @@ junit_filename                  = ${junit_filename}
                     }
                     post{
                         always {
-                            dir("logs"){
-                                script{
-                                    def log_files = findFiles glob: '**/*.log'
-                                    log_files.each { log_file ->
-                                        echo "Found ${log_file}"
-                                        archiveArtifacts artifacts: "${log_file}"
-                                        bat "del ${log_file}"
-                                    }
-                                }
-                            }
+                            archiveArtifacts artifacts: "logs/build_sphinx_${env.NODE_NAME}.log"
+//                            dir("logs"){
+//                                script{
+//                                    def log_files = findFiles glob: '**/*.log'
+//                                    log_files.each { log_file ->
+//                                        echo "Found ${log_file}"
+//                                        archiveArtifacts artifacts: "${log_file}"
+//                                        bat "del ${log_file}"
+//                                    }
+//                                }
+//                            }
                         }
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
