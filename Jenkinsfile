@@ -364,7 +364,7 @@ junit_filename                  = ${junit_filename}
                         dir("source"){
                             bat "pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html -b doctest"
                         }
-                        bat "move ${WORKSPACE}\\build\\docs\\output.txt ${WORKSPACE}\\reports\\doctest.txt"
+                        bat "move ${WORKSPACE}\\build\\docs\\html\\doctest\\output.txt ${WORKSPACE}\\reports\\doctest.txt"
                     }
                     post{
                         always {
