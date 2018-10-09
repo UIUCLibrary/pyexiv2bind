@@ -351,8 +351,8 @@ junit_filename                  = ${junit_filename}
                             publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
                         }
                         failure {
-                            echo "Tox test failed. Removing ${WORKSPACE}\\.tox\\PyTest"
-                            dir("${WORKSPACE}\\.tox\\PyTest"){
+                            echo "Tox test failed. Removing ${WORKSPACE}\\.tox"
+                            dir("${WORKSPACE}\\.tox"){
                                 deleteDir()
                             }
                         }
