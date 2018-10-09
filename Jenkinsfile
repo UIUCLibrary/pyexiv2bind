@@ -149,7 +149,7 @@ pipeline {
                             }                           
                         }
                         
-                        bat "venv\\Scripts\\pip.exe install devpi-client --upgrade-strategy only-if-needed"
+                        bat "venv\\Scripts\\pip.exe install devpi-client flake8 pytest pytest-cov --upgrade-strategy only-if-needed"
                         
            
                         tee("logs/pippackages_venv_${NODE_NAME}.log") {
