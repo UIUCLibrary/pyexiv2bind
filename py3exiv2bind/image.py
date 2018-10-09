@@ -1,6 +1,6 @@
 import os
 
-from . import core # type: ignore
+from . import core  # type: ignore
 from . import icc
 import collections
 import typing
@@ -18,7 +18,6 @@ class Image(core.Image):
         for warning in self.warnings_logs:
             warnings.warn(warning.strip(), Warning)
 
-
     @property
     def metadata(self) -> dict:
         """Extracts embedded metadata stored in exif, iptc, and xmp."""
@@ -33,7 +32,10 @@ class Image(core.Image):
         """
         extension = os.path.splitext(self.filename)[1].lower()
         if extension in Image._INVALID_FORMATS_FOR_ICC:
-            raise AttributeError("{} files not currently supported for ICC data".format(extension))
+            raise AttributeError(
+                "{} files not currently supported for ICC data".format(
+                    extension)
+            )
         unpacked = icc.unpack_binary(self.get_icc_profile_data())
 
         return unpacked._asdict()
