@@ -424,7 +424,7 @@ junit_filename                  = ${junit_filename}
                   }
                   post {
                     always {
-                      warnings parserConfigurations: [[parserName: 'PyLint', pattern: 'reports/flake8.log']], unHealthy: ''
+                      warnings parserConfigurations: [[parserName: 'PyLint', pattern: 'reports/flake8.txt']], unHealthy: ''
                     }
                   }
                 }
