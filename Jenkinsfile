@@ -242,8 +242,8 @@ junit_filename                  = ${junit_filename}
                     }
                     post{
                         always{
-                           archiveArtifacts artifacts: "logs/setuptools_build_{env.NODE_NAME}.log"
-                           warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: "logs/setuptools_build_{env.NODE_NAME}.log"]]
+                           archiveArtifacts artifacts: "logs/setuptools_build_${env.NODE_NAME}.log"
+                           warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: "logs/setuptools_build_${env.NODE_NAME}.log"]]
                         }
                         success{
                           stash includes: 'build/lib/**', name: "${NODE_NAME}_build"
