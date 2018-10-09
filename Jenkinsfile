@@ -361,14 +361,6 @@ junit_filename                  = ${junit_filename}
                        equals expected: true, actual: params.TEST_RUN_DOCTEST
                     }
                     steps {
-                        dir("reports/doctests"){
-                            echo "Cleaning doctest reports directory"
-                            deleteDir()
-                        }
-                        dir("${WORKSPACE}/reports/doctests"){
-                            echo "Cleaning doctest reports directory"
-                            deleteDir()
-                        }
                         dir("source"){
                             bat "pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html -b doctest"
                         }
