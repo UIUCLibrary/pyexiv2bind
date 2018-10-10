@@ -276,10 +276,13 @@ junit_filename                  = ${junit_filename}
                     post{
                         always {
                             archiveArtifacts artifacts: "logs/build_sphinx_${env.NODE_NAME}.log"
+                            dir("${WORKSPACE}\\build\\docs\"{
+                                bat "tree /A /F"
+                            }
                         }
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            zip archive: true, dir: "build/docs/html", glob: '*.*', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                            zip archive: true, dir: "build/docs/html/", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
                         }
                     }
                 
