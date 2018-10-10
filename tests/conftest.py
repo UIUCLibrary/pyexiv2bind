@@ -1,4 +1,5 @@
 import os
+import shutil
 import tarfile
 
 import pytest
@@ -21,16 +22,28 @@ def download_images(url, destination):
             pass
 
 
-@pytest.fixture(scope="session", autouse=True)
-def my_own_session_run_at_beginning(request):
+@pytest.fixture(scope="session")
+def sample_images_readonly(request):
 
     test_path = os.path.dirname(__file__)
     sample_images_path = os.path.join(test_path, "sample_images")
 
     if os.path.exists(sample_images_path):
         print("{} already exits".format(sample_images_path))
-        return
+
     else:
         print("Downloading sample images")
         download_images(url="https://jenkins.library.illinois.edu/userContent/sample_images.tar.gz",
                         destination=test_path)
+
+    return sample_images_path
+
+
+@pytest.fixture
+def sample_images_editable(tmpdir_factory, sample_images_readonly):
+    new_set = tmpdir_factory.mktemp("sample_set")
+
+    for file in os.scandir(sample_images_readonly):
+        shutil.copyfile(file.path, os.path.join(new_set, file.name))
+
+    return new_set
