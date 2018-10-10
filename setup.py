@@ -6,7 +6,7 @@ from setuptools.command.build_ext import build_ext
 import platform
 import subprocess
 
-CMAKE = shutil.which("cmake")
+# CMAKE = shutil.which("cmake")
 
 class CMakeExtension(Extension):
     def __init__(self, name, sources=None):
@@ -16,13 +16,13 @@ class CMakeExtension(Extension):
 
 class BuildCMakeExt(build_ext):
     user_options = build_ext.user_options + [
-        ('cmake-path=', None,
+        ('cmake-exec=', None,
          "Location of CMake. Defaults of CMake located on path")
     ]
 
     def initialize_options(self):
         super().initialize_options()
-        self.cmake_path = shutil.which("cmake")
+        self.cmake_exec = shutil.which("cmake")
         pass
 
     def __init__(self, dist):
@@ -32,12 +32,12 @@ class BuildCMakeExt(build_ext):
     def finalize_options(self):
         super().finalize_options()
 
-        if self.cmake_path is None:
+        if self.cmake_exec is None:
 
             raise Exception("CMake path not located on path")
 
-        if not os.path.exists(self.cmake_path):
-            raise Exception("CMake path not located at {}".format(self.cmake_path))
+        if not os.path.exists(self.cmake_exec):
+            raise Exception("CMake path not located at {}".format(self.cmake_exec))
 
     @staticmethod
     def get_build_generator_name():
@@ -81,7 +81,7 @@ class BuildCMakeExt(build_ext):
             build_configuration_name = 'Release'
 
         configure_command = [
-            self.cmake_path,
+            self.cmake_exec,
             f'-H{source_dir}',
             f'-B{self.build_temp}',
             f'-G{self.get_build_generator_name()}'
@@ -111,7 +111,7 @@ class BuildCMakeExt(build_ext):
         self.announce("Building binaries", level=3)
 
         build_command = [
-            self.cmake_path,
+            self.cmake_exec,
             "--build",
             self.build_temp,
         ]
@@ -138,7 +138,7 @@ class BuildCMakeExt(build_ext):
         self.announce("Adding binaries to Python build path", level=3)
 
         install_command = [
-            self.cmake_path,
+            self.cmake_exec,
             "--build", self.build_temp
         ]
 
