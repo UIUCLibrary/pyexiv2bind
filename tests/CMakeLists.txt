@@ -8,10 +8,11 @@ if (BUILD_TESTING)
     FetchContent_GetProperties(test_images)
     if (NOT test_images_POPULATED)
         FetchContent_Populate(test_images)
-        find_path(TEST_IMAGE_PATH dummy.jp2
-                HINTS ${test_images_SOURCE_DIR})
     endif()
 
+    find_path(TEST_IMAGE_PATH dummy.jp2
+            PATHS ${test_images_SOURCE_DIR})
+    set(TEST_IMAGE_PATH ${TEST_IMAGE_PATH}/)
     set(PYTHON_TEST_FILES test_core.py)
     find_package(PythonInterp 3 REQUIRED)
     add_custom_target(add_python_tests
@@ -36,7 +37,7 @@ if (BUILD_TESTING)
 #            test_metadata_processor.cpp
 #            test_editing.cpp
             )
-	string(REPLACE "\\" "/" TEST_IMAGE_PATH ${TEST_IMAGE_PATH})
+    message(WARNING "ASDFASDFASDF ${TEST_IMAGE_PATH}" )
     target_compile_definitions(cpp_tests PRIVATE TEST_IMAGE_PATH="${TEST_IMAGE_PATH}")
     set_target_properties(cpp_tests PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}

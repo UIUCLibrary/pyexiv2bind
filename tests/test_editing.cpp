@@ -12,9 +12,10 @@ void exifPrint(const Exiv2::ExifData& exifData);
 //#define METADATA_KEY "Exif.Image.Make"
 //#define METADATA_NEW_VALUE "MEa"
 
+const std::string IMAGE_TEST_PATH(TEST_IMAGE_PATH);
 
 TEST_CASE("Edit"){
-    const std::string filename = TEST_IMAGE_PATH "/dummy.tif";
+    const std::string filename = IMAGE_TEST_PATH + "dummy.tif";
     {
 
         Exiv2::Image::AutoPtr image = Exiv2::ImageFactory::open(filename);
@@ -116,8 +117,8 @@ TEST_CASE("Edit"){
 //
 //    }
 }
-TEST_CASE("Edit jpeg") {
-    const std::string filename = "C:\\Users\\hborcher\\Pictures\\activate.tif";
+TEST_CASE("Edit tiff") {
+    const std::string filename = IMAGE_TEST_PATH + "dummy.tif";
     {
 
         Exiv2::Image::AutoPtr image = Exiv2::ImageFactory::open(filename);
@@ -130,21 +131,18 @@ TEST_CASE("Edit jpeg") {
         Exiv2::ExifData exifData = image->exifData();
         image->readMetadata();
         exifPrint(exifData);
-        exifData[METADATA_KEY] = int32_t(300);
+        exifData["Exif.Image.XResolution"] = int32_t(300);
         exifData["Exif.Image.YResolution"] = int32_t(300);
-        exifData["Exif.Image.Make"] = "Mine";
+//        exifData["Exif.Image.Make"] = "Mine";
 
         std::string stringvalue = exifData[METADATA_KEY].toString();
         exifData["Exif.Image.ResolutionUnit"] = int32_t(2);
         Exiv2::Exifdatum d = exifData["Exif.Image.ResolutionUnit"];
 
-//        image->is2ByteType().
-//        std::cout << "The original value of " << METADATA_KEY << " is " << exifData[METADATA_KEY] << std::endl;
         image->setExifData(exifData);
         image->writeMetadata();
         std::cout << "Written to " << filename << std::endl;
 
-//        exifDataExifdatum
 
 
     }
@@ -154,9 +152,10 @@ TEST_CASE("Edit jpeg") {
         assert(image.get() != 0);
         image->readMetadata();
         Exiv2::ExifData exifData_second = image->exifData();
-        std::cout << "Now the value of " << exifData_second[METADATA_KEY].key() << " is "
-                  << exifData_second[METADATA_KEY].value().toFloat() << std::endl;
+        std::cout << "Now the value of " << exifData_second["Exif.Image.XResolution"].key() << " is "
+                  << exifData_second["Exif.Image.XResolution"].value().toString() << std::endl;
         exifPrint(exifData_second);
+        REQUIRE(exifData_second["Exif.Image.XResolution"].value().toString() == "300");
     }
 }
 
