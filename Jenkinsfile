@@ -269,7 +269,7 @@ junit_filename                  = ${junit_filename}
                         echo "Building docs on ${env.NODE_NAME}"
                         tee("logs/build_sphinx_${env.NODE_NAME}.log") {
                             dir("source"){
-                                bat "pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html"
+                                bat "pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs"
                             }
                         }
                     }
