@@ -57,7 +57,7 @@ if(EXIV2_VERSION_TAG)
             GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
             GIT_TAG ${EXIV2_VERSION_TAG}
             PATCH_COMMAND
-                COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/Make_Subproject_possible.patch
+                COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/tiff_resolution_path.patch
     )
 else()
     message(STATUS "Checking out HEAD from exiv2 source")
@@ -65,7 +65,7 @@ else()
             libexiv2
             GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
             PATCH_COMMAND
-                COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/Make_Subproject_possible.patch
+                COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/tiff_resolution_path.patch
     )
 endif()
 

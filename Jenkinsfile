@@ -30,6 +30,7 @@ pipeline {
     parameters {
         booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
         booleanParam(name: "BUILD_DOCS", defaultValue: true, description: "Build documentation")
+        booleanParam(name: "TEST_UNIT_TESTS", defaultValue: true, description: "Run automated unit tests")
         booleanParam(name: "TEST_RUN_DOCTEST", defaultValue: true, description: "Test documentation")
         booleanParam(name: "TEST_RUN_FLAKE8", defaultValue: true, description: "Run Flake8 static analysis")
         booleanParam(name: "TEST_RUN_MYPY", defaultValue: true, description: "Run MyPy static analysis")
@@ -83,27 +84,29 @@ pipeline {
                 }
                 stage("Installing required system level dependencies"){
                     steps{
-                        lock("system_python"){
-                            bat "${tool 'CPython-3.6'} -m pip install pip==18.0 --quiet"
+                        lock("system_python_${env.NODE_NAME}"){
+                            bat "${tool 'CPython-3.6'} -m pip install pip --upgrade --quiet"
                             bat "${tool 'CPython-3.6'} -m pip install scikit-build --quiet"
                             bat "${tool 'CPython-3.6'} -m pip install --upgrade pipenv --quiet"
+                            tee("logs/pippackages_system_${NODE_NAME}.log") {
+                                bat "${tool 'CPython-3.6'} -m pip list"
+                            }
                         }
-                        tee("logs/pippackages_system_${NODE_NAME}.log") {
-                            bat "${tool 'CPython-3.6'} -m pip list"
-                        }       
+
                     }
                     post{
                         always{
-                            dir("logs"){
-                                script{
-                                    def log_files = findFiles glob: '**/pippackages_system_*.log'
-                                    log_files.each { log_file ->
-                                        echo "Found ${log_file}"
-                                        archiveArtifacts artifacts: "${log_file}"
-                                        bat "del ${log_file}"
-                                    }
-                                }
-                            }
+                            archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
+//                            dir(){
+//                            script{
+//                                def log_files = findFiles glob: 'logs/pippackages_system_*.log'
+//                                log_files.each { log_file ->
+//                                    echo "Found ${log_file}"
+//                                    archiveArtifacts artifacts: "${log_file}"
+//                                    bat "del ${log_file}"
+//                                }
+//                            }
+//                            }
                         }
                         failure {
                             deleteDir()
@@ -127,16 +130,9 @@ pipeline {
                     }
                     post{
                         always{
-                            dir("logs"){
-                                script{
-                                    def log_files = findFiles glob: '**/pippackages_pipenv_*.log'
-                                    log_files.each { log_file ->
-                                        echo "Found ${log_file}"
-                                        archiveArtifacts artifacts: "${log_file}"
-                                        bat "del ${log_file}"
-                                    }
-                                }
-                            }
+                            archiveArtifacts artifacts: "logs/pippackages_pipenv_${NODE_NAME}.log"
+//                                }
+//                            }
                         }
                     }
                 }
@@ -154,7 +150,7 @@ pipeline {
                             }                           
                         }
                         
-                        bat "venv\\Scripts\\pip.exe install devpi-client --upgrade-strategy only-if-needed"
+                        bat "venv\\Scripts\\pip.exe install devpi-client flake8 pytest pytest-cov --upgrade-strategy only-if-needed --quiet"
                         
            
                         tee("logs/pippackages_venv_${NODE_NAME}.log") {
@@ -234,28 +230,25 @@ junit_filename                  = ${junit_filename}
         stage("Building") {
             stages{     
                 stage("Building Python Package"){
-                    environment {
-                        PATH = "${tool 'cmake3.12'}\\;$PATH"
-                    }
+//                    environment {
+//                        PATH = "${tool 'cmake3.12'}\\;$PATH"
+//                    }
                     steps {
-                        tee("logs/build.log") {
+                        tee("logs/setuptools_build_${env.NODE_NAME}.log") {
                             dir("source"){
-                                bat "pipenv run python setup.py build -b ${WORKSPACE}\\build -j ${NUMBER_OF_PROCESSORS}"
+                                bat script: "pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --inplace --cmake-exec=${tool 'cmake3.12'}\\cmake.exe"
                             }
                         
                         }
                     }
                     post{
                         always{
-                            script{
-                                def log_files = findFiles glob: '**/*.log'
-                                log_files.each { log_file ->
-                                    echo "Found ${log_file}"
-                                    archiveArtifacts artifacts: "${log_file}"
-                                    warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: "${log_file}"]]
-                                    bat "del ${log_file}"
-                                }                                            
-                            }
+                           archiveArtifacts artifacts: "logs/setuptools_build_${env.NODE_NAME}.log"
+                           warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: "logs/setuptools_build_${env.NODE_NAME}.log"]]
+                        }
+                        success{
+                          stash includes: 'build/lib/**', name: "${NODE_NAME}_build"
+                          stash includes: 'source/py3exiv2bind/**/*.dll,source/py3exiv2bind/**/*.pyd,source/py3exiv2bind/**/*.exe"', name: "${NODE_NAME}_built_source"
                         }
                     }
                 }
@@ -272,41 +265,21 @@ junit_filename                  = ${junit_filename}
                             echo "Cleaned out build/docs/html dirctory"
 
                         }
-                        script{
-                            // Add a line to config file so auto docs look in the build folder
-                            def sphinx_config_file = 'source/docs/source/conf.py'
-                            def extra_line = "sys.path.insert(0, os.path.abspath('${WORKSPACE}/build/lib'))"
-                            def readContent = readFile "${sphinx_config_file}"
-                            echo "Adding \"${extra_line}\" to ${sphinx_config_file}."
-                            writeFile file: "${sphinx_config_file}", text: readContent+"\r\n${extra_line}\r\n"
-
-
-                        }
+//
                         echo "Building docs on ${env.NODE_NAME}"
-                        tee("logs/build_sphinx.log") {
-                            dir("build/lib"){
-                                bat "pipenv run sphinx-build -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees"
+                        tee("logs/build_sphinx_${env.NODE_NAME}.log") {
+                            dir("source"){
+                                bat "pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html"
                             }
                         }
                     }
                     post{
                         always {
-                            dir("logs"){
-                                script{
-                                    def log_files = findFiles glob: '**/*.log'
-                                    log_files.each { log_file ->
-                                        echo "Found ${log_file}"
-                                        archiveArtifacts artifacts: "${log_file}"
-                                        bat "del ${log_file}"
-                                    }
-                                }
-                            }
+                            archiveArtifacts artifacts: "logs/build_sphinx_${env.NODE_NAME}.log"
                         }
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            dir("${WORKSPACE}/dist"){
-                            zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "${DOC_ZIP_FILENAME}"
-                            }
+                            zip archive: true, dir: "build/docs/html", glob: '*.*', zipFile: "dist/${DOC_ZIP_FILENAME}"
                         }
                     }
                 
@@ -329,16 +302,19 @@ junit_filename                  = ${junit_filename}
                     environment {
                         PATH = "${tool 'cmake3.12'}\\;$PATH"
                     }
+                    options{
+                        lock("system_python_${env.NODE_NAME}")
+                    }
                     steps {
-                        
+                        bat "${tool 'CPython-3.6'} -m pip install pip --upgrade --quiet"
                         dir("source"){
                             bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
                             script{
                                 try{
-                                    bat "pipenv run tox --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
+                                    bat "pipenv run tox --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
 
                                 } catch (exc) {
-                                    bat "pipenv run tox --recreate --workdir ${WORKSPACE}\\.tox\\PyTest -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
+                                    bat "pipenv run tox --recreate --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
                                 }
                             }
                         }
@@ -348,11 +324,11 @@ junit_filename                  = ${junit_filename}
                         success{
                             script {
                                 try{
-                                    publishCoverage
-                                        autoDetectPath: 'coverage*/*.xml'
-                                        adapters: [
-                                            cobertura(coberturaReportFile:"reports/tox_coverage.xml")
-                                        ]
+                                    publishCoverage adapters: [
+                                            coberturaAdapter('reports/tox_coverage.xml')
+                                            ],
+                                        tag: 'coverage'
+                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
                                 } catch(exc){
                                     echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
                                     cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "reports/tox_coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
@@ -374,8 +350,8 @@ junit_filename                  = ${junit_filename}
                             publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
                         }
                         failure {
-                            echo "Tox test failed. Removing ${WORKSPACE}\\.tox\\PyTest"
-                            dir("${WORKSPACE}\\.tox\\PyTest"){
+                            echo "Tox test failed. Removing ${WORKSPACE}\\.tox"
+                            dir("${WORKSPACE}\\.tox"){
                                 deleteDir()
                             }
                         }
@@ -386,24 +362,14 @@ junit_filename                  = ${junit_filename}
                        equals expected: true, actual: params.TEST_RUN_DOCTEST
                     }
                     steps {
-                        dir("reports/doctests"){
-                            echo "Cleaning doctest reports directory"
-                            deleteDir()
-                        }
-                        dir("${WORKSPACE}/reports/doctests"){
-                            echo "Cleaning doctest reports directory"
-                            deleteDir()
-                        }
                         dir("source"){
-                            bat "pipenv run sphinx-build -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -v"
+                            bat "pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html -b doctest"
                         }
-                        bat "move ${WORKSPACE}\\build\\docs\\output.txt ${WORKSPACE}\\reports\\doctest.txt"
+                        bat "move ${WORKSPACE}\\build\\docs\\html\\doctest\\output.txt ${WORKSPACE}\\reports\\doctest.txt"
                     }
                     post{
                         always {
-                            dir("reports"){
-                                archiveArtifacts artifacts: "doctest.txt"
-                            }
+                            archiveArtifacts artifacts: "reports/doctest.txt"
                         }
                     }
                 }
@@ -436,25 +402,72 @@ junit_filename                  = ${junit_filename}
                         }
                     }
                 }
+                stage("Flake8") {
+                  when {
+                      equals expected: true, actual: params.TEST_RUN_FLAKE8
+                  }
+                  options{
+                    timeout(2)
+                  }
+                  steps{
+                    unstash "${NODE_NAME}_built_source"
+                    script{
+                      try{
+                        dir("source"){
+                            bat "${WORKSPACE}\\venv\\Scripts\\flake8.exe py3exiv2bind --format=pylint --tee --output-file ${WORKSPACE}/reports/flake8.txt"
+                        }
+                      } catch (exc) {
+                        echo "Flake8 found some warnings."
+                        // currentBuild.result = 'UNSTABLE'
+                      }
+                    }
+                  }
+                  post {
+                    always {
+                      warnings parserConfigurations: [[parserName: 'PyLint', pattern: 'reports/flake8.txt']], unHealthy: ''
+                    }
+                  }
+                }
+                stage("Running Unit Tests"){
+                  when {
+                    equals expected: true, actual: params.TEST_UNIT_TESTS
+                  }
+                  steps{
+                    unstash "${NODE_NAME}_built_source"
+                    dir("source"){
+                      bat "${WORKSPACE}\\venv\\Scripts\\python.exe -m pytest --cov py3exiv2bind --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/pytest/ --cov-report xml:${WORKSPACE}/reports/coverage.xml"
+                    }
+                  }
+                  post{
+                    always{
+                      publishCoverage adapters: [
+                            coberturaAdapter('reports/coverage.xml')
+                            ],
+                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+                        tag: 'coverage'
+
+                      dir("reports"){
+                        junit "${junit_filename}"
+                        // deleteDir()
+                      }
+                      bat "del reports\\coverage.xml"
+                      publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage/pytest", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
+                    }
+                  }
+                }
             }
 
         }
         stage("Packaging") {
-            environment {
-                PATH = "${tool 'cmake3.12'}\\;$PATH"
-            }
             steps {
                 dir("source"){
-                    bat "pipenv run python setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist bdist_wheel -d ${WORKSPACE}\\dist"
+                    bat "pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe sdist -d ${WORKSPACE}\\dist bdist_wheel -d ${WORKSPACE}\\dist"
                 }
 
-                dir("dist") {
-                    archiveArtifacts artifacts: "*.whl", fingerprint: true
-                    archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
-                }
+                archiveArtifacts artifacts: "dist/*.whl,dist/*.tar.gz,dist/*.zip", fingerprint: true
             }
         }
-        stage("Deploy to Devpi Staging") {
+        stage("Deploy to DevPi Staging") {
 
             when {
                 allOf{
@@ -509,7 +522,7 @@ junit_filename                  = ${junit_filename}
                         bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
 
                         script {                          
-                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s tar.gz  --verbose"
+                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME}==${PKG_VERSION} -s tar.gz  --verbose"
                             if(devpi_test_return_code != 0){   
                                 error "Devpi exit code for tar.gz was ${devpi_test_return_code}"
                             }
@@ -534,7 +547,7 @@ junit_filename                  = ${junit_filename}
                         }
                         bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
                         script {
-                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s zip --verbose"
+                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME}==${PKG_VERSION} -s zip --verbose"
                             if(devpi_test_return_code != 0){   
                                 error "Devpi exit code for zip was ${devpi_test_return_code}"
                             }
@@ -565,7 +578,7 @@ junit_filename                  = ${junit_filename}
                         }
                         bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
                         script{
-                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s whl  --verbose"
+                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME}==${PKG_VERSION} -s whl  --verbose"
                             if(devpi_test_return_code != 0){   
                                 error "Devpi exit code for whl was ${devpi_test_return_code}"
                             }
@@ -693,20 +706,19 @@ junit_filename                  = ${junit_filename}
                                 bat "pipenv run python setup.py clean --all"
                             }
                         } catch (Exception ex) {
-                        // echo "Unable to succesfully run clean. Purging source directory."
-                            dir("_skbuild"){
-                                deleteDir()
-                            }
-                            try{
-                                bat "pipenv run python setup.py clean --all"
-                            } catch (Exception ex2) {
-                                echo "Unable to successfully run clean. Purging source directory."
-                                deleteDir()
-                            }
+                            echo "Unable to successfully run clean. Purging source directory."
+                            deleteDir()
                         }
                         bat "dir"
                     }
-                }                
+                dir("source"){
+                    def binary_files = findFiles glob: "**/*.dll,**/*.pyd,**/*.exe"
+                    binary_files.each { binary_file ->
+                        bat "del ${binary_file}"
+                    }
+                  }
+                }
+
                 if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                         bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"

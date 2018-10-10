@@ -92,7 +92,7 @@ if(WIN32)
     find_file(GTEST_MAIN_DLL
             NAMES gtest_main.dll
             PATHS ${gtest_BINARY_DIR}/installed/lib
-            NO_DEFAULT_PATH
+            NO_SYSTEM_ENVIRONMENT_PATH
             )
 #    set(GTEST_MAIN_DLL ${gtest_BINARY_DIR}/installed/lib/gtest_main.dll)
 endif()

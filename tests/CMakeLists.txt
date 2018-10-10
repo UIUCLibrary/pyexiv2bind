@@ -8,10 +8,11 @@ if (BUILD_TESTING)
     FetchContent_GetProperties(test_images)
     if (NOT test_images_POPULATED)
         FetchContent_Populate(test_images)
-        find_path(TEST_IMAGE_PATH dummy.jp2
-                HINTS ${test_images_SOURCE_DIR})
     endif()
 
+    find_path(TEST_IMAGE_PATH dummy.jp2
+            PATHS ${test_images_SOURCE_DIR})
+    set(TEST_IMAGE_PATH ${TEST_IMAGE_PATH}/)
     set(PYTHON_TEST_FILES test_core.py)
     find_package(PythonInterp 3 REQUIRED)
     add_custom_target(add_python_tests
@@ -34,6 +35,7 @@ if (BUILD_TESTING)
             tests-main.cpp
             $<TARGET_OBJECTS:glue>
 #            test_metadata_processor.cpp
+#            test_editing.cpp
             )
     target_compile_definitions(cpp_tests PRIVATE TEST_IMAGE_PATH="${TEST_IMAGE_PATH}")
     set_target_properties(cpp_tests PROPERTIES
@@ -49,5 +51,17 @@ if (BUILD_TESTING)
             COMMAND $<TARGET_FILE:cpp_tests>
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
             )
+    add_executable(test_editing
+            test_editing.cpp
+#            test_simple_edit.cpp
+            tests-main.cpp
+            )
+
+    set_target_properties(test_editing PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+            CXX_STANDARD 11
+            )
+    target_link_libraries(test_editing PRIVATE exiv2lib Catch)
+    target_compile_definitions(test_editing PRIVATE TEST_IMAGE_PATH="${TEST_IMAGE_PATH}")
 
 endif ()
