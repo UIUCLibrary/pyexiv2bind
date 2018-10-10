@@ -149,7 +149,7 @@ class BuildCMakeExt(build_ext):
         else:
             install_command.append("Release")
 
-        install_command += ["--target", "INSTALL"]
+        install_command += ["--target", "install"]
 
         if self.parallel:
             install_command.extend(["-j", str(self.parallel)])
