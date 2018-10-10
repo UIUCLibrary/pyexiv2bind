@@ -135,12 +135,13 @@ class BuildCMakeExt(build_ext):
             self.spawn(build_command)
 
     def build_install_cmake(self, extension: Extension):
-        self.announce("Adding binaries to Python build path", level=3)
 
         install_command = [
             self.cmake_exec,
             "--build", self.build_temp
         ]
+
+        self.announce("Adding binaries to Python build path", level=3)
 
         install_command.append("--config")
         if self.debug:
