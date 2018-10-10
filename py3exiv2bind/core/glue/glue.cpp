@@ -6,6 +6,8 @@
 #include <iostream>
 #include <cassert>
 #include "glue.h"
+using Exiv2::Image;
+using Exiv2::ImageFactory;
 std::string exiv2_version() {
     return Exiv2::versionString();
 }
@@ -77,7 +79,6 @@ std::string exiv2_version() {
 
 int get_pixelHeight(const std::string &filename){
     try {
-        using namespace Exiv2;
         Image::AutoPtr image = ImageFactory::open(filename);
         assert(image.get() != 0); // Make sure it's able to read the file
         image->readMetadata();
@@ -93,7 +94,7 @@ int get_pixelHeight(const std::string &filename){
 
 int get_pixelWidth(const std::string &filename){
     try {
-        using namespace Exiv2;
+//        using namespace Exiv2;
         Image::AutoPtr image = ImageFactory::open(filename);
         assert(image.get() != 0); // Make sure it's able to read the file
         image->readMetadata();
@@ -104,4 +105,31 @@ int get_pixelWidth(const std::string &filename){
         std::cerr << e.what() << std::endl;
         throw;
     }
+}
+
+
+void set_dpi(const std::string &filename, int x, int y){
+    try{
+        Image::AutoPtr image = ImageFactory::open(filename);
+
+        image->readMetadata();
+
+        Exiv2::ExifData metadata = image->exifData();
+
+        metadata["Exif.Image.XResolution"] = create_DPI_string(x);
+        metadata["Exif.Image.YResolution"] = create_DPI_string(y);
+        metadata["Exif.Image.ResolutionUnit"] = 2;
+        image->setExifData(metadata);
+        image->writeMetadata();
+
+    }catch (Exiv2::AnyError &e) {
+        throw;
+    }
+}
+
+std::string create_DPI_string(int value){
+    std::ostringstream response;
+    response << value;
+    response << "/1";
+    return response.str();
 }

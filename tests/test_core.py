@@ -9,4 +9,15 @@ def test_exiv_version():
 
 
 def test_set_dpi(sample_images_editable):
-    print("the value of sample_iamge_set {} ".format(sample_images_editable))
+    test_jp2 = os.path.join(sample_images_editable, "dummy.jp2")
+    sample_image = core.Image(test_jp2)
+    assert sample_image.exif['Exif.Image.XResolution'] == "400/1"
+    assert sample_image.exif['Exif.Image.YResolution'] == "400/1"
+    assert sample_image.exif['Exif.Image.ResolutionUnit'] == "2"
+
+    # core.set_dpi(test_jp2, 300, 300)
+    core.set_dpi(image=str(test_jp2), x=300, y=300)
+    sample_image2 = core.Image(test_jp2)
+    assert sample_image2.exif['Exif.Image.XResolution'] == "300/1"
+    assert sample_image2.exif['Exif.Image.YResolution'] == "300/1"
+    assert sample_image2.exif['Exif.Image.ResolutionUnit'] == "2"

@@ -34,4 +34,11 @@ PYBIND11_MODULE(core, m) {
                  },                                                            "Get the icc profile data"
             );
     pybind11::register_exception<NoIccError>(m, "NoICCError");
+
+    m.def("set_dpi", &set_dpi,
+            pybind11::arg("image"),
+            pybind11::arg("x"),
+            pybind11::arg("y"),
+            "set the DPI for a given image file"
+            );
 }
