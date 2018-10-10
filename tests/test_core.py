@@ -22,6 +22,7 @@ def test_set_dpi_on_jp2(sample_images_editable):
     assert sample_image2.exif['Exif.Image.YResolution'] == "300/1"
     assert sample_image2.exif['Exif.Image.ResolutionUnit'] == "2"
 
+
 def test_set_dpi_on_tiff(sample_images_editable):
     test_jp2 = os.path.join(sample_images_editable, "dummy.tif")
     sample_image = core.Image(test_jp2)
