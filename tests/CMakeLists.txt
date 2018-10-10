@@ -37,7 +37,6 @@ if (BUILD_TESTING)
 #            test_metadata_processor.cpp
 #            test_editing.cpp
             )
-    message(WARNING "ASDFASDFASDF ${TEST_IMAGE_PATH}" )
     target_compile_definitions(cpp_tests PRIVATE TEST_IMAGE_PATH="${TEST_IMAGE_PATH}")
     set_target_properties(cpp_tests PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
