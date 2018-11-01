@@ -582,13 +582,7 @@ junit_filename                  = ${junit_filename}
                   }
                   post{
                     always{
-                      
-
-                      dir("reports"){
-                        junit "${junit_filename}"
-                        // deleteDir()
-                      }
-                      publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage/pytest", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
+                        junit "reports/pytest/${junit_filename}"                      
                     }
                   }
                 }
