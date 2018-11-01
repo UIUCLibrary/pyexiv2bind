@@ -84,62 +84,99 @@ pipeline {
                 }
                 stage("Installing required system level dependencies"){
                     steps{
-                        lock("system_python_${env.NODE_NAME}"){
-                            bat "${tool 'CPython-3.6'} -m pip install pip --upgrade --quiet"
-                            bat "${tool 'CPython-3.6'} -m pip install scikit-build --quiet"
-                            bat "${tool 'CPython-3.6'} -m pip install --upgrade pipenv --quiet"
-                            tee("logs/pippackages_system_${NODE_NAME}.log") {
-                                bat "${tool 'CPython-3.6'} -m pip list"
-                            }
+                        lock("system_python_${NODE_NAME}"){
+                            bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
                         }
-
                     }
                     post{
                         always{
+                            lock("system_python_${NODE_NAME}"){
+                                bat "${tool 'CPython-3.6'} -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
+                            }
                             archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
-//                            dir(){
-//                            script{
-//                                def log_files = findFiles glob: 'logs/pippackages_system_*.log'
-//                                log_files.each { log_file ->
-//                                    echo "Found ${log_file}"
-//                                    archiveArtifacts artifacts: "${log_file}"
-//                                    bat "del ${log_file}"
-//                                }
-//                            }
-//                            }
-                        }
-                        failure {
-                            deleteDir()
                         }
                     }
-
                 }
+//                 stage("Installing required system level dependencies"){
+//                     steps{
+//                         lock("system_python_${env.NODE_NAME}"){
+//                             bat "${tool 'CPython-3.6'} -m pip install pip --upgrade --quiet"
+//                             bat "${tool 'CPython-3.6'} -m pip install scikit-build --quiet"
+//                             bat "${tool 'CPython-3.6'} -m pip install --upgrade pipenv --quiet"
+//                             tee("logs/pippackages_system_${NODE_NAME}.log") {
+//                                 bat "${tool 'CPython-3.6'} -m pip list"
+//                             }
+//                         }
+
+//                     }
+//                     post{
+//                         always{
+//                             archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
+// //                            dir(){
+// //                            script{
+// //                                def log_files = findFiles glob: 'logs/pippackages_system_*.log'
+// //                                log_files.each { log_file ->
+// //                                    echo "Found ${log_file}"
+// //                                    archiveArtifacts artifacts: "${log_file}"
+// //                                    bat "del ${log_file}"
+// //                                }
+// //                            }
+// //                            }
+//                         }
+//                         failure {
+//                             deleteDir()
+//                         }
+//                     }
+
+//                 }
+//                 stage("Installing Pipfile"){
+//                     options{
+//                         timeout(5)
+//                     }
+//                     steps {
+//                         dir("source"){
+//                             bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
+                            
+//                         }
+//                         tee("logs/pippackages_pipenv_${NODE_NAME}.log") {
+//                             bat "${tool 'CPython-3.6'} -m pipenv run pip list"
+//                         }  
+                        
+//                     }
+//                     post{
+//                         always{
+//                             archiveArtifacts artifacts: "logs/pippackages_pipenv_${NODE_NAME}.log"
+// //                                }
+// //                            }
+//                         }
+//                     }
+//                 }
                 stage("Installing Pipfile"){
                     options{
                         timeout(5)
                     }
                     steps {
                         dir("source"){
-                            bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
-                            
+                            bat "pipenv install --dev --deploy && pipenv run pip list > ..\\logs\\pippackages_pipenv_${NODE_NAME}.log"
+                            bat "pipenv check"
+
                         }
-                        tee("logs/pippackages_pipenv_${NODE_NAME}.log") {
-                            bat "${tool 'CPython-3.6'} -m pipenv run pip list"
-                        }  
-                        
                     }
                     post{
                         always{
-                            archiveArtifacts artifacts: "logs/pippackages_pipenv_${NODE_NAME}.log"
-//                                }
-//                            }
+                            archiveArtifacts artifacts: "logs/pippackages_pipenv_*.log"
+                        }
+                        failure {
+                            deleteDir()
+                        }
+                        cleanup{
+                            cleanWs(patterns: [[pattern: "logs/pippackages_pipenv_*.log", type: 'INCLUDE']])
                         }
                     }
                 }
                 stage("Creating virtualenv for building"){
-                    steps {
+                    steps{
                         bat "${tool 'CPython-3.6'} -m venv venv"
-                        
                         script {
                             try {
                                 bat "call venv\\Scripts\\python.exe -m pip install -U pip"
@@ -147,32 +184,58 @@ pipeline {
                             catch (exc) {
                                 bat "${tool 'CPython-3.6'} -m venv venv"
                                 bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
-                            }                           
-                        }
-                        
-                        bat "venv\\Scripts\\pip.exe install devpi-client flake8 pytest pytest-cov --upgrade-strategy only-if-needed --quiet"
-                        
-           
-                        tee("logs/pippackages_venv_${NODE_NAME}.log") {
-                            bat "venv\\Scripts\\pip.exe list"
-                        }
-                    }
-                    post{
-                        always{
-                            script{
-                                def log_files = findFiles glob: '**/pippackages_venv_*.log'
-                                log_files.each { log_file ->
-                                    echo "Found ${log_file}"
-                                    archiveArtifacts artifacts: "${log_file}"
-                                    bat "del ${log_file}"
-                                }
                             }
                         }
+                        bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
+                    }
+                    post{
+                        success{                            
+                            bat "venv\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
+                            archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"  
+                            cleanWs patterns: [[pattern: "logs/pippackages_venv_*.log", type: 'INCLUDE']]                          
+                        }
                         failure {
-                            deleteDir()
+                            cleanWs deleteDirs: true, patterns: [[pattern: 'venv', type: 'INCLUDE']]
                         }
                     }
                 }
+                // stage("Creating virtualenv for building"){
+                //     steps {
+                //         bat "${tool 'CPython-3.6'} -m venv venv"
+                        
+                //         script {
+                //             try {
+                //                 bat "call venv\\Scripts\\python.exe -m pip install -U pip"
+                //             }
+                //             catch (exc) {
+                //                 bat "${tool 'CPython-3.6'} -m venv venv"
+                //                 bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+                //             }                           
+                //         }
+                        
+                //         bat "venv\\Scripts\\pip.exe install devpi-client flake8 pytest pytest-cov --upgrade-strategy only-if-needed --quiet"
+                        
+           
+                //         tee("logs/pippackages_venv_${NODE_NAME}.log") {
+                //             bat "venv\\Scripts\\pip.exe list"
+                //         }
+                //     }
+                //     post{
+                //         always{
+                //             script{
+                //                 def log_files = findFiles glob: '**/pippackages_venv_*.log'
+                //                 log_files.each { log_file ->
+                //                     echo "Found ${log_file}"
+                //                     archiveArtifacts artifacts: "${log_file}"
+                //                     bat "del ${log_file}"
+                //                 }
+                //             }
+                //         }
+                //         failure {
+                //             deleteDir()
+                //         }
+                //     }
+                // }
                 stage("Setting variables used by the rest of the build"){
                     steps{
                         
@@ -228,61 +291,107 @@ junit_filename                  = ${junit_filename}
 
         }
         stage("Building") {
-            stages{     
-                stage("Building Python Package"){
-//                    environment {
-//                        PATH = "${tool 'cmake3.12'}\\;$PATH"
-//                    }
+            stages{
+                stage("Building Python Packag"){
                     steps {
-                        tee("logs/setuptools_build_${env.NODE_NAME}.log") {
-                            dir("source"){
-                                bat script: "pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --inplace --cmake-exec=${tool 'cmake3.12'}\\cmake.exe"
+                        dir("source"){
+                            lock("system_pipenv_${NODE_NAME}"){
+                                powershell "& pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --inplace --cmake-exec=${tool 'cmake3.12'}\\cmake.exe | tee ${WORKSPACE}\\logs\\build.log"
                             }
-                        
                         }
                     }
                     post{
                         always{
-                           archiveArtifacts artifacts: "logs/setuptools_build_${env.NODE_NAME}.log"
-                           warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: "logs/setuptools_build_${env.NODE_NAME}.log"]]
+                            archiveArtifacts artifacts: "logs/build.log"
+                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build.log']]
+                            // bat "dir build"
                         }
-                        success{
-                          stash includes: 'build/lib/**', name: "${NODE_NAME}_build"
-                          stash includes: 'source/py3exiv2bind/**/*.dll,source/py3exiv2bind/**/*.pyd,source/py3exiv2bind/**/*.exe"', name: "${NODE_NAME}_built_source"
+                        cleanup{
+                            cleanWs(patterns: [[pattern: 'logs/build.log', type: 'INCLUDE']])
                         }
                     }
-                }
-                stage("Building Sphinx Documentation"){
-                    when {
-                        equals expected: true, actual: params.BUILD_DOCS
-                    }
-                    environment {
-                        PATH = "${tool 'cmake3.12'}\\;$PATH"
-                    }
-                    steps {
-                        dir("build/docs/html"){
-                            deleteDir()
-                            echo "Cleaned out build/docs/html dirctory"
+                    
+                }     
+//                 stage("Building Python Package"){
+// //                    environment {
+// //                        PATH = "${tool 'cmake3.12'}\\;$PATH"
+// //                    }
+//                     steps {
+//                         tee("logs/setuptools_build_${env.NODE_NAME}.log") {
+//                             dir("source"){
+//                                 bat script: "pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --inplace --cmake-exec=${tool 'cmake3.12'}\\cmake.exe"
+//                             }
+                        
+//                         }
+//                     }
+//                     post{
+//                         always{
+//                            archiveArtifacts artifacts: "logs/setuptools_build_${env.NODE_NAME}.log"
+//                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: "logs/setuptools_build_${env.NODE_NAME}.log"]]
+//                         }
+//                         success{
+//                           stash includes: 'build/lib/**', name: "${NODE_NAME}_build"
+//                           stash includes: 'source/py3exiv2bind/**/*.dll,source/py3exiv2bind/**/*.pyd,source/py3exiv2bind/**/*.exe"', name: "${NODE_NAME}_built_source"
+//                         }
+//                     }
+//                 }
+//                 stage("Building Sphinx Documentation"){
+//                     when {
+//                         equals expected: true, actual: params.BUILD_DOCS
+//                     }
+//                     environment {
+//                         PATH = "${tool 'cmake3.12'}\\;$PATH"
+//                     }
+//                     steps {
+//                         dir("build/docs/html"){
+//                             deleteDir()
+//                             echo "Cleaned out build/docs/html dirctory"
 
-                        }
-//
+//                         }
+// //
+//                         echo "Building docs on ${env.NODE_NAME}"
+//                         tee("logs/build_sphinx_${env.NODE_NAME}.log") {
+//                             dir("source"){
+//                                 bat "pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs"
+//                             }
+//                         }
+//                     }
+//                     post{
+//                         always {
+//                             archiveArtifacts artifacts: "logs/build_sphinx_${env.NODE_NAME}.log"
+//                         }
+//                         success{
+//                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+//                             zip archive: true, dir: "build/docs/html/", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+//                         }
+//                     }
+                
+//                 }
+                stage("Building Sphinx Documentation"){
+                    steps {
                         echo "Building docs on ${env.NODE_NAME}"
-                        tee("logs/build_sphinx_${env.NODE_NAME}.log") {
-                            dir("source"){
-                                bat "pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs"
+                        dir("source"){
+                            lock("system_pipenv_${NODE_NAME}"){
+                                powershell "& ${tool 'CPython-3.6'} -m pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs | tee ${WORKSPACE}\\logs\\build_sphinx.log"
                             }
                         }
                     }
                     post{
                         always {
-                            archiveArtifacts artifacts: "logs/build_sphinx_${env.NODE_NAME}.log"
+                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
+                            archiveArtifacts artifacts: 'logs/build_sphinx.log'
                         }
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            zip archive: true, dir: "build/docs/html/", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                            zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                            stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
+
+                        }
+                        cleanup{
+                            cleanWs(patterns: [[pattern: 'logs/build_sphinx.log', type: 'INCLUDE']])
+                            cleanWs(patterns: [[pattern: "dist/${DOC_ZIP_FILENAME}", type: 'INCLUDE']])
                         }
                     }
-                
                 }
             }
         }
