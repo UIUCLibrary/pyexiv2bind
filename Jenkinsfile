@@ -574,27 +574,44 @@ junit_filename                  = ${junit_filename}
                     equals expected: true, actual: params.TEST_UNIT_TESTS
                   }
                   steps{
-                    unstash "${NODE_NAME}_built_source"
+                    // unstash "${NODE_NAME}_built_source"
                     dir("source"){
-                      bat "${WORKSPACE}\\venv\\Scripts\\python.exe -m pytest --cov py3exiv2bind --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/pytest/ --cov-report xml:${WORKSPACE}/reports/coverage.xml"
+                        bat "pipenv run coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=${WORKSPACE}/reports/pytest/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                    //   bat "${WORKSPACE}\\venv\\Scripts\\python.exe -m pytest --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/pytest/ --cov-report xml:${WORKSPACE}/reports/coverage.xml"
                     }
                   }
                   post{
                     always{
-                      publishCoverage adapters: [
-                            coberturaAdapter('reports/coverage.xml')
-                            ],
-                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-                        tag: 'coverage'
+                      
 
                       dir("reports"){
                         junit "${junit_filename}"
                         // deleteDir()
                       }
-                      bat "del reports\\coverage.xml"
                       publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage/pytest", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
                     }
                   }
+                }
+            }
+            post{
+                always{
+                    dir("source"){
+                        bat "pipenv run coverage combine"
+                        bat "pipenv run coverage xml -o ${WORKSPACE}\\reports\\coverage.xml"
+                        bat "pipenv run coverage html -d ${WORKSPACE}\\reports\\coverage"
+
+                    }
+                    publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
+                    publishCoverage adapters: [
+                                    coberturaAdapter('reports/coverage.xml')
+                                    ],
+                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
+                }
+                cleanup{
+                    cleanWs(patterns: [[pattern: 'reports/coverage.xml', type: 'INCLUDE']])
+                    cleanWs(patterns: [[pattern: 'reports/coverage', type: 'INCLUDE']])
+                    cleanWs(patterns: [[pattern: 'source/.coverage', type: 'INCLUDE']])
+
                 }
             }
 
