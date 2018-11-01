@@ -293,7 +293,7 @@ junit_filename                  = ${junit_filename}
         }
         stage("Building") {
             stages{
-                stage("Building Python Packag"){
+                stage("Building Python Package"){
                     steps {
                         dir("source"){
                             lock("system_pipenv_${NODE_NAME}"){
@@ -309,6 +309,10 @@ junit_filename                  = ${junit_filename}
                         }
                         cleanup{
                             cleanWs(patterns: [[pattern: 'logs/build.log', type: 'INCLUDE']])
+                        }
+                        success{
+                          stash includes: 'build/lib/**', name: "${NODE_NAME}_build"
+                          stash includes: 'source/py3exiv2bind/**/*.dll,source/py3exiv2bind/**/*.pyd,source/py3exiv2bind/**/*.exe"', name: "${NODE_NAME}_built_source"
                         }
                     }
                     
