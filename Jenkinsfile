@@ -91,6 +91,7 @@ pipeline {
                     post{
                         always{
                             lock("system_python_${NODE_NAME}"){
+                                bat "dir logs"
                                 bat "${tool 'CPython-3.6'} -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
                             }
                             archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
