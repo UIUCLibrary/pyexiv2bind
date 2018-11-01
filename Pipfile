@@ -6,6 +6,7 @@ name = "pypi"
 
 [dev-packages]
 pytest = "*"
+coverage = "*"
 pytest-runner = "*"
 tox = "*"
 mypy = "*"
