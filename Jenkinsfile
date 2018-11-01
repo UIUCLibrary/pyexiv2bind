@@ -62,18 +62,19 @@ pipeline {
                         bat "dir"                        
                         dir("logs"){
                             deleteDir()
+                            bat "dir > nul"
                         }
 
                         dir("build"){
                             deleteDir()
                             echo "Cleaned out build directory"
-                            bat "dir"
+                            bat "dir > nul"
                         }
                         
                         dir("reports"){
                             deleteDir()
                             echo "Cleaned out reports directory"
-                            bat "dir"
+                            bat "dir > nul"
                         }
                     }
                     post{
@@ -91,7 +92,6 @@ pipeline {
                     post{
                         always{
                             lock("system_python_${NODE_NAME}"){
-                                bat "dir logs"
                                 bat "${tool 'CPython-3.6'} -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
                             }
                             archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
