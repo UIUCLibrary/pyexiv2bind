@@ -52,6 +52,8 @@ class BuildCMakeExt(build_ext):
         cmake_build_systems_lut = {
             'MSC v.1900 64 bit (AMD64)': "Visual Studio 14 2015 Win64",
             'MSC v.1900 32 bit (Intel)': "Visual Studio 14 2015",
+            'MSC v.1915 64 bit (AMD64)': "Visual Studio 14 2015 Win64",
+            'MSC v.1915 32 bit (Intel)': "Visual Studio 14 2015",
             'GCC': "Unix Makefiles",
             'Clang': "Unix Makefiles",
         }
