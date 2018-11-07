@@ -158,7 +158,7 @@ pipeline {
                     }
                     steps {
                         dir("source"){
-                            bat "pipenv install --dev --deploy && pipenv run pip list > ..\\logs\\pippackages_pipenv_${NODE_NAME}.log"
+                            bat "pipenv install --dev --deploy --verbose && pipenv run pip list > ..\\logs\\pippackages_pipenv_${NODE_NAME}.log"
                             bat "pipenv check"
 
                         }
