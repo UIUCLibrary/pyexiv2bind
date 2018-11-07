@@ -168,6 +168,10 @@ pipeline {
                             archiveArtifacts artifacts: "logs/pippackages_pipenv_*.log"
                         }
                         failure {
+                            dir("source"){
+                                bat "pipenv --rm"
+                            }
+
                             deleteDir()
                         }
                         cleanup{
