@@ -420,15 +420,17 @@ junit_filename                  = ${junit_filename}
                         lock("system_python_${env.NODE_NAME}")
                     }
                     steps {
-                        bat "${tool 'CPython-3.6'} -m pip install pip --upgrade --quiet"
+                        bat "${tool 'CPython-3.6'} -m venv venv"
+                        bat "venv\\scripts\\python.exe -m pip install pip --upgrade --quiet"
+                        bat "venv\\scripts\\pip.exe install tox detox --upgrade --quiet"
                         dir("source"){
-                            bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
+                            // bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
                             script{
                                 try{
-                                    bat "pipenv run tox --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
+                                    bat "venv\\scripts\\tox.exe --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
 
                                 } catch (exc) {
-                                    bat "pipenv run tox --recreate --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
+                                    bat "venv\\scripts\\tox.exe --recreate --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
                                 }
                             }
                         }
