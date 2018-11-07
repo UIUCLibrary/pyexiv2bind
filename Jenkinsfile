@@ -613,12 +613,19 @@ junit_filename                  = ${junit_filename}
 
         }
         stage("Packaging") {
-            steps {
-                dir("source"){
-                    bat "pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe sdist -d ${WORKSPACE}\\dist bdist_wheel -d ${WORKSPACE}\\dist"
+            parallel{
+                stage("Python 3.6"){
+                    steps {
+                        dir("source"){
+                            bat "pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe sdist -d ${WORKSPACE}\\dist bdist_wheel -d ${WORKSPACE}\\dist"
+                        }
+                    }
                 }
-
-                archiveArtifacts artifacts: "dist/*.whl,dist/*.tar.gz,dist/*.zip", fingerprint: true
+            }
+            post{
+                success{
+                    archiveArtifacts artifacts: "dist/*.whl,dist/*.tar.gz,dist/*.zip", fingerprint: true
+                }
             }
         }
         stage("Deploy to DevPi Staging") {
