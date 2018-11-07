@@ -617,21 +617,36 @@ junit_filename                  = ${junit_filename}
 
         }
         stage("Packaging") {
+            environment {
+                PATH = "${tool 'cmake3.12'};$PATH"
+            }
             parallel{
                 stage("Python 3.6 whl"){
-                    steps {
-                        dir("source"){
-                            bat "pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+                    stages{
+                        
+                        stage("Create venv for 3.6"){
+                            environment {
+                                PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'}\\..\\;$PATH"
+                            }
+                            steps {
+                                bat "${tool 'CPython-3.6'} -m venv venv36"
+                                bat "venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv36\\Scripts\\pip.exe install wheel setuptools --upgrade"
+                            }
+                        }
+                        stage("Creating bdist wheel for 3.6"){
+                            steps {
+                                dir("source"){
+                                    // bat "pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+                                    bat "${WORKSPACE}\\venv36\\scripts\\python.exe setup.py build -b ../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/36 --build-temp ../build/36/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+                                }
+                            }
                         }
                     }
                 }
                 stage("Python 3.6 sdist"){
-                    environment {
-                        PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'}\\..\\;$PATH"
-                    }
                     steps {
                         dir("source"){
-                            bat "pipenv run python setup.py sdist -d ${WORKSPACE}\\dist"
+                            bat "${tool 'CPython-3.6'} setup.py sdist -d ${WORKSPACE}\\dist"
                         }
                     }
                 }
@@ -647,7 +662,7 @@ junit_filename                  = ${junit_filename}
                             }
                         }
                     
-                        stage("creating bdist wheel for 3.7"){
+                        stage("Creating bdist wheel for 3.7"){
                             steps {
                                 dir("source"){
                                     bat "${WORKSPACE}\\venv37\\scripts\\python.exe setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/37 --build-temp ../build/37/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
