@@ -169,7 +169,7 @@ pipeline {
                         }
                         failure {
                             dir("source"){
-                                bat "pipenv --rm"
+                                bat returnStatus: true, script: "pipenv --rm"
                             }
 
                             deleteDir()
