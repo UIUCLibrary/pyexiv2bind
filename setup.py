@@ -9,9 +9,11 @@ import subprocess
 # CMAKE = shutil.which("cmake")
 
 class CMakeExtension(Extension):
-    def __init__(self, name, sources=None):
+    def __init__(self, name, sources=None, language=None):
         # don't invoke the original build_ext for this special extension
-        super().__init__(name, sources=sources if sources is not None else [])
+        super().__init__(name,
+                         sources=sources if sources is not None else [],
+                         language=language)
 
 
 class BuildCMakeExt(build_ext):
