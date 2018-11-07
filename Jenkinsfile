@@ -414,7 +414,7 @@ junit_filename                  = ${junit_filename}
                        equals expected: true, actual: params.TEST_RUN_TOX
                     }
                     environment {
-                        PATH = "${tool 'cmake3.12'}\\;$PATH"
+                        PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'}\\..\\;${tool 'CPython-3.7'}\\..\\;$PATH"
                     }
                     options{
                         lock("system_python_${env.NODE_NAME}")
@@ -663,7 +663,7 @@ junit_filename                  = ${junit_filename}
             parallel {
                 stage("Source Distribution: .tar.gz") {
                     environment {
-                        PATH = "${tool 'cmake3.12'}\\;$PATH"
+                        PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'}\\..\\;${tool 'CPython-3.7'}\\..\\;$PATH"
                     }
                     steps {
                         echo "Testing Source tar.gz package in devpi"
@@ -688,30 +688,6 @@ junit_filename                  = ${junit_filename}
                     }
 
                 }
-                stage("Source Distribution: .zip") {
-                    environment {
-                        PATH = "${tool 'cmake3.12'}\\;$PATH"
-                    }
-                    steps {
-                        echo "Testing Source zip package in devpi"
-                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                        }
-                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                        script {
-                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME}==${PKG_VERSION} -s zip --verbose"
-                            if(devpi_test_return_code != 0){   
-                                error "Devpi exit code for zip was ${devpi_test_return_code}"
-                            }
-                        }
-                        echo "Finished testing Source Distribution: .zip"
-                    }
-                    post {
-                        failure {
-                            echo "Tests for .zip source on DevPi failed."
-                        }
-                    }
-                }
                 stage("Built Distribution: .whl") {
                     agent {
                         node {
@@ -720,6 +696,9 @@ junit_filename                  = ${junit_filename}
                     }
                     options {
                         skipDefaultCheckout(true)
+                    }
+                    environment {
+                        PATH = "${tool 'CPython-3.6'}\\..\\;${tool 'CPython-3.7'}\\..\\;$PATH"
                     }
                     steps {
                         echo "Testing Whl package in devpi"
