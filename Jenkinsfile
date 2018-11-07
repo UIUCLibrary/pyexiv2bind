@@ -304,7 +304,8 @@ junit_filename                  = ${junit_filename}
                     post{
                         always{
                             archiveArtifacts artifacts: "logs/build.log"
-                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build.log']]
+                            // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build.log']]
+                            recordIssues enabledForFailure: true, tools: [[name: 'Setuptools Build', pattern: 'logs/build.log', tool: pyLint()]]
                             // bat "dir build"
                         }
                         cleanup{
@@ -383,7 +384,8 @@ junit_filename                  = ${junit_filename}
                     }
                     post{
                         always {
-                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
+                            recordIssues enabledForFailure: true, tools: [[name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', tool: pep8()]]
+                            // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
                             archiveArtifacts artifacts: 'logs/build_sphinx.log'
                         }
                         success{
@@ -509,7 +511,8 @@ junit_filename                  = ${junit_filename}
                     }
                     post {
                         always {
-                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
+                            recordIssues enabledForFailure: true, tools: [[name: 'MyPy', pattern: "logs/mypy.log", tool: myPy()]]
+                            // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                         }
                     }
@@ -555,7 +558,7 @@ junit_filename                  = ${junit_filename}
                     script{
                       try{
                         dir("source"){
-                            bat "${WORKSPACE}\\venv\\Scripts\\flake8.exe py3exiv2bind --format=pylint --tee --output-file ${WORKSPACE}/reports/flake8.txt"
+                            bat "${WORKSPACE}\\venv\\Scripts\\flake8.exe py3exiv2bind --tee --output-file ${WORKSPACE}/reports/flake8.txt"
                         }
                       } catch (exc) {
                         echo "Flake8 found some warnings."
@@ -565,7 +568,8 @@ junit_filename                  = ${junit_filename}
                   }
                   post {
                     always {
-                      warnings parserConfigurations: [[parserName: 'PyLint', pattern: 'reports/flake8.txt']], unHealthy: ''
+                        recordIssues enabledForFailure: true, tools: [[name: 'Flake8', pattern: 'logs/flake8.log', tool: flake8()]]
+                    //   warnings parserConfigurations: [[parserName: 'PyLint', pattern: 'reports/flake8.txt']], unHealthy: ''
                     }
                   }
                 }
