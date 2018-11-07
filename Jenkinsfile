@@ -304,7 +304,7 @@ junit_filename                  = ${junit_filename}
                     steps {
                         dir("source"){
                             lock("system_pipenv_${NODE_NAME}"){
-                                powershell "& pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --inplace --cmake-exec=${tool 'cmake3.12'}\\cmake.exe | tee ${WORKSPACE}\\logs\\build.log"
+                                powershell "& pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --inplace --cmake-exec=${tool 'cmake3.12'}\\cmake.exe | Tee-Object -FilePath ${WORKSPACE}\\logs\\build.log"
                             }
                         }
                     }
@@ -385,7 +385,7 @@ junit_filename                  = ${junit_filename}
                         echo "Building docs on ${env.NODE_NAME}"
                         dir("source"){
                             lock("system_pipenv_${NODE_NAME}"){
-                                powershell "& ${tool 'CPython-3.6'} -m pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs | tee ${WORKSPACE}\\logs\\build_sphinx.log"
+                                powershell "& ${tool 'CPython-3.6'} -m pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs |  Tee-Object -FilePath ${WORKSPACE}\\logs\\build_sphinx.log"
                             }
                         }
                     }
