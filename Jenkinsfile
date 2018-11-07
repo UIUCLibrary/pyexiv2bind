@@ -628,6 +628,24 @@ junit_filename                  = ${junit_filename}
                         }
                     }
                 }
+                stage("Python 3.7 whl"){
+                    stages{
+                        stage("create venv for 3.7"){
+                            steps {
+                                bat "${tool 'CPython-3.7'} -m venv venv37"
+                                bat "venv\\Scripts\\python.exe -m pip install pip --upgrade && venv\\Scripts\\pip.exe install wheel setuptools --upgrade"
+                            }
+                        }
+                    
+                        stage("creating bdist wheel for 3.7"){
+                            steps {
+                                dir("source"){
+                                    bat "${WORKSPACE}\\venv37\\scripts\\python.exe setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/37 --build-temp ../build/37/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+                                }
+                            }
+                        }
+                    }
+                }
             }
             post{
                 success{
