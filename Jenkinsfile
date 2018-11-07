@@ -1,6 +1,9 @@
 #!groovy
 @Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
 import org.ds.*
+
+@Library("devpi") _
+
 def PKG_NAME = "unknown"
 def PKG_VERSION = "unknown"
 def DOC_ZIP_FILENAME = "doc.zip"
@@ -724,24 +727,38 @@ junit_filename                  = ${junit_filename}
 
 
             parallel {
-                stage("Source Distribution: .tar.gz") {
+                stage("Testing Submitted Source Distribution") {
                     environment {
                         PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'}\\..\\;${tool 'CPython-3.7'}\\..\\;$PATH"
                     }
                     steps {
                         echo "Testing Source tar.gz package in devpi"
-                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                        
+                        timeout(10){
+                            bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu/${env.BRANCH_NAME}_staging"
+                            devpiTest(
+                                devpiExecutable: "venv\\Scripts\\devpi.exe",
+                                url: "https://devpi.library.illinois.edu",
+                                index: "${env.BRANCH_NAME}_staging",
+                                pkgName: "${PKG_NAME}",
+                                pkgVersion: "${PKG_VERSION}",
+                                pkgRegex: "tar.gz",
+                                detox: false
+                            )
+                        }
+                        
+                        // withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                        //     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                     
-                        }
-                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                        // }
+                        // bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
 
-                        script {                          
-                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME}==${PKG_VERSION} -s tar.gz  --verbose"
-                            if(devpi_test_return_code != 0){   
-                                error "Devpi exit code for tar.gz was ${devpi_test_return_code}"
-                            }
-                        }
+                        // script {                          
+                        //     def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME}==${PKG_VERSION} -s tar.gz  --verbose"
+                        //     if(devpi_test_return_code != 0){   
+                        //         error "Devpi exit code for tar.gz was ${devpi_test_return_code}"
+                        //     }
+                        // }
                         echo "Finished testing Source Distribution: .tar.gz"
                     }
                     post {
