@@ -643,7 +643,7 @@ junit_filename                  = ${junit_filename}
                         }
                     }
                 }
-                stage("Python 3.6 sdist"){
+                stage("Python sdist"){
                     steps {
                         dir("source"){
                             bat "${tool 'CPython-3.6'} setup.py sdist -d ${WORKSPACE}\\dist"
