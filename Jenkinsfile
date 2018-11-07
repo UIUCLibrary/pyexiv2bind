@@ -774,12 +774,13 @@ junit_filename                  = ${junit_filename}
                             label "Windows && Python3"
                         }
                     }
-                    options {
-                        skipDefaultCheckout(true)
-                    }
                     environment {
                         PATH = "${tool 'CPython-3.6'}\\..\\;${tool 'CPython-3.7'}\\..\\;$PATH"
                     }
+                    options {
+                        skipDefaultCheckout(true)
+                    }
+                    
                     steps {
                         echo "Testing Whl package in devpi"
                         bat "${tool 'CPython-3.6'} -m venv venv"
@@ -790,7 +791,7 @@ junit_filename                  = ${junit_filename}
                         }
                         bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
                         script{
-                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME}==${PKG_VERSION} -s whl  --verbose"
+                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME}==${PKG_VERSION} -s whl -e py36  --verbose"
                             if(devpi_test_return_code != 0){   
                                 error "Devpi exit code for whl was ${devpi_test_return_code}"
                             }
