@@ -786,6 +786,7 @@ junit_filename                  = ${junit_filename}
                         bat "${tool 'CPython-3.6'} -m venv venv"
                         bat "venv\\Scripts\\pip.exe install tox devpi-client"
                         bat "where python"
+                        bat "set"
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                             bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"                        
                         }
