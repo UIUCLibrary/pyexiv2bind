@@ -312,7 +312,10 @@ junit_filename                  = ${junit_filename}
                         always{
                             archiveArtifacts artifacts: "logs/build.log"
                             // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build.log']]
-                            recordIssues enabledForFailure: true, tools: [[name: 'Setuptools Build', pattern: 'logs/build.log', tool: pyLint()]]
+                            recordIssues enabledForFailure: true, tools: [
+                                [name: 'Setuptools Build: PyLint', pattern: 'logs/build.log', tool: pyLint()],
+                                [name: 'Setuptools Build: MSBuild', pattern: 'logs/build.log', tool: msBuild()]
+                                ]
                             // bat "dir build"
                         }
                         cleanup{
