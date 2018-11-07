@@ -422,7 +422,7 @@ junit_filename                  = ${junit_filename}
                     steps {
                         bat "${tool 'CPython-3.6'} -m venv venv"
                         bat "venv\\scripts\\python.exe -m pip install pip --upgrade --quiet"
-                        bat "venv\\scripts\\pip.exe install tox detox --upgrade --quiet"
+                        bat "venv\\scripts\\pip.exe install tox detox --upgrade"
                         dir("source"){
                             // bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
                             script{
