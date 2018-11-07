@@ -427,44 +427,44 @@ junit_filename                  = ${junit_filename}
                             // bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
                             script{
                                 try{
-                                    bat "venv\\scripts\\tox.exe --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
+                                    bat "venv\\scripts\\detox.exe --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
 
                                 } catch (exc) {
-                                    bat "venv\\scripts\\tox.exe --recreate --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
+                                    bat "venv\\scripts\\detox.exe --recreate --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov-report xml:${WORKSPACE}/reports/tox_coverage.xml"
                                 }
                             }
                         }
                         
                     }
                     post {
-                        success{
-                            script {
-                                try{
-                                    publishCoverage adapters: [
-                                            coberturaAdapter('reports/tox_coverage.xml')
-                                            ],
-                                        tag: 'coverage'
-                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
-                                } catch(exc){
-                                    echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
-                                    cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "reports/tox_coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
-                                }
-                                archiveArtifacts artifacts: "reports/tox_coverage.xml"
-                                bat "del reports\\tox_coverage.xml"
-                            }
-                            dir("reports}"){
-                                bat "dir"
+                        // success{
+                        //     script {
+                        //         try{
+                        //             publishCoverage adapters: [
+                        //                     coberturaAdapter('reports/tox_coverage.xml')
+                        //                     ],
+                        //                 tag: 'coverage'
+                        //                 sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
+                        //         } catch(exc){
+                        //             echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
+                        //             cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "reports/tox_coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
+                        //         }
+                        //         archiveArtifacts artifacts: "reports/tox_coverage.xml"
+                        //         bat "del reports\\tox_coverage.xml"
+                        //     }
+                        //     dir("reports}"){
+                        //         bat "dir"
 
-                                script {
-                                    def xml_files = findFiles glob: "**/*.xml"
-                                    xml_files.each { junit_xml_file ->
-                                        echo "Found ${junit_xml_file}"
-                                        junit "${junit_xml_file}"
-                                    }
-                                }
-                            }              
-                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
-                        }
+                        //         script {
+                        //             def xml_files = findFiles glob: "**/*.xml"
+                        //             xml_files.each { junit_xml_file ->
+                        //                 echo "Found ${junit_xml_file}"
+                        //                 junit "${junit_xml_file}"
+                        //             }
+                        //         }
+                        //     }              
+                        //     publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
+                        // }
                         failure {
                             echo "Tox test failed. Removing ${WORKSPACE}\\.tox"
                             dir("${WORKSPACE}\\.tox"){
