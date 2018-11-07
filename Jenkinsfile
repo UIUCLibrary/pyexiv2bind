@@ -626,6 +626,9 @@ junit_filename                  = ${junit_filename}
                     }
                 }
                 stage("Python 3.6 sdist"){
+                    environment {
+                        PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'}\\..\\;$PATH"
+                    }
                     steps {
                         dir("source"){
                             bat "pipenv run python setup.py sdist -d ${WORKSPACE}\\dist"
@@ -635,9 +638,12 @@ junit_filename                  = ${junit_filename}
                 stage("Python 3.7 whl"){
                     stages{
                         stage("create venv for 3.7"){
+                            environment {
+                                PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.7'}\\..\\;$PATH"
+                            }
                             steps {
                                 bat "${tool 'CPython-3.7'} -m venv venv37"
-                                bat "venv\\Scripts\\python.exe -m pip install pip --upgrade && venv\\Scripts\\pip.exe install wheel setuptools --upgrade"
+                                bat "venv37\\Scripts\\python.exe -m pip install pip --upgrade && venv37\\Scripts\\pip.exe install wheel setuptools --upgrade"
                             }
                         }
                     
@@ -871,8 +877,10 @@ junit_filename                  = ${junit_filename}
                 if(fileExists('source/setup.py')){
                     dir("source"){
                         try{
-                            retry(3) {
-                                bat "pipenv run python setup.py clean --all"
+                            if(fileExists('venv\\Scripts\\python.exe')){
+                                retry(3) {
+                                    bat "venv\\Scripts\\python.exe setup.py clean --all"
+                                }
                             }
                         } catch (Exception ex) {
                             echo "Unable to successfully run clean. Purging source directory."
