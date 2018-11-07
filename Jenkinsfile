@@ -614,10 +614,17 @@ junit_filename                  = ${junit_filename}
         }
         stage("Packaging") {
             parallel{
-                stage("Python 3.6"){
+                stage("Python 3.6 whl"){
                     steps {
                         dir("source"){
-                            bat "pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe sdist -d ${WORKSPACE}\\dist bdist_wheel -d ${WORKSPACE}\\dist"
+                            bat "pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+                        }
+                    }
+                }
+                stage("Python 3.6 sdist"){
+                    steps {
+                        dir("source"){
+                            bat "pipenv run python setup.py sdist -d ${WORKSPACE}\\dist"
                         }
                     }
                 }
