@@ -301,6 +301,9 @@ junit_filename                  = ${junit_filename}
         stage("Building") {
             stages{
                 stage("Building Python Package"){
+                    environment {
+                        CL = "/MP"
+                    }
                     steps {
                         dir("source"){
                             lock("system_pipenv_${NODE_NAME}"){
@@ -637,6 +640,7 @@ junit_filename                  = ${junit_filename}
                         stage("Create venv for 3.6"){
                             environment {
                                 PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'}\\..\\;$PATH"
+                                CL = "/MP"
                             }
                             steps {
                                 bat "${tool 'CPython-3.6'} -m venv venv36"
@@ -670,6 +674,7 @@ junit_filename                  = ${junit_filename}
                         stage("create venv for 3.7"){
                             environment {
                                 PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.7'}\\..\\;$PATH"
+                                CL = "/MP"
                             }
                             steps {
                                 bat "${tool 'CPython-3.7'} -m venv venv37"
