@@ -677,7 +677,7 @@ junit_filename                  = ${junit_filename}
                                 CL = "/MP"
                             }
                             steps {
-                                bat "where python"
+                                // bat "where python"
                                 bat "${tool 'CPython-3.7'}\\python.exe -m venv venv37"
                                 bat "venv37\\Scripts\\python.exe -m pip install pip --upgrade && venv37\\Scripts\\pip.exe install wheel setuptools --upgrade"
                             }
