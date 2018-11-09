@@ -101,7 +101,8 @@ class BuildCMakeExt(build_ext):
             f'-DCMAKE_BUILD_TYPE={build_configuration_name}')
 
         configure_command.append(f'-DCMAKE_INSTALL_PREFIX={self.build_lib}')
-        configure_command.append(f'-DPython_ADDITIONAL_VERSIONS={sys.version_info.major}.{sys.version_info.minor}')
+        configure_command.append(f'-DPYTHON_EXECUTABLE={sys.executable}')
+        # configure_command.append(f'-DPython_ADDITIONAL_VERSIONS={sys.version_info.major}.{sys.version_info.minor}')
 
         configure_command += self.extra_cmake_options
 
