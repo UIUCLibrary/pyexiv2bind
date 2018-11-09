@@ -687,7 +687,7 @@ junit_filename                  = ${junit_filename}
                             steps {
                                 dir("source"){
                                     
-                                    bat "${WORKSPACE}\\venv37\\scripts\\python.exe setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+                                    bat "${tool 'CPython-3.7'}\\python.exe setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
                                 }
                             }
                             post{
