@@ -661,12 +661,12 @@ junit_filename                  = ${junit_filename}
                     }
                 }
                 stage("Python 3.7 whl"){
-                    stages{
-                        agent {
+                    agent {
                             node {
                                 label "Windows && Python3"
                             }
                         }
+                    stages{
                         stage("create venv for 3.7"){
                             environment {
                                 PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.7'}\\..\\;$PATH"
