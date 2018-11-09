@@ -738,7 +738,7 @@ junit_filename                  = ${junit_filename}
                         echo "Testing Source tar.gz package in devpi"
                         
                         timeout(10){
-                            bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu/${env.BRANCH_NAME}_staging"
+                            // bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu/${env.BRANCH_NAME}_staging"
                             devpiTest(
                                 devpiExecutable: "venv\\Scripts\\devpi.exe",
                                 url: "https://devpi.library.illinois.edu",
@@ -775,7 +775,8 @@ junit_filename                  = ${junit_filename}
                     agent {
                         node {
                             label "Windows && Python3"
-                        }}
+                        }
+                    }
                     environment {
                         PATH = "${tool 'CPython-3.6'}\\..\\;${tool 'CPython-3.7'}\\..\\;$PATH"
                     }
@@ -784,9 +785,12 @@ junit_filename                  = ${junit_filename}
                     }
                     
                     steps {
+                        bat "${tool 'CPython-3.6'} -m venv venv36"
+                        bat "venv36\\Scripts\\python.exe -m pip install pip --upgrade"
+                        bat "venv36\\Scripts\\pip.exe install devpi --upgrade"
                         echo "Testing Whl package in devpi"
                         devpiTest(
-                                devpiExecutable: "venv\\Scripts\\devpi.exe",
+                                devpiExecutable: "venv36\\Scripts\\devpi.exe",
                                 url: "https://devpi.library.illinois.edu",
                                 index: "${env.BRANCH_NAME}_staging",
                                 pkgName: "${PKG_NAME}",
@@ -823,7 +827,7 @@ junit_filename                  = ${junit_filename}
                             label "Windows && Python3"
                         }}
                     environment {
-                        PATH = "${tool 'CPython-3.6'}\\..\\;${tool 'CPython-3.7'}\\..\\;$PATH"
+                        PATH = "${tool 'CPython-3.7'}\\..\\;$PATH"
                     }
                     options {
                         skipDefaultCheckout(true)
@@ -831,8 +835,11 @@ junit_filename                  = ${junit_filename}
                     
                     steps {
                         echo "Testing Whl package in devpi"
+                        bat "${tool 'CPython-3.7'} -m venv venv37"
+                        bat "venv37\\Scripts\\python.exe -m pip install pip --upgrade"
+                        bat "venv37\\Scripts\\pip.exe install devpi --upgrade"
                         devpiTest(
-                                devpiExecutable: "venv\\Scripts\\devpi.exe",
+                                devpiExecutable: "venv37\\Scripts\\devpi.exe",
                                 url: "https://devpi.library.illinois.edu",
                                 index: "${env.BRANCH_NAME}_staging",
                                 pkgName: "${PKG_NAME}",
