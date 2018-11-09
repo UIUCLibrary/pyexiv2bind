@@ -304,7 +304,7 @@ junit_filename                  = ${junit_filename}
                     steps {
                         dir("source"){
                             lock("system_pipenv_${NODE_NAME}"){
-                                powershell "& pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/36 --build-temp ../build/36/temp build_ext --inplace --cmake-exec=${tool 'cmake3.12'}\\cmake.exe | Tee-Object -FilePath ${WORKSPACE}\\logs\\build.log"
+                                powershell "& pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace --cmake-exec=${tool 'cmake3.12'}\\cmake.exe | Tee-Object -FilePath ${WORKSPACE}\\logs\\build.log"
                             }
                         }
                     }
@@ -662,6 +662,11 @@ junit_filename                  = ${junit_filename}
                 }
                 stage("Python 3.7 whl"){
                     stages{
+                        agent {
+                            node {
+                                label "Windows && Python3"
+                            }
+                        }
                         stage("create venv for 3.7"){
                             environment {
                                 PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.7'}\\..\\;$PATH"
@@ -678,12 +683,18 @@ junit_filename                  = ${junit_filename}
                                     bat "${WORKSPACE}\\venv37\\scripts\\python.exe setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
                                 }
                             }
+                            post{
+                                success{
+                                    stash includes: 'dist/*.whl', name: "whl 3.7"
+                                }
+                            }
                         }
                     }
                 }
             }
             post{
                 success{
+                    unstash "whl 3.7"
                     archiveArtifacts artifacts: "dist/*.whl,dist/*.tar.gz,dist/*.zip", fingerprint: true
                 }
             }
