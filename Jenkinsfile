@@ -429,7 +429,7 @@ junit_filename                  = ${junit_filename}
                        equals expected: true, actual: params.TEST_RUN_TOX
                     }
                     environment {
-                        PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'}\\..\\;${tool 'CPython-3.7'}\\..\\;$PATH"
+                        PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'}\\..\\;${tool 'CPython-3.7'};$PATH"
                     }
                     options{
                         lock("system_python_${env.NODE_NAME}")
@@ -673,11 +673,11 @@ junit_filename                  = ${junit_filename}
                     stages{
                         stage("create venv for 3.7"){
                             environment {
-                                PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.7'}\\..\\;$PATH"
+                                PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.7'};$PATH"
                                 CL = "/MP"
                             }
                             steps {
-                                bat "${tool 'CPython-3.7'} -m venv venv37"
+                                bat "${tool 'CPython-3.7'}\\python.exe -m venv venv37"
                                 bat "venv37\\Scripts\\python.exe -m pip install pip --upgrade && venv37\\Scripts\\pip.exe install wheel setuptools --upgrade"
                             }
                         }
@@ -748,7 +748,7 @@ junit_filename                  = ${junit_filename}
             parallel {
                 stage("Testing Submitted Source Distribution") {
                     environment {
-                        PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'}\\..\\;${tool 'CPython-3.7'}\\..\\;$PATH"
+                        PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'}\\..\\;${tool 'CPython-3.7'};$PATH"
                     }
                     steps {
                         echo "Testing Source tar.gz package in devpi"
@@ -794,7 +794,7 @@ junit_filename                  = ${junit_filename}
                         }
                     }
                     environment {
-                        PATH = "${tool 'CPython-3.6'}\\..\\;${tool 'CPython-3.7'}\\..\\;$PATH"
+                        PATH = "${tool 'CPython-3.6'}\\..\\;${tool 'CPython-3.7'};$PATH"
                     }
                     options {
                         skipDefaultCheckout(true)
@@ -843,7 +843,7 @@ junit_filename                  = ${junit_filename}
                             label "Windows && Python3"
                         }}
                     environment {
-                        PATH = "${tool 'CPython-3.7'}\\..\\;$PATH"
+                        PATH = "${tool 'CPython-3.7'};$PATH"
                     }
                     options {
                         skipDefaultCheckout(true)
@@ -851,7 +851,7 @@ junit_filename                  = ${junit_filename}
                     
                     steps {
                         echo "Testing Whl package in devpi"
-                        bat "${tool 'CPython-3.7'} -m venv venv37"
+                        bat "${tool 'CPython-3.7'}\\python.exe -m venv venv37"
                         bat "venv37\\Scripts\\python.exe -m pip install pip --upgrade"
                         bat "venv37\\Scripts\\pip.exe install devpi --upgrade"
                         devpiTest(
