@@ -797,7 +797,7 @@ junit_filename                  = ${junit_filename}
                                 pkgVersion: "${PKG_VERSION}",
                                 pkgRegex: "36.*whl",
                                 detox: false,
-                                toxEnvironment: "-e py36"
+                                toxEnvironment: "py36"
                             )
                         // bat "${tool 'CPython-3.6'} -m venv venv"
                         // bat "venv\\Scripts\\pip.exe install tox devpi-client"
@@ -846,7 +846,7 @@ junit_filename                  = ${junit_filename}
                                 pkgVersion: "${PKG_VERSION}",
                                 pkgRegex: "37.*whl",
                                 detox: false,
-                                toxEnvironment: "-e py37"
+                                toxEnvironment: "py37"
                             )
                         // bat "${tool 'CPython-3.6'} -m venv venv"
                         // bat "venv\\Scripts\\pip.exe install tox devpi-client"
