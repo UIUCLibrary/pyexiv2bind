@@ -686,7 +686,7 @@ junit_filename                  = ${junit_filename}
                         stage("Creating bdist wheel for 3.7"){
                             steps {
                                 dir("source"){
-                                    bat "${tool 'CPython-3.7'}\\python.exe setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+                                    bat "\"${tool 'CPython-3.7'}\\python.exe\" setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
                                 }
                             }
                             post{
@@ -853,7 +853,7 @@ junit_filename                  = ${junit_filename}
                     
                     steps {
                         echo "Testing Whl package in devpi"
-                        bat "${tool 'CPython-3.7'}\\python.exe -m venv venv37"
+                        bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv37"
                         bat "venv37\\Scripts\\python.exe -m pip install pip --upgrade"
                         bat "venv37\\Scripts\\pip.exe install devpi --upgrade"
                         devpiTest(
