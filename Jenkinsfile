@@ -513,6 +513,10 @@ junit_filename                  = ${junit_filename}
                             deleteDir()
                             bat "dir"
                         }
+                        dir("logs"){
+                            deleteDir()
+                            bat "dir"
+                        }
                         script{
                             try{
                                 dir("source"){
