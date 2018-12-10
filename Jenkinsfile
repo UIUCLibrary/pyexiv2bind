@@ -585,10 +585,16 @@ junit_filename                  = ${junit_filename}
                         // currentBuild.result = 'UNSTABLE'
                       }
                     }
+                    stash includes: "logs/flake8.log", name: "FLAKE8_LOG"
                   }
                   post {
                     always {
-                        recordIssues enabledForFailure: true, tools: [[name: 'Flake8', pattern: 'logs/flake8.log', tool: flake8()]]
+                        node('master') {
+                            unstash "FLAKE8_LOG"
+                            recordIssues enabledForFailure: true, tools: [[tool: flake8(pattern: 'logs/flake8.log')]]
+        //                    recordIssues enabledForFailure: true, tools: [[tool: pep8(id: 'DocTest', name: 'DocTest', pattern: 'logs/build_sphinx.log')]]
+                        }
+//                        recordIssues enabledForFailure: true, tools: [[name: 'Flake8', pattern: 'logs/flake8.log', tool: flake8()]]
                     //   warnings parserConfigurations: [[parserName: 'PyLint', pattern: 'reports/flake8.txt']], unHealthy: ''
                     }
                   }
