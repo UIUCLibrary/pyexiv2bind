@@ -50,7 +50,10 @@ pipeline {
             stages{
                 stage("Purge all existing data in workspace"){
                     when{
-                        equals expected: true, actual: params.FRESH_WORKSPACE
+                        anyOf{
+                            equals expected: true, actual: params.FRESH_WORKSPACE
+                            triggeredBy "TimerTriggerCause"
+                        }
                     }
                     steps{
                         deleteDir()
