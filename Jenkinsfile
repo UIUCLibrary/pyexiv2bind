@@ -513,10 +513,7 @@ junit_filename                  = ${junit_filename}
                             deleteDir()
                             bat "dir"
                         }
-                        dir("logs"){
-                            deleteDir()
-                            bat "dir"
-                        }
+
                         script{
                             try{
                                 dir("source"){
@@ -574,6 +571,9 @@ junit_filename                  = ${junit_filename}
                   }
                   steps{
                     unstash "${NODE_NAME}_built_source"
+                    dir("logs"){
+                        bat "dir"
+                    }
                     script{
                       try{
                         dir("source"){
