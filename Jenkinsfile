@@ -574,7 +574,8 @@ junit_filename                  = ${junit_filename}
                     script{
                       try{
                         dir("source"){
-                            bat "mkdir ${WORKSPACE}\\logs & ${WORKSPACE}\\venv\\Scripts\\flake8.exe py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
+                            bat returnStatus: true, script: "mkdir ${WORKSPACE}\\logs"
+                            bat "${WORKSPACE}\\venv\\Scripts\\flake8.exe py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
                         }
                       } catch (exc) {
                         echo "Flake8 found some warnings."
