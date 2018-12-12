@@ -50,7 +50,10 @@ pipeline {
             stages{
                 stage("Purge all existing data in workspace"){
                     when{
-                        equals expected: true, actual: params.FRESH_WORKSPACE
+                        anyOf{
+                            equals expected: true, actual: params.FRESH_WORKSPACE
+                            triggeredBy "TimerTriggerCause"
+                        }
                     }
                     steps{
                         deleteDir()
@@ -89,13 +92,13 @@ pipeline {
                 stage("Installing required system level dependencies"){
                     steps{
                         lock("system_python_${NODE_NAME}"){
-                            bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
+                            bat "${tool 'CPython-3.6'}\\python -m pip install --upgrade pip --quiet"
                         }
                     }
                     post{
                         always{
                             lock("system_python_${NODE_NAME}"){
-                                bat "${tool 'CPython-3.6'} -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
+                                bat "${tool 'CPython-3.6'}\\python -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
                             }
                             archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
                         }
@@ -184,13 +187,13 @@ pipeline {
                 }
                 stage("Creating virtualenv for building"){
                     steps{
-                        bat "${tool 'CPython-3.6'} -m venv venv"
+                        bat "${tool 'CPython-3.6'}\\python -m venv venv"
                         script {
                             try {
                                 bat "call venv\\Scripts\\python.exe -m pip install -U pip"
                             }
                             catch (exc) {
-                                bat "${tool 'CPython-3.6'} -m venv venv"
+                                bat "${tool 'CPython-3.6'}\\python -m venv venv"
                                 bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                             }
                         }
@@ -250,8 +253,8 @@ pipeline {
                         script {
                             // Set up the reports directory variable 
                             dir("source"){
-                                PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
-                                PKG_VERSION = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                                PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}\\python  setup.py --name").trim()
+                                PKG_VERSION = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}\\python setup.py --version").trim()
                             }
                         }
 
@@ -391,7 +394,7 @@ junit_filename                  = ${junit_filename}
                         echo "Building docs on ${env.NODE_NAME}"
                         dir("source"){
                             lock("system_pipenv_${NODE_NAME}"){
-                                powershell "& ${tool 'CPython-3.6'} -m pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs |  Tee-Object -FilePath ${WORKSPACE}\\logs\\build_sphinx.log"
+                                powershell "& ${tool 'CPython-3.6'}\\python -m pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs |  Tee-Object -FilePath ${WORKSPACE}\\logs\\build_sphinx.log"
                             }
                         }
                     }
@@ -429,13 +432,13 @@ junit_filename                  = ${junit_filename}
                        equals expected: true, actual: params.TEST_RUN_TOX
                     }
                     environment {
-                        PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'}\\..\\;${tool 'CPython-3.7'};$PATH"
+                        PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                     }
                     options{
                         lock("system_python_${env.NODE_NAME}")
                     }
                     steps {
-                        bat "${tool 'CPython-3.6'} -m venv venv"
+                        bat "${tool 'CPython-3.6'}\\python -m venv venv"
                         bat "venv\\scripts\\python.exe -m pip install pip --upgrade --quiet"
                         bat "venv\\scripts\\pip.exe install tox detox --upgrade"
                         dir("source"){
@@ -513,6 +516,7 @@ junit_filename                  = ${junit_filename}
                             deleteDir()
                             bat "dir"
                         }
+
                         script{
                             try{
                                 dir("source"){
@@ -573,6 +577,7 @@ junit_filename                  = ${junit_filename}
                     script{
                       try{
                         dir("source"){
+                            bat returnStatus: true, script: "mkdir ${WORKSPACE}\\logs"
                             bat "${WORKSPACE}\\venv\\Scripts\\flake8.exe py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
                         }
                       } catch (exc) {
@@ -580,10 +585,16 @@ junit_filename                  = ${junit_filename}
                         // currentBuild.result = 'UNSTABLE'
                       }
                     }
+                    stash includes: "logs/flake8.log", name: "FLAKE8_LOG"
                   }
                   post {
                     always {
-                        recordIssues enabledForFailure: true, tools: [[name: 'Flake8', pattern: 'logs/flake8.log', tool: flake8()]]
+                        node('master') {
+                            unstash "FLAKE8_LOG"
+                            recordIssues enabledForFailure: true, tools: [[tool: flake8(pattern: 'logs/flake8.log')]]
+        //                    recordIssues enabledForFailure: true, tools: [[tool: pep8(id: 'DocTest', name: 'DocTest', pattern: 'logs/build_sphinx.log')]]
+                        }
+//                        recordIssues enabledForFailure: true, tools: [[name: 'Flake8', pattern: 'logs/flake8.log', tool: flake8()]]
                     //   warnings parserConfigurations: [[parserName: 'PyLint', pattern: 'reports/flake8.txt']], unHealthy: ''
                     }
                   }
@@ -639,11 +650,11 @@ junit_filename                  = ${junit_filename}
                         
                         stage("Create venv for 3.6"){
                             environment {
-                                PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'}\\..\\;$PATH"
+                                PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'};$PATH"
                                 CL = "/MP"
                             }
                             steps {
-                                bat "${tool 'CPython-3.6'} -m venv venv36"
+                                bat "${tool 'CPython-3.6'}\\python -m venv venv36"
                                 bat "venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv36\\Scripts\\pip.exe install wheel setuptools --upgrade"
                             }
                         }
@@ -660,7 +671,7 @@ junit_filename                  = ${junit_filename}
                 stage("Python sdist"){
                     steps {
                         dir("source"){
-                            bat "${tool 'CPython-3.6'} setup.py sdist -d ${WORKSPACE}\\dist"
+                            bat "${tool 'CPython-3.6'}\\python setup.py sdist -d ${WORKSPACE}\\dist"
                         }
                     }
                 }
@@ -750,12 +761,12 @@ junit_filename                  = ${junit_filename}
             parallel {
                 stage("Testing Submitted Source Distribution") {
                     environment {
-                        PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'}\\..\\;${tool 'CPython-3.7'};$PATH"
+                        PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                     }
                     steps {
                         echo "Testing Source tar.gz package in devpi"
                         
-                        timeout(10){
+                        timeout(20){
                             // bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu/${env.BRANCH_NAME}_staging"
                             devpiTest(
                                 devpiExecutable: "venv\\Scripts\\devpi.exe",
@@ -796,14 +807,14 @@ junit_filename                  = ${junit_filename}
                         }
                     }
                     environment {
-                        PATH = "${tool 'CPython-3.6'}\\..\\;${tool 'CPython-3.7'};$PATH"
+                        PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                     }
                     options {
                         skipDefaultCheckout(true)
                     }
                     
                     steps {
-                        bat "${tool 'CPython-3.6'} -m venv venv36"
+                        bat "${tool 'CPython-3.6'}\\python -m venv venv36"
                         bat "venv36\\Scripts\\python.exe -m pip install pip --upgrade"
                         bat "venv36\\Scripts\\pip.exe install devpi --upgrade"
                         echo "Testing Whl package in devpi"
