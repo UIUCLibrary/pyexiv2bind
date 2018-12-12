@@ -766,7 +766,7 @@ junit_filename                  = ${junit_filename}
                     steps {
                         echo "Testing Source tar.gz package in devpi"
                         
-                        timeout(10){
+                        timeout(20){
                             // bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu/${env.BRANCH_NAME}_staging"
                             devpiTest(
                                 devpiExecutable: "venv\\Scripts\\devpi.exe",
