@@ -382,6 +382,7 @@ junit_filename                  = ${junit_filename}
                         node('master') {
                             unstash "FLAKE8_LOG"
                             recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+                            deleteDir()
                         }
                     }
                     cleanup{
