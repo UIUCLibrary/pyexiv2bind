@@ -626,6 +626,15 @@ junit_filename                  = ${junit_filename}
                         failure {
                             echo "Tests for whl on DevPi failed."
                         }
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                disableDeferredWipeout: true,
+                                patterns: [
+                                    [pattern: 'certs', type: 'INCLUDE']
+                                    ]
+                            )
+                        }
                     }
                 }
                 stage("Built Distribution: py37 .whl") {
@@ -660,6 +669,15 @@ junit_filename                  = ${junit_filename}
                     post {
                         failure {
                             echo "Tests for whl on DevPi failed."
+                        }
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                disableDeferredWipeout: true,
+                                patterns: [
+                                    [pattern: 'certs', type: 'INCLUDE']
+                                    ]
+                            )
                         }
                     }
                 }
