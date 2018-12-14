@@ -764,14 +764,14 @@ junit_filename                  = ${junit_filename}
                 deleteDirs: true,
                 disableDeferredWipeout: true,
                 patterns: [
-                    [pattern: 'dist', type: 'INCLUDE']
-                    [pattern: 'build', type: 'INCLUDE']
-                    [pattern: 'reports', type: 'INCLUDE']
-                    [pattern: 'logs', type: 'INCLUDE']
-                    [pattern: 'certs', type: 'INCLUDE']
-                    [pattern: "source/**/*.dll", type: 'INCLUDE']
-                    [pattern: "source/**/*.pyd", type: 'INCLUDE']
-                    [pattern: "source/**/*.exe", type: 'INCLUDE']
+                    [pattern: 'dist', type: 'INCLUDE'],
+                    [pattern: 'build', type: 'INCLUDE'],
+                    [pattern: 'reports', type: 'INCLUDE'],
+                    [pattern: 'logs', type: 'INCLUDE'],
+                    [pattern: 'certs', type: 'INCLUDE'],
+                    [pattern: "source/**/*.dll", type: 'INCLUDE'],
+                    [pattern: "source/**/*.pyd", type: 'INCLUDE'],
+                    [pattern: "source/**/*.exe", type: 'INCLUDE'],
                     [pattern: "source/**/*.exe", type: 'INCLUDE']
                     ]
                 )
