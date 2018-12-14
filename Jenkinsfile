@@ -769,9 +769,13 @@ junit_filename                  = ${junit_filename}
                     echo "Devpi remove exited with code ${devpi_remove_return_code}."
                 }
             }
-            cleanWs deleteDirs: true, patterns: [
-                [pattern: 'dist,build,reports,logs,certs', type: 'INCLUDE']
-            ]
+            cleanWs(
+                deleteDirs: true,
+                disableDeferredWipeout:true,
+                patterns: [
+                    [pattern: 'dist,build,reports,logs,certs', type: 'INCLUDE']
+                    ]
+                )
 
         }
     }
