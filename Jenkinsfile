@@ -8,8 +8,6 @@ def PKG_NAME = "unknown"
 def PKG_VERSION = "unknown"
 def DOC_ZIP_FILENAME = "doc.zip"
 def junit_filename = "junit.xml"
-def VENV_PYTHON = ""
-def VENV_PIP = ""
 pipeline {
     agent {
         label "Windows && VS2015 && Python3 && longfilenames"
@@ -170,19 +168,6 @@ pipeline {
                             DOC_ZIP_FILENAME = "${PKG_NAME}-${PKG_VERSION}.doc.zip"
                             junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
                         }
-
-
-                        
-                        
-                        script{
-                            VENV_PYTHON = "${WORKSPACE}\\venv36\\Scripts\\python.exe"
-                            bat "${VENV_PYTHON} --version"
-
-                            VENV_PIP = "${WORKSPACE}\\venv36\\Scripts\\pip.exe"
-                            bat "${VENV_PIP} --version"
-                        }
-
-                        
                         bat "venv36\\Scripts\\devpi use https://devpi.library.illinois.edu"
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
                             bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
@@ -196,8 +181,6 @@ pipeline {
                     echo """Name                            = ${PKG_NAME}
 Version                         = ${PKG_VERSION}
 documentation zip file          = ${DOC_ZIP_FILENAME}
-VirtualEnv Python executable    = ${VENV_PYTHON}
-VirtualEnv Pip executable       = ${VENV_PIP}
 junit_filename                  = ${junit_filename}
 """           
 
