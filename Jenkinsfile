@@ -749,33 +749,33 @@ junit_filename                  = ${junit_filename}
                             echo "Unable to successfully run clean. Purging source directory."
                             deleteDir()
                         }
-                        bat "dir"
                     }
-                dir("source"){
-                    def binary_files = findFiles glob: "**/*.dll,**/*.pyd,**/*.exe"
-                    binary_files.each { binary_file ->
-                        bat "del ${binary_file}"
-                    }
-                  }
-                }
-
                 if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                         bat "venv36\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
                         bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
                     }
 
-                    def devpi_remove_return_code = bat returnStatus: true, script:"venv36\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
+                    def devpi_remove_return_code = bat(returnStatus: true, script:"venv36\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}")
                     echo "Devpi remove exited with code ${devpi_remove_return_code}."
                 }
             }
             cleanWs(
                 deleteDirs: true,
-                disableDeferredWipeout:true,
+                disableDeferredWipeout: true,
                 patterns: [
-                    [pattern: 'dist,build,reports,logs,certs', type: 'INCLUDE']
+                    [pattern: 'dist', type: 'INCLUDE']
+                    [pattern: 'build', type: 'INCLUDE']
+                    [pattern: 'reports', type: 'INCLUDE']
+                    [pattern: 'logs', type: 'INCLUDE']
+                    [pattern: 'certs', type: 'INCLUDE']
+                    [pattern: "source/**/*.dll", type: 'INCLUDE']
+                    [pattern: "source/**/*.pyd", type: 'INCLUDE']
+                    [pattern: "source/**/*.exe", type: 'INCLUDE']
+                    [pattern: "source/**/*.exe", type: 'INCLUDE']
                     ]
                 )
+            }
 
         }
     }
