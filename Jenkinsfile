@@ -317,11 +317,17 @@ junit_filename                  = ${junit_filename}
                     post{
                         always{
                             archiveArtifacts artifacts: "logs/build.log"
-                            // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build.log']]
-                            recordIssues enabledForFailure: true, tools: [
-                                [name: 'Setuptools Build: PyLint', pattern: 'logs/build.log', tool: pyLint()],
-                                [name: 'Setuptools Build: MSBuild', pattern: 'logs/build.log', tool: msBuild()]
+                            recordIssues(tools: [
+                                    pyLint(name: 'Setuptools Build: PyLint', pattern: 'logs/build.log'),
+                                    msBuild(name: 'Setuptools Build: MSBuild', pattern: 'logs/build.log')
                                 ]
+                                )
+
+                            // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build.log']]
+//                            recordIssues enabledForFailure: true, tools: [
+//                                [name: 'Setuptools Build: PyLint', pattern: 'logs/build.log', tool: pyLint()],
+//                                [name: 'Setuptools Build: MSBuild', pattern: 'logs/build.log', tool: msBuild()]
+//                                ]
                             // bat "dir build"
                         }
                         cleanup{
@@ -400,7 +406,8 @@ junit_filename                  = ${junit_filename}
                     }
                     post{
                         always {
-                            recordIssues enabledForFailure: true, tools: [[name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', tool: pep8()]]
+                            recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log')])
+//                            recordIssues enabledForFailure: true, tools: [[name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', tool: pep8()]]
                             // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
                             archiveArtifacts artifacts: 'logs/build_sphinx.log'
                         }
@@ -530,7 +537,9 @@ junit_filename                  = ${junit_filename}
                     }
                     post {
                         always {
-                            recordIssues enabledForFailure: true, tools: [[name: 'MyPy', pattern: "logs/mypy.log", tool: myPy()]]
+                            recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
+
+//                            recordIssues enabledForFailure: true, tools: [[name: 'MyPy', pattern: "logs/mypy.log", tool: myPy()]]
                             // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                         }
@@ -591,7 +600,9 @@ junit_filename                  = ${junit_filename}
                     always {
                         node('master') {
                             unstash "FLAKE8_LOG"
-                            recordIssues enabledForFailure: true, tools: [[tool: flake8(pattern: 'logs/flake8.log')]]
+                            recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+
+//                            recordIssues enabledForFailure: true, tools: [[tool: flake8(pattern: 'logs/flake8.log')]]
         //                    recordIssues enabledForFailure: true, tools: [[tool: pep8(id: 'DocTest', name: 'DocTest', pattern: 'logs/build_sphinx.log')]]
                         }
 //                        recordIssues enabledForFailure: true, tools: [[name: 'Flake8', pattern: 'logs/flake8.log', tool: flake8()]]
