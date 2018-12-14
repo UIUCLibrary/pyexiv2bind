@@ -481,6 +481,19 @@ junit_filename                  = ${junit_filename}
                                 success{
                                     stash includes: 'dist/*.whl', name: "whl 3.7"
                                 }
+                                cleanup{
+                                    deleteDir()
+//                                    cleanWs(
+//                                        deleteDirs: true,
+//                                        disableDeferredWipeout: true,
+//                                        patterns: [
+//                                            [pattern: 'dist', type: 'INCLUDE'],
+//                                            [pattern: 'build', type: 'INCLUDE'],
+//                                            [pattern: 'source', type: 'INCLUDE'],
+//                                            [pattern: 'venv37', type: 'INCLUDE'],
+//                                            ]
+//                                        )
+                                }
                             }
                         }
                     }
