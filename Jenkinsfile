@@ -509,10 +509,12 @@ junit_filename                  = ${junit_filename}
             }
         }
         stage("Deploy to DevPi Staging") {
-
             when {
                 allOf{
-                    equals expected: true, actual: params.DEPLOY_DEVPI
+                    anyOf{
+                        equals expected: true, actual: params.DEPLOY_DEVPI
+                        triggeredBy "TimerTriggerCause"
+                    }
                     anyOf {
                         equals expected: "master", actual: env.BRANCH_NAME
                         equals expected: "dev", actual: env.BRANCH_NAME
@@ -541,7 +543,10 @@ junit_filename                  = ${junit_filename}
         stage("Test DevPi packages") {
             when {
                 allOf{
-                    equals expected: true, actual: params.DEPLOY_DEVPI
+                    anyOf{
+                        equals expected: true, actual: params.DEPLOY_DEVPI
+                        triggeredBy "TimerTriggerCause"
+                    }
                     anyOf {
                         equals expected: "master", actual: env.BRANCH_NAME
                         equals expected: "dev", actual: env.BRANCH_NAME
@@ -549,11 +554,10 @@ junit_filename                  = ${junit_filename}
                 }
             }
 
-
             parallel {
                 stage("Testing Submitted Source Distribution") {
                     environment {
-                        PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                        PATH = "${tool 'cmake3.12'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                     }
                     steps {
                         echo "Testing Source tar.gz package in devpi"
@@ -570,19 +574,6 @@ junit_filename                  = ${junit_filename}
                                 detox: false
                             )
                         }
-                        
-                        // withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        //     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                    
-                        // }
-                        // bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-
-                        // script {                          
-                        //     def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME}==${PKG_VERSION} -s tar.gz  --verbose"
-                        //     if(devpi_test_return_code != 0){   
-                        //         error "Devpi exit code for tar.gz was ${devpi_test_return_code}"
-                        //     }
-                        // }
                         echo "Finished testing Source Distribution: .tar.gz"
                     }
                     post {
@@ -620,20 +611,7 @@ junit_filename                  = ${junit_filename}
                                 detox: false,
                                 toxEnvironment: "py36"
                             )
-                        // bat "${tool 'CPython-3.6'} -m venv venv"
-                        // bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                        // bat "where python"
-                        // bat "set"
-                        // withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        //     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"                        
-                        // }
-                        // bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                        // script{
-                        //     def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME}==${PKG_VERSION} -s \"36.*whl\" -e py36  --verbose"
-                        //     if(devpi_test_return_code != 0){   
-                        //         error "Devpi exit code for whl was ${devpi_test_return_code}"
-                        //     }
-                        // }
+
                         echo "Finished testing Built Distribution: .whl"
                     }
                     post {
@@ -669,20 +647,6 @@ junit_filename                  = ${junit_filename}
                                 detox: false,
                                 toxEnvironment: "py37"
                             )
-                        // bat "${tool 'CPython-3.6'} -m venv venv"
-                        // bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                        // bat "where python"
-                        // bat "set"
-                        // withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        //     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"                        
-                        // }
-                        // bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                        // script{
-                        //     def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME}==${PKG_VERSION} -s \"36.*whl\" -e py36  --verbose"
-                        //     if(devpi_test_return_code != 0){   
-                        //         error "Devpi exit code for whl was ${devpi_test_return_code}"
-                        //     }
-                        // }
                         echo "Finished testing Built Distribution: .whl"
                     }
                     post {
