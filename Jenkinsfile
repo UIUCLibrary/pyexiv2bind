@@ -8,7 +8,6 @@ def PKG_NAME = "unknown"
 def PKG_VERSION = "unknown"
 def DOC_ZIP_FILENAME = "doc.zip"
 def junit_filename = "junit.xml"
-def VENV_ROOT = ""
 def VENV_PYTHON = ""
 def VENV_PIP = ""
 pipeline {
@@ -133,26 +132,26 @@ pipeline {
                 }
                 stage("Creating virtualenv for building"){
                     steps{
-                        bat "${tool 'CPython-3.6'}\\python -m venv venv"
+                        bat "${tool 'CPython-3.6'}\\python -m venv venv36"
                         script {
                             try {
-                                bat "call venv\\Scripts\\python.exe -m pip install -U pip"
+                                bat "call venv36\\Scripts\\python.exe -m pip install -U pip"
                             }
                             catch (exc) {
-                                bat "${tool 'CPython-3.6'}\\python -m venv venv"
-                                bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+                                bat "${tool 'CPython-3.6'}\\python -m venv venv36"
+                                bat "call venv36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                             }
                         }
-                        bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
+                        bat "venv36\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
                     }
                     post{
                         success{                            
-                            bat "venv\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
+                            bat "venv36\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
                             archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"  
                             cleanWs patterns: [[pattern: "logs/pippackages_venv_*.log", type: 'INCLUDE']]                          
                         }
                         failure {
-                            cleanWs deleteDirs: true, patterns: [[pattern: 'venv', type: 'INCLUDE']]
+                            cleanWs deleteDirs: true, patterns: [[pattern: 'venv36', type: 'INCLUDE']]
                         }
                     }
                 }
@@ -176,19 +175,17 @@ pipeline {
                         
                         
                         script{
-                            VENV_ROOT = "${WORKSPACE}\\venv\\"
-
-                            VENV_PYTHON = "${WORKSPACE}\\venv\\Scripts\\python.exe"
+                            VENV_PYTHON = "${WORKSPACE}\\venv36\\Scripts\\python.exe"
                             bat "${VENV_PYTHON} --version"
 
-                            VENV_PIP = "${WORKSPACE}\\venv\\Scripts\\pip.exe"
+                            VENV_PIP = "${WORKSPACE}\\venv36\\Scripts\\pip.exe"
                             bat "${VENV_PIP} --version"
                         }
 
                         
-                        bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu"
+                        bat "venv36\\Scripts\\devpi use https://devpi.library.illinois.edu"
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
-                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                            bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                         }
                         bat "dir"
                     }
@@ -199,7 +196,6 @@ pipeline {
                     echo """Name                            = ${PKG_NAME}
 Version                         = ${PKG_VERSION}
 documentation zip file          = ${DOC_ZIP_FILENAME}
-Python virtual environment path = ${VENV_ROOT}
 VirtualEnv Python executable    = ${VENV_PYTHON}
 VirtualEnv Pip executable       = ${VENV_PIP}
 junit_filename                  = ${junit_filename}
@@ -295,16 +291,16 @@ junit_filename                  = ${junit_filename}
                         lock("system_python_${env.NODE_NAME}")
                     }
                     steps {
-                        bat "${tool 'CPython-3.6'}\\python -m venv venv"
-                        bat "venv\\scripts\\python.exe -m pip install pip --upgrade --quiet"
-                        bat "venv\\scripts\\pip.exe install tox detox --upgrade"
+                        bat "${tool 'CPython-3.6'}\\python -m venv venv36"
+                        bat "venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet"
+                        bat "venv36\\scripts\\pip.exe install tox detox --upgrade"
                         dir("source"){
                             script{
                                 try{
-                                    bat "${WORKSPACE}\\venv\\scripts\\detox.exe --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                    bat "${WORKSPACE}\\venv36\\scripts\\detox.exe --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
 
                                 } catch (exc) {
-                                    bat "${WORKSPACE}\\venv\\scripts\\detox.exe --recreate --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                    bat "${WORKSPACE}\\venv36\\scripts\\detox.exe --recreate --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
                                 }
                             }
                         }
@@ -349,7 +345,7 @@ junit_filename                  = ${junit_filename}
                             try{
                                 dir("source"){
                                     bat "dir"
-                                    bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
+                                    bat "${WORKSPACE}\\venv36\\Scripts\\mypy.exe -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
                                 }
                             } catch (exc) {
                                 echo "MyPy found some warnings"
@@ -377,7 +373,7 @@ junit_filename                  = ${junit_filename}
                       try{
                         dir("source"){
                             bat returnStatus: true, script: "mkdir ${WORKSPACE}\\logs"
-                            bat "${WORKSPACE}\\venv\\Scripts\\flake8.exe py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
+                            bat "${WORKSPACE}\\venv36\\Scripts\\flake8.exe py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
                         }
                       } catch (exc) {
                         echo "Flake8 found some warnings."
@@ -393,6 +389,9 @@ junit_filename                  = ${junit_filename}
                             recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
                         }
                     }
+                    cleanup{
+                        cleanWs patterns: [[pattern: 'logs/flake8.log', type: 'INCLUDE']]
+                    }
                   }
                 }
                 stage("Running Unit Tests"){
@@ -403,7 +402,6 @@ junit_filename                  = ${junit_filename}
                     // unstash "${NODE_NAME}_built_source"
                     dir("source"){
                         bat "pipenv run coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=${WORKSPACE}/reports/pytest/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
-                    //   bat "${WORKSPACE}\\venv\\Scripts\\python.exe -m pytest --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/pytest/ --cov-report xml:${WORKSPACE}/reports/coverage.xml"
                     }
                   }
                   post{
@@ -526,16 +524,16 @@ junit_filename                  = ${junit_filename}
             }
             steps {
                 unstash "DOCS_ARCHIVE"
-                bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
+                bat "venv36\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                    bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                     
                 }
-                bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
                 script {
-                        bat "venv\\Scripts\\devpi.exe upload --from-dir dist"
+                        bat "venv36\\Scripts\\devpi.exe upload --from-dir dist"
                         try {
-                            bat "venv\\Scripts\\devpi.exe upload --only-docs ${WORKSPACE}\\dist\\${DOC_ZIP_FILENAME}"
+                            bat "venv36\\Scripts\\devpi.exe upload --only-docs ${WORKSPACE}\\dist\\${DOC_ZIP_FILENAME}"
                         } catch (exc) {
                             echo "Unable to upload to devpi with docs."
                         }
@@ -566,9 +564,8 @@ junit_filename                  = ${junit_filename}
                         echo "Testing Source tar.gz package in devpi"
                         
                         timeout(20){
-                            // bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu/${env.BRANCH_NAME}_staging"
                             devpiTest(
-                                devpiExecutable: "venv\\Scripts\\devpi.exe",
+                                devpiExecutable: "venv36\\Scripts\\devpi.exe",
                                 url: "https://devpi.library.illinois.edu",
                                 index: "${env.BRANCH_NAME}_staging",
                                 pkgName: "${PKG_NAME}",
@@ -664,9 +661,9 @@ junit_filename                  = ${junit_filename}
                     echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
                     script {
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                            bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                            bat "venv\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                            bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                            bat "venv36\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                            bat "venv36\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                         }
 
                     }
@@ -739,11 +736,11 @@ junit_filename                  = ${junit_filename}
                                     input "Release ${PKG_NAME} ${PKG_VERSION} (https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging/${PKG_NAME}/${PKG_VERSION}) to DevPi Production? "
                                 }
                                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"         
+                                    bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                                 }
 
-                                bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                                bat "venv\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/release"
+                                bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                                bat "venv36\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/release"
                             } catch(err){
                                 echo "User response timed out. Packages not deployed to DevPi Production."
                             }
@@ -755,23 +752,13 @@ junit_filename                  = ${junit_filename}
     }
     post {
         cleanup {
-            dir('dist') {
-                deleteDir()
-            }
-
-            dir('build') {
-                deleteDir()
-            }
-            dir("reports") {
-                deleteDir()
-            }
             script {
                 if(fileExists('source/setup.py')){
                     dir("source"){
                         try{
-                            if(fileExists('venv\\Scripts\\python.exe')){
+                            if(fileExists('venv36\\Scripts\\python.exe')){
                                 retry(3) {
-                                    bat "venv\\Scripts\\python.exe setup.py clean --all"
+                                    bat "venv36\\Scripts\\python.exe setup.py clean --all"
                                 }
                             }
                         } catch (Exception ex) {
@@ -790,15 +777,18 @@ junit_filename                  = ${junit_filename}
 
                 if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
-                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                        bat "venv36\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
+                        bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
                     }
 
-                    def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
+                    def devpi_remove_return_code = bat returnStatus: true, script:"venv36\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
                     echo "Devpi remove exited with code ${devpi_remove_return_code}."
                 }
             }
-            bat "dir"
+            cleanWs deleteDirs: true, patterns: [
+                [pattern: 'dist,build,reports,logs,certs', type: 'INCLUDE']
+            ]
+
         }
     }
 }
