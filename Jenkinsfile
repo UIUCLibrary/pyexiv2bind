@@ -297,6 +297,17 @@ junit_filename                  = ${junit_filename}
                                 deleteDir()
                             }
                         }
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                disableDeferredWipeout: true,
+                                patterns: [
+                                    [pattern: 'dist', type: 'INCLUDE'],
+                                    [pattern: 'reports', type: 'INCLUDE'],
+                                    [pattern: "source", type: 'INCLUDE'],
+                                    ]
+                            )
+                        }
                     }
                 }
                 stage("Run Doctest Tests"){
