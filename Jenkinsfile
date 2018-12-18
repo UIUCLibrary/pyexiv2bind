@@ -599,7 +599,7 @@ junit_filename                  = ${junit_filename}
                         }
                     }
                     environment {
-                        PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                        PATH = "${tool 'CPython-3.6'};$PATH"
                     }
                     options {
                         skipDefaultCheckout(true)
@@ -625,7 +625,7 @@ junit_filename                  = ${junit_filename}
                     }
                     post {
                         failure {
-                            echo "Tests for whl on DevPi failed."
+                            archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
                         }
                         cleanup{
                             cleanWs(
@@ -669,7 +669,7 @@ junit_filename                  = ${junit_filename}
                     }
                     post {
                         failure {
-                            echo "Tests for whl on DevPi failed."
+                            archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
                         }
                         cleanup{
                             cleanWs(
