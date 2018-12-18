@@ -193,6 +193,9 @@ junit_filename                  = ${junit_filename}
         stage("Building") {
             stages{
                 stage("Building Python Package"){
+                    options{
+                        lock("CMakeBuilding")
+                    }
                     environment {
                         CL = "/MP"
                     }
@@ -248,8 +251,11 @@ junit_filename                  = ${junit_filename}
 
                         }
                         cleanup{
-                            cleanWs(patterns: [[pattern: 'logs/build_sphinx.log', type: 'INCLUDE']])
-                            cleanWs(patterns: [[pattern: "dist/${DOC_ZIP_FILENAME}", type: 'INCLUDE']])
+                            cleanWs(patterns: [
+                                    [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
+                                    [pattern: "dist/${DOC_ZIP_FILENAME}", type: 'INCLUDE']
+                                ]
+                            )
                         }
                     }
                 }
@@ -350,7 +356,6 @@ junit_filename                  = ${junit_filename}
                     post {
                         always {
                             recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
-
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                         }
                     }
@@ -422,9 +427,12 @@ junit_filename                  = ${junit_filename}
                                 sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
                 }
                 cleanup{
-                    cleanWs(patterns: [[pattern: 'reports/coverage.xml', type: 'INCLUDE']])
-                    cleanWs(patterns: [[pattern: 'reports/coverage', type: 'INCLUDE']])
-                    cleanWs(patterns: [[pattern: 'source/.coverage', type: 'INCLUDE']])
+                    cleanWs(patterns: [
+                            [pattern: 'reports/coverage.xml', type: 'INCLUDE'],
+                            [pattern: 'reports/coverage', type: 'INCLUDE'],
+                            [pattern: 'source/.coverage', type: 'INCLUDE']
+                        ]
+                    )
 
                 }
             }
