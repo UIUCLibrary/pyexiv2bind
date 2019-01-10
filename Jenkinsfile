@@ -202,7 +202,7 @@ junit_filename                  = ${junit_filename}
                     steps {
                         dir("source"){
                             lock("system_pipenv_${NODE_NAME}"){
-                                powershell "& ${tool 'CPython-3.6'}\\python.exe -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace --cmake-exec=${tool 'cmake3.12'}\\cmake.exe | Tee-Object -FilePath ${WORKSPACE}\\logs\\build.log"
+                                powershell "& ${tool 'CPython-3.6'}\\python.exe -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace --cmake-exec=\"${tool 'cmake3.12'}\\cmake.exe\" | Tee-Object -FilePath ${WORKSPACE}\\logs\\build.log"
                             }
                         }
                     }
