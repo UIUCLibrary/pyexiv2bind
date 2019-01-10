@@ -202,7 +202,7 @@ junit_filename                  = ${junit_filename}
                     steps {
                         dir("source"){
                             lock("system_pipenv_${NODE_NAME}"){
-                                powershell """Get-Host.UI.RawUI.BufferSize = New-Object Management.Automation.Host.Size (500, 25)
+                                powershell """\$Host.UI.RawUI.BufferSize = New-Object Management.Automation.Host.Size (500, 25)
                                 & ${tool 'CPython-3.6'}\\python.exe -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace --cmake-exec=\"${tool 'cmake3.12'}\\cmake.exe\" | Tee-Object -FilePath ${WORKSPACE}\\logs\\build.log
                                 """
                             }
