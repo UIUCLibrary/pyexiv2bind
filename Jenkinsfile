@@ -205,8 +205,8 @@ junit_filename                  = ${junit_filename}
                             lock("system_pipenv_${NODE_NAME}"){
                                 powershell """& ${tool 'CPython-3.6'}\\python.exe -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace -OutVariable build_output
                                     \$build_output > ${WORKSPACE}\\logs\\build.log
-//                                Tee-Object -FilePath ${WORKSPACE}\\logs\\build.log
                                 """
+//                                Tee-Object -FilePath ${WORKSPACE}\\logs\\build.log
                             }
                         }
                     }
