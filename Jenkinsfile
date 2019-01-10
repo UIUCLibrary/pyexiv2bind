@@ -210,6 +210,7 @@ junit_filename                  = ${junit_filename}
                                 \$build_output > ${WORKSPACE}\\logs\\build.log
 
                                 """
+                                )
 //                                Tee-Object -FilePath ${WORKSPACE}\\logs\\build.log
                             }
                         }
