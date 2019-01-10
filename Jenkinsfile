@@ -324,6 +324,7 @@ junit_filename                  = ${junit_filename}
                                     [pattern: 'dist', type: 'INCLUDE'],
                                     [pattern: 'reports', type: 'INCLUDE'],
                                     [pattern: "source", type: 'INCLUDE'],
+                                    [pattern: '*tmp', type: 'INCLUDE'],
                                     ]
                             )
                         }
