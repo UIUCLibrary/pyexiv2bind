@@ -342,7 +342,7 @@ junit_filename                  = ${junit_filename}
                     post{
                         always {
                             archiveArtifacts artifacts: "reports/doctest.txt"
-                            recordIssues(tools: [sphinxBuild(pattern: 'logs/doctest.log')])
+                            recordIssues(tools: [sphinxBuild(name: 'Doctest', pattern: 'logs/doctest.log')])
 
                         }
                     }
