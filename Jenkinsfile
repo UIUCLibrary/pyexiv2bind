@@ -964,6 +964,7 @@ junit_filename                  = ${junit_filename}
                     [pattern: 'reports', type: 'INCLUDE'],
                     [pattern: 'logs', type: 'INCLUDE'],
                     [pattern: 'certs', type: 'INCLUDE'],
+                    [pattern: '*tmp', type: 'INCLUDE'],
                     [pattern: "source/**/*.dll", type: 'INCLUDE'],
                     [pattern: "source/**/*.pyd", type: 'INCLUDE'],
                     [pattern: "source/**/*.exe", type: 'INCLUDE'],
