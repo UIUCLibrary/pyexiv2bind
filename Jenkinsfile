@@ -8,9 +8,6 @@ def PKG_NAME = "unknown"
 def PKG_VERSION = "unknown"
 def DOC_ZIP_FILENAME = "doc.zip"
 def junit_filename = "junit.xml"
-def VENV_ROOT = ""
-def VENV_PYTHON = ""
-def VENV_PIP = ""
 pipeline {
     agent {
         label "Windows && VS2015 && Python3 && longfilenames"
@@ -24,6 +21,7 @@ pipeline {
         disableConcurrentBuilds()  //each branch has 1 job running at a time
         timeout(60)  // Timeout after 60 minutes. This shouldn't take this long but it hangs for some reason
         checkoutToSubdirectory("source")
+        buildDiscarder logRotator(artifactDaysToKeepStr: '10', artifactNumToKeepStr: '10', daysToKeepStr: '', numToKeepStr: '')
     }
     environment {
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
@@ -39,7 +37,7 @@ pipeline {
         booleanParam(name: "TEST_RUN_MYPY", defaultValue: true, description: "Run MyPy static analysis")
         booleanParam(name: "TEST_RUN_TOX", defaultValue: true, description: "Run Tox Tests")
         
-        booleanParam(name: "DEPLOY_DEVPI", defaultValue: true, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
+        booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to https://devpi.library.illinois.edu/production/release")
         // choice(choices: 'None\nrelease', description: "Release the build to production. Only available in the Master branch", name: 'RELEASE')
         string(name: 'URL_SUBFOLDER', defaultValue: "py3exiv2bind", description: 'The directory that the docs should be saved under')
@@ -104,60 +102,6 @@ pipeline {
                         }
                     }
                 }
-//                 stage("Installing required system level dependencies"){
-//                     steps{
-//                         lock("system_python_${env.NODE_NAME}"){
-//                             bat "${tool 'CPython-3.6'} -m pip install pip --upgrade --quiet"
-//                             bat "${tool 'CPython-3.6'} -m pip install scikit-build --quiet"
-//                             bat "${tool 'CPython-3.6'} -m pip install --upgrade pipenv --quiet"
-//                             tee("logs/pippackages_system_${NODE_NAME}.log") {
-//                                 bat "${tool 'CPython-3.6'} -m pip list"
-//                             }
-//                         }
-
-//                     }
-//                     post{
-//                         always{
-//                             archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
-// //                            dir(){
-// //                            script{
-// //                                def log_files = findFiles glob: 'logs/pippackages_system_*.log'
-// //                                log_files.each { log_file ->
-// //                                    echo "Found ${log_file}"
-// //                                    archiveArtifacts artifacts: "${log_file}"
-// //                                    bat "del ${log_file}"
-// //                                }
-// //                            }
-// //                            }
-//                         }
-//                         failure {
-//                             deleteDir()
-//                         }
-//                     }
-
-//                 }
-//                 stage("Installing Pipfile"){
-//                     options{
-//                         timeout(5)
-//                     }
-//                     steps {
-//                         dir("source"){
-//                             bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
-                            
-//                         }
-//                         tee("logs/pippackages_pipenv_${NODE_NAME}.log") {
-//                             bat "${tool 'CPython-3.6'} -m pipenv run pip list"
-//                         }  
-                        
-//                     }
-//                     post{
-//                         always{
-//                             archiveArtifacts artifacts: "logs/pippackages_pipenv_${NODE_NAME}.log"
-// //                                }
-// //                            }
-//                         }
-//                     }
-//                 }
                 stage("Installing Pipfile"){
                     options{
                         timeout(5)
@@ -187,66 +131,29 @@ pipeline {
                 }
                 stage("Creating virtualenv for building"){
                     steps{
-                        bat "${tool 'CPython-3.6'}\\python -m venv venv"
+                        bat "${tool 'CPython-3.6'}\\python -m venv venv36"
                         script {
                             try {
-                                bat "call venv\\Scripts\\python.exe -m pip install -U pip"
+                                bat "call venv36\\Scripts\\python.exe -m pip install -U pip"
                             }
                             catch (exc) {
-                                bat "${tool 'CPython-3.6'}\\python -m venv venv"
-                                bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+                                bat "${tool 'CPython-3.6'}\\python -m venv venv36"
+                                bat "call venv36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                             }
                         }
-                        bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
+                        bat "venv36\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
                     }
                     post{
                         success{                            
-                            bat "venv\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
+                            bat "venv36\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
                             archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"  
                             cleanWs patterns: [[pattern: "logs/pippackages_venv_*.log", type: 'INCLUDE']]                          
                         }
                         failure {
-                            cleanWs deleteDirs: true, patterns: [[pattern: 'venv', type: 'INCLUDE']]
+                            cleanWs deleteDirs: true, patterns: [[pattern: 'venv36', type: 'INCLUDE']]
                         }
                     }
                 }
-                // stage("Creating virtualenv for building"){
-                //     steps {
-                //         bat "${tool 'CPython-3.6'} -m venv venv"
-                        
-                //         script {
-                //             try {
-                //                 bat "call venv\\Scripts\\python.exe -m pip install -U pip"
-                //             }
-                //             catch (exc) {
-                //                 bat "${tool 'CPython-3.6'} -m venv venv"
-                //                 bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
-                //             }                           
-                //         }
-                        
-                //         bat "venv\\Scripts\\pip.exe install devpi-client flake8 pytest pytest-cov --upgrade-strategy only-if-needed --quiet"
-                        
-           
-                //         tee("logs/pippackages_venv_${NODE_NAME}.log") {
-                //             bat "venv\\Scripts\\pip.exe list"
-                //         }
-                //     }
-                //     post{
-                //         always{
-                //             script{
-                //                 def log_files = findFiles glob: '**/pippackages_venv_*.log'
-                //                 log_files.each { log_file ->
-                //                     echo "Found ${log_file}"
-                //                     archiveArtifacts artifacts: "${log_file}"
-                //                     bat "del ${log_file}"
-                //                 }
-                //             }
-                //         }
-                //         failure {
-                //             deleteDir()
-                //         }
-                //     }
-                // }
                 stage("Setting variables used by the rest of the build"){
                     steps{
                         
@@ -262,24 +169,9 @@ pipeline {
                             DOC_ZIP_FILENAME = "${PKG_NAME}-${PKG_VERSION}.doc.zip"
                             junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
                         }
-
-
-                        
-                        
-                        script{
-                            VENV_ROOT = "${WORKSPACE}\\venv\\"
-
-                            VENV_PYTHON = "${WORKSPACE}\\venv\\Scripts\\python.exe"
-                            bat "${VENV_PYTHON} --version"
-
-                            VENV_PIP = "${WORKSPACE}\\venv\\Scripts\\pip.exe"
-                            bat "${VENV_PIP} --version"
-                        }
-
-                        
-                        bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu"
+                        bat "venv36\\Scripts\\devpi use https://devpi.library.illinois.edu"
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
-                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                            bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                         }
                         bat "dir"
                     }
@@ -290,9 +182,6 @@ pipeline {
                     echo """Name                            = ${PKG_NAME}
 Version                         = ${PKG_VERSION}
 documentation zip file          = ${DOC_ZIP_FILENAME}
-Python virtual environment path = ${VENV_ROOT}
-VirtualEnv Python executable    = ${VENV_PYTHON}
-VirtualEnv Pip executable       = ${VENV_PIP}
 junit_filename                  = ${junit_filename}
 """           
 
@@ -304,13 +193,28 @@ junit_filename                  = ${junit_filename}
         stage("Building") {
             stages{
                 stage("Building Python Package"){
+                    options{
+                        lock("CMakeBuilding")
+                    }
                     environment {
+                        PATH = "${tool 'cmake3.13'};$PATH"
                         CL = "/MP"
                     }
                     steps {
                         dir("source"){
                             lock("system_pipenv_${NODE_NAME}"){
-                                powershell "& pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace --cmake-exec=${tool 'cmake3.12'}\\cmake.exe | Tee-Object -FilePath ${WORKSPACE}\\logs\\build.log"
+                            script{
+                                powershell(
+                                    script: "& ${tool 'CPython-3.6'}\\python.exe -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace | Tee-Object -FilePath ${WORKSPACE}\\logs\\build.log"
+//                                        """Invoke-Expression -Command \"${tool 'CPython-3.6'}\\python.exe -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace\" -OutVariable build_output
+//                                        echo \"\$build_output\"
+
+//                                """
+//                                \$build_output > ${WORKSPACE}\\logs\\build.log
+                                )
+
+                            }
+//                                Tee-Object -FilePath ${WORKSPACE}\\logs\\build.log
                             }
                         }
                     }
@@ -323,12 +227,6 @@ junit_filename                  = ${junit_filename}
                                 ]
                                 )
 
-                            // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build.log']]
-//                            recordIssues enabledForFailure: true, tools: [
-//                                [name: 'Setuptools Build: PyLint', pattern: 'logs/build.log', tool: pyLint()],
-//                                [name: 'Setuptools Build: MSBuild', pattern: 'logs/build.log', tool: msBuild()]
-//                                ]
-                            // bat "dir build"
                         }
                         cleanup{
                             cleanWs(patterns: [[pattern: 'logs/build.log', type: 'INCLUDE']])
@@ -337,64 +235,13 @@ junit_filename                  = ${junit_filename}
                           stash includes: 'build/36/lib/**', name: "${NODE_NAME}_build"
                           stash includes: 'source/py3exiv2bind/**/*.dll,source/py3exiv2bind/**/*.pyd,source/py3exiv2bind/**/*.exe"', name: "${NODE_NAME}_built_source"
                         }
+                        failure{
+                            archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
+
+                        }
                     }
                     
                 }     
-//                 stage("Building Python Package"){
-// //                    environment {
-// //                        PATH = "${tool 'cmake3.12'}\\;$PATH"
-// //                    }
-//                     steps {
-//                         tee("logs/setuptools_build_${env.NODE_NAME}.log") {
-//                             dir("source"){
-//                                 bat script: "pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --inplace --cmake-exec=${tool 'cmake3.12'}\\cmake.exe"
-//                             }
-                        
-//                         }
-//                     }
-//                     post{
-//                         always{
-//                            archiveArtifacts artifacts: "logs/setuptools_build_${env.NODE_NAME}.log"
-//                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MSBuild', pattern: "logs/setuptools_build_${env.NODE_NAME}.log"]]
-//                         }
-//                         success{
-//                           stash includes: 'build/lib/**', name: "${NODE_NAME}_build"
-//                           stash includes: 'source/py3exiv2bind/**/*.dll,source/py3exiv2bind/**/*.pyd,source/py3exiv2bind/**/*.exe"', name: "${NODE_NAME}_built_source"
-//                         }
-//                     }
-//                 }
-//                 stage("Building Sphinx Documentation"){
-//                     when {
-//                         equals expected: true, actual: params.BUILD_DOCS
-//                     }
-//                     environment {
-//                         PATH = "${tool 'cmake3.12'}\\;$PATH"
-//                     }
-//                     steps {
-//                         dir("build/docs/html"){
-//                             deleteDir()
-//                             echo "Cleaned out build/docs/html dirctory"
-
-//                         }
-// //
-//                         echo "Building docs on ${env.NODE_NAME}"
-//                         tee("logs/build_sphinx_${env.NODE_NAME}.log") {
-//                             dir("source"){
-//                                 bat "pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs"
-//                             }
-//                         }
-//                     }
-//                     post{
-//                         always {
-//                             archiveArtifacts artifacts: "logs/build_sphinx_${env.NODE_NAME}.log"
-//                         }
-//                         success{
-//                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-//                             zip archive: true, dir: "build/docs/html/", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
-//                         }
-//                     }
-                
-//                 }
                 stage("Building Sphinx Documentation"){
                     steps {
                         echo "Building docs on ${env.NODE_NAME}"
@@ -407,9 +254,7 @@ junit_filename                  = ${junit_filename}
                     }
                     post{
                         always {
-                            recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log')])
-//                            recordIssues enabledForFailure: true, tools: [[name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', tool: pep8()]]
-                            // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
+                            recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', id: 'sphinx_build')])
                             archiveArtifacts artifacts: 'logs/build_sphinx.log'
                         }
                         success{
@@ -419,8 +264,11 @@ junit_filename                  = ${junit_filename}
 
                         }
                         cleanup{
-                            cleanWs(patterns: [[pattern: 'logs/build_sphinx.log', type: 'INCLUDE']])
-                            cleanWs(patterns: [[pattern: "dist/${DOC_ZIP_FILENAME}", type: 'INCLUDE']])
+                            cleanWs(patterns: [
+                                    [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
+                                    [pattern: "dist/${DOC_ZIP_FILENAME}", type: 'INCLUDE']
+                                ]
+                            )
                         }
                     }
                 }
@@ -440,62 +288,45 @@ junit_filename                  = ${junit_filename}
                        equals expected: true, actual: params.TEST_RUN_TOX
                     }
                     environment {
-                        PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                        PATH = "${tool 'cmake3.13'}\\;${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                     }
                     options{
                         lock("system_python_${env.NODE_NAME}")
                     }
                     steps {
-                        bat "${tool 'CPython-3.6'}\\python -m venv venv"
-                        bat "venv\\scripts\\python.exe -m pip install pip --upgrade --quiet"
-                        bat "venv\\scripts\\pip.exe install tox detox --upgrade"
+                        bat "${tool 'CPython-3.6'}\\python -m venv venv36"
+                        bat "venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet"
+                        bat "venv36\\scripts\\pip.exe install tox detox --upgrade"
                         dir("source"){
-                            // bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
                             script{
                                 try{
-                                    bat "${WORKSPACE}\\venv\\scripts\\detox.exe --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                    bat "${WORKSPACE}\\venv36\\scripts\\detox.exe --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
 
                                 } catch (exc) {
-                                    bat "${WORKSPACE}\\venv\\scripts\\detox.exe --recreate --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                    bat "${WORKSPACE}\\venv36\\scripts\\detox.exe --recreate --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
                                 }
                             }
                         }
                         
                     }
                     post {
-                        // success{
-                        //     script {
-                        //         try{
-                        //             publishCoverage adapters: [
-                        //                     coberturaAdapter('reports/tox_coverage.xml')
-                        //                     ],
-                        //                 tag: 'coverage'
-                        //                 sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
-                        //         } catch(exc){
-                        //             echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
-                        //             cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "reports/tox_coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
-                        //         }
-                        //         archiveArtifacts artifacts: "reports/tox_coverage.xml"
-                        //         bat "del reports\\tox_coverage.xml"
-                        //     }
-                        //     dir("reports}"){
-                        //         bat "dir"
-
-                        //         script {
-                        //             def xml_files = findFiles glob: "**/*.xml"
-                        //             xml_files.each { junit_xml_file ->
-                        //                 echo "Found ${junit_xml_file}"
-                        //                 junit "${junit_xml_file}"
-                        //             }
-                        //         }
-                        //     }              
-                        //     publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
-                        // }
                         failure {
                             echo "Tox test failed. Removing ${WORKSPACE}\\.tox"
                             dir("${WORKSPACE}\\.tox"){
                                 deleteDir()
                             }
+                        }
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                disableDeferredWipeout: true,
+                                patterns: [
+                                    [pattern: 'dist', type: 'INCLUDE'],
+                                    [pattern: 'reports', type: 'INCLUDE'],
+                                    [pattern: "source", type: 'INCLUDE'],
+                                    [pattern: '*tmp', type: 'INCLUDE'],
+                                    ]
+                            )
                         }
                     }
                 }
@@ -505,13 +336,15 @@ junit_filename                  = ${junit_filename}
                     }
                     steps {
                         dir("source"){
-                            bat "pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html -b doctest"
+                            bat "pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html -b doctest > ${WORKSPACE}/logs/doctest.log"
                         }
                         bat "move ${WORKSPACE}\\build\\docs\\html\\doctest\\output.txt ${WORKSPACE}\\reports\\doctest.txt"
                     }
                     post{
                         always {
                             archiveArtifacts artifacts: "reports/doctest.txt"
+                            recordIssues(tools: [sphinxBuild(name: 'Doctest', pattern: 'logs/doctest.log', id: 'doctest')])
+
                         }
                     }
                 }
@@ -529,7 +362,7 @@ junit_filename                  = ${junit_filename}
                             try{
                                 dir("source"){
                                     bat "dir"
-                                    bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
+                                    bat "${WORKSPACE}\\venv36\\Scripts\\mypy.exe -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
                                 }
                             } catch (exc) {
                                 echo "MyPy found some warnings"
@@ -539,42 +372,10 @@ junit_filename                  = ${junit_filename}
                     post {
                         always {
                             recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
-
-//                            recordIssues enabledForFailure: true, tools: [[name: 'MyPy', pattern: "logs/mypy.log", tool: myPy()]]
-                            // warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                         }
                     }
                 }
-                // stage("Run MyPy Static Analysis") {
-                //     when {
-                //         equals expected: true, actual: params.TEST_RUN_MYPY
-                //     }
-                //     steps{
-                //         dir("reports/mypy/html"){
-                //             deleteDir()
-                //             bat "dir"
-                //         }
-                //         script{
-                //             tee("logs/mypy.log") {
-                //                 try{
-                //                     dir("source"){
-                //                         bat "dir"
-                //                         bat "pipenv run mypy ${WORKSPACE}\\build\\lib\\py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html"
-                //                     }
-                //                 } catch (exc) {
-                //                     echo "MyPy found some warnings"
-                //                 }
-                //             }
-                //         }
-                //     }
-                //     post {
-                //         always {
-                //             warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
-                //             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/mypy/html/", reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
-                //         }
-                //     }
-                // }
                 stage("Flake8") {
                   when {
                       equals expected: true, actual: params.TEST_RUN_FLAKE8
@@ -588,7 +389,7 @@ junit_filename                  = ${junit_filename}
                       try{
                         dir("source"){
                             bat returnStatus: true, script: "mkdir ${WORKSPACE}\\logs"
-                            bat "${WORKSPACE}\\venv\\Scripts\\flake8.exe py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
+                            bat "${WORKSPACE}\\venv36\\Scripts\\flake8.exe py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
                         }
                       } catch (exc) {
                         echo "Flake8 found some warnings."
@@ -602,12 +403,11 @@ junit_filename                  = ${junit_filename}
                         node('master') {
                             unstash "FLAKE8_LOG"
                             recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-
-//                            recordIssues enabledForFailure: true, tools: [[tool: flake8(pattern: 'logs/flake8.log')]]
-        //                    recordIssues enabledForFailure: true, tools: [[tool: pep8(id: 'DocTest', name: 'DocTest', pattern: 'logs/build_sphinx.log')]]
+                            deleteDir()
                         }
-//                        recordIssues enabledForFailure: true, tools: [[name: 'Flake8', pattern: 'logs/flake8.log', tool: flake8()]]
-                    //   warnings parserConfigurations: [[parserName: 'PyLint', pattern: 'reports/flake8.txt']], unHealthy: ''
+                    }
+                    cleanup{
+                        cleanWs patterns: [[pattern: 'logs/flake8.log', type: 'INCLUDE']]
                     }
                   }
                 }
@@ -619,7 +419,6 @@ junit_filename                  = ${junit_filename}
                     // unstash "${NODE_NAME}_built_source"
                     dir("source"){
                         bat "pipenv run coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=${WORKSPACE}/reports/pytest/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
-                    //   bat "${WORKSPACE}\\venv\\Scripts\\python.exe -m pytest --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/pytest/ --cov-report xml:${WORKSPACE}/reports/coverage.xml"
                     }
                   }
                   post{
@@ -644,9 +443,12 @@ junit_filename                  = ${junit_filename}
                                 sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
                 }
                 cleanup{
-                    cleanWs(patterns: [[pattern: 'reports/coverage.xml', type: 'INCLUDE']])
-                    cleanWs(patterns: [[pattern: 'reports/coverage', type: 'INCLUDE']])
-                    cleanWs(patterns: [[pattern: 'source/.coverage', type: 'INCLUDE']])
+                    cleanWs(patterns: [
+                            [pattern: 'reports/coverage.xml', type: 'INCLUDE'],
+                            [pattern: 'reports/coverage', type: 'INCLUDE'],
+                            [pattern: 'source/.coverage', type: 'INCLUDE']
+                        ]
+                    )
 
                 }
             }
@@ -654,7 +456,7 @@ junit_filename                  = ${junit_filename}
         }
         stage("Packaging") {
             environment {
-                PATH = "${tool 'cmake3.12'};$PATH"
+                PATH = "${tool 'cmake3.13'};$PATH"
             }
             parallel{
                 stage("Python 3.6 whl"){
@@ -662,7 +464,7 @@ junit_filename                  = ${junit_filename}
                         
                         stage("Create venv for 3.6"){
                             environment {
-                                PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'};$PATH"
+                                PATH = "${tool 'cmake3.13'}\\;${tool 'CPython-3.6'};$PATH"
                                 CL = "/MP"
                             }
                             steps {
@@ -673,8 +475,7 @@ junit_filename                  = ${junit_filename}
                         stage("Creating bdist wheel for 3.6"){
                             steps {
                                 dir("source"){
-                                    // bat "pipenv run python setup.py build -b ../build -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/lib --build-temp ../build/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
-                                    bat "${WORKSPACE}\\venv36\\scripts\\python.exe setup.py build -b ../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib --build-temp ../build/36/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+                                    bat "${WORKSPACE}\\venv36\\scripts\\python.exe setup.py build -b ../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib --build-temp ../build/36/temp build_ext --cmake-exec=${tool 'cmake3.13'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
                                 }
                             }
                         }
@@ -696,7 +497,7 @@ junit_filename                  = ${junit_filename}
                     stages{
                         stage("create venv for 3.7"){
                             environment {
-                                PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.7'};$PATH"
+                                PATH = "${tool 'cmake3.13'}\\;${tool 'CPython-3.7'};$PATH"
                                 CL = "/MP"
                             }
                             steps {
@@ -709,12 +510,25 @@ junit_filename                  = ${junit_filename}
                         stage("Creating bdist wheel for 3.7"){
                             steps {
                                 dir("source"){
-                                    bat "\"${tool 'CPython-3.7'}\\python.exe\" setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+                                    bat "\"${tool 'CPython-3.7'}\\python.exe\" setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext --cmake-exec=${tool 'cmake3.13'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
                                 }
                             }
                             post{
                                 success{
                                     stash includes: 'dist/*.whl', name: "whl 3.7"
+                                }
+                                cleanup{
+                                    deleteDir()
+//                                    cleanWs(
+//                                        deleteDirs: true,
+//                                        disableDeferredWipeout: true,
+//                                        patterns: [
+//                                            [pattern: 'dist', type: 'INCLUDE'],
+//                                            [pattern: 'build', type: 'INCLUDE'],
+//                                            [pattern: 'source', type: 'INCLUDE'],
+//                                            [pattern: 'venv37', type: 'INCLUDE'],
+//                                            ]
+//                                        )
                                 }
                             }
                         }
@@ -729,197 +543,307 @@ junit_filename                  = ${junit_filename}
             }
         }
         stage("Deploy to DevPi Staging") {
-
             when {
                 allOf{
-                    equals expected: true, actual: params.DEPLOY_DEVPI
+                    anyOf{
+                        equals expected: true, actual: params.DEPLOY_DEVPI
+                        triggeredBy "TimerTriggerCause"
+                    }
                     anyOf {
                         equals expected: "master", actual: env.BRANCH_NAME
                         equals expected: "dev", actual: env.BRANCH_NAME
                     }
                 }
             }
-            steps {
-                unstash "DOCS_ARCHIVE"
-                bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
-                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                    
+            options{
+                timestamps()
+            }
+            stages{
+                stage("Upload to DevPi Staging"){
+                    steps {
+                        unstash "DOCS_ARCHIVE"
+                        bat "venv36\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
+                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                            bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+
+                        }
+                        bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                        script {
+                                bat "venv36\\Scripts\\devpi.exe upload --from-dir dist"
+                                try {
+                                    bat "venv36\\Scripts\\devpi.exe upload --only-docs ${WORKSPACE}\\dist\\${DOC_ZIP_FILENAME}"
+                                } catch (exc) {
+                                    echo "Unable to upload to devpi with docs."
+                                }
+                            }
+
+                    }
                 }
-                bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                script {
-                        bat "venv\\Scripts\\devpi.exe upload --from-dir dist"
-                        try {
-                            bat "venv\\Scripts\\devpi.exe upload --only-docs ${WORKSPACE}\\dist\\${DOC_ZIP_FILENAME}"
-                        } catch (exc) {
-                            echo "Unable to upload to devpi with docs."
+                stage("Test DevPi packages") {
+
+                    parallel {
+                        stage("Testing Submitted Source Distribution") {
+                            environment {
+                                PATH = "${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                            }
+                            steps {
+                                echo "Testing Source tar.gz package in devpi"
+
+                                timeout(20){
+                                    devpiTest(
+                                        devpiExecutable: "venv36\\Scripts\\devpi.exe",
+                                        url: "https://devpi.library.illinois.edu",
+                                        index: "${env.BRANCH_NAME}_staging",
+                                        pkgName: "${PKG_NAME}",
+                                        pkgVersion: "${PKG_VERSION}",
+                                        pkgRegex: "tar.gz",
+                                        detox: false
+                                    )
+                                }
+                                echo "Finished testing Source Distribution: .tar.gz"
+                            }
+                            post {
+                                failure {
+                                    echo "Tests for .tar.gz source on DevPi failed."
+                                }
+                            }
+
+                        }
+                        stage("Built Distribution: py36 .whl") {
+                            agent {
+                                node {
+                                    label "Windows && Python3"
+                                }
+                            }
+                            environment {
+                                PATH = "${tool 'CPython-3.6'};$PATH"
+                            }
+                            options {
+                                skipDefaultCheckout(true)
+                            }
+
+                            steps {
+                                bat "${tool 'CPython-3.6'}\\python -m venv venv36"
+                                bat "venv36\\Scripts\\python.exe -m pip install pip --upgrade"
+                                bat "venv36\\Scripts\\pip.exe install devpi --upgrade"
+                                echo "Testing Whl package in devpi"
+                                devpiTest(
+                                        devpiExecutable: "venv36\\Scripts\\devpi.exe",
+                                        url: "https://devpi.library.illinois.edu",
+                                        index: "${env.BRANCH_NAME}_staging",
+                                        pkgName: "${PKG_NAME}",
+                                        pkgVersion: "${PKG_VERSION}",
+                                        pkgRegex: "36.*whl",
+                                        detox: false,
+                                        toxEnvironment: "py36"
+                                    )
+
+                                echo "Finished testing Built Distribution: .whl"
+                            }
+                            post {
+                                failure {
+                                    archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
+                                }
+                                cleanup{
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        disableDeferredWipeout: true,
+                                        patterns: [
+                                            [pattern: 'certs', type: 'INCLUDE']
+                                            ]
+                                    )
+                                }
+                            }
+                        }
+                        stage("Built Distribution: py37 .whl") {
+                            agent {
+                                node {
+                                    label "Windows && Python3"
+                                }}
+                            environment {
+                                PATH = "${tool 'CPython-3.7'};$PATH"
+                            }
+                            options {
+                                skipDefaultCheckout(true)
+                            }
+
+                            steps {
+                                echo "Testing Whl package in devpi"
+                                bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv37"
+                                bat "venv37\\Scripts\\python.exe -m pip install pip --upgrade"
+                                bat "venv37\\Scripts\\pip.exe install devpi --upgrade"
+                                devpiTest(
+                                        devpiExecutable: "venv37\\Scripts\\devpi.exe",
+                                        url: "https://devpi.library.illinois.edu",
+                                        index: "${env.BRANCH_NAME}_staging",
+                                        pkgName: "${PKG_NAME}",
+                                        pkgVersion: "${PKG_VERSION}",
+                                        pkgRegex: "37.*whl",
+                                        detox: false,
+                                        toxEnvironment: "py37"
+                                    )
+                                echo "Finished testing Built Distribution: .whl"
+                            }
+                            post {
+                                failure {
+                                    archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
+                                }
+                                cleanup{
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        disableDeferredWipeout: true,
+                                        patterns: [
+                                            [pattern: 'certs', type: 'INCLUDE']
+                                            ]
+                                    )
+                                }
+                            }
                         }
                     }
+                    }
 
-            }
         }
-        stage("Test DevPi packages") {
-            when {
-                allOf{
-                    equals expected: true, actual: params.DEPLOY_DEVPI
-                    anyOf {
-                        equals expected: "master", actual: env.BRANCH_NAME
-                        equals expected: "dev", actual: env.BRANCH_NAME
-                    }
-                }
-            }
-
-
-            parallel {
-                stage("Testing Submitted Source Distribution") {
-                    environment {
-                        PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-                    }
-                    steps {
-                        echo "Testing Source tar.gz package in devpi"
-                        
-                        timeout(20){
-                            // bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu/${env.BRANCH_NAME}_staging"
-                            devpiTest(
-                                devpiExecutable: "venv\\Scripts\\devpi.exe",
-                                url: "https://devpi.library.illinois.edu",
-                                index: "${env.BRANCH_NAME}_staging",
-                                pkgName: "${PKG_NAME}",
-                                pkgVersion: "${PKG_VERSION}",
-                                pkgRegex: "tar.gz",
-                                detox: false
-                            )
-                        }
-                        
-                        // withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        //     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                    
-                        // }
-                        // bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-
-                        // script {                          
-                        //     def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME}==${PKG_VERSION} -s tar.gz  --verbose"
-                        //     if(devpi_test_return_code != 0){   
-                        //         error "Devpi exit code for tar.gz was ${devpi_test_return_code}"
-                        //     }
-                        // }
-                        echo "Finished testing Source Distribution: .tar.gz"
-                    }
-                    post {
-                        failure {
-                            echo "Tests for .tar.gz source on DevPi failed."
-                        }
-                    }
-
-                }
-                stage("Built Distribution: py36 .whl") {
-                    agent {
-                        node {
-                            label "Windows && Python3"
-                        }
-                    }
-                    environment {
-                        PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-                    }
-                    options {
-                        skipDefaultCheckout(true)
-                    }
-                    
-                    steps {
-                        bat "${tool 'CPython-3.6'}\\python -m venv venv36"
-                        bat "venv36\\Scripts\\python.exe -m pip install pip --upgrade"
-                        bat "venv36\\Scripts\\pip.exe install devpi --upgrade"
-                        echo "Testing Whl package in devpi"
-                        devpiTest(
-                                devpiExecutable: "venv36\\Scripts\\devpi.exe",
-                                url: "https://devpi.library.illinois.edu",
-                                index: "${env.BRANCH_NAME}_staging",
-                                pkgName: "${PKG_NAME}",
-                                pkgVersion: "${PKG_VERSION}",
-                                pkgRegex: "36.*whl",
-                                detox: false,
-                                toxEnvironment: "py36"
-                            )
-                        // bat "${tool 'CPython-3.6'} -m venv venv"
-                        // bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                        // bat "where python"
-                        // bat "set"
-                        // withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        //     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"                        
-                        // }
-                        // bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                        // script{
-                        //     def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME}==${PKG_VERSION} -s \"36.*whl\" -e py36  --verbose"
-                        //     if(devpi_test_return_code != 0){   
-                        //         error "Devpi exit code for whl was ${devpi_test_return_code}"
-                        //     }
-                        // }
-                        echo "Finished testing Built Distribution: .whl"
-                    }
-                    post {
-                        failure {
-                            echo "Tests for whl on DevPi failed."
-                        }
-                    }
-                }
-                stage("Built Distribution: py37 .whl") {
-                    agent {
-                        node {
-                            label "Windows && Python3"
-                        }}
-                    environment {
-                        PATH = "${tool 'CPython-3.7'};$PATH"
-                    }
-                    options {
-                        skipDefaultCheckout(true)
-                    }
-                    
-                    steps {
-                        echo "Testing Whl package in devpi"
-                        bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv37"
-                        bat "venv37\\Scripts\\python.exe -m pip install pip --upgrade"
-                        bat "venv37\\Scripts\\pip.exe install devpi --upgrade"
-                        devpiTest(
-                                devpiExecutable: "venv37\\Scripts\\devpi.exe",
-                                url: "https://devpi.library.illinois.edu",
-                                index: "${env.BRANCH_NAME}_staging",
-                                pkgName: "${PKG_NAME}",
-                                pkgVersion: "${PKG_VERSION}",
-                                pkgRegex: "37.*whl",
-                                detox: false,
-                                toxEnvironment: "py37"
-                            )
-                        // bat "${tool 'CPython-3.6'} -m venv venv"
-                        // bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                        // bat "where python"
-                        // bat "set"
-                        // withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        //     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"                        
-                        // }
-                        // bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                        // script{
-                        //     def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME}==${PKG_VERSION} -s \"36.*whl\" -e py36  --verbose"
-                        //     if(devpi_test_return_code != 0){   
-                        //         error "Devpi exit code for whl was ${devpi_test_return_code}"
-                        //     }
-                        // }
-                        echo "Finished testing Built Distribution: .whl"
-                    }
-                    post {
-                        failure {
-                            echo "Tests for whl on DevPi failed."
-                        }
-                    }
-                }
-            }
+//        stage("Test DevPi packages") {
+//            when {
+//                allOf{
+//                    anyOf{
+//                        equals expected: true, actual: params.DEPLOY_DEVPI
+//                        triggeredBy "TimerTriggerCause"
+//                    }
+//                    anyOf {
+//                        equals expected: "master", actual: env.BRANCH_NAME
+//                        equals expected: "dev", actual: env.BRANCH_NAME
+//                    }
+//                }
+//            }
+//
+//            parallel {
+//                stage("Testing Submitted Source Distribution") {
+//                    environment {
+//                        PATH = "${tool 'cmake3.12'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+//                    }
+//                    steps {
+//                        echo "Testing Source tar.gz package in devpi"
+//
+//                        timeout(20){
+//                            devpiTest(
+//                                devpiExecutable: "venv36\\Scripts\\devpi.exe",
+//                                url: "https://devpi.library.illinois.edu",
+//                                index: "${env.BRANCH_NAME}_staging",
+//                                pkgName: "${PKG_NAME}",
+//                                pkgVersion: "${PKG_VERSION}",
+//                                pkgRegex: "tar.gz",
+//                                detox: false
+//                            )
+//                        }
+//                        echo "Finished testing Source Distribution: .tar.gz"
+//                    }
+//                    post {
+//                        failure {
+//                            echo "Tests for .tar.gz source on DevPi failed."
+//                        }
+//                    }
+//
+//                }
+//                stage("Built Distribution: py36 .whl") {
+//                    agent {
+//                        node {
+//                            label "Windows && Python3"
+//                        }
+//                    }
+//                    environment {
+//                        PATH = "${tool 'CPython-3.6'};$PATH"
+//                    }
+//                    options {
+//                        skipDefaultCheckout(true)
+//                    }
+//
+//                    steps {
+//                        bat "${tool 'CPython-3.6'}\\python -m venv venv36"
+//                        bat "venv36\\Scripts\\python.exe -m pip install pip --upgrade"
+//                        bat "venv36\\Scripts\\pip.exe install devpi --upgrade"
+//                        echo "Testing Whl package in devpi"
+//                        devpiTest(
+//                                devpiExecutable: "venv36\\Scripts\\devpi.exe",
+//                                url: "https://devpi.library.illinois.edu",
+//                                index: "${env.BRANCH_NAME}_staging",
+//                                pkgName: "${PKG_NAME}",
+//                                pkgVersion: "${PKG_VERSION}",
+//                                pkgRegex: "36.*whl",
+//                                detox: false,
+//                                toxEnvironment: "py36"
+//                            )
+//
+//                        echo "Finished testing Built Distribution: .whl"
+//                    }
+//                    post {
+//                        failure {
+//                            archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
+//                        }
+//                        cleanup{
+//                            cleanWs(
+//                                deleteDirs: true,
+//                                disableDeferredWipeout: true,
+//                                patterns: [
+//                                    [pattern: 'certs', type: 'INCLUDE']
+//                                    ]
+//                            )
+//                        }
+//                    }
+//                }
+//                stage("Built Distribution: py37 .whl") {
+//                    agent {
+//                        node {
+//                            label "Windows && Python3"
+//                        }}
+//                    environment {
+//                        PATH = "${tool 'CPython-3.7'};$PATH"
+//                    }
+//                    options {
+//                        skipDefaultCheckout(true)
+//                    }
+//
+//                    steps {
+//                        echo "Testing Whl package in devpi"
+//                        bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv37"
+//                        bat "venv37\\Scripts\\python.exe -m pip install pip --upgrade"
+//                        bat "venv37\\Scripts\\pip.exe install devpi --upgrade"
+//                        devpiTest(
+//                                devpiExecutable: "venv37\\Scripts\\devpi.exe",
+//                                url: "https://devpi.library.illinois.edu",
+//                                index: "${env.BRANCH_NAME}_staging",
+//                                pkgName: "${PKG_NAME}",
+//                                pkgVersion: "${PKG_VERSION}",
+//                                pkgRegex: "37.*whl",
+//                                detox: false,
+//                                toxEnvironment: "py37"
+//                            )
+//                        echo "Finished testing Built Distribution: .whl"
+//                    }
+//                    post {
+//                        failure {
+//                            archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
+//                        }
+//                        cleanup{
+//                            cleanWs(
+//                                deleteDirs: true,
+//                                disableDeferredWipeout: true,
+//                                patterns: [
+//                                    [pattern: 'certs', type: 'INCLUDE']
+//                                    ]
+//                            )
+//                        }
+//                    }
+//                }
+//            }
             post {
                 success {
                     echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
                     script {
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                            bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                            bat "venv\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                            bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                            bat "venv36\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                            bat "venv36\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                         }
 
                     }
@@ -992,11 +916,11 @@ junit_filename                  = ${junit_filename}
                                     input "Release ${PKG_NAME} ${PKG_VERSION} (https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging/${PKG_NAME}/${PKG_VERSION}) to DevPi Production? "
                                 }
                                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"         
+                                    bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                                 }
 
-                                bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                                bat "venv\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/release"
+                                bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                                bat "venv36\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/release"
                             } catch(err){
                                 echo "User response timed out. Packages not deployed to DevPi Production."
                             }
@@ -1008,76 +932,48 @@ junit_filename                  = ${junit_filename}
     }
     post {
         cleanup {
-            dir('dist') {
-                deleteDir()
-            }
-
-            dir('build') {
-                deleteDir()
-            }
-            dir("reports") {
-                deleteDir()
-            }
             script {
                 if(fileExists('source/setup.py')){
                     dir("source"){
                         try{
-                            if(fileExists('venv\\Scripts\\python.exe')){
+                            if(fileExists('venv36\\Scripts\\python.exe')){
                                 retry(3) {
-                                    bat "venv\\Scripts\\python.exe setup.py clean --all"
+                                    bat "venv36\\Scripts\\python.exe setup.py clean --all"
                                 }
                             }
                         } catch (Exception ex) {
                             echo "Unable to successfully run clean. Purging source directory."
                             deleteDir()
                         }
-                        bat "dir"
                     }
-                dir("source"){
-                    def binary_files = findFiles glob: "**/*.dll,**/*.pyd,**/*.exe"
-                    binary_files.each { binary_file ->
-                        bat "del ${binary_file}"
-                    }
-                  }
-                }
-
                 if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
-                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                        bat "venv36\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
+                        bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
                     }
 
-                    def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
+                    def devpi_remove_return_code = bat(returnStatus: true, script:"venv36\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}")
                     echo "Devpi remove exited with code ${devpi_remove_return_code}."
                 }
             }
-            bat "dir"
+            cleanWs(
+                deleteDirs: true,
+                disableDeferredWipeout: true,
+                patterns: [
+                    [pattern: 'dist', type: 'INCLUDE'],
+                    [pattern: 'build', type: 'INCLUDE'],
+                    [pattern: 'reports', type: 'INCLUDE'],
+                    [pattern: 'logs', type: 'INCLUDE'],
+                    [pattern: 'certs', type: 'INCLUDE'],
+                    [pattern: '*tmp', type: 'INCLUDE'],
+                    [pattern: "source/**/*.dll", type: 'INCLUDE'],
+                    [pattern: "source/**/*.pyd", type: 'INCLUDE'],
+                    [pattern: "source/**/*.exe", type: 'INCLUDE'],
+                    [pattern: "source/**/*.exe", type: 'INCLUDE']
+                    ]
+                )
+            }
+
         }
     }
-    // post {
-    //     cleanup{
-    //         echo "Cleaning up."
-    //         script {
-    //             if(fileExists('source/setup.py')){
-    //                 dir("source"){
-    //                     try{
-    //                         bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py clean --all"
-    //                     } catch (Exception ex) {
-    //                         echo "Unable to succesfully run clean. Purging source directory."
-    //                         deleteDir()
-    //                     }   
-    //                 }
-    //             }                
-    //             if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
-    //                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-    //                     bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
-    //                     bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-    //                 }
-
-    //                 def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
-    //                 echo "Devpi remove exited with code ${devpi_remove_return_code}."
-    //             }
-    //         }
-    //     } 
-    // }
 }

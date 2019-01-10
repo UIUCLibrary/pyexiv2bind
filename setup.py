@@ -117,13 +117,14 @@ class BuildCMakeExt(build_ext):
         # self.spawn(configure_command)
 
     def build_cmake(self, extension: Extension):
-        self.announce("Building binaries", level=3)
 
         build_command = [
             self.cmake_exec,
             "--build",
             self.build_temp,
         ]
+
+        self.announce("Building binaries", level=3)
 
         # Add config
         build_command.append("--config")
