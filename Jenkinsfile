@@ -197,14 +197,13 @@ junit_filename                  = ${junit_filename}
                         lock("CMakeBuilding")
                     }
                     environment {
+                        PATH = "${tool 'cmake3.13'};$PATH"
                         CL = "/MP"
                     }
                     steps {
                         dir("source"){
                             lock("system_pipenv_${NODE_NAME}"){
-                                powershell """\$Host.UI.RawUI.BufferSize = New-Object Management.Automation.Host.Size (500, 25)
-                                & ${tool 'CPython-3.6'}\\python.exe -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace --cmake-exec=\"${tool 'cmake3.12'}\\cmake.exe\" | Tee-Object -FilePath ${WORKSPACE}\\logs\\build.log
-                                """
+                                powershell "& ${tool 'CPython-3.6'}\\python.exe -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace | Tee-Object -FilePath ${WORKSPACE}\\logs\\build.log"
                             }
                         }
                     }
@@ -278,7 +277,7 @@ junit_filename                  = ${junit_filename}
                        equals expected: true, actual: params.TEST_RUN_TOX
                     }
                     environment {
-                        PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                        PATH = "${tool 'cmake3.13'}\\;${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                     }
                     options{
                         lock("system_python_${env.NODE_NAME}")
@@ -445,7 +444,7 @@ junit_filename                  = ${junit_filename}
         }
         stage("Packaging") {
             environment {
-                PATH = "${tool 'cmake3.12'};$PATH"
+                PATH = "${tool 'cmake3.13'};$PATH"
             }
             parallel{
                 stage("Python 3.6 whl"){
@@ -453,7 +452,7 @@ junit_filename                  = ${junit_filename}
                         
                         stage("Create venv for 3.6"){
                             environment {
-                                PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.6'};$PATH"
+                                PATH = "${tool 'cmake3.13'}\\;${tool 'CPython-3.6'};$PATH"
                                 CL = "/MP"
                             }
                             steps {
@@ -464,7 +463,7 @@ junit_filename                  = ${junit_filename}
                         stage("Creating bdist wheel for 3.6"){
                             steps {
                                 dir("source"){
-                                    bat "${WORKSPACE}\\venv36\\scripts\\python.exe setup.py build -b ../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib --build-temp ../build/36/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+                                    bat "${WORKSPACE}\\venv36\\scripts\\python.exe setup.py build -b ../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib --build-temp ../build/36/temp build_ext --cmake-exec=${tool 'cmake3.13'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
                                 }
                             }
                         }
@@ -486,7 +485,7 @@ junit_filename                  = ${junit_filename}
                     stages{
                         stage("create venv for 3.7"){
                             environment {
-                                PATH = "${tool 'cmake3.12'}\\;${tool 'CPython-3.7'};$PATH"
+                                PATH = "${tool 'cmake3.13'}\\;${tool 'CPython-3.7'};$PATH"
                                 CL = "/MP"
                             }
                             steps {
@@ -499,7 +498,7 @@ junit_filename                  = ${junit_filename}
                         stage("Creating bdist wheel for 3.7"){
                             steps {
                                 dir("source"){
-                                    bat "\"${tool 'CPython-3.7'}\\python.exe\" setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext --cmake-exec=${tool 'cmake3.12'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+                                    bat "\"${tool 'CPython-3.7'}\\python.exe\" setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext --cmake-exec=${tool 'cmake3.13'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
                                 }
                             }
                             post{
@@ -573,7 +572,7 @@ junit_filename                  = ${junit_filename}
                     parallel {
                         stage("Testing Submitted Source Distribution") {
                             environment {
-                                PATH = "${tool 'cmake3.12'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                                PATH = "${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                             }
                             steps {
                                 echo "Testing Source tar.gz package in devpi"
