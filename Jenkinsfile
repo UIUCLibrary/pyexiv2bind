@@ -448,15 +448,15 @@ junit_filename                  = ${junit_filename}
                     steps {
                         bat "${tool 'CPython-3.6'}\\python -m venv venv"
                         bat "venv\\scripts\\python.exe -m pip install pip --upgrade --quiet"
-                        bat "venv\\scripts\\pip.exe install tox detox --upgrade"
+                        bat "venv\\scripts\\pip.exe install tox>=3.7"
                         dir("source"){
                             // bat "${tool 'CPython-3.6'} -m pipenv install --dev --deploy"
                             script{
                                 try{
-                                    bat "${WORKSPACE}\\venv\\scripts\\detox.exe --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                    bat "${WORKSPACE}\\venv\\scripts\\tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
 
                                 } catch (exc) {
-                                    bat "${WORKSPACE}\\venv\\scripts\\detox.exe --recreate --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                    bat "${WORKSPACE}\\venv\\scripts\\tox.exe --recreate --parallel=auto --parallel-live  --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
                                 }
                             }
                         }
