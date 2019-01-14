@@ -27,6 +27,7 @@ pipeline {
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
         PIPENV_CACHE_DIR="${WORKSPACE}\\..\\.virtualenvs\\cache\\"
         WORKON_HOME ="${WORKSPACE}\\pipenv\\"
+        PIPENV_NOSPIN="DISABLED"
     }
     parameters {
         booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
@@ -518,17 +519,17 @@ junit_filename                  = ${junit_filename}
                                     stash includes: 'dist/*.whl', name: "whl 3.7"
                                 }
                                 cleanup{
-                                    deleteDir()
-//                                    cleanWs(
-//                                        deleteDirs: true,
-//                                        disableDeferredWipeout: true,
-//                                        patterns: [
-//                                            [pattern: 'dist', type: 'INCLUDE'],
-//                                            [pattern: 'build', type: 'INCLUDE'],
-//                                            [pattern: 'source', type: 'INCLUDE'],
-//                                            [pattern: 'venv37', type: 'INCLUDE'],
-//                                            ]
-//                                        )
+//                                    deleteDir()
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        disableDeferredWipeout: true,
+                                        patterns: [
+                                            [pattern: 'dist', type: 'INCLUDE'],
+                                            [pattern: 'source', type: 'INCLUDE'],
+                                            [pattern: '*tmp', type: 'INCLUDE'],
+                                            [pattern: 'venv37', type: 'INCLUDE'],
+                                            ]
+                                        )
                                 }
                             }
                         }
@@ -649,6 +650,7 @@ junit_filename                  = ${junit_filename}
                                         deleteDirs: true,
                                         disableDeferredWipeout: true,
                                         patterns: [
+                                            [pattern: '*tmp', type: 'INCLUDE'],
                                             [pattern: 'certs', type: 'INCLUDE']
                                             ]
                                     )
@@ -693,6 +695,7 @@ junit_filename                  = ${junit_filename}
                                         deleteDirs: true,
                                         disableDeferredWipeout: true,
                                         patterns: [
+                                            [pattern: '*tmp', type: 'INCLUDE'],
                                             [pattern: 'certs', type: 'INCLUDE']
                                             ]
                                     )
@@ -961,7 +964,7 @@ junit_filename                  = ${junit_filename}
                 disableDeferredWipeout: true,
                 patterns: [
                     [pattern: 'dist', type: 'INCLUDE'],
-                    [pattern: 'build', type: 'INCLUDE'],
+//                    [pattern: 'build', type: 'INCLUDE'],
                     [pattern: 'reports', type: 'INCLUDE'],
                     [pattern: 'logs', type: 'INCLUDE'],
                     [pattern: 'certs', type: 'INCLUDE'],
