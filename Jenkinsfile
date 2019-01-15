@@ -461,13 +461,14 @@ junit_filename                  = ${junit_filename}
             }
             parallel{
                 stage("Python 3.6 whl"){
+                    environment {
+                        PATH = "${tool 'cmake3.13'}\\;${tool 'CPython-3.6'};$PATH"
+                        CL = "/MP"
+                    }
                     stages{
                         
                         stage("Create venv for 3.6"){
-                            environment {
-                                PATH = "${tool 'cmake3.13'}\\;${tool 'CPython-3.6'};$PATH"
-                                CL = "/MP"
-                            }
+
                             steps {
                                 bat "${tool 'CPython-3.6'}\\python -m venv venv36"
                                 bat "venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv36\\Scripts\\pip.exe install wheel setuptools --upgrade"
@@ -491,16 +492,17 @@ junit_filename                  = ${junit_filename}
                 }
                 stage("Python 3.7 whl"){
                     agent {
-                            node {
-                                label "Windows && Python3 && VS2015"
-                            }
+                        node {
+                            label "Windows && Python3 && VS2015"
                         }
+                    }
+                    environment {
+                        PATH = "${tool 'cmake3.13'}\\;${tool 'CPython-3.7'};$PATH"
+                        CL = "/MP"
+                    }
                     stages{
                         stage("create venv for 3.7"){
-                            environment {
-                                PATH = "${tool 'cmake3.13'}\\;${tool 'CPython-3.7'};$PATH"
-                                CL = "/MP"
-                            }
+
                             steps {
                                 // bat "where python"
                                 bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv37"
