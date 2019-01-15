@@ -289,7 +289,8 @@ junit_filename                  = ${junit_filename}
                        equals expected: true, actual: params.TEST_RUN_TOX
                     }
                     environment {
-                        PATH = "${tool 'cmake3.13'}\\;${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                        PATH = "${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                        CL = "/MP"
                     }
                     options{
                         lock("system_python_${env.NODE_NAME}")
