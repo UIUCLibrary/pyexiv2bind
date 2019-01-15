@@ -492,7 +492,7 @@ junit_filename                  = ${junit_filename}
                 stage("Python 3.7 whl"){
                     agent {
                             node {
-                                label "Windows && Python3"
+                                label "Windows && Python3 && VS2015"
                             }
                         }
                     stages{
