@@ -206,7 +206,7 @@ junit_filename                  = ${junit_filename}
                             lock("system_pipenv_${NODE_NAME}"){
                             script{
                                 powershell(
-                                    script: "& ${tool 'CPython-3.6'}\\python.exe -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace | Tee-Object -FilePath ${WORKSPACE}\\logs\\build.log"
+                                    script: "& ${tool 'CPython-3.6'}\\python.exe -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace | tee ${WORKSPACE}\\logs\\build.log"
 //                                        """Invoke-Expression -Command \"${tool 'CPython-3.6'}\\python.exe -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace\" -OutVariable build_output
 //                                        echo \"\$build_output\"
 
@@ -289,7 +289,8 @@ junit_filename                  = ${junit_filename}
                        equals expected: true, actual: params.TEST_RUN_TOX
                     }
                     environment {
-                        PATH = "${tool 'cmake3.13'}\\;${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                        PATH = "${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                        CL = "/MP"
                     }
                     options{
                         lock("system_python_${env.NODE_NAME}")
@@ -461,13 +462,14 @@ junit_filename                  = ${junit_filename}
             }
             parallel{
                 stage("Python 3.6 whl"){
+                    environment {
+                        PATH = "${tool 'cmake3.13'}\\;${tool 'CPython-3.6'};$PATH"
+                        CL = "/MP"
+                    }
                     stages{
                         
                         stage("Create venv for 3.6"){
-                            environment {
-                                PATH = "${tool 'cmake3.13'}\\;${tool 'CPython-3.6'};$PATH"
-                                CL = "/MP"
-                            }
+
                             steps {
                                 bat "${tool 'CPython-3.6'}\\python -m venv venv36"
                                 bat "venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv36\\Scripts\\pip.exe install wheel setuptools --upgrade"
@@ -491,16 +493,17 @@ junit_filename                  = ${junit_filename}
                 }
                 stage("Python 3.7 whl"){
                     agent {
-                            node {
-                                label "Windows && Python3"
-                            }
+                        node {
+                            label "Windows && Python3 && VS2015"
                         }
+                    }
+                    environment {
+                        PATH = "${tool 'cmake3.13'}\\;${tool 'CPython-3.7'};$PATH"
+                        CL = "/MP"
+                    }
                     stages{
                         stage("create venv for 3.7"){
-                            environment {
-                                PATH = "${tool 'cmake3.13'}\\;${tool 'CPython-3.7'};$PATH"
-                                CL = "/MP"
-                            }
+
                             steps {
                                 // bat "where python"
                                 bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv37"
@@ -936,19 +939,21 @@ junit_filename                  = ${junit_filename}
     post {
         cleanup {
             script {
-                if(fileExists('source/setup.py')){
-                    dir("source"){
-                        try{
-                            if(fileExists('venv36\\Scripts\\python.exe')){
-                                retry(3) {
-                                    bat "venv36\\Scripts\\python.exe setup.py clean --all"
-                                }
-                            }
-                        } catch (Exception ex) {
-                            echo "Unable to successfully run clean. Purging source directory."
-                            deleteDir()
-                        }
-                    }
+//                if(fileExists('source/setup.py')){
+//                    dir("source"){
+//                        try{
+//                            if(fileExists('venv36\\Scripts\\python.exe')){
+//                                retry(3) {
+//                                    bat "venv36\\Scripts\\python.exe setup.py clean --all"
+//                                }
+//                            }
+//                        } catch (Exception ex) {
+//                            echo "Unable to successfully run clean. Purging source directory."
+//                            deleteDir()
+//                        }
+//                    }
+//
+//            }
                 if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                         bat "venv36\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
@@ -958,7 +963,6 @@ junit_filename                  = ${junit_filename}
                     def devpi_remove_return_code = bat(returnStatus: true, script:"venv36\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}")
                     echo "Devpi remove exited with code ${devpi_remove_return_code}."
                 }
-            }
             cleanWs(
                 deleteDirs: true,
                 disableDeferredWipeout: true,
