@@ -206,7 +206,7 @@ junit_filename                  = ${junit_filename}
                             lock("system_pipenv_${NODE_NAME}"){
                             script{
                                 powershell(
-                                    script: "& ${tool 'CPython-3.6'}\\python.exe -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace | Tee-Object -FilePath ${WORKSPACE}\\logs\\build.log"
+                                    script: "& ${tool 'CPython-3.6'}\\python.exe -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace | tee ${WORKSPACE}\\logs\\build.log"
 //                                        """Invoke-Expression -Command \"${tool 'CPython-3.6'}\\python.exe -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace\" -OutVariable build_output
 //                                        echo \"\$build_output\"
 
