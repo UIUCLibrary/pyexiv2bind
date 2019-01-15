@@ -936,19 +936,21 @@ junit_filename                  = ${junit_filename}
     post {
         cleanup {
             script {
-                if(fileExists('source/setup.py')){
-                    dir("source"){
-                        try{
-                            if(fileExists('venv36\\Scripts\\python.exe')){
-                                retry(3) {
-                                    bat "venv36\\Scripts\\python.exe setup.py clean --all"
-                                }
-                            }
-                        } catch (Exception ex) {
-                            echo "Unable to successfully run clean. Purging source directory."
-                            deleteDir()
-                        }
-                    }
+//                if(fileExists('source/setup.py')){
+//                    dir("source"){
+//                        try{
+//                            if(fileExists('venv36\\Scripts\\python.exe')){
+//                                retry(3) {
+//                                    bat "venv36\\Scripts\\python.exe setup.py clean --all"
+//                                }
+//                            }
+//                        } catch (Exception ex) {
+//                            echo "Unable to successfully run clean. Purging source directory."
+//                            deleteDir()
+//                        }
+//                    }
+//
+//            }
                 if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                         bat "venv36\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
@@ -958,7 +960,6 @@ junit_filename                  = ${junit_filename}
                     def devpi_remove_return_code = bat(returnStatus: true, script:"venv36\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}")
                     echo "Devpi remove exited with code ${devpi_remove_return_code}."
                 }
-            }
             cleanWs(
                 deleteDirs: true,
                 disableDeferredWipeout: true,
