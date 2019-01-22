@@ -72,11 +72,11 @@ pipeline {
                             bat "dir > nul"
                         }
 
-                        dir("build"){
-                            deleteDir()
-                            echo "Cleaned out build directory"
-                            bat "dir > nul"
-                        }
+//                        dir("build"){
+//                            deleteDir()
+//                            echo "Cleaned out build directory"
+//                            bat "dir > nul"
+//                        }
                         
                         dir("reports"){
                             deleteDir()
