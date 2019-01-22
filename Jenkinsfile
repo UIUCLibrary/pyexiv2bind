@@ -687,13 +687,9 @@ pipeline {
                                     }
 
                                     steps {
-//                                        bat "${tool 'CPython-3.6'}\\python -m venv venv36"
-//                                        bat "venv36\\Scripts\\python.exe -m pip install pip --upgrade"
-//                                        bat "venv36\\Scripts\\pip.exe install devpi --upgrade"
-//                                        echo "Testing Whl package in devpi"
+
                                         devpiTest(
                                                 devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
-//                                                devpiExecutable: "venv36\\Scripts\\devpi.exe",
                                                 url: "https://devpi.library.illinois.edu",
                                                 index: "${env.BRANCH_NAME}_staging",
                                                 pkgName: "${env.PKG_NAME}",
@@ -722,34 +718,53 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Built Distribution: py37 .whl") {
+                        stage("Testing DevPi .whl Package with Python 3.7"){
                             agent {
                                 node {
                                     label "Windows && Python3"
-                                }}
-                            environment {
-                                PATH = "${tool 'CPython-3.7'};$PATH"
+                                }
                             }
+
                             options {
                                 skipDefaultCheckout(true)
                             }
+                            stages{
+                                stage("Creating venv to Test py37 .whl"){
+                                    environment {
+                                        PATH = "${tool 'CPython-3.7'};$PATH"
+                                    }
+                                    steps {
+                                        lock("system_python_${NODE_NAME}"){
+                                            bat "if not exist venv\\37 mkdir venv\\36"
+                                            bat "python -m venv venv\\37"
+                                        }
+                                        bat "venv\\37\\Scripts\\python.exe -m pip install pip --upgrade && venv\\37\\Scripts\\pip.exe install setuptools --upgrade && venv\\37\\Scripts\\pip.exe install \"tox<3.7\" devpi-client"
+                                    }
 
-                            steps {
-                                echo "Testing Whl package in devpi"
-                                bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv37"
-                                bat "venv37\\Scripts\\python.exe -m pip install pip --upgrade"
-                                bat "venv37\\Scripts\\pip.exe install devpi --upgrade"
-                                devpiTest(
-                                        devpiExecutable: "venv37\\Scripts\\devpi.exe",
-                                        url: "https://devpi.library.illinois.edu",
-                                        index: "${env.BRANCH_NAME}_staging",
-                                        pkgName: "${env.PKG_NAME}",
-                                        pkgVersion: "${env.PKG_VERSION}",
-                                        pkgRegex: "37.*whl",
-                                        detox: false,
-                                        toxEnvironment: "py37"
-                                    )
-                                echo "Finished testing Built Distribution: .whl"
+                                }
+                                stage("Testing DevPi .whl Package with Python 3.7"){
+                                    options{
+                                        timeout(20)
+                                    }
+                                    environment {
+                                        PATH = "${WORKSPACE}\\venv\\venv37\\Scripts;$PATH"
+                                    }
+
+                                    steps {
+
+                                        devpiTest(
+                                                devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
+                                                url: "https://devpi.library.illinois.edu",
+                                                index: "${env.BRANCH_NAME}_staging",
+                                                pkgName: "${env.PKG_NAME}",
+                                                pkgVersion: "${env.PKG_VERSION}",
+                                                pkgRegex: "37.*whl",
+                                                detox: false,
+                                                toxEnvironment: "py37"
+                                            )
+
+                                    }
+                                }
                             }
                             post {
                                 failure {
@@ -767,6 +782,51 @@ pipeline {
                                 }
                             }
                         }
+//                        stage("Built Distribution: py37 .whl") {
+//                            agent {
+//                                node {
+//                                    label "Windows && Python3"
+//                                }}
+//                            environment {
+//                                PATH = "${tool 'CPython-3.7'};$PATH"
+//                            }
+//                            options {
+//                                skipDefaultCheckout(true)
+//                            }
+//
+//                            steps {
+//                                echo "Testing Whl package in devpi"
+//                                bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv37"
+//                                bat "venv37\\Scripts\\python.exe -m pip install pip --upgrade"
+//                                bat "venv37\\Scripts\\pip.exe install devpi --upgrade"
+//                                devpiTest(
+//                                        devpiExecutable: "venv37\\Scripts\\devpi.exe",
+//                                        url: "https://devpi.library.illinois.edu",
+//                                        index: "${env.BRANCH_NAME}_staging",
+//                                        pkgName: "${env.PKG_NAME}",
+//                                        pkgVersion: "${env.PKG_VERSION}",
+//                                        pkgRegex: "37.*whl",
+//                                        detox: false,
+//                                        toxEnvironment: "py37"
+//                                    )
+//                                echo "Finished testing Built Distribution: .whl"
+//                            }
+//                            post {
+//                                failure {
+//                                    archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
+//                                }
+//                                cleanup{
+//                                    cleanWs(
+//                                        deleteDirs: true,
+//                                        disableDeferredWipeout: true,
+//                                        patterns: [
+//                                            [pattern: '*tmp', type: 'INCLUDE'],
+//                                            [pattern: 'certs', type: 'INCLUDE']
+//                                            ]
+//                                    )
+//                                }
+//                            }
+//                        }
                     }
                 }
                 stage("Deploy to DevPi Production") {
