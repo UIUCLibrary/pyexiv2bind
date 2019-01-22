@@ -185,18 +185,12 @@ pipeline {
                     steps {
                         dir("source"){
                             lock("system_pipenv_${NODE_NAME}"){
-                            script{
-                                powershell(
-                                    script: "& python -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace | tee ${WORKSPACE}\\logs\\build.log"
-//                                        """Invoke-Expression -Command \"${tool 'CPython-3.6'}\\python.exe -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace\" -OutVariable build_output
-//                                        echo \"\$build_output\"
+                                script{
+                                    powershell(
+                                        script: "& python -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace | tee ${WORKSPACE}\\logs\\build.log"
+                                    )
 
-//                                """
-//                                \$build_output > ${WORKSPACE}\\logs\\build.log
-                                )
-
-                            }
-//                                Tee-Object -FilePath ${WORKSPACE}\\logs\\build.log
+                                }
                             }
                         }
                     }
@@ -229,7 +223,6 @@ pipeline {
                         echo "Building docs on ${env.NODE_NAME}"
                         dir("source"){
                             lock("system_pipenv_${NODE_NAME}"){
-//                                 bat "${tool 'CPython-3.6'}\\python -m pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs 2> ${WORKSPACE}\\logs\\build_sphinx.log & type ${WORKSPACE}\\logs\\build_sphinx.log"
                                 powershell "& python -m pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs | Tee-Object -FilePath ${WORKSPACE}\\logs\\build_sphinx.log"
                             }
                         }
@@ -288,7 +281,7 @@ pipeline {
                                     bat "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
 
                                 } catch (exc) {
-                                    bat "tox.exe --recreate --parallel=auto --parallel-live  --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                    bat "tox --recreate --parallel=auto --parallel-live  --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
                                 }
                             }
                         }
@@ -515,7 +508,6 @@ pipeline {
                                     stash includes: 'dist/*.whl', name: "whl 3.7"
                                 }
                                 cleanup{
-//                                    deleteDir()
                                     cleanWs(
                                         deleteDirs: true,
                                         disableDeferredWipeout: true,
@@ -782,21 +774,6 @@ pipeline {
     post {
         cleanup {
             script {
-//                if(fileExists('source/setup.py')){
-//                    dir("source"){
-//                        try{
-//                            if(fileExists('venv36\\Scripts\\python.exe')){
-//                                retry(3) {
-//                                    bat "venv36\\Scripts\\python.exe setup.py clean --all"
-//                                }
-//                            }
-//                        } catch (Exception ex) {
-//                            echo "Unable to successfully run clean. Purging source directory."
-//                            deleteDir()
-//                        }
-//                    }
-//
-//            }
                 if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                         bat "venv36\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
@@ -806,6 +783,7 @@ pipeline {
                     def devpi_remove_return_code = bat(returnStatus: true, script:"venv36\\Scripts\\devpi.exe remove -y ${env.PKG_NAME}==${env.PKG_VERSION}")
                     echo "Devpi remove exited with code ${devpi_remove_return_code}."
                 }
+            }
             cleanWs(
                 deleteDirs: true,
                 disableDeferredWipeout: true,
@@ -822,8 +800,6 @@ pipeline {
                     [pattern: "source/**/*.exe", type: 'INCLUDE']
                     ]
                 )
-            }
-
         }
     }
 }
