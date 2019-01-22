@@ -5,7 +5,6 @@ import org.ds.*
 @Library(["devpi", "PythonHelpers"]) _
 
 
-def junit_filename = "junit.xml"
 pipeline {
     agent {
         label "Windows && VS2015 && Python3 && longfilenames"
@@ -159,18 +158,18 @@ pipeline {
                         }
                     }
                 }
-                stage("Setting variables used by the rest of the build"){
-                    steps{
-                        script{
-                            junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
-                        }
-//                        bat "venv36\\Scripts\\devpi use https://devpi.library.illinois.edu"
-//                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-//                            bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+//                stage("Setting variables used by the rest of the build"){
+//                    steps{
+//                        script{
+//
 //                        }
-//                        bat "dir"
-                    }
-                }
+////                        bat "venv36\\Scripts\\devpi use https://devpi.library.illinois.edu"
+////                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+////                            bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+////                        }
+////                        bat "dir"
+//                    }
+//                }
             }
         }
         stage("Building") {
@@ -274,6 +273,7 @@ pipeline {
                     environment {
                         PATH = "${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                         CL = "/MP"
+                        junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
                     }
                     options{
                         lock("system_python_${env.NODE_NAME}")
@@ -285,10 +285,10 @@ pipeline {
                         dir("source"){
                             script{
                                 try{
-                                    bat "${WORKSPACE}\\venv36\\scripts\\tox.exe --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                    bat "${WORKSPACE}\\venv36\\scripts\\tox.exe --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
 
                                 } catch (exc) {
-                                    bat "${WORKSPACE}\\venv36\\scripts\\tox.exe --recreate --parallel=auto --parallel-live  --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                    bat "${WORKSPACE}\\venv36\\scripts\\tox.exe --recreate --parallel=auto --parallel-live  --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
                                 }
                             }
                         }
@@ -408,12 +408,12 @@ pipeline {
                   steps{
                     // unstash "${NODE_NAME}_built_source"
                     dir("source"){
-                        bat "python -m pipenv run coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=${WORKSPACE}/reports/pytest/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                        bat "python -m pipenv run coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=${WORKSPACE}/reports/pytest/${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
                     }
                   }
                   post{
                     always{
-                        junit "reports/pytest/${junit_filename}"                      
+                        junit "reports/pytest/${env.junit_filename}"
                     }
                   }
                 }
