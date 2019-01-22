@@ -490,7 +490,7 @@ pipeline {
                 stage("Python sdist"){
                     steps {
                         dir("source"){
-                            bat "python setup.py sdist -d ${WORKSPACE}\\dist"
+                            bat "python setup.py sdist -d ${WORKSPACE}\\dist --format zip"
                         }
                     }
                     post{
@@ -613,13 +613,13 @@ pipeline {
                                         }
 
                                 }
-                                stage("test sdist tar gz"){
+                                stage("Testing DevPi zip Package"){
 
                                     environment {
                                         PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                                     }
                                     steps {
-                                        echo "Testing Source tar.gz package in devpi"
+                                        echo "Testing Source zip package in devpi"
 
                                         timeout(20){
                                             devpiTest(
@@ -629,7 +629,7 @@ pipeline {
                                                 index: "${env.BRANCH_NAME}_staging",
                                                 pkgName: "${env.PKG_NAME}",
                                                 pkgVersion: "${env.PKG_VERSION}",
-                                                pkgRegex: "tar.gz",
+                                                pkgRegex: "zip",
                                                 detox: false
                                             )
                                         }
