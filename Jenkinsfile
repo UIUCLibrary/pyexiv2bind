@@ -24,6 +24,7 @@ pipeline {
         buildDiscarder logRotator(artifactDaysToKeepStr: '10', artifactNumToKeepStr: '10', daysToKeepStr: '', numToKeepStr: '')
     }
     environment {
+        PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
         PIPENV_CACHE_DIR="${WORKSPACE}\\..\\.virtualenvs\\cache\\"
         WORKON_HOME ="${WORKSPACE}\\pipenv\\"
@@ -109,8 +110,8 @@ pipeline {
                     }
                     steps {
                         dir("source"){
-                            bat "pipenv install --dev --deploy && pipenv run pip list > ..\\logs\\pippackages_pipenv_${NODE_NAME}.log"
-                            bat "pipenv check"
+                            bat "python -m pipenv install --dev --deploy && python -m pipenv run pip list > ..\\logs\\pippackages_pipenv_${NODE_NAME}.log"
+                            bat "python -m pipenv check"
 
                         }
                     }
@@ -120,7 +121,7 @@ pipeline {
                         }
                         failure {
                             dir("source"){
-                                bat returnStatus: true, script: "pipenv --rm"
+                                bat returnStatus: true, script: "python -m pipenv --rm"
                             }
 
                             deleteDir()
@@ -337,7 +338,7 @@ junit_filename                  = ${junit_filename}
                     }
                     steps {
                         dir("source"){
-                            bat "pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html -b doctest > ${WORKSPACE}/logs/doctest.log"
+                            bat "python -m pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html -b doctest > ${WORKSPACE}/logs/doctest.log"
                         }
                         bat "move ${WORKSPACE}\\build\\docs\\html\\doctest\\output.txt ${WORKSPACE}\\reports\\doctest.txt"
                     }
@@ -419,7 +420,7 @@ junit_filename                  = ${junit_filename}
                   steps{
                     // unstash "${NODE_NAME}_built_source"
                     dir("source"){
-                        bat "pipenv run coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=${WORKSPACE}/reports/pytest/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                        bat "python -m pipenv run coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=${WORKSPACE}/reports/pytest/${junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
                     }
                   }
                   post{
@@ -432,9 +433,9 @@ junit_filename                  = ${junit_filename}
             post{
                 always{
                     dir("source"){
-                        bat "pipenv run coverage combine"
-                        bat "pipenv run coverage xml -o ${WORKSPACE}\\reports\\coverage.xml"
-                        bat "pipenv run coverage html -d ${WORKSPACE}\\reports\\coverage"
+                        bat "python -m pipenv run coverage combine"
+                        bat "python -m pipenv run coverage xml -o ${WORKSPACE}\\reports\\coverage.xml"
+                        bat "python -m pipenv run coverage html -d ${WORKSPACE}\\reports\\coverage"
 
                     }
                     publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
@@ -703,7 +704,7 @@ junit_filename                  = ${junit_filename}
                             }
                         }
                     }
-                    }
+                }
 
         }
 //        stage("Test DevPi packages") {
@@ -865,7 +866,7 @@ junit_filename                  = ${junit_filename}
                     steps{
                         script {
                             if(!params.BUILD_DOCS){
-                                bat "pipenv run python setup.py build_sphinx"
+                                bat "python -m pipenv run python setup.py build_sphinx"
                             }
                         }
                         
