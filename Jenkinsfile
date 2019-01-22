@@ -590,7 +590,7 @@ pipeline {
                         timestamps()
                     }
                     parallel {
-                        stage("Testing Submitted Source Distribution") {
+                        stage("Testing DevPi .zip Package with Python 3.6 and 3.7"){
                             environment {
                                 PATH = "${tool 'CPython-3.7'};${tool 'CPython-3.6'};$PATH"
                             }
@@ -654,7 +654,7 @@ pipeline {
 
                         }
 
-                        stage("Built Distribution: py36 .whl") {
+                        stage("Testing DevPi .whl Package with Python 3.6"){
                             agent {
                                 node {
                                     label "Windows && Python3"
