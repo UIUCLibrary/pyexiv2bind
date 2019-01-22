@@ -348,10 +348,10 @@ pipeline {
                         PATH = "${WORKSPACE}\\venv36\\Scripts;$PATH"
                     }
                     steps{
-                        dir("reports/mypy/html"){
-                            deleteDir()
-                            bat "dir"
-                        }
+                        bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
+//                        dir("reports/mypy/html"){
+//                            deleteDir()
+//                        }
 
                         script{
                             try{
