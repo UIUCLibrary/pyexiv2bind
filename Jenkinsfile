@@ -670,8 +670,7 @@ pipeline {
                                     }
                                     steps {
                                         lock("system_python_${NODE_NAME}"){
-                                            bat "if not exist venv\\36 mkdir venv\\36"
-                                            bat "python -m venv venv\\36"
+                                            bat "(if not exist venv\\36 mkdir venv\\36) && python -m venv venv\\36"
                                         }
                                         bat "venv\\36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\36\\Scripts\\pip.exe install setuptools --upgrade && venv\\36\\Scripts\\pip.exe install \"tox<3.7\" devpi-client"
                                     }
