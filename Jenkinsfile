@@ -162,17 +162,7 @@ pipeline {
                 }
                 stage("Setting variables used by the rest of the build"){
                     steps{
-                        
-//                        script {
-//                            // Set up the reports directory variable
-//                            dir("source"){
-//                                PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}\\python  setup.py --name").trim()
-//                                PKG_VERSION = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}\\python setup.py --version").trim()
-//                            }
-//                        }
-
                         script{
-//                            DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
                             junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
                         }
                         bat "venv36\\Scripts\\devpi use https://devpi.library.illinois.edu"
@@ -199,7 +189,7 @@ pipeline {
                         lock("CMakeBuilding")
                     }
                     environment {
-                        PATH = "${tool 'cmake3.13'};$PATH"
+                        PATH = "${tool 'CPython-3.6'};${tool 'cmake3.13'};$PATH"
                         CL = "/MP"
                     }
                     steps {
@@ -207,7 +197,7 @@ pipeline {
                             lock("system_pipenv_${NODE_NAME}"){
                             script{
                                 powershell(
-                                    script: "& ${tool 'CPython-3.6'}\\python.exe -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace | tee ${WORKSPACE}\\logs\\build.log"
+                                    script: "& python -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace | tee ${WORKSPACE}\\logs\\build.log"
 //                                        """Invoke-Expression -Command \"${tool 'CPython-3.6'}\\python.exe -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace\" -OutVariable build_output
 //                                        echo \"\$build_output\"
 
