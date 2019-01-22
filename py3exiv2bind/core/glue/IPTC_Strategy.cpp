@@ -4,6 +4,9 @@
 
 #include "IPTC_Strategy.h"
 #include "make_dictionary.h"
+#include <exiv2/error.hpp>
+#include <iostream>
+
 std::map<std::string, std::string> IPTC_Strategy::load(const Exiv2::Image::AutoPtr &image) {
     try{
         return make_dictionary(image->iptcData());

@@ -10,6 +10,7 @@
 #include "glue_execeptions.h"
 #include "MetadataProcessor.h"
 #include <exiv2/error.hpp>
+#include <iostream>
 
 std::ostringstream warning_log;
 std::ostringstream error_log;

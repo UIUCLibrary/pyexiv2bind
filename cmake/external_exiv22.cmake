@@ -60,10 +60,11 @@ if(EXIV2_VERSION_TAG)
                 COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/tiff_resolution_path.patch
     )
 else()
-    message(STATUS "Checking out HEAD from exiv2 source")
+    message(STATUS "Using version 0.27")
     FetchContent_Declare(
             libexiv2
             GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
+            GIT_TAG "0.27"
             PATCH_COMMAND
                 COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/tiff_resolution_path.patch
     )
@@ -87,9 +88,11 @@ if (NOT libexiv2_POPULATED)
     set(ZLIB_LIBRARY $<TARGET_FILE:zlibstatic>)
     set(EXIV2_BUILD_SAMPLES OFF)
     option(EXIV2_BUILD_SAMPLES "" OFF)
-    add_subdirectory(${libexiv2_SOURCE_DIR} ${libexiv2_BINARY_DIR} EXCLUDE_FROM_ALL)
     include_directories(${libexiv2_BINARY_DIR})
+    add_subdirectory(${libexiv2_SOURCE_DIR} ${libexiv2_BINARY_DIR} EXCLUDE_FROM_ALL)
+#    target_include_directories(exiv2lib PRIVATE ${libexiv2_BINARY_DIR})
+#    include_directories(${libexiv2_BINARY_DIR})
     add_dependencies(exiv2lib zlibstatic)
 endif ()
-add_dependencies(xmp expat)
+add_dependencies(exiv2-xmp expat)
 

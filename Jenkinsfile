@@ -231,7 +231,7 @@ pipeline {
                     agent{
                         node {
                             label "Windows && VS2015 && Python3 && longfilenames"
-                            customWorkspace "c:/Jenkins/temp/${JOB_NAME}/tox/"
+//                            customWorkspace "c:/Jenkins/temp/${JOB_NAME}/tox/"
                         }
                     }
                     when {
