@@ -181,7 +181,8 @@ class Exiv2Ext(BuildCMakeExt):
         self.extra_cmake_options += [
             "-Dpyexiv2bind_generate_venv:BOOL=OFF",
             "-DBUILD_SHARED_LIBS:BOOL=OFF",
-            "-DEXIV2_VERSION_TAG:STRING=11e66c6c9eceeddd2263c3591af6317cbd05c1b6",
+            # "-DEXIV2_VERSION_TAG:STRING=11e66c6c9eceeddd2263c3591af6317cbd05c1b6",
+            "-DEXIV2_VERSION_TAG:STRING=0.27",
             "-DBUILD_TESTING:BOOL=OFF",
         ]
 
