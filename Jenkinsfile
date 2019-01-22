@@ -26,6 +26,7 @@ pipeline {
         PKG_NAME = pythonPackageName(toolName: "CPython-3.6")
         PKG_VERSION = pythonPackageVersion(toolName: "CPython-3.6")
         DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
+        DEVPI = credentials("DS_devpi")
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
         PIPENV_CACHE_DIR="${WORKSPACE}\\..\\.virtualenvs\\cache\\"
         WORKON_HOME ="${WORKSPACE}\\pipenv\\"
@@ -163,11 +164,11 @@ pipeline {
                         script{
                             junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
                         }
-                        bat "venv36\\Scripts\\devpi use https://devpi.library.illinois.edu"
-                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
-                            bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                        }
-                        bat "dir"
+//                        bat "venv36\\Scripts\\devpi use https://devpi.library.illinois.edu"
+//                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+//                            bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+//                        }
+//                        bat "dir"
                     }
                 }
             }
@@ -556,19 +557,20 @@ pipeline {
                     steps {
                         unstash "DOCS_ARCHIVE"
                         bat "venv36\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
-                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-
-                        }
-                        bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                        script {
-                                bat "venv36\\Scripts\\devpi.exe upload --from-dir dist"
-                                try {
-                                    bat "venv36\\Scripts\\devpi.exe upload --only-docs ${WORKSPACE}\\dist\\${env.DOC_ZIP_FILENAME}"
-                                } catch (exc) {
-                                    echo "Unable to upload to devpi with docs."
-                                }
-                            }
+                        bat "devpi use https://devpi.library.illinois.edu && devpi login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && devpi upload --from-dir dist"
+//                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+//                            bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+//
+//                        }
+//                        bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+//                        script {
+//                                bat "venv36\\Scripts\\devpi.exe upload --from-dir dist"
+//                                try {
+//                                    bat "venv36\\Scripts\\devpi.exe upload --only-docs ${WORKSPACE}\\dist\\${env.DOC_ZIP_FILENAME}"
+//                                } catch (exc) {
+//                                    echo "Unable to upload to devpi with docs."
+//                                }
+//                            }
 
                     }
                 }
@@ -696,141 +698,7 @@ pipeline {
                         }
                     }
                 }
-
-        }
-//        stage("Test DevPi packages") {
-//            when {
-//                allOf{
-//                    anyOf{
-//                        equals expected: true, actual: params.DEPLOY_DEVPI
-//                        triggeredBy "TimerTriggerCause"
-//                    }
-//                    anyOf {
-//                        equals expected: "master", actual: env.BRANCH_NAME
-//                        equals expected: "dev", actual: env.BRANCH_NAME
-//                    }
-//                }
-//            }
-//
-//            parallel {
-//                stage("Testing Submitted Source Distribution") {
-//                    environment {
-//                        PATH = "${tool 'cmake3.12'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-//                    }
-//                    steps {
-//                        echo "Testing Source tar.gz package in devpi"
-//
-//                        timeout(20){
-//                            devpiTest(
-//                                devpiExecutable: "venv36\\Scripts\\devpi.exe",
-//                                url: "https://devpi.library.illinois.edu",
-//                                index: "${env.BRANCH_NAME}_staging",
-//                                pkgName: "${env.PKG_NAME}",
-//                                pkgVersion: "${env.PKG_VERSION}",
-//                                pkgRegex: "tar.gz",
-//                                detox: false
-//                            )
-//                        }
-//                        echo "Finished testing Source Distribution: .tar.gz"
-//                    }
-//                    post {
-//                        failure {
-//                            echo "Tests for .tar.gz source on DevPi failed."
-//                        }
-//                    }
-//
-//                }
-//                stage("Built Distribution: py36 .whl") {
-//                    agent {
-//                        node {
-//                            label "Windows && Python3"
-//                        }
-//                    }
-//                    environment {
-//                        PATH = "${tool 'CPython-3.6'};$PATH"
-//                    }
-//                    options {
-//                        skipDefaultCheckout(true)
-//                    }
-//
-//                    steps {
-//                        bat "${tool 'CPython-3.6'}\\python -m venv venv36"
-//                        bat "venv36\\Scripts\\python.exe -m pip install pip --upgrade"
-//                        bat "venv36\\Scripts\\pip.exe install devpi --upgrade"
-//                        echo "Testing Whl package in devpi"
-//                        devpiTest(
-//                                devpiExecutable: "venv36\\Scripts\\devpi.exe",
-//                                url: "https://devpi.library.illinois.edu",
-//                                index: "${env.BRANCH_NAME}_staging",
-//                                pkgName: "${env.PKG_NAME}",
-//                                pkgVersion: "${env.PKG_VERSION}",
-//                                pkgRegex: "36.*whl",
-//                                detox: false,
-//                                toxEnvironment: "py36"
-//                            )
-//
-//                        echo "Finished testing Built Distribution: .whl"
-//                    }
-//                    post {
-//                        failure {
-//                            archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
-//                        }
-//                        cleanup{
-//                            cleanWs(
-//                                deleteDirs: true,
-//                                disableDeferredWipeout: true,
-//                                patterns: [
-//                                    [pattern: 'certs', type: 'INCLUDE']
-//                                    ]
-//                            )
-//                        }
-//                    }
-//                }
-//                stage("Built Distribution: py37 .whl") {
-//                    agent {
-//                        node {
-//                            label "Windows && Python3"
-//                        }}
-//                    environment {
-//                        PATH = "${tool 'CPython-3.7'};$PATH"
-//                    }
-//                    options {
-//                        skipDefaultCheckout(true)
-//                    }
-//
-//                    steps {
-//                        echo "Testing Whl package in devpi"
-//                        bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv37"
-//                        bat "venv37\\Scripts\\python.exe -m pip install pip --upgrade"
-//                        bat "venv37\\Scripts\\pip.exe install devpi --upgrade"
-//                        devpiTest(
-//                                devpiExecutable: "venv37\\Scripts\\devpi.exe",
-//                                url: "https://devpi.library.illinois.edu",
-//                                index: "${env.BRANCH_NAME}_staging",
-//                                pkgName: "${env.PKG_NAME}",
-//                                pkgVersion: "${env.PKG_VERSION}",
-//                                pkgRegex: "37.*whl",
-//                                detox: false,
-//                                toxEnvironment: "py37"
-//                            )
-//                        echo "Finished testing Built Distribution: .whl"
-//                    }
-//                    post {
-//                        failure {
-//                            archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
-//                        }
-//                        cleanup{
-//                            cleanWs(
-//                                deleteDirs: true,
-//                                disableDeferredWipeout: true,
-//                                patterns: [
-//                                    [pattern: 'certs', type: 'INCLUDE']
-//                                    ]
-//                            )
-//                        }
-//                    }
-//                }
-//            }
+            }
             post {
                 success {
                     echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
