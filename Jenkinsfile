@@ -76,33 +76,6 @@ pipeline {
                         }
                     }
                 }
-//                stage("Cleanup"){
-//                    steps {
-//
-//                        bat "dir"
-//                        dir("logs"){
-//                            deleteDir()
-//                            bat "dir > nul"
-//                        }
-//
-////                        dir("build"){
-////                            deleteDir()
-////                            echo "Cleaned out build directory"
-////                            bat "dir > nul"
-////                        }
-//
-//                        dir("reports"){
-//                            deleteDir()
-//                            echo "Cleaned out reports directory"
-//                            bat "dir > nul"
-//                        }
-//                    }
-//                    post{
-//                        failure {
-//                            deleteDir()
-//                        }
-//                    }
-//                }
                 stage("Installing required system level dependencies"){
                     steps{
                         lock("system_python_${NODE_NAME}"){
@@ -148,42 +121,29 @@ pipeline {
                 }
                 stage("Creating virtualenv for building"){
                     steps{
-//                    TODO: Put venv36 inside subdirectory of venv
-                        bat "python -m venv venv36"
+                        bat "python -m venv venv\\venv36"
                         script {
                             try {
-                                bat "call venv36\\Scripts\\python.exe -m pip install -U pip"
+                                bat "call venv\\venv36\\Scripts\\python.exe -m pip install -U pip"
                             }
                             catch (exc) {
                                 bat "python -m venv venv36"
-                                bat "call venv36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+                                bat "call venv\\venv36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                             }
                         }
-                        bat "venv36\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
+                        bat "venv\\venv36\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
                     }
                     post{
                         success{                            
-                            bat "venv36\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
+                            bat "venv\\venv36\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
                             archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"  
                             cleanWs patterns: [[pattern: "logs/pippackages_venv_*.log", type: 'INCLUDE']]                          
                         }
                         failure {
-                            cleanWs deleteDirs: true, patterns: [[pattern: 'venv36', type: 'INCLUDE']]
+                            cleanWs deleteDirs: true, patterns: [[pattern: 'venv\\venv36', type: 'INCLUDE']]
                         }
                     }
                 }
-//                stage("Setting variables used by the rest of the build"){
-//                    steps{
-//                        script{
-//
-//                        }
-////                        bat "venv36\\Scripts\\devpi use https://devpi.library.illinois.edu"
-////                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-////                            bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-////                        }
-////                        bat "dir"
-//                    }
-//                }
             }
         }
         stage("Building") {
@@ -278,7 +238,7 @@ pipeline {
                        equals expected: true, actual: params.TEST_RUN_TOX
                     }
                     environment {
-                        PATH = "${WORKSPACE}\\venv36\\scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                        PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                         CL = "/MP"
                         junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
                     }
@@ -286,9 +246,9 @@ pipeline {
                         lock("system_python_${env.NODE_NAME}")
                     }
                     steps {
-                        bat "${tool 'CPython-3.6'}\\python -m venv venv36"
-                        bat "venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet"
-                        bat "venv36\\scripts\\pip.exe install tox>=3.7"
+                        bat "${tool 'CPython-3.6'}\\python -m venv venv\\venv36"
+                        bat "venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet"
+                        bat "venv\\venv36\\scripts\\pip.exe install tox>=3.7"
                         dir("source"){
                             script{
                                 try{
@@ -345,7 +305,7 @@ pipeline {
                         equals expected: true, actual: params.TEST_RUN_MYPY
                     }
                     environment {
-                        PATH = "${WORKSPACE}\\venv36\\Scripts;$PATH"
+                        PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
                     }
                     steps{
                         bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
@@ -464,8 +424,8 @@ pipeline {
                             }
 
                             steps {
-                                bat "python -m venv venv36"
-                                bat "venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv36\\Scripts\\pip.exe install wheel setuptools --upgrade"
+                                bat "python -m venv venv\\venv36"
+                                bat "venv\\venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv36\\Scripts\\pip.exe install wheel setuptools --upgrade"
                             }
                         }
                         stage("Creating bdist wheel for 3.6"){
@@ -512,13 +472,13 @@ pipeline {
                         stage("create venv for 3.7"){
                             steps {
                                 bat "python -m venv venv37"
-                                bat "venv37\\Scripts\\python.exe -m pip install pip --upgrade && venv37\\Scripts\\pip.exe install wheel setuptools --upgrade"
+                                bat "venv\\venv37\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv37\\Scripts\\pip.exe install wheel setuptools --upgrade"
                             }
                         }
                     
                         stage("Creating bdist wheel for 3.7"){
                             environment {
-                                PATH = "${WORKSPACE}\\venv37\\scripts;${tool 'CPython-3.6'};$PATH"
+                                PATH = "${WORKSPACE}\\venv\\venv37\\scripts;${tool 'CPython-3.6'};$PATH"
                             }
                             steps {
                                 dir("source"){
@@ -775,51 +735,6 @@ pipeline {
                                 }
                             }
                         }
-//                        stage("Built Distribution: py37 .whl") {
-//                            agent {
-//                                node {
-//                                    label "Windows && Python3"
-//                                }}
-//                            environment {
-//                                PATH = "${tool 'CPython-3.7'};$PATH"
-//                            }
-//                            options {
-//                                skipDefaultCheckout(true)
-//                            }
-//
-//                            steps {
-//                                echo "Testing Whl package in devpi"
-//                                bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv37"
-//                                bat "venv37\\Scripts\\python.exe -m pip install pip --upgrade"
-//                                bat "venv37\\Scripts\\pip.exe install devpi --upgrade"
-//                                devpiTest(
-//                                        devpiExecutable: "venv37\\Scripts\\devpi.exe",
-//                                        url: "https://devpi.library.illinois.edu",
-//                                        index: "${env.BRANCH_NAME}_staging",
-//                                        pkgName: "${env.PKG_NAME}",
-//                                        pkgVersion: "${env.PKG_VERSION}",
-//                                        pkgRegex: "37.*whl",
-//                                        detox: false,
-//                                        toxEnvironment: "py37"
-//                                    )
-//                                echo "Finished testing Built Distribution: .whl"
-//                            }
-//                            post {
-//                                failure {
-//                                    archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
-//                                }
-//                                cleanup{
-//                                    cleanWs(
-//                                        deleteDirs: true,
-//                                        disableDeferredWipeout: true,
-//                                        patterns: [
-//                                            [pattern: '*tmp', type: 'INCLUDE'],
-//                                            [pattern: 'certs', type: 'INCLUDE']
-//                                            ]
-//                                    )
-//                                }
-//                            }
-//                        }
                     }
                 }
                 stage("Deploy to DevPi Production") {
@@ -835,10 +750,10 @@ pipeline {
                                     timeout(30) {
                                         input "Release ${env.PKG_NAME} ${env.PKG_VERSION} (https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging/${env.PKG_NAME}/${env.PKG_VERSION}) to DevPi Production? "
                                     }
-                                    bat "venv36\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${env.DEVPI_PSW}"
+                                    bat "venv\\venv36\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${env.DEVPI_PSW}"
 
-                                    bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                                    bat "venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} production/release"
+                                    bat "venv\\venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                                    bat "venv\\venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} production/release"
                                 } catch(err){
                                     echo "User response timed out. Packages not deployed to DevPi Production."
                                 }
@@ -849,11 +764,11 @@ pipeline {
             post {
                 success {
                     echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
-                    bat "venv36\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && venv36\\Scripts\\devpi.exe use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} ${env.DEVPI_USR}/${env.BRANCH_NAME}"
+                    bat "venv\\venv36\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && venv\\venv36\\Scripts\\devpi.exe use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && venv\\venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} ${env.DEVPI_USR}/${env.BRANCH_NAME}"
 
                 }
                 cleanup{
-                    remove_from_devpi("venv36\\Scripts\\devpi.exe", "${env.PKG_NAME}", "${env.PKG_VERSION}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
+                    remove_from_devpi("venv\\venv36\\Scripts\\devpi.exe", "${env.PKG_NAME}", "${env.PKG_VERSION}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
                 }
             }
         }
