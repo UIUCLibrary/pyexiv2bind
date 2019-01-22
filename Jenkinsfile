@@ -76,33 +76,33 @@ pipeline {
                         }
                     }
                 }
-                stage("Cleanup"){
-                    steps {
-                        
-                        bat "dir"                        
-                        dir("logs"){
-                            deleteDir()
-                            bat "dir > nul"
-                        }
-
-//                        dir("build"){
+//                stage("Cleanup"){
+//                    steps {
+//
+//                        bat "dir"
+//                        dir("logs"){
 //                            deleteDir()
-//                            echo "Cleaned out build directory"
 //                            bat "dir > nul"
 //                        }
-                        
-                        dir("reports"){
-                            deleteDir()
-                            echo "Cleaned out reports directory"
-                            bat "dir > nul"
-                        }
-                    }
-                    post{
-                        failure {
-                            deleteDir()
-                        }
-                    }
-                }
+//
+////                        dir("build"){
+////                            deleteDir()
+////                            echo "Cleaned out build directory"
+////                            bat "dir > nul"
+////                        }
+//
+//                        dir("reports"){
+//                            deleteDir()
+//                            echo "Cleaned out reports directory"
+//                            bat "dir > nul"
+//                        }
+//                    }
+//                    post{
+//                        failure {
+//                            deleteDir()
+//                        }
+//                    }
+//                }
                 stage("Installing required system level dependencies"){
                     steps{
                         lock("system_python_${NODE_NAME}"){
