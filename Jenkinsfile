@@ -4,9 +4,7 @@ import org.ds.*
 
 @Library(["devpi", "PythonHelpers"]) _
 
-//def PKG_NAME = "unknown"
-//def PKG_VERSION = "unknown"
-//def DOC_ZIP_FILENAME = "doc.zip"
+
 def junit_filename = "junit.xml"
 pipeline {
     agent {
@@ -173,14 +171,6 @@ pipeline {
                     }
                 }
             }
-            post{
-                always{
-                    echo "junit_filename = ${junit_filename}"
-
-                }
-                
-            }
-
         }
         stage("Building") {
             stages{
@@ -268,6 +258,9 @@ pipeline {
         }
         
         stage("Testing") {
+            environment {
+                PATH = "${WORKSPACE}\\venv36\\Scripts;$PATH"
+            }
             parallel {
                 stage("Run Tox test") {
                     agent{
@@ -354,8 +347,7 @@ pipeline {
                         script{
                             try{
                                 dir("source"){
-                                    bat "dir"
-                                    bat "${WORKSPACE}\\venv36\\Scripts\\mypy.exe -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
+                                    bat "mypy -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
                                 }
                             } catch (exc) {
                                 echo "MyPy found some warnings"
@@ -382,7 +374,7 @@ pipeline {
                       try{
                         dir("source"){
                             bat returnStatus: true, script: "mkdir ${WORKSPACE}\\logs"
-                            bat "${WORKSPACE}\\venv36\\Scripts\\flake8.exe py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
+                            bat "flake8 py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
                         }
                       } catch (exc) {
                         echo "Flake8 found some warnings."
