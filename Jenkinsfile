@@ -444,13 +444,13 @@ pipeline {
 
         }
         stage("Packaging") {
+            environment {
+                CMAKE_PATH = "${tool 'cmake3.13'}"
+                PATH = "${env.CMAKE_PATH};$PATH"
+                CL = "/MP"
+            }
             parallel{
                 stage("Python 3.6 whl"){
-                    environment {
-                        CMAKE_PATH = "${tool 'cmake3.13'}"
-                        PATH = "${env.CMAKE_PATH};$PATH"
-                        CL = "/MP"
-                    }
                     stages{
                         stage("Create venv for 3.6"){
                             environment {
@@ -488,17 +488,14 @@ pipeline {
                         }
                     }
                     environment {
-                        PATH = "${tool 'cmake3.13'};$PATH"
+                        CMAKE_PATH = "${tool 'cmake3.13'}"
+                        PATH = "${env.CMAKE_PATH};${tool 'CPython-3.7'};$PATH"
                         CL = "/MP"
                     }
                     stages{
                         stage("create venv for 3.7"){
-                            environment {
-                                PATH = "${tool 'CPython-3.7'};$PATH"
-                            }
                             steps {
-                                // bat "where python"
-                                bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv37"
+                                bat "python -m venv venv37"
                                 bat "venv37\\Scripts\\python.exe -m pip install pip --upgrade && venv37\\Scripts\\pip.exe install wheel setuptools --upgrade"
                             }
                         }
@@ -506,7 +503,7 @@ pipeline {
                         stage("Creating bdist wheel for 3.7"){
                             steps {
                                 dir("source"){
-                                    bat "\"${tool 'CPython-3.7'}\\python.exe\" setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext --cmake-exec=${tool 'cmake3.13'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+                                    bat "python setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
                                 }
                             }
                             post{
