@@ -309,9 +309,6 @@ pipeline {
                     }
                     steps{
                         bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
-//                        dir("reports/mypy/html"){
-//                            deleteDir()
-//                        }
 
                         script{
                             try{
@@ -353,15 +350,15 @@ pipeline {
                         // currentBuild.result = 'UNSTABLE'
                       }
                     }
-                    stash includes: "logs/flake8.log", name: "FLAKE8_LOG"
+//                    stash includes: "logs/flake8.log", name: "FLAKE8_LOG"
                   }
                   post {
                     always {
-                        node('master') {
-                            unstash "FLAKE8_LOG"
-                            recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-                            deleteDir()
-                        }
+//                        node('master') {
+//                            unstash "FLAKE8_LOG"
+                        recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+//                            deleteDir()
+//                        }
                     }
                     cleanup{
                         cleanWs patterns: [[pattern: 'logs/flake8.log', type: 'INCLUDE']]
