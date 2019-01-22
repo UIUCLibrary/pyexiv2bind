@@ -558,24 +558,9 @@ pipeline {
                         unstash "DOCS_ARCHIVE"
                         bat "venv36\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
                         bat "devpi use https://devpi.library.illinois.edu && devpi login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && devpi upload --from-dir dist"
-//                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-//                            bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-//
-//                        }
-//                        bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-//                        script {
-//                                bat "venv36\\Scripts\\devpi.exe upload --from-dir dist"
-//                                try {
-//                                    bat "venv36\\Scripts\\devpi.exe upload --only-docs ${WORKSPACE}\\dist\\${env.DOC_ZIP_FILENAME}"
-//                                } catch (exc) {
-//                                    echo "Unable to upload to devpi with docs."
-//                                }
-//                            }
-
                     }
                 }
                 stage("Test DevPi packages") {
-
                     parallel {
                         stage("Testing Submitted Source Distribution") {
                             environment {
@@ -698,6 +683,29 @@ pipeline {
                         }
                     }
                 }
+                stage("Deploy to DevPi Production") {
+                        when {
+                            allOf{
+                                equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
+                                branch "master"
+                            }
+                        }
+                        steps {
+                            script {
+                                try{
+                                    timeout(30) {
+                                        input "Release ${env.PKG_NAME} ${env.PKG_VERSION} (https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging/${env.PKG_NAME}/${env.PKG_VERSION}) to DevPi Production? "
+                                    }
+                                    bat "venv36\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${env.DEVPI_PSW}"
+
+                                    bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                                    bat "venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} production/release"
+                                } catch(err){
+                                    echo "User response timed out. Packages not deployed to DevPi Production."
+                                }
+                            }
+                        }
+                }
             }
             post {
                 success {
@@ -764,32 +772,7 @@ pipeline {
                         }
                     }
                 }
-                stage("Deploy to DevPi Production") {
-                    when {
-                        allOf{
-                            equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
-                            equals expected: true, actual: params.DEPLOY_DEVPI
-                            branch "master"
-                        }
-                    }
-                    steps {
-                        script {
-                            try{
-                                timeout(30) {
-                                    input "Release ${env.PKG_NAME} ${env.PKG_VERSION} (https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging/${env.PKG_NAME}/${env.PKG_VERSION}) to DevPi Production? "
-                                }
-                                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                    bat "venv36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                                }
 
-                                bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                                bat "venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} production/release"
-                            } catch(err){
-                                echo "User response timed out. Packages not deployed to DevPi Production."
-                            }
-                        }
-                    }
-                }
             }
         }
     }
