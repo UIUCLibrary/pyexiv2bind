@@ -634,9 +634,6 @@ pipeline {
                                 }
                             }
                             post {
-                                failure {
-                                    echo "Tests for .zip source on DevPi failed."
-                                }
                                 cleanup{
                                     cleanWs(
                                         deleteDirs: true,
