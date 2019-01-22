@@ -633,47 +633,78 @@ pipeline {
                                                 detox: false
                                             )
                                         }
-                                        echo "Finished testing Source Distribution: .tar.gz"
                                     }
                                 }
                             }
                             post {
                                 failure {
-                                    echo "Tests for .tar.gz source on DevPi failed."
+                                    echo "Tests for .zip source on DevPi failed."
+                                }
+                                cleanup{
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        disableDeferredWipeout: true,
+                                        patterns: [
+                                            [pattern: '*tmp', type: 'INCLUDE'],
+                                            [pattern: 'certs', type: 'INCLUDE']
+                                            ]
+                                    )
                                 }
                             }
 
                         }
+
                         stage("Built Distribution: py36 .whl") {
                             agent {
                                 node {
                                     label "Windows && Python3"
                                 }
                             }
-                            environment {
-                                PATH = "${tool 'CPython-3.6'};$PATH"
-                            }
+
                             options {
                                 skipDefaultCheckout(true)
                             }
+                            stages{
+                                stage("Creating venv to Test py36 .whl"){
+                                    environment {
+                                        PATH = "${tool 'CPython-3.6'};$PATH"
+                                    }
+                                    steps {
+                                        lock("system_python_${NODE_NAME}"){
+                                            bat "if not exist venv\\36 mkdir venv\\36"
+                                            bat "python -m venv venv\\36"
+                                        }
+                                        bat "venv\\36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\36\\Scripts\\pip.exe install setuptools --upgrade && venv\\36\\Scripts\\pip.exe install \"tox<3.7\" devpi-client"
+                                    }
 
-                            steps {
-                                bat "${tool 'CPython-3.6'}\\python -m venv venv36"
-                                bat "venv36\\Scripts\\python.exe -m pip install pip --upgrade"
-                                bat "venv36\\Scripts\\pip.exe install devpi --upgrade"
-                                echo "Testing Whl package in devpi"
-                                devpiTest(
-                                        devpiExecutable: "venv36\\Scripts\\devpi.exe",
-                                        url: "https://devpi.library.illinois.edu",
-                                        index: "${env.BRANCH_NAME}_staging",
-                                        pkgName: "${env.PKG_NAME}",
-                                        pkgVersion: "${env.PKG_VERSION}",
-                                        pkgRegex: "36.*whl",
-                                        detox: false,
-                                        toxEnvironment: "py36"
-                                    )
+                                }
+                                stage("Testing DevPi .whl Package with Python 3.6"){
+                                    options{
+                                        timeout(20)
+                                    }
+                                    environment {
+                                        PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
+                                    }
 
-                                echo "Finished testing Built Distribution: .whl"
+                                    steps {
+//                                        bat "${tool 'CPython-3.6'}\\python -m venv venv36"
+//                                        bat "venv36\\Scripts\\python.exe -m pip install pip --upgrade"
+//                                        bat "venv36\\Scripts\\pip.exe install devpi --upgrade"
+//                                        echo "Testing Whl package in devpi"
+                                        devpiTest(
+                                                devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
+//                                                devpiExecutable: "venv36\\Scripts\\devpi.exe",
+                                                url: "https://devpi.library.illinois.edu",
+                                                index: "${env.BRANCH_NAME}_staging",
+                                                pkgName: "${env.PKG_NAME}",
+                                                pkgVersion: "${env.PKG_VERSION}",
+                                                pkgRegex: "36.*whl",
+                                                detox: false,
+                                                toxEnvironment: "py36"
+                                            )
+
+                                    }
+                                }
                             }
                             post {
                                 failure {
