@@ -271,7 +271,7 @@ pipeline {
                        equals expected: true, actual: params.TEST_RUN_TOX
                     }
                     environment {
-                        PATH = "${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                        PATH = "${WORKSPACE}\\venv36\\scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                         CL = "/MP"
                         junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
                     }
@@ -285,10 +285,10 @@ pipeline {
                         dir("source"){
                             script{
                                 try{
-                                    bat "${WORKSPACE}\\venv36\\scripts\\tox.exe --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                    bat "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
 
                                 } catch (exc) {
-                                    bat "${WORKSPACE}\\venv36\\scripts\\tox.exe --recreate --parallel=auto --parallel-live  --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                    bat "tox.exe --recreate --parallel=auto --parallel-live  --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
                                 }
                             }
                         }
@@ -469,7 +469,7 @@ pipeline {
                             }
                             steps {
                                 dir("source"){
-                                    bat "python.exe setup.py build -b ../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib --build-temp ../build/36/temp build_ext --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+                                    bat "python setup.py build -b ../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib --build-temp ../build/36/temp build_ext --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
                                 }
                             }
                         }
@@ -502,6 +502,9 @@ pipeline {
                         }
                     
                         stage("Creating bdist wheel for 3.7"){
+                            environment {
+                                PATH = "${WORKSPACE}\\venv37\\scripts;${tool 'CPython-3.6'};$PATH"
+                            }
                             steps {
                                 dir("source"){
                                     bat "python setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
