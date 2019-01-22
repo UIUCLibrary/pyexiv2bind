@@ -347,18 +347,12 @@ pipeline {
                         }
                       } catch (exc) {
                         echo "Flake8 found some warnings."
-                        // currentBuild.result = 'UNSTABLE'
                       }
                     }
-//                    stash includes: "logs/flake8.log", name: "FLAKE8_LOG"
                   }
                   post {
                     always {
-//                        node('master') {
-//                            unstash "FLAKE8_LOG"
                         recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-//                            deleteDir()
-//                        }
                     }
                     cleanup{
                         cleanWs patterns: [[pattern: 'logs/flake8.log', type: 'INCLUDE']]
@@ -370,7 +364,6 @@ pipeline {
                     equals expected: true, actual: params.TEST_UNIT_TESTS
                   }
                   steps{
-                    // unstash "${NODE_NAME}_built_source"
                     dir("source"){
                         bat "python -m pipenv run coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=${WORKSPACE}/reports/pytest/${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
                     }
@@ -578,7 +571,6 @@ pipeline {
                                         timeout(20){
                                             devpiTest(
                                                 devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
-//                                                devpiExecutable: "venv36\\Scripts\\devpi.exe",
                                                 url: "https://devpi.library.illinois.edu",
                                                 index: "${env.BRANCH_NAME}_staging",
                                                 pkgName: "${env.PKG_NAME}",
