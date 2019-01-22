@@ -607,23 +607,24 @@ pipeline {
                                 stage("Creating venv to test sdist"){
                                         steps {
                                             lock("system_python_${NODE_NAME}"){
-                                                bat "python -m venv venv"
+                                                bat "python -m venv venv\\venv36"
                                             }
-                                            bat "venv\\Scripts\\python.exe -m pip install pip --upgrade && venv\\Scripts\\pip.exe install setuptools --upgrade && venv\\Scripts\\pip.exe install \"tox<3.7\" detox devpi-client"
+                                            bat "venv\\venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv36\\Scripts\\pip.exe install setuptools --upgrade && venv\\venv36\\Scripts\\pip.exe install \"tox<3.7\" detox devpi-client"
                                         }
 
                                 }
                                 stage("test sdist tar gz"){
 
                                     environment {
-                                        PATH = "${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                                        PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                                     }
                                     steps {
                                         echo "Testing Source tar.gz package in devpi"
 
                                         timeout(20){
                                             devpiTest(
-                                                devpiExecutable: "venv36\\Scripts\\devpi.exe",
+                                                devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
+//                                                devpiExecutable: "venv36\\Scripts\\devpi.exe",
                                                 url: "https://devpi.library.illinois.edu",
                                                 index: "${env.BRANCH_NAME}_staging",
                                                 pkgName: "${env.PKG_NAME}",
