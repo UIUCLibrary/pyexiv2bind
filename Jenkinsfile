@@ -5,6 +5,19 @@ import org.ds.*
 @Library(["devpi", "PythonHelpers"]) _
 
 
+def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUsername, devpiPassword){
+    script {
+            try {
+                bat "${devpiExecutable} login ${devpiUsername} --password ${devpiPassword}"
+                bat "${devpiExecutable} use ${devpiIndex}"
+                bat "${devpiExecutable} remove -y ${pkgName}==${pkgVersion}"
+            } catch (Exception ex) {
+                echo "Failed to remove ${pkgName}==${pkgVersion} from ${devpiIndex}"
+        }
+
+    }
+}
+
 pipeline {
     agent {
         label "Windows && VS2015 && Python3 && longfilenames"
@@ -531,7 +544,7 @@ pipeline {
                 }
             }
         }
-        stage("Deploy to DevPi Staging") {
+        stage("Deploy to DevPi") {
             when {
                 allOf{
                     anyOf{
@@ -714,6 +727,9 @@ pipeline {
 
                     }
                 }
+                cleanup{
+                    remove_from_devpi("venv36\\Scripts\\devpi.exe", "${env.PKG_NAME}", "${env.PKG_VERSION}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
+                }
                 failure {
                     echo "At least one package format on DevPi failed."
                 }
@@ -773,17 +789,17 @@ pipeline {
     }
     post {
         cleanup {
-            script {
-                if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
-                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        bat "venv36\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
-                        bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                    }
-
-                    def devpi_remove_return_code = bat(returnStatus: true, script:"venv36\\Scripts\\devpi.exe remove -y ${env.PKG_NAME}==${env.PKG_VERSION}")
-                    echo "Devpi remove exited with code ${devpi_remove_return_code}."
-                }
-            }
+//            script {
+//                if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
+//                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+//                        bat "venv36\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
+//                        bat "venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+//                    }
+//
+//                    def devpi_remove_return_code = bat(returnStatus: true, script:"venv36\\Scripts\\devpi.exe remove -y ${env.PKG_NAME}==${env.PKG_VERSION}")
+//                    echo "Devpi remove exited with code ${devpi_remove_return_code}."
+//                }
+//            }
             cleanWs(
                 deleteDirs: true,
                 disableDeferredWipeout: true,
