@@ -112,7 +112,8 @@ pipeline {
                     post{
                         always{
                             lock("system_python_${NODE_NAME}"){
-                                bat "python -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
+                            bat """if not exist "logs" mkdir logs
+                                python -m pip list > logs\\pippackages_system_${NODE_NAME}.log"""
                             }
                             archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
                         }
