@@ -258,9 +258,7 @@ pipeline {
         }
         
         stage("Testing") {
-            environment {
-                PATH = "${WORKSPACE}\\venv36\\Scripts;$PATH"
-            }
+
             parallel {
                 stage("Run Tox test") {
                     agent{
@@ -338,6 +336,9 @@ pipeline {
                     when {
                         equals expected: true, actual: params.TEST_RUN_MYPY
                     }
+                    environment {
+                        PATH = "${WORKSPACE}\\venv36\\Scripts;$PATH"
+                    }
                     steps{
                         dir("reports/mypy/html"){
                             deleteDir()
@@ -367,6 +368,9 @@ pipeline {
                   }
                   options{
                     timeout(2)
+                  }
+                  environment {
+                    PATH = "${WORKSPACE}\\venv36\\Scripts;$PATH"
                   }
                   steps{
                     unstash "${NODE_NAME}_built_source"
@@ -440,28 +444,31 @@ pipeline {
 
         }
         stage("Packaging") {
-            environment {
-                PATH = "${tool 'cmake3.13'};$PATH"
-            }
             parallel{
                 stage("Python 3.6 whl"){
                     environment {
-                        PATH = "${tool 'cmake3.13'}\\;${tool 'CPython-3.6'};$PATH"
+                        CMAKE_PATH = "${tool 'cmake3.13'}"
+                        PATH = "${env.CMAKE_PATH};$PATH"
                         CL = "/MP"
                     }
                     stages{
-                        
                         stage("Create venv for 3.6"){
+                            environment {
+                                PATH = "${tool 'CPython-3.6'};$PATH"
+                            }
 
                             steps {
-                                bat "${tool 'CPython-3.6'}\\python -m venv venv36"
+                                bat "python -m venv venv36"
                                 bat "venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv36\\Scripts\\pip.exe install wheel setuptools --upgrade"
                             }
                         }
                         stage("Creating bdist wheel for 3.6"){
+                            environment {
+                                PATH = "${WORKSPACE}\\venv36\\scripts;${tool 'CPython-3.6'};$PATH"
+                            }
                             steps {
                                 dir("source"){
-                                    bat "${WORKSPACE}\\venv36\\scripts\\python.exe setup.py build -b ../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib --build-temp ../build/36/temp build_ext --cmake-exec=${tool 'cmake3.13'}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+                                    bat "python.exe setup.py build -b ../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib --build-temp ../build/36/temp build_ext --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
                                 }
                             }
                         }
@@ -470,7 +477,7 @@ pipeline {
                 stage("Python sdist"){
                     steps {
                         dir("source"){
-                            bat "${tool 'CPython-3.6'}\\python setup.py sdist -d ${WORKSPACE}\\dist"
+                            bat "python setup.py sdist -d ${WORKSPACE}\\dist"
                         }
                     }
                 }
@@ -481,12 +488,14 @@ pipeline {
                         }
                     }
                     environment {
-                        PATH = "${tool 'cmake3.13'}\\;${tool 'CPython-3.7'};$PATH"
+                        PATH = "${tool 'cmake3.13'};$PATH"
                         CL = "/MP"
                     }
                     stages{
                         stage("create venv for 3.7"){
-
+                            environment {
+                                PATH = "${tool 'CPython-3.7'};$PATH"
+                            }
                             steps {
                                 // bat "where python"
                                 bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv37"
