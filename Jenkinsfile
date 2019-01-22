@@ -478,6 +478,11 @@ pipeline {
                                     bat "python setup.py build -b ../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib --build-temp ../build/36/temp build_ext --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
                                 }
                             }
+                            post{
+                               success{
+                                    stash includes: 'dist/*.whl', name: "whl 3.6"
+                                }
+                            }
                         }
                     }
                 }
@@ -485,6 +490,11 @@ pipeline {
                     steps {
                         dir("source"){
                             bat "python setup.py sdist -d ${WORKSPACE}\\dist"
+                        }
+                    }
+                    post{
+                        success{
+                            stash includes: 'dist/*.zip,dist/*.tar.gz', name: "sdist"
                         }
                     }
                 }
@@ -540,6 +550,8 @@ pipeline {
             post{
                 success{
                     unstash "whl 3.7"
+                    unstash "whl 3.6"
+                    unstash "sdist"
                     archiveArtifacts artifacts: "dist/*.whl,dist/*.tar.gz,dist/*.zip", fingerprint: true
                 }
             }
@@ -560,11 +572,17 @@ pipeline {
             options{
                 timestamps()
             }
+            environment{
+                PATH = "${WORKSPACE}\\venv36\\Scripts;$PATH"
+            }
             stages{
                 stage("Upload to DevPi Staging"){
                     steps {
                         unstash "DOCS_ARCHIVE"
-                        bat "venv36\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
+                        unstash "whl 3.6"
+                        unstash "whl 3.7"
+                        unstash "sdist"
+                        bat "devpi use https://devpi.library.illinois.edu"
                         bat "devpi use https://devpi.library.illinois.edu && devpi login ${env.DEVPI_PSW} --password ${env.DEVPI_PSW} && devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && devpi upload --from-dir dist"
                     }
                 }
