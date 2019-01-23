@@ -61,90 +61,95 @@ pipeline {
     }
     stages {
         stage("Configure") {
-            stages{
-                stage("Purge all existing data in workspace"){
-                    when{
-                        anyOf{
-                            equals expected: true, actual: params.FRESH_WORKSPACE
-                            triggeredBy "TimerTriggerCause"
-                        }
-                    }
-                    steps{
-                        deleteDir()
-                        dir("source"){
-                            checkout scm
-                        }
-                    }
-                }
-                stage("Installing required system level dependencies"){
-                    steps{
-                        lock("system_python_${NODE_NAME}"){
-                            bat "python -m pip install --upgrade pip --quiet"
-                        }
-                    }
-                    post{
-                        always{
-                            lock("system_python_${NODE_NAME}"){
-                            bat """if not exist "logs" mkdir logs
-                                python -m pip list > logs\\pippackages_system_${NODE_NAME}.log"""
+            parallel{
+                stage("Setting up Workspace"){
+                    stages{
+                        stage("Purge all existing data in workspace"){
+                            when{
+                                anyOf{
+                                    equals expected: true, actual: params.FRESH_WORKSPACE
+                                    triggeredBy "TimerTriggerCause"
+                                }
                             }
-                            archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
+                            steps{
+                                deleteDir()
+                                dir("source"){
+                                    checkout scm
+                                }
+                            }
                         }
-                    }
-                }
-                stage("Installing Pipfile"){
-                    options{
-                        timeout(5)
-                    }
-                    steps {
-                        dir("source"){
-                            bat "python -m pipenv install --dev --deploy && python -m pipenv run pip list > ..\\logs\\pippackages_pipenv_${NODE_NAME}.log"
-                            bat "python -m pipenv check"
+                        stage("Installing required system level dependencies"){
+                            steps{
+                                lock("system_python_${NODE_NAME}"){
+                                    bat "python -m pip install --upgrade pip --quiet"
+                                }
+                            }
+                            post{
+                                always{
+                                    lock("system_python_${NODE_NAME}"){
+                                    bat """if not exist "logs" mkdir logs
+                                        python -m pip list > logs\\pippackages_system_${NODE_NAME}.log"""
+                                    }
+                                    archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
+                                }
+                            }
+                        }
+                        stage("Installing Pipfile"){
+                            options{
+                                timeout(5)
+                            }
+                            steps {
+                                dir("source"){
+                                    bat "python -m pipenv install --dev --deploy && python -m pipenv run pip list > ..\\logs\\pippackages_pipenv_${NODE_NAME}.log"
+                                    bat "python -m pipenv check"
 
-                        }
-                    }
-                    post{
-                        always{
-                            archiveArtifacts artifacts: "logs/pippackages_pipenv_*.log"
-                        }
-                        failure {
-                            dir("source"){
-                                bat returnStatus: true, script: "python -m pipenv --rm"
+                                }
                             }
+                            post{
+                                always{
+                                    archiveArtifacts artifacts: "logs/pippackages_pipenv_*.log"
+                                }
+                                failure {
+                                    dir("source"){
+                                        bat returnStatus: true, script: "python -m pipenv --rm"
+                                    }
 
-                            deleteDir()
-                        }
-                        cleanup{
-                            cleanWs(patterns: [[pattern: "logs/pippackages_pipenv_*.log", type: 'INCLUDE']])
-                        }
-                    }
-                }
-                stage("Creating virtualenv for building"){
-                    steps{
-                        bat "python -m venv venv\\venv36"
-                        script {
-                            try {
-                                bat "call venv\\venv36\\Scripts\\python.exe -m pip install -U pip"
-                            }
-                            catch (exc) {
-                                bat "python -m venv venv36"
-                                bat "call venv\\venv36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+                                    deleteDir()
+                                }
+                                cleanup{
+                                    cleanWs(patterns: [[pattern: "logs/pippackages_pipenv_*.log", type: 'INCLUDE']])
+                                }
                             }
                         }
-                        bat "venv\\venv36\\Scripts\\pip.exe install -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
-                    }
-                    post{
-                        success{                            
-                            bat "venv\\venv36\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
-                            archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"  
-                            cleanWs patterns: [[pattern: "logs/pippackages_venv_*.log", type: 'INCLUDE']]                          
-                        }
-                        failure {
-                            cleanWs deleteDirs: true, patterns: [[pattern: 'venv\\venv36', type: 'INCLUDE']]
+                        stage("Creating virtualenv for building"){
+                            steps{
+                                bat "python -m venv venv\\venv36"
+                                script {
+                                    try {
+                                        bat "call venv\\venv36\\Scripts\\python.exe -m pip install -U pip"
+                                    }
+                                    catch (exc) {
+                                        bat "python -m venv venv36"
+                                        bat "call venv\\venv36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+                                    }
+                                }
+                                bat "venv\\venv36\\Scripts\\pip.exe install -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
+                            }
+                            post{
+                                success{
+                                    bat "venv\\venv36\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
+                                    archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
+                                    cleanWs patterns: [[pattern: "logs/pippackages_venv_*.log", type: 'INCLUDE']]
+                                }
+                                failure {
+                                    cleanWs deleteDirs: true, patterns: [[pattern: 'venv\\venv36', type: 'INCLUDE']]
+                                }
+                            }
                         }
                     }
                 }
             }
+
         }
         stage("Building") {
             stages{
