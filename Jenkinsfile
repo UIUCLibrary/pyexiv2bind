@@ -341,10 +341,10 @@ pipeline {
                     timeout(2)
                   }
                   environment {
-                    PATH = "${WORKSPACE}\\venv36\\Scripts;$PATH"
+                    PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
                   }
                   steps{
-                    bat "(if not exist logs mkdir logs) & pip install flake8"
+                    bat "(if not exist logs mkdir logs) && pip install flake8"
                     unstash "${NODE_NAME}_built_source"
                     script{
                       try{
