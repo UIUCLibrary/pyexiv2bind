@@ -344,11 +344,12 @@ pipeline {
                     PATH = "${WORKSPACE}\\venv36\\Scripts;$PATH"
                   }
                   steps{
+                    bat "(if not exist logs mkdir logs) & pip install flake8"
                     unstash "${NODE_NAME}_built_source"
                     script{
                       try{
                         dir("source"){
-                            bat returnStatus: true, script: "mkdir ${WORKSPACE}\\logs"
+//                            bat returnStatus: true, script: "mkdir ${WORKSPACE}\\logs"
                             bat "flake8 py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
                         }
                       } catch (exc) {
