@@ -131,7 +131,7 @@ pipeline {
                                 bat "call venv\\venv36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                             }
                         }
-                        bat "venv\\venv36\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
+                        bat "venv\\venv36\\Scripts\\pip.exe install -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
                     }
                     post{
                         success{                            
@@ -420,7 +420,7 @@ pipeline {
                         }
                         stage("Creating bdist wheel for 3.6"){
                             environment {
-                                PATH = "${WORKSPACE}\\venv36\\scripts;${tool 'CPython-3.6'};$PATH"
+                                PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'CPython-3.6'};$PATH"
                             }
                             steps {
                                 dir("source"){
@@ -520,7 +520,7 @@ pipeline {
             }
 
             environment{
-                PATH = "${WORKSPACE}\\venv36\\Scripts;$PATH"
+                PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
             }
             stages{
                 stage("Upload to DevPi Staging"){
@@ -529,6 +529,7 @@ pipeline {
                         unstash "whl 3.6"
                         unstash "whl 3.7"
                         unstash "sdist"
+                        bat "pip install devpi-client"
                         bat "devpi use https://devpi.library.illinois.edu && devpi login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && devpi upload --from-dir dist"
                     }
                 }
