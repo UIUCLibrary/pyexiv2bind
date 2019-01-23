@@ -632,7 +632,7 @@ pipeline {
                                         timeout(20)
                                     }
                                     environment {
-                                        PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
+                                        PATH = "${WORKSPACE}\\venv\\36\\Scripts;$PATH"
                                     }
 
                                     steps {
@@ -684,7 +684,7 @@ pipeline {
                                     }
                                     steps {
                                         lock("system_python_${NODE_NAME}"){
-                                            bat "if not exist venv\\37 mkdir venv\\36"
+//                                            bat "if not exist venv\\37 mkdir venv\\37"
                                             bat "python -m venv venv\\37"
                                         }
                                         bat "venv\\37\\Scripts\\python.exe -m pip install pip --upgrade && venv\\37\\Scripts\\pip.exe install setuptools --upgrade && venv\\37\\Scripts\\pip.exe install \"tox<3.7\" devpi-client"
@@ -696,7 +696,7 @@ pipeline {
                                         timeout(20)
                                     }
                                     environment {
-                                        PATH = "${WORKSPACE}\\venv\\venv37\\Scripts;$PATH"
+                                        PATH = "${WORKSPACE}\\venv\\37\\Scripts;$PATH"
                                     }
 
                                     steps {
