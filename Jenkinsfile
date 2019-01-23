@@ -225,7 +225,9 @@ pipeline {
         }
         
         stage("Testing") {
-
+            environment{
+                junit_filename = "junit-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
+            }
             parallel {
                 stage("Run Tox test") {
                     agent{
@@ -240,7 +242,6 @@ pipeline {
                     environment {
                         PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                         CL = "/MP"
-                        junit_filename = "junit-${env.NODE_NAME}-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
                     }
                     options{
                         lock("system_python_${env.NODE_NAME}")
