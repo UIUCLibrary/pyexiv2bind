@@ -188,7 +188,7 @@ pipeline {
                         }
                         success{
                           stash includes: 'build/36/lib/**', name: "${NODE_NAME}_build"
-                          stash includes: 'source/py3exiv2bind/**/*.dll,source/py3exiv2bind/**/*.pyd,source/py3exiv2bind/**/*.exe"', name: "${NODE_NAME}_built_source"
+                          stash includes: 'source/py3exiv2bind/**/*.dll,source/py3exiv2bind/**/*.pyd,source/py3exiv2bind/**/*.exe"', name: "built_source"
                         }
                         failure{
                             archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
@@ -252,7 +252,7 @@ pipeline {
                         lock("system_python_${env.NODE_NAME}")
                     }
                     steps {
-                        bat "python -m venv venv\\venv36"
+                        bat "\"${tool 'CPython-3.6'}\\\"python -m venv venv\\venv36"
                         bat "venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet"
                         bat "venv\\venv36\\scripts\\pip.exe install \"tox>=3.7\""
                         dir("source"){
@@ -345,7 +345,13 @@ pipeline {
                   }
                   steps{
                     bat "(if not exist logs mkdir logs) && pip install flake8"
-                    unstash "${NODE_NAME}_built_source"
+                    script{
+                        try{
+                            unstash "built_source"
+                        } catch (exc){
+                            echo "Unable to reuse stash ${exc}"
+                        }
+                    }
                     script{
                       try{
                         dir("source"){
