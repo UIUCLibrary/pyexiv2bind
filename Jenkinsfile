@@ -157,6 +157,7 @@ pipeline {
                 stage("Building Python Package"){
                     options{
                         lock("CMakeBuilding")
+                        retry 2
                     }
                     environment {
                         PATH = "${tool 'CPython-3.6'};${tool 'cmake3.13'};$PATH"
@@ -240,7 +241,6 @@ pipeline {
                         node {
 //                        Runs in own node because tox tests delete the coverage data produced
                             label "Windows && VS2015 && Python3 && longfilenames"
-//                            customWorkspace "c:/Jenkins/temp/${JOB_NAME}/tox/"
                         }
                     }
                     when {
