@@ -254,7 +254,7 @@ pipeline {
                     steps {
                         bat "\"${tool 'CPython-3.6'}\\python\" -m venv venv\\venv36"
                         bat "venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet"
-                        bat "venv\\venv36\\scripts\\pip.exe install \"tox<3.7\""
+                        bat "venv\\venv36\\scripts\\pip.exe install \"tox>=3.7\""
                         dir("source"){
                             script{
                                 try{
@@ -565,7 +565,7 @@ pipeline {
                                                 bat "python -m venv venv\\venv36"
                                             }
                                             bat "venv\\venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv36\\Scripts\\pip.exe install setuptools --upgrade"
-                                            bat 'venv\\venv36\\Scripts\\pip.exe install devpi-client "tox=>3.7"'
+                                            bat 'venv\\venv36\\Scripts\\pip.exe install devpi-client "tox<3.7"'
                                         }
 
                                 }
@@ -724,6 +724,8 @@ pipeline {
                             post {
                                 failure {
                                     archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
+                                }
+                                failure{
                                     deleteDir()
                                 }
                                 cleanup{
