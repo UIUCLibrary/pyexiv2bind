@@ -602,6 +602,9 @@ pipeline {
                                             ]
                                     )
                                 }
+                                failure{
+                                    deleteDir()
+                                }
                             }
 
                         }
@@ -656,6 +659,7 @@ pipeline {
                             post {
                                 failure {
                                     archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
+                                    deleteDir()
                                 }
                                 cleanup{
                                     cleanWs(
@@ -720,6 +724,7 @@ pipeline {
                             post {
                                 failure {
                                     archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
+                                    deleteDir()
                                 }
                                 cleanup{
                                     cleanWs(
