@@ -134,6 +134,7 @@ pipeline {
                                     }
                                 }
                                 bat "venv\\venv36\\Scripts\\pip.exe install -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
+                                bat "venv\\venv36\\scripts\\pip.exe install \"tox>=3.7\""
                             }
                             post{
                                 success{
@@ -162,6 +163,7 @@ pipeline {
                 stage("Building Python Package"){
                     options{
                         lock("CMakeBuilding")
+                        retry 2
                     }
                     environment {
                         PATH = "${tool 'CPython-3.6'};${tool 'cmake3.13'};$PATH"
@@ -243,8 +245,8 @@ pipeline {
                 stage("Run Tox test") {
                     agent{
                         node {
+//                        Runs in own node because tox tests delete the coverage data produced
                             label "Windows && VS2015 && Python3 && longfilenames"
-//                            customWorkspace "c:/Jenkins/temp/${JOB_NAME}/tox/"
                         }
                     }
                     when {
@@ -254,9 +256,9 @@ pipeline {
                         PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                         CL = "/MP"
                     }
-                    options{
-                        lock("system_python_${env.NODE_NAME}")
-                    }
+//                    options{
+//                        lock("system_python_${env.NODE_NAME}")
+//                    }
                     steps {
                         bat "\"${tool 'CPython-3.6'}\\\"python -m venv venv\\venv36"
                         bat "venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet"
@@ -395,7 +397,7 @@ pipeline {
                 }
             }
             post{
-                always{
+                success{
                     dir("source"){
                         bat "python -m pipenv run coverage combine && python -m pipenv run coverage xml -o ${WORKSPACE}\\reports\\coverage.xml && python -m pipenv run coverage html -d ${WORKSPACE}\\reports\\coverage"
 
@@ -613,6 +615,9 @@ pipeline {
                                             ]
                                     )
                                 }
+                                failure{
+                                    deleteDir()
+                                }
                             }
 
                         }
@@ -667,6 +672,7 @@ pipeline {
                             post {
                                 failure {
                                     archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
+                                    deleteDir()
                                 }
                                 cleanup{
                                     cleanWs(
@@ -731,6 +737,7 @@ pipeline {
                             post {
                                 failure {
                                     archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
+                                    deleteDir()
                                 }
                                 cleanup{
                                     cleanWs(
