@@ -724,8 +724,6 @@ pipeline {
                             post {
                                 failure {
                                     archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
-                                }
-                                failure{
                                     deleteDir()
                                 }
                                 cleanup{
