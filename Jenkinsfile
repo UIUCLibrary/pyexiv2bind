@@ -236,12 +236,13 @@ pipeline {
             }
             parallel {
                 stage("Run Tox test") {
-//                    agent{
-//                        node {
-//                            label "Windows && VS2015 && Python3 && longfilenames"
-////                            customWorkspace "c:/Jenkins/temp/${JOB_NAME}/tox/"
-//                        }
-//                    }
+                    agent{
+                        node {
+//                        Runs in own node because tox tests delete the coverage data produced
+                            label "Windows && VS2015 && Python3 && longfilenames"
+//                            customWorkspace "c:/Jenkins/temp/${JOB_NAME}/tox/"
+                        }
+                    }
                     when {
                        equals expected: true, actual: params.TEST_RUN_TOX
                     }
@@ -253,9 +254,9 @@ pipeline {
 //                        lock("system_python_${env.NODE_NAME}")
 //                    }
                     steps {
-//                        bat "\"${tool 'CPython-3.6'}\\python\" -m venv venv\\venv36"
-//                        bat "venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet"
-//                        bat "venv\\venv36\\scripts\\pip.exe install \"tox>=3.7\""
+                        bat "\"${tool 'CPython-3.6'}\\python\" -m venv venv\\venv36"
+                        bat "venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet"
+                        bat "venv\\venv36\\scripts\\pip.exe install \"tox>=3.7\""
                         dir("source"){
                             script{
                                 try{
@@ -268,26 +269,26 @@ pipeline {
                         }
                         
                     }
-//                    post {
-//                        failure {
-//                            echo "Tox test failed. Removing ${WORKSPACE}\\.tox"
-//                            dir("${WORKSPACE}\\.tox"){
-//                                deleteDir()
-//                            }
-//                        }
-////                        cleanup{
-////                            cleanWs(
-////                                deleteDirs: true,
-////                                disableDeferredWipeout: true,
-////                                patterns: [
-////                                    [pattern: 'dist', type: 'INCLUDE'],
-////                                    [pattern: 'reports', type: 'INCLUDE'],
-////                                    [pattern: "source", type: 'INCLUDE'],
-////                                    [pattern: '*tmp', type: 'INCLUDE'],
-////                                    ]
-////                            )
-////                        }
-//                    }
+                    post {
+                        failure {
+                            echo "Tox test failed. Removing ${WORKSPACE}\\.tox"
+                            dir("${WORKSPACE}\\.tox"){
+                                deleteDir()
+                            }
+                        }
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                disableDeferredWipeout: true,
+                                patterns: [
+                                    [pattern: 'dist', type: 'INCLUDE'],
+                                    [pattern: 'reports', type: 'INCLUDE'],
+                                    [pattern: "source", type: 'INCLUDE'],
+                                    [pattern: '*tmp', type: 'INCLUDE'],
+                                    ]
+                            )
+                        }
+                    }
                 }
                 stage("Run Doctest Tests"){
                     when {
