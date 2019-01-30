@@ -235,12 +235,12 @@ pipeline {
             }
             parallel {
                 stage("Run Tox test") {
-                    agent{
-                        node {
-                            label "Windows && VS2015 && Python3 && longfilenames"
-//                            customWorkspace "c:/Jenkins/temp/${JOB_NAME}/tox/"
-                        }
-                    }
+//                    agent{
+//                        node {
+//                            label "Windows && VS2015 && Python3 && longfilenames"
+////                            customWorkspace "c:/Jenkins/temp/${JOB_NAME}/tox/"
+//                        }
+//                    }
                     when {
                        equals expected: true, actual: params.TEST_RUN_TOX
                     }
@@ -274,18 +274,18 @@ pipeline {
                                 deleteDir()
                             }
                         }
-                        cleanup{
-                            cleanWs(
-                                deleteDirs: true,
-                                disableDeferredWipeout: true,
-                                patterns: [
-                                    [pattern: 'dist', type: 'INCLUDE'],
-                                    [pattern: 'reports', type: 'INCLUDE'],
-                                    [pattern: "source", type: 'INCLUDE'],
-                                    [pattern: '*tmp', type: 'INCLUDE'],
-                                    ]
-                            )
-                        }
+//                        cleanup{
+//                            cleanWs(
+//                                deleteDirs: true,
+//                                disableDeferredWipeout: true,
+//                                patterns: [
+//                                    [pattern: 'dist', type: 'INCLUDE'],
+//                                    [pattern: 'reports', type: 'INCLUDE'],
+//                                    [pattern: "source", type: 'INCLUDE'],
+//                                    [pattern: '*tmp', type: 'INCLUDE'],
+//                                    ]
+//                            )
+//                        }
                     }
                 }
                 stage("Run Doctest Tests"){
