@@ -249,9 +249,9 @@ pipeline {
                         PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                         CL = "/MP"
                     }
-                    options{
-                        lock("system_python_${env.NODE_NAME}")
-                    }
+//                    options{
+//                        lock("system_python_${env.NODE_NAME}")
+//                    }
                     steps {
 //                        bat "\"${tool 'CPython-3.6'}\\python\" -m venv venv\\venv36"
 //                        bat "venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet"
@@ -384,7 +384,7 @@ pipeline {
                 }
             }
             post{
-                always{
+                success{
                     dir("source"){
                         bat "python -m pipenv run coverage combine && python -m pipenv run coverage xml -o ${WORKSPACE}\\reports\\coverage.xml && python -m pipenv run coverage html -d ${WORKSPACE}\\reports\\coverage"
 
