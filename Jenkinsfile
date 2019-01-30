@@ -268,25 +268,25 @@ pipeline {
                         }
                         
                     }
-                    post {
-                        failure {
-                            echo "Tox test failed. Removing ${WORKSPACE}\\.tox"
-                            dir("${WORKSPACE}\\.tox"){
-                                deleteDir()
-                            }
-                        }
-//                        cleanup{
-//                            cleanWs(
-//                                deleteDirs: true,
-//                                disableDeferredWipeout: true,
-//                                patterns: [
-//                                    [pattern: 'dist', type: 'INCLUDE'],
-//                                    [pattern: 'reports', type: 'INCLUDE'],
-//                                    [pattern: "source", type: 'INCLUDE'],
-//                                    [pattern: '*tmp', type: 'INCLUDE'],
-//                                    ]
-//                            )
+//                    post {
+//                        failure {
+//                            echo "Tox test failed. Removing ${WORKSPACE}\\.tox"
+//                            dir("${WORKSPACE}\\.tox"){
+//                                deleteDir()
+//                            }
 //                        }
+////                        cleanup{
+////                            cleanWs(
+////                                deleteDirs: true,
+////                                disableDeferredWipeout: true,
+////                                patterns: [
+////                                    [pattern: 'dist', type: 'INCLUDE'],
+////                                    [pattern: 'reports', type: 'INCLUDE'],
+////                                    [pattern: "source", type: 'INCLUDE'],
+////                                    [pattern: '*tmp', type: 'INCLUDE'],
+////                                    ]
+////                            )
+////                        }
                     }
                 }
                 stage("Run Doctest Tests"){
