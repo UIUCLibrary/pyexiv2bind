@@ -250,9 +250,10 @@ pipeline {
                         PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                         CL = "/MP"
                     }
-//                    options{
+                    options{
+                        timeout(15)
 //                        lock("system_python_${env.NODE_NAME}")
-//                    }
+                    }
                     steps {
                         bat "\"${tool 'CPython-3.6'}\\python\" -m venv venv\\venv36"
                         bat "venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet"
