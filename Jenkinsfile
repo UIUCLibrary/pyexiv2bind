@@ -339,15 +339,11 @@ pipeline {
                             steps{
                                 bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
 
-                                script{
-//                                    try{
-                                        dir("source"){
-                                            bat returnStatus: true, script: "mypy -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
-                                        }
-//                                    } catch (exc) {
-//                                        echo "MyPy found some warnings"
-//                                    }
+//                                script{
+                                dir("source"){
+                                    bat returnStatus: true, script: "mypy -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
                                 }
+//                                }
                             }
                             post {
                                 always {
