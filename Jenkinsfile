@@ -100,8 +100,7 @@ pipeline {
                             }
                             steps {
                                 dir("source"){
-                                    bat "python -m pipenv install --dev --deploy && python -m pipenv run pip list > ..\\logs\\pippackages_pipenv_${NODE_NAME}.log"
-                                    bat "python -m pipenv check"
+                                    bat "python -m pipenv install --dev --deploy && python -m pipenv run pip list > ..\\logs\\pippackages_pipenv_${NODE_NAME}.log && python -m pipenv check"
 
                                 }
                             }
@@ -373,16 +372,9 @@ pipeline {
                   steps{
                     bat "(if not exist logs mkdir logs) && pip install flake8"
                     unstash "built_source"
-//                    script{
-//                      try{
-                        dir("source"){
-//                            bat returnStatus: true, script: "mkdir ${WORKSPACE}\\logs"
-                            bat returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
-                        }
-//                      } catch (exc) {
-//                        echo "Flake8 found some warnings."
-//                      }
-//                    }
+                    dir("source"){
+                        bat returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
+                    }
                   }
                   post {
                     always {
