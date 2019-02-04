@@ -340,13 +340,13 @@ pipeline {
                                 bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
 
                                 script{
-                                    try{
+//                                    try{
                                         dir("source"){
-                                            bat "mypy -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
+                                            bat returnStatus: true, script: "mypy -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
                                         }
-                                    } catch (exc) {
-                                        echo "MyPy found some warnings"
-                                    }
+//                                    } catch (exc) {
+//                                        echo "MyPy found some warnings"
+//                                    }
                                 }
                             }
                             post {
@@ -609,8 +609,6 @@ pipeline {
                                         PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                                     }
                                     steps {
-                                        echo "Testing Source zip package in devpi"
-
                                         timeout(20){
                                             devpiTest(
                                                 devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
