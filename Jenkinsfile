@@ -338,12 +338,9 @@ pipeline {
                             }
                             steps{
                                 bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
-
-//                                script{
                                 dir("source"){
                                     bat returnStatus: true, script: "mypy -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
                                 }
-//                                }
                             }
                             post {
                                 always {
@@ -376,16 +373,16 @@ pipeline {
                   steps{
                     bat "(if not exist logs mkdir logs) && pip install flake8"
                     unstash "built_source"
-                    script{
-                      try{
+//                    script{
+//                      try{
                         dir("source"){
 //                            bat returnStatus: true, script: "mkdir ${WORKSPACE}\\logs"
-                            bat "flake8 py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
+                            bat returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
                         }
-                      } catch (exc) {
-                        echo "Flake8 found some warnings."
-                      }
-                    }
+//                      } catch (exc) {
+//                        echo "Flake8 found some warnings."
+//                      }
+//                    }
                   }
                   post {
                     always {
