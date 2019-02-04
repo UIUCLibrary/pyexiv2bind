@@ -341,7 +341,7 @@ pipeline {
                   }
                   options{
                     timeout(2)
-                    lock("${WORKSPACE}")
+                    lock("${currentBuild.absoluteUrl}")
                   }
                   environment {
                     PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
@@ -375,7 +375,7 @@ pipeline {
                   }
                   options{
                     timeout(2)
-                    lock("${WORKSPACE}")
+                    lock("${currentBuild.absoluteUrl}")
                   }
                   steps{
                     dir("source"){
