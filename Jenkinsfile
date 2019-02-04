@@ -459,8 +459,7 @@ pipeline {
                             }
 
                             steps {
-                                bat "python -m venv venv\\venv36"
-                                bat "venv\\venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv36\\Scripts\\pip.exe install wheel setuptools --upgrade"
+                                bat "python -m venv venv\\venv36 && venv\\venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv36\\Scripts\\pip.exe install wheel setuptools --upgrade"
                             }
                         }
                         stage("Creating bdist wheel for 3.6"){
