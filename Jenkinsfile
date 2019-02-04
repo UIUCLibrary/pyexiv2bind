@@ -158,6 +158,7 @@ pipeline {
                     options{
                         lock("CMakeBuilding")
                         retry 2
+                        timeout(10)
                     }
                     environment {
                         PATH = "${tool 'CPython-3.6'};${tool 'cmake3.13'};$PATH"
