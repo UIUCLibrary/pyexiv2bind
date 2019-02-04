@@ -316,32 +316,55 @@ pipeline {
                         }
                     }
                 }
-                stage("Run MyPy Static Analysis") {
+                stage("MyPy Static Analysis") {
                     when {
                         equals expected: true, actual: params.TEST_RUN_MYPY
                     }
                     environment {
                         PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
                     }
-                    steps{
-                        bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
-
-                        script{
-                            try{
+                    stages{
+                        stage("Generate stubs") {
+                            steps{
                                 dir("source"){
-                                    bat "mypy -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
+                                  bat "stubgen py3exiv2bind --recursive -o ${WORKSPACE}\\mypy_stubs"
                                 }
-                            } catch (exc) {
-                                echo "MyPy found some warnings"
+                            }
+
+                        }
+                        stage("Run MyPy") {
+                            environment{
+                                MYPYPATH = "${WORKSPACE}\\mypy_stubs"
+                            }
+                            steps{
+                                bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
+
+                                script{
+                                    try{
+                                        dir("source"){
+                                            bat "mypy -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
+                                        }
+                                    } catch (exc) {
+                                        echo "MyPy found some warnings"
+                                    }
+                                }
+                            }
+                            post {
+                                always {
+                                    recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
+                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                }
                             }
                         }
                     }
-                    post {
-                        always {
-                            recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                    post{
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [[pattern: 'mypy_stubs', type: 'INCLUDE']]
+                            )
                         }
-                    }
+                      }
                 }
                 stage("Flake8") {
                   when {
