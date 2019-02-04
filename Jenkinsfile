@@ -261,10 +261,10 @@ pipeline {
                         dir("source"){
                             script{
                                 try{
-                                    bat "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                    bat "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv"
 
                                 } catch (exc) {
-                                    bat "tox --recreate --parallel=auto --parallel-live  --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                    bat "tox --recreate --parallel=auto --parallel-live  --workdir ${WORKSPACE}\\.tox -vv"
                                 }
                             }
                         }
