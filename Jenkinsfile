@@ -164,6 +164,7 @@ pipeline {
                     options{
                         lock("CMakeBuilding")
                         retry 2
+                        timeout(10)
                     }
                     environment {
                         PATH = "${tool 'CPython-3.6'};${tool 'cmake3.13'};$PATH"
@@ -256,20 +257,21 @@ pipeline {
                         PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                         CL = "/MP"
                     }
-//                    options{
+                    options{
+                        timeout(15)
 //                        lock("system_python_${env.NODE_NAME}")
-//                    }
+                    }
                     steps {
-                        bat "\"${tool 'CPython-3.6'}\\\"python -m venv venv\\venv36"
+                        bat "\"${tool 'CPython-3.6'}\\python\" -m venv venv\\venv36"
                         bat "venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet"
                         bat "venv\\venv36\\scripts\\pip.exe install \"tox>=3.7\""
                         dir("source"){
                             script{
                                 try{
-                                    bat "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                    bat "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv"
 
                                 } catch (exc) {
-                                    bat "tox --recreate --parallel=auto --parallel-live  --workdir ${WORKSPACE}\\.tox -vv -- --junitxml=${WORKSPACE}\\reports\\${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                    bat "tox --recreate --parallel=auto --parallel-live  --workdir ${WORKSPACE}\\.tox -vv"
                                 }
                             }
                         }
@@ -347,19 +349,14 @@ pipeline {
                   }
                   options{
                     timeout(2)
+                    lock("${currentBuild.absoluteUrl}")
                   }
                   environment {
                     PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
                   }
                   steps{
                     bat "(if not exist logs mkdir logs) && pip install flake8"
-                    script{
-                        try{
-                            unstash "built_source"
-                        } catch (exc){
-                            echo "Unable to reuse stash ${exc}"
-                        }
-                    }
+                    unstash "built_source"
                     script{
                       try{
                         dir("source"){
@@ -383,6 +380,10 @@ pipeline {
                 stage("Running Unit Tests"){
                   when {
                     equals expected: true, actual: params.TEST_UNIT_TESTS
+                  }
+                  options{
+                    timeout(2)
+                    lock("${currentBuild.absoluteUrl}")
                   }
                   steps{
                     dir("source"){
