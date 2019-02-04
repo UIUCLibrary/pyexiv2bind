@@ -190,7 +190,7 @@ pipeline {
                         }
                         success{
                           stash includes: 'build/36/lib/**', name: "${NODE_NAME}_build"
-                          stash includes: 'source/py3exiv2bind/**/*.dll,source/py3exiv2bind/**/*.pyd,source/py3exiv2bind/**/*.exe"', name: "${NODE_NAME}_built_source"
+                          stash includes: 'source/py3exiv2bind/**/*.dll,source/py3exiv2bind/**/*.pyd,source/py3exiv2bind/**/*.exe"', name: "built_source"
                         }
                         failure{
                             archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
@@ -341,13 +341,14 @@ pipeline {
                   }
                   options{
                     timeout(2)
+                    lock("${WORKSPACE}")
                   }
                   environment {
                     PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
                   }
                   steps{
                     bat "(if not exist logs mkdir logs) && pip install flake8"
-                    unstash "${NODE_NAME}_built_source"
+                    unstash "built_source"
                     script{
                       try{
                         dir("source"){
@@ -371,6 +372,10 @@ pipeline {
                 stage("Running Unit Tests"){
                   when {
                     equals expected: true, actual: params.TEST_UNIT_TESTS
+                  }
+                  options{
+                    timeout(2)
+                    lock("${WORKSPACE}")
                   }
                   steps{
                     dir("source"){
