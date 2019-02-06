@@ -797,11 +797,12 @@ pipeline {
                         equals expected: true, actual: params.DEPLOY_DOCS
                     }
                     steps{
-                        script {
-                            if(!params.BUILD_DOCS){
-                                bat "python -m pipenv run python setup.py build_sphinx"
-                            }
-                        }
+                        unstash "DOCS_ARCHIVE"
+                        // script {
+                        //     if(!params.BUILD_DOCS){
+                        //         bat "python -m pipenv run python setup.py build_sphinx"
+                        //     }
+                        // }
                         
                         dir("build/docs/html/"){
                             script{
