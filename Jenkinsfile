@@ -249,7 +249,21 @@ pipeline {
                     }
                     
                     
-                    stages{                        
+                    stages{
+                        stage("Purge all existing data in Node"){
+                            when{
+                                anyOf{
+                                    equals expected: true, actual: params.FRESH_WORKSPACE
+                                    triggeredBy "TimerTriggerCause"
+                                }
+                            }
+                            steps{
+                                deleteDir()
+                                dir("source"){
+                                    checkout scm
+                                }
+                            }
+                        }                  
                         stage("Install Tox"){
                             environment {
                                 PATH = "${tool 'CPython-3.6'};$PATH"
