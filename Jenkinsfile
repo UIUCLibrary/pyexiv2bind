@@ -263,9 +263,7 @@ pipeline {
                     stages{
                         stage("run tox"){
                             steps {
-                                bat "\"${tool 'CPython-3.6'}\\python\" -m venv venv\\venv36"
-                                bat "venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet"
-                                bat "venv\\venv36\\scripts\\pip.exe install \"tox>=3.7\""
+                                bat "\"${tool 'CPython-3.6'}\\python\" -m venv venv\\venv36 && venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet && venv\\venv36\\scripts\\pip.exe install \"tox>=3.7\""
                                 dir("source"){
                                     script{
                                         try{
