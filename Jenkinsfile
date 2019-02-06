@@ -248,10 +248,7 @@ pipeline {
                        equals expected: true, actual: params.TEST_RUN_TOX
                     }
                     
-                    options{
-                        timeout(15)
-//                        lock("system_python_${env.NODE_NAME}")
-                    }
+                    
                     stages{                        
                         stage("Install Tox"){
                             environment {
@@ -265,6 +262,9 @@ pipeline {
                             environment {
                                 PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                                 CL = "/MP"
+                            }
+                            options{
+                                timeout(15)
                             }
                             steps {
                                 dir("source"){
@@ -808,7 +808,7 @@ pipeline {
                         //     }
                         // }
                         
-                        dir("build/docs/html/"){
+                        // dir("build/docs/html/"){
                             script{
                                 try{
                                     timeout(30) {
@@ -840,7 +840,7 @@ pipeline {
                                     echo "User response timed out. Documentation not published."
                                 }
                             }
-                        }
+                        // }
                     }
                 }
 
