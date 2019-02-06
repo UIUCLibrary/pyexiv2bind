@@ -202,7 +202,7 @@ pipeline {
                 }     
                 stage("Building Sphinx Documentation"){
                     steps {
-                        echo "Building docs on ${env.NODE_NAME}"
+                        // echo "Building docs on ${env.NODE_NAME}"
                         dir("source"){
                             lock("system_pipenv_${NODE_NAME}"){
                                 powershell "& python -m pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs | Tee-Object -FilePath ${WORKSPACE}\\logs\\build_sphinx.log"
