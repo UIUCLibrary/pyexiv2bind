@@ -178,7 +178,7 @@ pipeline {
                     }
                     post{
                         always{
-                            archiveArtifacts artifacts: "logs/build.log"
+                            // archiveArtifacts artifacts: "logs/build.log"
                             recordIssues(tools: [
                                     pyLint(name: 'Setuptools Build: PyLint', pattern: 'logs/build.log'),
                                     msBuild(name: 'Setuptools Build: MSBuild', pattern: 'logs/build.log')
