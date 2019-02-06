@@ -785,7 +785,7 @@ pipeline {
             }
             post {
                 success {
-                    echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
+                    // echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
                     bat "venv\\venv36\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && venv\\venv36\\Scripts\\devpi.exe use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && venv\\venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} ${env.DEVPI_USR}/${env.BRANCH_NAME}"
 
                 }
