@@ -260,22 +260,27 @@ pipeline {
                         timeout(15)
 //                        lock("system_python_${env.NODE_NAME}")
                     }
-                    steps {
-                        bat "\"${tool 'CPython-3.6'}\\python\" -m venv venv\\venv36"
-                        bat "venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet"
-                        bat "venv\\venv36\\scripts\\pip.exe install \"tox>=3.7\""
-                        dir("source"){
-                            script{
-                                try{
-                                    bat "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv"
+                    stages{
+                        stage("run tox"){
+                            steps {
+                                bat "\"${tool 'CPython-3.6'}\\python\" -m venv venv\\venv36"
+                                bat "venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet"
+                                bat "venv\\venv36\\scripts\\pip.exe install \"tox>=3.7\""
+                                dir("source"){
+                                    script{
+                                        try{
+                                            bat "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv"
 
-                                } catch (exc) {
-                                    bat "tox --recreate --parallel=auto --parallel-live  --workdir ${WORKSPACE}\\.tox -vv"
+                                        } catch (exc) {
+                                            bat "tox --recreate --parallel=auto --parallel-live  --workdir ${WORKSPACE}\\.tox -vv"
+                                        }
+                                    }
                                 }
-                            }
+                                
+                            }        
                         }
-                        
                     }
+                    
                     post {
                         failure {
                             echo "Tox test failed. Removing ${WORKSPACE}\\.tox"
