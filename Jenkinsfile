@@ -280,7 +280,6 @@ pipeline {
                     
                     post {
                         failure {
-                            echo "Tox test failed. Removing ${WORKSPACE}\\.tox"
                             dir("${WORKSPACE}\\.tox"){
                                 deleteDir()
                             }
