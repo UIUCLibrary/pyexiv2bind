@@ -169,12 +169,10 @@ pipeline {
                     steps {
                         dir("source"){
                             lock("system_pipenv_${NODE_NAME}"){
-                                script{
-                                    powershell(
-                                        script: "& python -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace | tee ${WORKSPACE}\\logs\\build.log"
-                                    )
-
-                                }
+                                
+                                powershell(
+                                    script: "& python -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace | tee ${WORKSPACE}\\logs\\build.log"
+                                )
                             }
                         }
                     }
