@@ -193,10 +193,10 @@ pipeline {
                           stash includes: 'build/36/lib/**', name: "${NODE_NAME}_build"
                           stash includes: 'source/py3exiv2bind/**/*.dll,source/py3exiv2bind/**/*.pyd,source/py3exiv2bind/**/*.exe"', name: "built_source"
                         }
-                        failure{
-                            archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
+                        // failure{
+                        //     archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
 
-                        }
+                        // }
                     }
                     
                 }     
