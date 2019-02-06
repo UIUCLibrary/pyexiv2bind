@@ -247,21 +247,25 @@ pipeline {
                     when {
                        equals expected: true, actual: params.TEST_RUN_TOX
                     }
-                    environment {
-                        PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-                        CL = "/MP"
-                    }
+                    
                     options{
                         timeout(15)
 //                        lock("system_python_${env.NODE_NAME}")
                     }
-                    stages{
+                    stages{                        
                         stage("Install Tox"){
+                            environment {
+                                PATH = "${tool 'CPython-3.6'};$PATH"
+                            }
                             steps{
-                                bat "\"${tool 'CPython-3.6'}\\python\" -m venv venv\\venv36 && venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet && venv\\venv36\\scripts\\pip.exe install \"tox>=3.7\""
+                                bat "python -m venv venv\\venv36 && venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet && venv\\venv36\\scripts\\pip.exe install \"tox>=3.7\""
                             }
                         }
                         stage("run tox"){
+                            environment {
+                                PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                                CL = "/MP"
+                            }
                             steps {
                                 dir("source"){
                                     script{
