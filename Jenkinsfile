@@ -808,7 +808,7 @@ pipeline {
                             script{
                                 try{
                                     timeout(30) {
-                                        input 'Update project documentation?'
+                                        input "Update project documentation to https://www.library.illinois.edu/dccdocs/${env.PKG_NAME}"
                                     }
                                     sshPublisher(
                                         publishers: [
@@ -822,10 +822,10 @@ pipeline {
                                                 makeEmptyDirs: false, 
                                                 noDefaultExcludes: false, 
                                                 patternSeparator: '[, ]+', 
-                                                remoteDirectory: "${params.DEPLOY_DOCS_URL_SUBFOLDER}", 
+                                                remoteDirectory: "${env.PKG_NAME}", 
                                                 remoteDirectorySDF: false, 
-                                                removePrefix: '', 
-                                                sourceFiles: '**')], 
+                                                removePrefix: 'build/docs/html', 
+                                                sourceFiles: 'build/docs/html/**')], 
                                             usePromotionTimestamp: false, 
                                             useWorkspaceInPromotion: false, 
                                             verbose: true
