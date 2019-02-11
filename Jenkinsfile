@@ -322,7 +322,7 @@ pipeline {
                     }
                     steps {
                         dir("source"){
-                            bat "python -m pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html -b doctest > ${WORKSPACE}/logs/doctest.log && move ${WORKSPACE}\\build\\docs\\html\\doctest\\output.txt ${WORKSPACE}\\reports\\doctest.txt"
+                            bat "python -m pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html -b doctest -w ${WORKSPACE}\\reports\\doctest.txt"
                         }
                         // bat ""
                     }
