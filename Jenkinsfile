@@ -258,6 +258,9 @@ pipeline {
                 }
 
                 stage("Running Tests"){
+                    environment{
+                        PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;${PATH}"
+                    }
                     failFast true
                     parallel {
                         stage("Run Tox test") {
