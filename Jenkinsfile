@@ -236,192 +236,197 @@ pipeline {
             environment{
                 junit_filename = "junit-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
             }
-            parallel {
-                stage("Run Tox test") {
-                    agent{
-                        node {
-//                        Runs in own node because tox tests delete the coverage data produced
-                            label "Windows && VS2015 && Python3 && longfilenames"
-                        }
-                    }
-                    when {
-                       equals expected: true, actual: params.TEST_RUN_TOX
-                    }
-                    
-                    
-                    stages{
-                        stage("Purge all existing data in Node"){
-                            when{
-                                anyOf{
-                                    equals expected: true, actual: params.FRESH_WORKSPACE
-                                    triggeredBy "TimerTriggerCause"
-                                }
-                            }
-                            steps{
-                                deleteDir()
-                                dir("source"){
-                                    checkout scm
-                                }
-                            }
-                        }                  
-                        stage("Install Tox"){
-                            environment {
-                                PATH = "${tool 'CPython-3.6'};$PATH"
-                            }
-                            steps{
-                                bat "python -m venv venv\\venv36 && venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet && venv\\venv36\\scripts\\pip.exe install \"tox>=3.7\""
-                            }
-                        }
-                        stage("run tox"){
-                            environment {
-                                PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-                                CL = "/MP"
-                            }
-                            options{
-                                timeout(15)
-                            }
-                            steps {
-                                dir("source"){
-                                    script{
-                                        try{
-                                            bat "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv"
+            stages{
+                stage("Run tests"){
 
-                                        } catch (exc) {
-                                            bat "tox --recreate --parallel=auto --parallel-live  --workdir ${WORKSPACE}\\.tox -vv"
+                    parallel {
+                        stage("Run Tox test") {
+                            agent{
+                                node {
+        //                        Runs in own node because tox tests delete the coverage data produced
+                                    label "Windows && VS2015 && Python3 && longfilenames"
+                                }
+                            }
+                            when {
+                               equals expected: true, actual: params.TEST_RUN_TOX
+                            }
+
+
+                            stages{
+                                stage("Purge all existing data in Node"){
+                                    when{
+                                        anyOf{
+                                            equals expected: true, actual: params.FRESH_WORKSPACE
+                                            triggeredBy "TimerTriggerCause"
+                                        }
+                                    }
+                                    steps{
+                                        deleteDir()
+                                        dir("source"){
+                                            checkout scm
                                         }
                                     }
                                 }
-                                
-                            }        
-                        }
-                    }
-                    
-                    post {
-                        failure {
-                            dir("${WORKSPACE}\\.tox"){
-                                deleteDir()
-                            }
-                        }
-                        cleanup{
-                            cleanWs(
-                                deleteDirs: true,
-                                disableDeferredWipeout: true,
-                                patterns: [
-                                    [pattern: 'dist', type: 'INCLUDE'],
-                                    [pattern: 'reports', type: 'INCLUDE'],
-                                    [pattern: "source", type: 'INCLUDE'],
-                                    [pattern: '*tmp', type: 'INCLUDE'],
-                                    ]
-                            )
-                        }
-                    }
-                }
-                stage("Run Doctest Tests"){
-                    when {
-                       equals expected: true, actual: params.TEST_RUN_DOCTEST
-                    }
-                    steps {
-                        dir("source"){
-                            bat "python -m pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html -b doctest -w ${WORKSPACE}\\reports\\doctest.txt"
-                        }
-                        // bat ""
-                    }
-                    post{
-                        always {
-                            archiveArtifacts artifacts: "reports/doctest.txt"
-                            recordIssues(tools: [sphinxBuild(name: 'Doctest', pattern: 'logs/doctest.log', id: 'doctest')])
+                                stage("Install Tox"){
+                                    environment {
+                                        PATH = "${tool 'CPython-3.6'};$PATH"
+                                    }
+                                    steps{
+                                        bat "python -m venv venv\\venv36 && venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet && venv\\venv36\\scripts\\pip.exe install \"tox>=3.7\""
+                                    }
+                                }
+                                stage("run tox"){
+                                    environment {
+                                        PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                                        CL = "/MP"
+                                    }
+                                    options{
+                                        timeout(15)
+                                    }
+                                    steps {
+                                        dir("source"){
+                                            script{
+                                                try{
+                                                    bat "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv"
 
-                        }
-                    }
-                }
-                stage("MyPy Static Analysis") {
-                    when {
-                        equals expected: true, actual: params.TEST_RUN_MYPY
-                    }
-                    environment {
-                        PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
-                    }
-                    stages{
-                        stage("Generate stubs") {
-                            steps{
-                                dir("source"){
-                                  bat "stubgen -p py3exiv2bind -o ${WORKSPACE}\\mypy_stubs"
+                                                } catch (exc) {
+                                                    bat "tox --recreate --parallel=auto --parallel-live  --workdir ${WORKSPACE}\\.tox -vv"
+                                                }
+                                            }
+                                        }
+
+                                    }
                                 }
                             }
 
-                        }
-                        stage("Run MyPy") {
-                            environment{
-                                MYPYPATH = "${WORKSPACE}\\mypy_stubs"
-                            }
-                            steps{
-                                bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
-                                dir("source"){
-                                    bat returnStatus: true, script: "mypy -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
-                                }
-                            }
                             post {
-                                always {
-                                    recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
-                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                failure {
+                                    dir("${WORKSPACE}\\.tox"){
+                                        deleteDir()
+                                    }
+                                }
+                                cleanup{
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        disableDeferredWipeout: true,
+                                        patterns: [
+                                            [pattern: 'dist', type: 'INCLUDE'],
+                                            [pattern: 'reports', type: 'INCLUDE'],
+                                            [pattern: "source", type: 'INCLUDE'],
+                                            [pattern: '*tmp', type: 'INCLUDE'],
+                                            ]
+                                    )
                                 }
                             }
                         }
-                    }
-                    post{
-                        cleanup{
-                            cleanWs(
-                                deleteDirs: true,
-                                patterns: [[pattern: 'mypy_stubs', type: 'INCLUDE']]
-                            )
+                        stage("Run Doctest Tests"){
+                            when {
+                               equals expected: true, actual: params.TEST_RUN_DOCTEST
+                            }
+                            steps {
+                                dir("source"){
+                                    bat "python -m pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html -b doctest -w ${WORKSPACE}\\reports\\doctest.txt"
+                                }
+                                // bat ""
+                            }
+                            post{
+                                always {
+                                    archiveArtifacts artifacts: "reports/doctest.txt"
+                                    recordIssues(tools: [sphinxBuild(name: 'Doctest', pattern: 'logs/doctest.log', id: 'doctest')])
+
+                                }
+                            }
                         }
-                      }
-                }
-                stage("Flake8") {
-                  when {
-                      equals expected: true, actual: params.TEST_RUN_FLAKE8
-                  }
-                  options{
-                    timeout(2)
-                    lock("${currentBuild.absoluteUrl}")
-                  }
-                  environment {
-                    PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
-                  }
-                  steps{
-                    bat "(if not exist logs mkdir logs) && pip install flake8"
-                    unstash "built_source"
-                    dir("source"){
-                        bat returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
+                        stage("MyPy Static Analysis") {
+                            when {
+                                equals expected: true, actual: params.TEST_RUN_MYPY
+                            }
+                            environment {
+                                PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
+                            }
+                            stages{
+                                stage("Generate stubs") {
+                                    steps{
+                                        dir("source"){
+                                          bat "stubgen -p py3exiv2bind -o ${WORKSPACE}\\mypy_stubs"
+                                        }
+                                    }
+
+                                }
+                                stage("Run MyPy") {
+                                    environment{
+                                        MYPYPATH = "${WORKSPACE}\\mypy_stubs"
+                                    }
+                                    steps{
+                                        bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
+                                        dir("source"){
+                                            bat returnStatus: true, script: "mypy -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
+                                        }
+                                    }
+                                    post {
+                                        always {
+                                            recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
+                                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                        }
+                                    }
+                                }
+                            }
+                            post{
+                                cleanup{
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        patterns: [[pattern: 'mypy_stubs', type: 'INCLUDE']]
+                                    )
+                                }
+                              }
+                        }
+                        stage("Flake8") {
+                          when {
+                              equals expected: true, actual: params.TEST_RUN_FLAKE8
+                          }
+                          options{
+                            timeout(2)
+                            lock("${currentBuild.absoluteUrl}")
+                          }
+                          environment {
+                            PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
+                          }
+                          steps{
+                            bat "(if not exist logs mkdir logs) && pip install flake8"
+                            unstash "built_source"
+                            dir("source"){
+                                bat returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
+                            }
+                          }
+                          post {
+                            always {
+                                recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+                            }
+                            cleanup{
+                                cleanWs patterns: [[pattern: 'logs/flake8.log', type: 'INCLUDE']]
+                            }
+                          }
+                        }
+                        stage("Running Unit Tests"){
+                          when {
+                            equals expected: true, actual: params.TEST_UNIT_TESTS
+                          }
+                          options{
+                            timeout(2)
+                            lock("${currentBuild.absoluteUrl}")
+                          }
+                          steps{
+                            dir("source"){
+                                bat "python -m pipenv run coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=${WORKSPACE}/reports/pytest/${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                            }
+                          }
+                          post{
+                            always{
+                                junit "reports/pytest/${env.junit_filename}"
+                            }
+                          }
+                        }
                     }
-                  }
-                  post {
-                    always {
-                        recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-                    }
-                    cleanup{
-                        cleanWs patterns: [[pattern: 'logs/flake8.log', type: 'INCLUDE']]
-                    }
-                  }
-                }
-                stage("Running Unit Tests"){
-                  when {
-                    equals expected: true, actual: params.TEST_UNIT_TESTS
-                  }
-                  options{
-                    timeout(2)
-                    lock("${currentBuild.absoluteUrl}")
-                  }
-                  steps{
-                    dir("source"){
-                        bat "python -m pipenv run coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=${WORKSPACE}/reports/pytest/${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
-                    }
-                  }
-                  post{
-                    always{
-                        junit "reports/pytest/${env.junit_filename}"
-                    }
-                  }
                 }
             }
             post{
