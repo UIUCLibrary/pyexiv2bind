@@ -345,7 +345,7 @@ pipeline {
                         stage("Generate stubs") {
                             steps{
                                 dir("source"){
-                                  bat "stubgen - py3exiv2bind -o ${WORKSPACE}\\mypy_stubs"
+                                  bat "stubgen -p py3exiv2bind -o ${WORKSPACE}\\mypy_stubs"
                                 }
                             }
 
