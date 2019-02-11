@@ -339,7 +339,7 @@ pipeline {
                             }
                             steps {
                                 dir("source"){
-                                    bat "sphinx-build docs/source ${WORKSPACE}\\build\\docs\\doctest -b doctest -d ${WORKSPACE}\\build\\docs\\.doctrees --no-color -w ${WORKSPACE}\\logs\\doctest_warnings.log"
+                                    bat "sphinx-build docs/source ${WORKSPACE}\\reports\\doctest -b doctest -d ${WORKSPACE}\\build\\docs\\.doctrees --no-color -w ${WORKSPACE}\\logs\\doctest_warnings.log"
 
 //                                    bat "python -m pipenv run build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html -b doctest -w ${WORKSPACE}\\reports\\doctest.txt"
                                 }
@@ -347,7 +347,7 @@ pipeline {
                             }
                             post{
                                 always {
-                                    archiveArtifacts artifacts: "reports/doctest.txt"
+                                    archiveArtifacts artifacts: "reports/doctest/output.txt", allowEmptyArchive: true
                                     recordIssues(tools: [sphinxBuild(name: 'Doctest', pattern: 'logs/doctest_warnings.log', id: 'doctest')])
 
                                 }
