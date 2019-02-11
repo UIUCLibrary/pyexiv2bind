@@ -218,9 +218,10 @@ pipeline {
                     steps {
                         // echo "Building docs on ${env.NODE_NAME}"
                         dir("source"){
-                            lock("system_pipenv_${NODE_NAME}"){
-                                powershell "& python -m pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs | Tee-Object -FilePath ${WORKSPACE}\\logs\\build_sphinx.log"
-                            }
+//                            lock("system_pipenv_${NODE_NAME}"){
+//                                powershell "& python -m pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs | Tee-Object -FilePath ${WORKSPACE}\\logs\\build_sphinx.log"
+                            bat "${WORKSPACE}\\venv\\venv36\\Scripts\\sphinx-build docs/source ${WORKSPACE}/build/docs -b html -d ${WORKSPACE}\\build\\docs\\.doctrees --no-color -w ${WORKSPACE}\\logs\\build_sphinx.log"
+//                            }
                         }
                     }
                     post{
@@ -296,7 +297,7 @@ pipeline {
                                         bat "python -m venv venv\\venv36 && venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet && venv\\venv36\\scripts\\pip.exe install \"tox>=3.7\""
                                     }
                                 }
-                                stage("run tox"){
+                                stage("Running Tox"){
                                     environment {
                                         PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                                         CL = "/MP"
