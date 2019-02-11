@@ -21,11 +21,9 @@ def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUse
 def runTox(){
 
     dir("source"){
-        bat "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv"
         script{
             try{
-
-
+                bat "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv"
             } catch (exc) {
                 bat "tox --recreate --parallel=auto --parallel-live  --workdir ${WORKSPACE}\\.tox -vv"
             }
