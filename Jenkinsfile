@@ -237,6 +237,11 @@ pipeline {
                 junit_filename = "junit-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
             }
             stages{
+                stage("Setting up test env"){
+                    steps{
+                        unstash "built_source"
+                    }
+                }
                 stage("Run tests"){
 
                     parallel {
@@ -393,7 +398,7 @@ pipeline {
                           }
                           steps{
                             bat "(if not exist logs mkdir logs) && pip install flake8"
-                            unstash "built_source"
+
                             dir("source"){
                                 bat returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
                             }
