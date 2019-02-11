@@ -335,14 +335,16 @@ pipeline {
                             }
                             steps {
                                 dir("source"){
-                                    bat "python -m pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html -b doctest -w ${WORKSPACE}\\reports\\doctest.txt"
+                                    bat "sphinx-build docs/source ${WORKSPACE}\\build\\docs\\doctest -b doctest -d ${WORKSPACE}\\build\\docs\\.doctrees -w ${WORKSPACE}\\logs\\doctest_warnings.log"
+
+//                                    bat "python -m pipenv run build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html -b doctest -w ${WORKSPACE}\\reports\\doctest.txt"
                                 }
                                 // bat ""
                             }
                             post{
                                 always {
                                     archiveArtifacts artifacts: "reports/doctest.txt"
-                                    recordIssues(tools: [sphinxBuild(name: 'Doctest', pattern: 'logs/doctest.log', id: 'doctest')])
+                                    recordIssues(tools: [sphinxBuild(name: 'Doctest', pattern: 'logs/doctest_warnings.log', id: 'doctest')])
 
                                 }
                             }
