@@ -126,7 +126,7 @@ pipeline {
                                         bat returnStatus: true, script: "python -m pipenv --rm"
                                     }
 
-                                    deleteDir()
+//                                    deleteDir()
                                 }
                                 cleanup{
                                     cleanWs(patterns: [[pattern: "logs/pippackages_pipenv_*.log", type: 'INCLUDE']])
