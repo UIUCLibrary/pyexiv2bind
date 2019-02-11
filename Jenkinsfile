@@ -256,8 +256,9 @@ pipeline {
                         unstash "built_source"
                     }
                 }
-                stage("Run tests"){
 
+                stage("Running Tests"){
+                    failFast true
                     parallel {
                         stage("Run Tox test") {
                             agent{
@@ -335,7 +336,7 @@ pipeline {
                             }
                             steps {
                                 dir("source"){
-                                    bat "sphinx-build docs/source ${WORKSPACE}\\build\\docs\\doctest -b doctest -d ${WORKSPACE}\\build\\docs\\.doctrees -w ${WORKSPACE}\\logs\\doctest_warnings.log"
+                                    bat "sphinx-build docs/source ${WORKSPACE}\\build\\docs\\doctest -b doctest -d ${WORKSPACE}\\build\\docs\\.doctrees --no-color -w ${WORKSPACE}\\logs\\doctest_warnings.log"
 
 //                                    bat "python -m pipenv run build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html -b doctest -w ${WORKSPACE}\\reports\\doctest.txt"
                                 }
