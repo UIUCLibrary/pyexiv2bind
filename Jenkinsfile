@@ -258,9 +258,7 @@ pipeline {
                 }
 
                 stage("Running Tests"){
-                    environment{
-                        PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;${PATH}"
-                    }
+
                     failFast true
                     parallel {
                         stage("Run Tox test") {
@@ -336,6 +334,9 @@ pipeline {
                         stage("Run Doctest Tests"){
                             when {
                                equals expected: true, actual: params.TEST_RUN_DOCTEST
+                            }
+                            environment{
+                                PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;${PATH}"
                             }
                             steps {
                                 dir("source"){
