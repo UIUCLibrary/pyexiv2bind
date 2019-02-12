@@ -220,7 +220,7 @@ pipeline {
                         dir("source"){
 //                            lock("system_pipenv_${NODE_NAME}"){
 //                                powershell "& python -m pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs | Tee-Object -FilePath ${WORKSPACE}\\logs\\build_sphinx.log"
-                            bat "${WORKSPACE}\\venv\\venv36\\Scripts\\sphinx-build docs/source ${WORKSPACE}/build/docs -b html -d ${WORKSPACE}\\build\\docs\\.doctrees --no-color -w ${WORKSPACE}\\logs\\build_sphinx.log"
+                            bat "${WORKSPACE}\\venv\\venv36\\Scripts\\sphinx-build docs/source ${WORKSPACE}/build/docs/html -b html -d ${WORKSPACE}\\build\\docs\\.doctrees --no-color -w ${WORKSPACE}\\logs\\build_sphinx.log"
 //                            }
                         }
                     }
