@@ -179,17 +179,18 @@ pipeline {
                     post{
                         always{
                             archiveArtifacts artifacts: "logs/build.log"
-                            recordIssues(tools: [
-                                    pyLint(name: 'Setuptools Build: PyLint', pattern: 'logs/build.log'),
-                                    msBuild(name: 'Setuptools Build: MSBuild', pattern: 'logs/build.log')
-                                ]
-                                )
+
 
                         }
                         cleanup{
                             cleanWs(patterns: [[pattern: 'logs/build.log', type: 'INCLUDE']])
                         }
                         success{
+                          recordIssues(tools: [
+                                pyLint(name: 'Setuptools Build: PyLint', pattern: 'logs/build.log'),
+                                msBuild(name: 'Setuptools Build: MSBuild', pattern: 'logs/build.log')
+                            ]
+                            )
                           stash includes: 'build/36/lib/**', name: "${NODE_NAME}_build"
                           stash includes: 'source/py3exiv2bind/**/*.dll,source/py3exiv2bind/**/*.pyd,source/py3exiv2bind/**/*.exe"', name: "built_source"
                         }
@@ -848,10 +849,11 @@ pipeline {
                     [pattern: 'logs', type: 'INCLUDE'],
                     [pattern: 'certs', type: 'INCLUDE'],
                     [pattern: '*tmp', type: 'INCLUDE'],
-                    [pattern: "source/**/*.dll", type: 'INCLUDE'],
-                    [pattern: "source/**/*.pyd", type: 'INCLUDE'],
-                    [pattern: "source/**/*.exe", type: 'INCLUDE'],
-                    [pattern: "source/**/*.exe", type: 'INCLUDE']
+//                    [pattern: "source/**/*.dll", type: 'INCLUDE'],
+//                    [pattern: "source/**/*.pyd", type: 'INCLUDE'],
+//                    [pattern: "source/**/*.exe", type: 'INCLUDE'],
+//                    [pattern: "source/**/*.exe", type: 'INCLUDE']
+                    [pattern: "source", type: 'INCLUDE']
                     ]
                 )
         }
