@@ -94,5 +94,5 @@ if (NOT libexiv2_POPULATED)
 #    include_directories(${libexiv2_BINARY_DIR})
     add_dependencies(exiv2lib zlibstatic)
 endif ()
-add_dependencies(exiv2-xmp expat)
+add_dependencies(exiv2lib expat)
 
