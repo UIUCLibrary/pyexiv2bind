@@ -126,7 +126,7 @@ pipeline {
                                         bat returnStatus: true, script: "python -m pipenv --rm"
                                     }
 
-//                                    deleteDir()
+                                    deleteDir()
                                 }
                                 cleanup{
                                     cleanWs(patterns: [[pattern: "logs/pippackages_pipenv_*.log", type: 'INCLUDE']])
@@ -183,7 +183,7 @@ pipeline {
                     steps {
                         dir("source"){
                             lock("system_pipenv_${NODE_NAME}"){
-                                
+
                                 powershell(
                                     script: "& python -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace | tee ${WORKSPACE}\\logs\\build.log"
                                 )
@@ -844,7 +844,7 @@ pipeline {
                         //         bat "python -m pipenv run python setup.py build_sphinx"
                         //     }
                         // }
-                        
+
                         // dir("build/docs/html/"){
                             script{
                                 try{
@@ -863,10 +863,10 @@ pipeline {
                                                 makeEmptyDirs: false, 
                                                 noDefaultExcludes: false, 
                                                 patternSeparator: '[, ]+', 
-                                                remoteDirectory: "${env.PKG_NAME}", 
+                                                remoteDirectory: "${env.PKG_NAME}",
                                                 remoteDirectorySDF: false, 
-                                                removePrefix: 'build/docs/html', 
-                                                sourceFiles: 'build/docs/html/**')], 
+                                                removePrefix: 'build/docs/html',
+                                                sourceFiles: 'build/docs/html/**')],
                                             usePromotionTimestamp: false, 
                                             useWorkspaceInPromotion: false, 
                                             verbose: true
@@ -896,10 +896,11 @@ pipeline {
                     [pattern: 'logs', type: 'INCLUDE'],
                     [pattern: 'certs', type: 'INCLUDE'],
                     [pattern: '*tmp', type: 'INCLUDE'],
-                    [pattern: "source/**/*.dll", type: 'INCLUDE'],
-                    [pattern: "source/**/*.pyd", type: 'INCLUDE'],
-                    [pattern: "source/**/*.exe", type: 'INCLUDE'],
-                    [pattern: "source/**/*.exe", type: 'INCLUDE']
+//                    [pattern: "source/**/*.dll", type: 'INCLUDE'],
+//                    [pattern: "source/**/*.pyd", type: 'INCLUDE'],
+//                    [pattern: "source/**/*.exe", type: 'INCLUDE'],
+//                    [pattern: "source/**/*.exe", type: 'INCLUDE']
+                    [pattern: "source", type: 'INCLUDE']
                     ]
                 )
         }
