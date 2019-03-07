@@ -524,6 +524,10 @@ pipeline {
                             label "Windows && Python3 && VS2015"
                         }
                     }
+                    options{
+                        retry 2
+                        timeout(10)
+                    }
                     environment {
                         CMAKE_PATH = "${tool 'cmake3.13'}"
                         PATH = "${env.CMAKE_PATH};${tool 'CPython-3.7'};$PATH"
