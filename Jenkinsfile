@@ -3,6 +3,23 @@
 import org.ds.*
 
 @Library(["devpi", "PythonHelpers"]) _
+def test_wheel(pkgRegex, python_version){
+    script{
+
+        bat "python -m venv venv\\${NODE_NAME}\\${python_version} && venv\\${NODE_NAME}\\${python_version}\\Scripts\\python.exe -m pip install pip --upgrade && venv\\${NODE_NAME}\\${python_version}\\Scripts\\pip.exe install tox --upgrade"
+
+        def python_wheel = findFiles glob: "**/${pkgRegex}"
+        dir("source"){
+            python_wheel.each{
+                echo "Testing ${it}"
+                bat "${WORKSPACE}\\venv\\${NODE_NAME}\\${python_version}\\Scripts\\tox.exe --installpkg=${WORKSPACE}\\${it} -e py${python_version}"
+            }
+
+        }
+
+
+    }
+}
 
 
 def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUsername, devpiPassword){
@@ -501,6 +518,24 @@ pipeline {
                             post{
                                success{
                                     stash includes: 'dist/*.whl', name: "whl 3.6"
+                                }
+                            }
+                        }
+                        stage("Testing 3.6 wheel on a computer without Visual Studio"){
+                            agent { label 'Windows && !VS2015' }
+                            environment {
+                                PATH = "${tool 'CPython-3.6'};$PATH"
+                            }
+                            steps{
+
+
+                                unstash "whl 3.6"
+                                test_wheel("*cp36*.whl", "36")
+
+                            }
+                            post{
+                                cleanup{
+                                    deleteDir()
                                 }
                             }
                         }
