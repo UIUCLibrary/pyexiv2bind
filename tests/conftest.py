@@ -41,7 +41,7 @@ def sample_images_readonly(tmpdir_factory):
 
 
 @pytest.fixture
-def sample_images_editable(tmpdir_factory, sample_images_readonly):
+def sample_images(tmpdir_factory, sample_images_readonly):
     new_set = tmpdir_factory.mktemp("sample_set")
 
     for file in os.scandir(sample_images_readonly):
