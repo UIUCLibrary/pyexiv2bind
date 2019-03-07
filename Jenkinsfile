@@ -21,6 +21,40 @@ def test_wheel(pkgRegex, python_version){
     }
 }
 
+                
+def deploy_docs(pkgName, prefix){
+    script{
+        try{
+            timeout(30) {
+                input "Update project documentation to https://www.library.illinois.edu/dccdocs/${pkgName}"
+            }
+            sshPublisher(
+                publishers: [
+                    sshPublisherDesc(
+                        configName: 'apache-ns - lib-dccuser-updater', 
+                        sshLabel: [label: 'Linux'], 
+                        transfers: [sshTransfer(excludes: '', 
+                        execCommand: '', 
+                        execTimeout: 120000, 
+                        flatten: false, 
+                        makeEmptyDirs: false, 
+                        noDefaultExcludes: false, 
+                        patternSeparator: '[, ]+', 
+                        remoteDirectory: "${pkgName}",
+                        remoteDirectorySDF: false, 
+                        removePrefix: "${prefix}",
+                        sourceFiles: "${prefix}/**")],
+                    usePromotionTimestamp: false, 
+                    useWorkspaceInPromotion: false, 
+                    verbose: true
+                    )
+                ]
+            )
+        } catch(exc){
+            echo "User response timed out. Documentation not published."
+        }
+    }
+}
 
 def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUsername, devpiPassword){
     script {
@@ -896,37 +930,38 @@ pipeline {
                         // }
 
                         // dir("build/docs/html/"){
-                            script{
-                                try{
-                                    timeout(30) {
-                                        input "Update project documentation to https://www.library.illinois.edu/dccdocs/${env.PKG_NAME}"
-                                    }
-                                    sshPublisher(
-                                        publishers: [
-                                            sshPublisherDesc(
-                                                configName: 'apache-ns - lib-dccuser-updater', 
-                                                sshLabel: [label: 'Linux'], 
-                                                transfers: [sshTransfer(excludes: '', 
-                                                execCommand: '', 
-                                                execTimeout: 120000, 
-                                                flatten: false, 
-                                                makeEmptyDirs: false, 
-                                                noDefaultExcludes: false, 
-                                                patternSeparator: '[, ]+', 
-                                                remoteDirectory: "${env.PKG_NAME}",
-                                                remoteDirectorySDF: false, 
-                                                removePrefix: 'build/docs/html',
-                                                sourceFiles: 'build/docs/html/**')],
-                                            usePromotionTimestamp: false, 
-                                            useWorkspaceInPromotion: false, 
-                                            verbose: true
-                                            )
-                                        ]
-                                    )
-                                } catch(exc){
-                                    echo "User response timed out. Documentation not published."
-                                }
-                            }
+                        deploy_docs(env.PKG_NAME, "build/docs/html")
+                            // script{
+                            //     try{
+                            //         timeout(30) {
+                            //             input "Update project documentation to https://www.library.illinois.edu/dccdocs/${env.PKG_NAME}"
+                            //         }
+                            //         sshPublisher(
+                            //             publishers: [
+                            //                 sshPublisherDesc(
+                            //                     configName: 'apache-ns - lib-dccuser-updater', 
+                            //                     sshLabel: [label: 'Linux'], 
+                            //                     transfers: [sshTransfer(excludes: '', 
+                            //                     execCommand: '', 
+                            //                     execTimeout: 120000, 
+                            //                     flatten: false, 
+                            //                     makeEmptyDirs: false, 
+                            //                     noDefaultExcludes: false, 
+                            //                     patternSeparator: '[, ]+', 
+                            //                     remoteDirectory: "${env.PKG_NAME}",
+                            //                     remoteDirectorySDF: false, 
+                            //                     removePrefix: 'build/docs/html',
+                            //                     sourceFiles: 'build/docs/html/**')],
+                            //                 usePromotionTimestamp: false, 
+                            //                 useWorkspaceInPromotion: false, 
+                            //                 verbose: true
+                            //                 )
+                            //             ]
+                            //         )
+                            //     } catch(exc){
+                            //         echo "User response timed out. Documentation not published."
+                            //     }
+                            // }
                         // }
                     }
                 }
