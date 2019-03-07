@@ -4,11 +4,10 @@ import tarfile
 
 import pytest
 import urllib.request
-from tempfile import TemporaryDirectory
 
 
-def download_images(url, destination):
-    with TemporaryDirectory() as download_path:
+def download_images(url, destination, download_path):
+
         print("Downloading {}".format(url))
         urllib.request.urlretrieve(url,
                                    filename=os.path.join(download_path, "sample_images.tar.gz"))
@@ -23,20 +22,22 @@ def download_images(url, destination):
 
 
 @pytest.fixture(scope="session")
-def sample_images_readonly(request):
+def sample_images_readonly(tmpdir_factory):
 
     test_path = os.path.dirname(__file__)
     sample_images_path = os.path.join(test_path, "sample_images")
-
+    download_path = tmpdir_factory.mktemp("downloaded_archives")
     if os.path.exists(sample_images_path):
         print("{} already exits".format(sample_images_path))
 
     else:
         print("Downloading sample images")
         download_images(url="https://jenkins.library.illinois.edu/userContent/sample_images.tar.gz",
-                        destination=test_path)
+                        destination=test_path,
+                        download_path=download_path)
 
-    return sample_images_path
+    yield sample_images_path
+    shutil.rmtree(sample_images_path)
 
 
 @pytest.fixture
@@ -46,4 +47,5 @@ def sample_images_editable(tmpdir_factory, sample_images_readonly):
     for file in os.scandir(sample_images_readonly):
         shutil.copyfile(file.path, os.path.join(new_set, file.name))
 
-    return new_set
+    yield new_set
+    shutil.rmtree(new_set)
