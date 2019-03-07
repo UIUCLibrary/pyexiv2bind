@@ -650,6 +650,24 @@ pipeline {
                                 }
                             }
                         }
+                        stage("Testing 3.7 wheel on a computer without Visual Studio"){
+                            agent { label 'Windows && !VS2015' }
+                            environment {
+                                PATH = "${tool 'CPython-3.7'};$PATH"
+                            }
+                            steps{
+
+
+                                unstash "whl 3.7"
+                                test_wheel("*cp37*.whl", "37")
+
+                            }
+                            post{
+                                cleanup{
+                                    deleteDir()
+                                }
+                            }
+                        }
                     }
                 }
             }
