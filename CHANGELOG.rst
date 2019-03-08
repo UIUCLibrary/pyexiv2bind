@@ -3,6 +3,10 @@
 Change Log
 ==========
 
+0.1.4
++++++
+* Package Visual C++ Redistributable for Visual Studio runtime
+
 0.1.3
 +++++
 
