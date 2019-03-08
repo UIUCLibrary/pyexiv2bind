@@ -6,7 +6,10 @@ from setuptools.command.build_ext import build_ext
 import platform
 import subprocess
 import sysconfig
+from ctypes.util import find_library
 # CMAKE = shutil.which("cmake")
+PACKAGE_NAME = "py3exiv2bind"
+
 
 class CMakeExtension(Extension):
     def __init__(self, name, sources=None, language=None):
@@ -21,6 +24,10 @@ class BuildCMakeExt(build_ext):
         ('cmake-exec=', None,
          "Location of CMake. Defaults of CMake located on path")
     ]
+    @property
+    def package_dir(self):
+        build_py = self.get_finalized_command('build_py')
+        return build_py.get_package_dir(PACKAGE_NAME)
 
     def initialize_options(self):
         super().initialize_options()
@@ -64,10 +71,20 @@ class BuildCMakeExt(build_ext):
 
     def run(self):
         for extension in self.extensions:
-            self.configure_cmake(extension)
-            self.build_cmake(extension)
-            self.build_install_cmake(extension)
-            self.bundle_shared_library_deps(extension)
+            self.build_extension(extension)
+
+
+        MSVCP_library = find_library("MSVCP140")
+        if MSVCP_library is not None:
+            self.announce("Including Visual C++ Redistributable for Visual Studio runtime")
+            self.copy_file(MSVCP_library, os.path.join(self.build_lib, self.package_dir))
+        #
+
+    def build_extension(self, ext):
+        self.configure_cmake(ext)
+        self.build_cmake(ext)
+        self.build_install_cmake(ext)
+        self.bundle_shared_library_deps(ext)
 
     def bundle_shared_library_deps(self, extension: Extension):
         print("bundling")
