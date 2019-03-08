@@ -8,8 +8,8 @@ def test_exiv_version():
     assert isinstance(exiv2_version, str)
 
 
-def test_set_dpi_on_jp2(sample_images_editable):
-    test_jp2 = os.path.join(sample_images_editable, "dummy.jp2")
+def test_set_dpi_on_jp2(sample_images):
+    test_jp2 = os.path.join(sample_images, "dummy.jp2")
     sample_image = core.Image(test_jp2)
     assert sample_image.exif['Exif.Image.XResolution'] == "400/1"
     assert sample_image.exif['Exif.Image.YResolution'] == "400/1"
@@ -23,8 +23,8 @@ def test_set_dpi_on_jp2(sample_images_editable):
     assert sample_image2.exif['Exif.Image.ResolutionUnit'] == "2"
 
 
-def test_set_dpi_on_tiff(sample_images_editable):
-    test_jp2 = os.path.join(sample_images_editable, "dummy.tif")
+def test_set_dpi_on_tiff(sample_images):
+    test_jp2 = os.path.join(sample_images, "dummy.tif")
     sample_image = core.Image(test_jp2)
     assert sample_image.exif['Exif.Image.XResolution'] != "400/1"
     assert sample_image.exif['Exif.Image.YResolution'] != "400/1"

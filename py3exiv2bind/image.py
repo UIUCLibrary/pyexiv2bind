@@ -1,6 +1,6 @@
 import os
 
-from . import core  # type: ignore
+from . import core
 from . import icc
 import collections
 import typing
