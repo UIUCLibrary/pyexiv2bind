@@ -24,7 +24,7 @@ def download_images(url, destination, download_path):
 @pytest.fixture(scope="session")
 def sample_images_readonly(tmpdir_factory):
 
-    test_path = os.path.dirname(__file__)
+    test_path = tmpdir_factory.mktemp("data")
     sample_images_path = os.path.join(test_path, "sample_images")
     download_path = tmpdir_factory.mktemp("downloaded_archives")
     if os.path.exists(sample_images_path):
@@ -37,15 +37,17 @@ def sample_images_readonly(tmpdir_factory):
                         download_path=download_path)
 
     yield sample_images_path
-    shutil.rmtree(sample_images_path)
+    shutil.rmtree(test_path)
 
 
 @pytest.fixture
 def sample_images(tmpdir_factory, sample_images_readonly):
     new_set = tmpdir_factory.mktemp("sample_set")
-
+    sample_image_files = []
     for file in os.scandir(sample_images_readonly):
-        shutil.copyfile(file.path, os.path.join(new_set, file.name))
+        sample_image_new = os.path.join(new_set, file.name)
+        shutil.copyfile(file.path, sample_image_new)
+        sample_image_files.append(sample_image_new)
 
     yield new_set
     shutil.rmtree(new_set)
