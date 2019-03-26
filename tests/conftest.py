@@ -24,9 +24,9 @@ def download_images(url, destination, download_path):
 @pytest.fixture(scope="session")
 def sample_images_readonly(tmpdir_factory):
 
-    test_path = tmpdir_factory.mktemp("data")
+    test_path = tmpdir_factory.mktemp("data", numbered=False)
     sample_images_path = os.path.join(test_path, "sample_images")
-    download_path = tmpdir_factory.mktemp("downloaded_archives")
+    download_path = tmpdir_factory.mktemp("downloaded_archives", numbered=False)
     if os.path.exists(sample_images_path):
         print("{} already exits".format(sample_images_path))
 
@@ -42,7 +42,7 @@ def sample_images_readonly(tmpdir_factory):
 
 @pytest.fixture
 def sample_images(tmpdir_factory, sample_images_readonly):
-    new_set = tmpdir_factory.mktemp("sample_set")
+    new_set = tmpdir_factory.mktemp("sample_set", numbered=False)
     sample_image_files = []
     for file in os.scandir(sample_images_readonly):
         sample_image_new = os.path.join(new_set, file.name)

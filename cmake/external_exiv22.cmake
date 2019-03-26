@@ -3,6 +3,28 @@ include(ExternalProject)
 
 set(EXIV2_VERSION_TAG "" CACHE STRING "Git tag of version of exiv2 to build")
 
+function(patch_tiff_resolution root)
+    list(APPEND LINES_TO_BE_REMOVED "{ 0x011a, ifd0Id }, // Exif.Image.XResolution")
+    list(APPEND LINES_TO_BE_REMOVED "{ 0x011b, ifd0Id }, // Exif.Image.YResolution")
+    list(APPEND LINES_TO_BE_REMOVED "{ 0x0128, ifd0Id }, // Exif.Image.ResolutionUnit")
+
+    find_file(
+        tiffimage_int
+        NAMES
+            tiffimage_int.cpp
+        PATHS
+            ${root}/src
+        NO_DEFAULT_PATH
+        NO_CMAKE_PATH
+    )
+    file(READ "${tiffimage_int}" data)
+    foreach(line ${LINES_TO_BE_REMOVED})
+        string(REPLACE "${line}" "" data "${data}")
+    endforeach()
+    file(WRITE  "${libexiv2_BINARY_DIR}/tiffimage_int.cpp" "${data}")
+    execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different "${libexiv2_BINARY_DIR}/tiffimage_int.cpp" "${tiffimage_int}")
+endfunction()
+
 ###########################################################################################
 # Google ZLIB
 ###########################################################################################
@@ -50,29 +72,32 @@ if (NOT expat_POPULATED)
 
     add_subdirectory(${expat_SOURCE_DIR}/expat ${expat_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif ()
-
-if(EXIV2_VERSION_TAG)
-    FetchContent_Declare(
-            libexiv2
-            GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
-            GIT_TAG ${EXIV2_VERSION_TAG}
-            PATCH_COMMAND
-                COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/tiff_resolution_path.patch
-    )
-else()
-    message(STATUS "Using version 0.27")
-    FetchContent_Declare(
-            libexiv2
-            GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
-            GIT_TAG "0.27"
-            PATCH_COMMAND
-                COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/tiff_resolution_path.patch
-    )
-endif()
+FetchContent_Declare(
+        libexiv2
+        URL https://github.com/Exiv2/exiv2/archive/0.27.tar.gz
+#            GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
+#            GIT_TAG ${EXIV2_VERSION_TAG}
+#        PATCH_COMMAND
+#            COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/tiff_resolution_path.patch
+)
+#if(EXIV2_VERSION_TAG)
+#
+#else()
+#    message(STATUS "Using version 0.27")
+#    FetchContent_Declare(
+#            libexiv2
+#            GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
+#            GIT_TAG "0.27"
+#            PATCH_COMMAND
+#                COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/tiff_resolution_path.patch
+#    )
+#endif()
 
 FetchContent_GetProperties(libexiv2)
 if (NOT libexiv2_POPULATED)
     FetchContent_Populate(libexiv2)
+    patch_tiff_resolution("${libexiv2_SOURCE_DIR}")
+
     option(BUILD_SHARED_LIBS "" OFF)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
     set(EXIV2_BUILD_SAMPLES OFF CACHE BOOL "")
