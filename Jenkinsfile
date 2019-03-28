@@ -83,18 +83,22 @@ def deploy_devpi_production(DEVPI, PKG_NAME, PKG_VERSION, BRANCH_NAME, USR, PSW)
     }
 
 }
-def runTox(){
 
-    dir("source"){
-        script{
-            try{
-                bat "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv"
-            } catch (exc) {
-                bat "tox --recreate --parallel=auto --parallel-live  --workdir ${WORKSPACE}\\.tox -vv"
-            }
+def runTox(){
+    script{
+        try{
+            bat  (
+                label: "Run Tox",
+                script: "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --result-json=${WORKSPACE}\\logs\\tox_report.json"
+            )
+
+        } catch (exc) {
+            bat (
+                label: "Run Tox with new environments",
+                script: "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox --recreate -vv --result-json=${WORKSPACE}\\logs\\tox_report.json"
+            )
         }
     }
-
 }
 
 pipeline {
@@ -359,7 +363,7 @@ pipeline {
                                         PATH = "${tool 'CPython-3.6'};$PATH"
                                     }
                                     steps{
-                                        bat "python -m venv venv\\venv36 && venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet && venv\\venv36\\scripts\\pip.exe install tox --upgrade"
+                                        bat 'python -m venv venv\\venv36 && venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet && venv\\venv36\\scripts\\pip.exe install "tox<3.8" --upgrade'
                                     }
                                 }
                                 stage("Running Tox"){
@@ -371,13 +375,18 @@ pipeline {
                                         timeout(15)
                                     }
                                     steps {
-                                        runTox()
+                                        dir("source"){
+                                            runtox()
+                                        }
 
                                     }
                                 }
                             }
 
                             post {
+                                always{
+                                    archiveArtifacts allowEmptyArchive: true, artifacts: '.tox/py*/log/*.log,.tox/log/*.log,logs/tox_report.json'
+                                }
                                 failure {
                                     dir("${WORKSPACE}\\.tox"){
                                         deleteDir()
