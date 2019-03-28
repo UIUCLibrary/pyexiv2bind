@@ -376,7 +376,7 @@ pipeline {
                                     }
                                     steps {
                                         dir("source"){
-                                            runtox()
+                                            runTox()
                                         }
 
                                     }
