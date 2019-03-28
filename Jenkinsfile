@@ -87,6 +87,7 @@ def deploy_devpi_production(DEVPI, PKG_NAME, PKG_VERSION, BRANCH_NAME, USR, PSW)
 def runTox(){
     script{
         try{
+            bat "if not exist ${WORKSPACE}\\logs mkdir ${WORKSPACE}\\logs"
             bat  (
                 label: "Run Tox",
                 script: "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --result-json=${WORKSPACE}\\logs\\tox_report.json"
