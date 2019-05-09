@@ -49,7 +49,7 @@ def build_ICC_friendly_names(icc_data: ICC_data, lookup_table=None,
     return new_icc
 
 
-def build_ICC_empty_data(raw_data)->ICC_data:
+def build_ICC_empty_data(raw_data) -> ICC_data:
     new_value = ICC_data()
     new_value.raw_data = raw_data
     return new_value
