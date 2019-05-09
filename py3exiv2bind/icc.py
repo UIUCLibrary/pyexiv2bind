@@ -19,7 +19,7 @@ class ICC_data:
             return str(self.raw_data)
 
 
-def build_ICC_data(value: bytes, lookup_table: dict=None,
+def build_ICC_data(value: bytes, lookup_table: dict = None,
                    restrict=False) -> ICC_data:
 
     new_value = ICC_data()
