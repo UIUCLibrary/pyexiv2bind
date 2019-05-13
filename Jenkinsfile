@@ -21,7 +21,16 @@ def test_wheel(pkgRegex, python_version){
     }
 }
 
-                
+def rebuild_workspace(sourceDir){
+    script{
+        deleteDir()
+        dir("${sourceDir}"){
+            checkout scm
+            bat "dir"
+        }
+
+    }
+}
 def deploy_docs(pkgName, prefix){
     script{
         try{
@@ -157,10 +166,11 @@ pipeline {
                                 }
                             }
                             steps{
-                                deleteDir()
-                                dir("source"){
-                                    checkout scm
-                                }
+                                rebuild_workspace("source")
+//                                deleteDir()
+//                                dir("source"){
+//                                    checkout scm
+//                                }
                             }
                         }
                         stage("Installing required system level dependencies"){
