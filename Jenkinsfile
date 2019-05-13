@@ -87,6 +87,7 @@ def deploy_devpi_production(DEVPI, PKG_NAME, PKG_VERSION, BRANCH_NAME, USR, PSW)
 def runTox(){
     script{
         try{
+            bat "where python"
             bat "if not exist ${WORKSPACE}\\logs mkdir ${WORKSPACE}\\logs"
             bat  (
                 label: "Run Tox",
