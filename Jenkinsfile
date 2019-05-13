@@ -84,20 +84,20 @@ def deploy_devpi_production(DEVPI, PKG_NAME, PKG_VERSION, BRANCH_NAME, USR, PSW)
 
 }
 
-def runTox(){
+def runTox(tox_exec){
     script{
         try{
             bat "where python"
             bat "if not exist ${WORKSPACE}\\logs mkdir ${WORKSPACE}\\logs"
             bat  (
                 label: "Run Tox",
-                script: "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --result-json=${WORKSPACE}\\logs\\tox_report.json"
+                script: "${tox_exec} --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --result-json=${WORKSPACE}\\logs\\tox_report.json"
             )
 
         } catch (exc) {
             bat (
                 label: "Run Tox with new environments",
-                script: "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox --recreate -vv --result-json=${WORKSPACE}\\logs\\tox_report.json"
+                script: "${tox_exec} --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox --recreate -vv --result-json=${WORKSPACE}\\logs\\tox_report.json"
             )
         }
     }
@@ -378,7 +378,7 @@ pipeline {
                                     }
                                     steps {
                                         dir("source"){
-                                            runTox()
+                                            runTox("${WORKSPACE}\\venv\\venv36\\Scripts\\tox.exe")
                                         }
 
                                     }
