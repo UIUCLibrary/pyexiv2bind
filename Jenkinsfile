@@ -202,13 +202,6 @@ pipeline {
                                 always{
                                     archiveArtifacts artifacts: "logs/pippackages_pipenv_*.log"
                                 }
-                                failure {
-                                    dir("source"){
-                                        bat returnStatus: true, script: "python -m pipenv --rm"
-                                    }
-
-                                    deleteDir()
-                                }
                                 cleanup{
                                     cleanWs(patterns: [[pattern: "logs/pippackages_pipenv_*.log", type: 'INCLUDE']])
                                 }
@@ -233,9 +226,7 @@ pipeline {
                                     archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
                                     cleanWs patterns: [[pattern: "logs/pippackages_venv_*.log", type: 'INCLUDE']]
                                 }
-                                failure {
-                                    cleanWs deleteDirs: true, patterns: [[pattern: 'venv\\venv36', type: 'INCLUDE']]
-                                }
+
                             }
                         }
                     }
@@ -244,6 +235,13 @@ pipeline {
             post{
                 success{
                     echo "Configured ${env.PKG_NAME}, version ${env.PKG_VERSION}, for testing."
+                }
+                failure {
+                    dir("source"){
+                        bat returnStatus: true, script: "python -m pipenv --rm"
+                    }
+
+                    deleteDir()
                 }
 
             }
