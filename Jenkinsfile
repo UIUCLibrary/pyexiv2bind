@@ -158,7 +158,7 @@ pipeline {
             parallel{
                 stage("Setting up Workspace"){
                     stages{
-                        stage("Purge all existing data in workspace"){
+                        stage("Purge all Existing Data in Workspace"){
                             when{
                                 anyOf{
                                     equals expected: true, actual: params.FRESH_WORKSPACE
@@ -173,7 +173,7 @@ pipeline {
 //                                }
                             }
                         }
-                        stage("Installing required system level dependencies"){
+                        stage("Installing Required System Level Dependencies"){
                             steps{
                                 lock("system_python_${NODE_NAME}"){
                                     bat "python -m pip install --upgrade pip --quiet"
@@ -207,7 +207,7 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Creating virtualenv for building"){
+                        stage("Creating Virtualenv for Building"){
                             steps{
                                 bat "python -m venv venv\\venv36"
                                 script {
@@ -271,7 +271,6 @@ pipeline {
                     }
                     post{
                         always{
-                            // archiveArtifacts artifacts: "logs/build.log"
                             recordIssues(tools: [
                                     pyLint(name: 'Setuptools Build: PyLint', pattern: 'logs/build.log'),
                                     msBuild(name: 'Setuptools Build: MSBuild', pattern: 'logs/build.log')
@@ -283,13 +282,8 @@ pipeline {
                             cleanWs(patterns: [[pattern: 'logs/build.log', type: 'INCLUDE']])
                         }
                         success{
-                        //   stash includes: 'build/36/lib/**', name: "${NODE_NAME}_build"
                           stash includes: 'source/py3exiv2bind/**/*.dll,source/py3exiv2bind/**/*.pyd,source/py3exiv2bind/**/*.exe"', name: "built_source"
                         }
-                        // failure{
-                        //     archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
-
-                        // }
                     }
                     
                 }     
@@ -331,7 +325,7 @@ pipeline {
                 junit_filename = "junit-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
             }
             stages{
-                stage("Setting up test env"){
+                stage("Setting up Test Env"){
                     steps{
                         unstash "built_source"
                     }
@@ -354,7 +348,7 @@ pipeline {
 
 
                             stages{
-                                stage("Purge all existing data in Node"){
+                                stage("Purge all Existing Data in Node"){
                                     when{
                                         anyOf{
                                             equals expected: true, actual: params.FRESH_WORKSPACE
@@ -571,7 +565,7 @@ pipeline {
                                 bat "python -m venv venv\\venv36 && venv\\venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv36\\Scripts\\pip.exe install wheel setuptools --upgrade"
                             }
                         }
-                        stage("Creating bdist wheel for 3.6"){
+                        stage("Creating bdist Wheel for 3.6"){
                             environment {
                                 PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'CPython-3.6'};$PATH"
                             }
@@ -586,7 +580,7 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Testing 3.6 wheel on a computer without Visual Studio"){
+                        stage("Testing 3.6 Wheel on a Computer Without Visual Studio"){
                             agent { label 'Windows && !VS2015' }
                             environment {
                                 PATH = "${tool 'CPython-3.6'};$PATH"
@@ -634,13 +628,13 @@ pipeline {
                         CL = "/MP"
                     }
                     stages{
-                        stage("create venv for 3.7"){
+                        stage("Create venv for 3.7"){
                             steps {
                                 bat "python -m venv venv\\venv37 && venv\\venv37\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv37\\Scripts\\pip.exe install wheel setuptools --upgrade"
                             }
                         }
                     
-                        stage("Creating bdist wheel for 3.7"){
+                        stage("Creating bdist Wheel for 3.7"){
                             environment {
                                 PATH = "${WORKSPACE}\\venv\\venv37\\scripts;${tool 'CPython-3.6'};$PATH"
                             }
@@ -667,7 +661,7 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Testing 3.7 wheel on a computer without Visual Studio"){
+                        stage("Testing 3.7 Wheel on a Computer Without Visual Studio"){
                             agent { label 'Windows && !VS2015' }
                             environment {
                                 PATH = "${tool 'CPython-3.7'};$PATH"
@@ -724,7 +718,7 @@ pipeline {
                         bat "pip install devpi-client && devpi use https://devpi.library.illinois.edu && devpi login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && devpi upload --from-dir dist"
                     }
                 }
-                stage("Test DevPi packages") {
+                stage("Test DevPi Packages") {
                     options{
                         timestamps()
                     }
@@ -743,14 +737,14 @@ pipeline {
 
                             }
                             stages{
-                                stage("Creating venv to test sdist"){
+                                stage("Creating venv to Test Sdist"){
                                         steps {
 //                                            lock("system_python_${NODE_NAME}"){
                                             bat "python -m venv venv\\venv36 && venv\\venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv36\\Scripts\\pip.exe install setuptools --upgrade && venv\\venv36\\Scripts\\pip.exe install \"tox<3.7\" detox devpi-client"
                                         }
 
                                 }
-                                stage("Testing DevPi zip Package"){
+                                stage("Testing DevPi Zip Package"){
 
                                     environment {
                                         PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
