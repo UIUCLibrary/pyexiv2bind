@@ -191,6 +191,7 @@ pipeline {
                         stage("Installing Pipfile"){
                             options{
                                 timeout(5)
+                                retry 2
                             }
                             steps {
                                 dir("source"){
