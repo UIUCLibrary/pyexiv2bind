@@ -581,8 +581,8 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Testing 3.6 Wheel on a Computer Without Visual Studio"){
-                            agent { label 'Windows && !VS2015' }
+                        stage("Testing 3.6 Wheel"){
+                            agent { label 'Windows && Python3' }
                             environment {
                                 PATH = "${tool 'CPython-3.6'};$PATH"
                             }
@@ -662,8 +662,8 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Testing 3.7 Wheel on a Computer Without Visual Studio"){
-                            agent { label 'Windows && !VS2015' }
+                        stage("Testing 3.7 Wheel"){
+                            agent { label 'Windows && Python3' }
                             environment {
                                 PATH = "${tool 'CPython-3.7'};$PATH"
                             }
