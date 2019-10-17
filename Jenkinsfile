@@ -170,7 +170,7 @@ pipeline {
 
                         stage("Getting Distribution Info"){
                             environment{
-                                PATH = "${tool 'CPython-3.7'};$PATH"
+                                PATH = "${tool 'CPython-3.7'};${tool 'cmake3.13'};$PATH"
                             }
                             steps{
                                 dir("source"){
