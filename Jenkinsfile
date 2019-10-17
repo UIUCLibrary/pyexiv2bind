@@ -182,10 +182,6 @@ pipeline {
                             }
                             steps{
                                 rebuild_workspace("source")
-//                                deleteDir()
-//                                dir("source"){
-//                                    checkout scm
-//                                }
                             }
                         }
 
@@ -453,10 +449,7 @@ pipeline {
                             steps {
                                 dir("source"){
                                     bat "sphinx-build docs/source ${WORKSPACE}\\reports\\doctest -b doctest -d ${WORKSPACE}\\build\\docs\\.doctrees --no-color -w ${WORKSPACE}\\logs\\doctest_warnings.log"
-
-//                                    bat "python -m pipenv run build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html -b doctest -w ${WORKSPACE}\\reports\\doctest.txt"
                                 }
-                                // bat ""
                             }
                             post{
                                 always {
@@ -765,7 +758,6 @@ pipeline {
                             stages{
                                 stage("Creating venv to Test Sdist"){
                                         steps {
-//                                            lock("system_python_${NODE_NAME}"){
                                             bat "python -m venv venv\\venv36 && venv\\venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv36\\Scripts\\pip.exe install setuptools --upgrade && venv\\venv36\\Scripts\\pip.exe install \"tox<3.7\" detox devpi-client"
                                         }
 
@@ -824,8 +816,7 @@ pipeline {
                                         PATH = "${tool 'CPython-3.6'};$PATH"
                                     }
                                     steps {
-                                        // lock("system_python_${NODE_NAME}"){
-                                            bat "(if not exist venv\\36 mkdir venv\\36) && python -m venv venv\\36 && venv\\36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\36\\Scripts\\pip.exe install setuptools --upgrade && venv\\36\\Scripts\\pip.exe install \"tox<3.7\" devpi-client"
+                                        bat "(if not exist venv\\36 mkdir venv\\36) && python -m venv venv\\36 && venv\\36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\36\\Scripts\\pip.exe install setuptools --upgrade && venv\\36\\Scripts\\pip.exe install \"tox<3.7\" devpi-client"
                                     }
 
                                 }
@@ -855,7 +846,6 @@ pipeline {
                             }
                             post {
                                 failure {
-                                    // archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
                                     deleteDir()
                                 }
                                 cleanup{
@@ -887,7 +877,6 @@ pipeline {
                                     }
                                     steps {
                                         lock("system_python_${NODE_NAME}"){
-//                                            bat "if not exist venv\\37 mkdir venv\\37"
                                             bat "python -m venv venv\\37"
                                         }
                                         bat "venv\\37\\Scripts\\python.exe -m pip install pip --upgrade && venv\\37\\Scripts\\pip.exe install setuptools --upgrade && venv\\37\\Scripts\\pip.exe install \"tox<3.7\" devpi-client"
@@ -920,7 +909,6 @@ pipeline {
                             }
                             post {
                                 failure {
-                                    // archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
                                     deleteDir()
                                 }
                                 cleanup{
@@ -946,22 +934,11 @@ pipeline {
                         }
                         steps {
                             deploy_devpi_production("venv\\venv36\\Scripts\\devpi.exe", env.PKG_NAME, env.PKG_VERSION, env.BRANCH_NAME, env.DEVPI_USR, env.DEVPI_PSW)
-                            // script {
-                            //     try{
-                            //         timeout(30) {
-                            //             input "Release ${env.PKG_NAME} ${env.PKG_VERSION} (https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging/${env.PKG_NAME}/${env.PKG_VERSION}) to DevPi Production? "
-                            //         }
-                            //         bat "venv\\venv36\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && venv\\venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging && venv\\venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} production/release"
-                            //     } catch(err){
-                            //         echo "User response timed out. Packages not deployed to DevPi Production."
-                            //     }
-                            // }
                         }
                 }
             }
             post {
                 success {
-                    // echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
                     bat "venv\\venv36\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && venv\\venv36\\Scripts\\devpi.exe use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && venv\\venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} ${env.DEVPI_USR}/${env.BRANCH_NAME}"
 
                 }
@@ -981,46 +958,7 @@ pipeline {
                     }
                     steps{
                         unstash "DOCS_ARCHIVE"
-                        // script {
-                        //     if(!params.BUILD_DOCS){
-                        //         bat "python -m pipenv run python setup.py build_sphinx"
-                        //     }
-                        // }
-
-                        // dir("build/docs/html/"){
                         deploy_docs(env.PKG_NAME, "build/docs/html")
-                            // script{
-                            //     try{
-                            //         timeout(30) {
-                            //             input "Update project documentation to https://www.library.illinois.edu/dccdocs/${env.PKG_NAME}"
-                            //         }
-                            //         sshPublisher(
-                            //             publishers: [
-                            //                 sshPublisherDesc(
-                            //                     configName: 'apache-ns - lib-dccuser-updater', 
-                            //                     sshLabel: [label: 'Linux'], 
-                            //                     transfers: [sshTransfer(excludes: '', 
-                            //                     execCommand: '', 
-                            //                     execTimeout: 120000, 
-                            //                     flatten: false, 
-                            //                     makeEmptyDirs: false, 
-                            //                     noDefaultExcludes: false, 
-                            //                     patternSeparator: '[, ]+', 
-                            //                     remoteDirectory: "${env.PKG_NAME}",
-                            //                     remoteDirectorySDF: false, 
-                            //                     removePrefix: 'build/docs/html',
-                            //                     sourceFiles: 'build/docs/html/**')],
-                            //                 usePromotionTimestamp: false, 
-                            //                 useWorkspaceInPromotion: false, 
-                            //                 verbose: true
-                            //                 )
-                            //             ]
-                            //         )
-                            //     } catch(exc){
-                            //         echo "User response timed out. Documentation not published."
-                            //     }
-                            // }
-                        // }
                     }
                 }
 
