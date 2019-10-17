@@ -139,11 +139,6 @@ pipeline {
     }
     parameters {
         booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
-        booleanParam(name: "BUILD_DOCS", defaultValue: true, description: "Build documentation")
-        booleanParam(name: "TEST_UNIT_TESTS", defaultValue: true, description: "Run automated unit tests")
-        booleanParam(name: "TEST_RUN_DOCTEST", defaultValue: true, description: "Test documentation")
-        booleanParam(name: "TEST_RUN_FLAKE8", defaultValue: true, description: "Run Flake8 static analysis")
-        booleanParam(name: "TEST_RUN_MYPY", defaultValue: true, description: "Run MyPy static analysis")
         booleanParam(name: "TEST_RUN_TOX", defaultValue: true, description: "Run Tox Tests")
         
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
@@ -433,9 +428,6 @@ pipeline {
                             }
                         }
                         stage("Run Doctest Tests"){
-                            when {
-                               equals expected: true, actual: params.TEST_RUN_DOCTEST
-                            }
                             environment{
                                 PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;${PATH}"
                             }
@@ -456,9 +448,6 @@ pipeline {
                             }
                         }
                         stage("MyPy Static Analysis") {
-                            when {
-                                equals expected: true, actual: params.TEST_RUN_MYPY
-                            }
                             environment {
                                 PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
                             }
@@ -499,9 +488,6 @@ pipeline {
                               }
                         }
                         stage("Flake8") {
-                          when {
-                              equals expected: true, actual: params.TEST_RUN_FLAKE8
-                          }
                           options{
                             timeout(2)
                           }
@@ -525,9 +511,6 @@ pipeline {
                           }
                         }
                         stage("Running Unit Tests"){
-                          when {
-                            equals expected: true, actual: params.TEST_UNIT_TESTS
-                          }
                           options{
                             timeout(2)
                           }
