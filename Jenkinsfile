@@ -21,6 +21,29 @@ def test_wheel(pkgRegex, python_version){
     }
 }
 
+def get_package_version(stashName, metadataFile){
+    ws {
+        unstash "${stashName}"
+        script{
+            def props = readProperties interpolate: true, file: "${metadataFile}"
+            deleteDir()
+            return props.Version
+        }
+    }
+}
+
+def get_package_name(stashName, metadataFile){
+    ws {
+        unstash "${stashName}"
+        script{
+            def props = readProperties interpolate: true, file: "${metadataFile}"
+            deleteDir()
+            return props.Name
+        }
+    }
+}
+
+
 def rebuild_workspace(sourceDir){
     script{
         deleteDir()
@@ -129,9 +152,6 @@ pipeline {
     }
     environment {
         PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-        PKG_NAME = pythonPackageName(toolName: "CPython-3.6")
-        PKG_VERSION = pythonPackageVersion(toolName: "CPython-3.6")
-        DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
         DEVPI = credentials("DS_devpi")
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
         PIPENV_CACHE_DIR="${WORKSPACE}\\..\\.virtualenvs\\cache\\"
@@ -140,11 +160,6 @@ pipeline {
     }
     parameters {
         booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
-        booleanParam(name: "BUILD_DOCS", defaultValue: true, description: "Build documentation")
-        booleanParam(name: "TEST_UNIT_TESTS", defaultValue: true, description: "Run automated unit tests")
-        booleanParam(name: "TEST_RUN_DOCTEST", defaultValue: true, description: "Test documentation")
-        booleanParam(name: "TEST_RUN_FLAKE8", defaultValue: true, description: "Run Flake8 static analysis")
-        booleanParam(name: "TEST_RUN_MYPY", defaultValue: true, description: "Run MyPy static analysis")
         booleanParam(name: "TEST_RUN_TOX", defaultValue: true, description: "Run Tox Tests")
         
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
@@ -167,10 +182,25 @@ pipeline {
                             }
                             steps{
                                 rebuild_workspace("source")
-//                                deleteDir()
-//                                dir("source"){
-//                                    checkout scm
-//                                }
+                            }
+                        }
+
+                        stage("Getting Distribution Info"){
+                            environment{
+                                PATH = "${tool 'CPython-3.7'};${tool 'cmake3.13'};$PATH"
+                            }
+                            steps{
+                                dir("source"){
+                                    bat "python setup.py dist_info"
+                                }
+                            }
+                            post{
+                                success{
+                                    dir("source"){
+                                        stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
+                                        archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
+                                    }
+                                }
                             }
                         }
                         stage("Installing Required System Level Dependencies"){
@@ -234,9 +264,6 @@ pipeline {
                 }
             }
             post{
-                success{
-                    echo "Configured ${env.PKG_NAME}, version ${env.PKG_VERSION}, for testing."
-                }
                 failure {
                     dir("source"){
                         bat returnStatus: true, script: "python -m pipenv --rm"
@@ -289,13 +316,17 @@ pipeline {
                     
                 }     
                 stage("Building Sphinx Documentation"){
+                    environment{
+                        PKG_NAME = get_package_name("DIST-INFO", "py3exiv2bind.dist-info/METADATA")
+                        PKG_VERSION = get_package_version("DIST-INFO", "py3exiv2bind.dist-info/METADATA")
+                    }
                     steps {
-                        // echo "Building docs on ${env.NODE_NAME}"
                         dir("source"){
-//                            lock("system_pipenv_${NODE_NAME}"){
-//                                powershell "& python -m pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs | Tee-Object -FilePath ${WORKSPACE}\\logs\\build_sphinx.log"
-                            bat "${WORKSPACE}\\venv\\venv36\\Scripts\\sphinx-build docs/source ${WORKSPACE}/build/docs/html -b html -d ${WORKSPACE}\\build\\docs\\.doctrees --no-color -w ${WORKSPACE}\\logs\\build_sphinx.log"
-//                            }
+                            script{
+                                def DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
+                                bat "${WORKSPACE}\\venv\\venv36\\Scripts\\sphinx-build docs/source ${WORKSPACE}/build/docs/html -b html -d ${WORKSPACE}\\build\\docs\\.doctrees --no-color -w ${WORKSPACE}\\logs\\build_sphinx.log"
+                                zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                            }
                         }
                     }
                     post{
@@ -305,14 +336,14 @@ pipeline {
                         }
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${env.DOC_ZIP_FILENAME}"
-                            stash includes: "dist/${env.DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
+
+                            stash includes: "dist/*doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
 
                         }
                         cleanup{
                             cleanWs(patterns: [
                                     [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
-                                    [pattern: "dist/${env.DOC_ZIP_FILENAME}", type: 'INCLUDE']
+                                    [pattern: "dist/*doc.zip,", type: 'INCLUDE']
                                 ]
                             )
                         }
@@ -412,19 +443,13 @@ pipeline {
                             }
                         }
                         stage("Run Doctest Tests"){
-                            when {
-                               equals expected: true, actual: params.TEST_RUN_DOCTEST
-                            }
                             environment{
                                 PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;${PATH}"
                             }
                             steps {
                                 dir("source"){
                                     bat "sphinx-build docs/source ${WORKSPACE}\\reports\\doctest -b doctest -d ${WORKSPACE}\\build\\docs\\.doctrees --no-color -w ${WORKSPACE}\\logs\\doctest_warnings.log"
-
-//                                    bat "python -m pipenv run build_sphinx --build-dir ${WORKSPACE}\\build\\docs\\html -b doctest -w ${WORKSPACE}\\reports\\doctest.txt"
                                 }
-                                // bat ""
                             }
                             post{
                                 always {
@@ -435,9 +460,6 @@ pipeline {
                             }
                         }
                         stage("MyPy Static Analysis") {
-                            when {
-                                equals expected: true, actual: params.TEST_RUN_MYPY
-                            }
                             environment {
                                 PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
                             }
@@ -478,9 +500,6 @@ pipeline {
                               }
                         }
                         stage("Flake8") {
-                          when {
-                              equals expected: true, actual: params.TEST_RUN_FLAKE8
-                          }
                           options{
                             timeout(2)
                           }
@@ -504,9 +523,6 @@ pipeline {
                           }
                         }
                         stage("Running Unit Tests"){
-                          when {
-                            equals expected: true, actual: params.TEST_UNIT_TESTS
-                          }
                           options{
                             timeout(2)
                           }
@@ -708,6 +724,8 @@ pipeline {
 
             environment{
                 PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
+                PKG_NAME = get_package_name("DIST-INFO", "py3exiv2bind.dist-info/METADATA")
+                PKG_VERSION = get_package_version("DIST-INFO", "py3exiv2bind.dist-info/METADATA")
             }
             stages{
                 stage("Upload to DevPi Staging"){
@@ -740,7 +758,6 @@ pipeline {
                             stages{
                                 stage("Creating venv to Test Sdist"){
                                         steps {
-//                                            lock("system_python_${NODE_NAME}"){
                                             bat "python -m venv venv\\venv36 && venv\\venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv36\\Scripts\\pip.exe install setuptools --upgrade && venv\\venv36\\Scripts\\pip.exe install \"tox<3.7\" detox devpi-client"
                                         }
 
@@ -799,8 +816,7 @@ pipeline {
                                         PATH = "${tool 'CPython-3.6'};$PATH"
                                     }
                                     steps {
-                                        // lock("system_python_${NODE_NAME}"){
-                                            bat "(if not exist venv\\36 mkdir venv\\36) && python -m venv venv\\36 && venv\\36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\36\\Scripts\\pip.exe install setuptools --upgrade && venv\\36\\Scripts\\pip.exe install \"tox<3.7\" devpi-client"
+                                        bat "(if not exist venv\\36 mkdir venv\\36) && python -m venv venv\\36 && venv\\36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\36\\Scripts\\pip.exe install setuptools --upgrade && venv\\36\\Scripts\\pip.exe install \"tox<3.7\" devpi-client"
                                     }
 
                                 }
@@ -830,7 +846,6 @@ pipeline {
                             }
                             post {
                                 failure {
-                                    // archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
                                     deleteDir()
                                 }
                                 cleanup{
@@ -862,7 +877,6 @@ pipeline {
                                     }
                                     steps {
                                         lock("system_python_${NODE_NAME}"){
-//                                            bat "if not exist venv\\37 mkdir venv\\37"
                                             bat "python -m venv venv\\37"
                                         }
                                         bat "venv\\37\\Scripts\\python.exe -m pip install pip --upgrade && venv\\37\\Scripts\\pip.exe install setuptools --upgrade && venv\\37\\Scripts\\pip.exe install \"tox<3.7\" devpi-client"
@@ -895,7 +909,6 @@ pipeline {
                             }
                             post {
                                 failure {
-                                    // archiveArtifacts allowEmptyArchive: true, artifacts: "**/MSBuild_*.failure.txt"
                                     deleteDir()
                                 }
                                 cleanup{
@@ -921,22 +934,11 @@ pipeline {
                         }
                         steps {
                             deploy_devpi_production("venv\\venv36\\Scripts\\devpi.exe", env.PKG_NAME, env.PKG_VERSION, env.BRANCH_NAME, env.DEVPI_USR, env.DEVPI_PSW)
-                            // script {
-                            //     try{
-                            //         timeout(30) {
-                            //             input "Release ${env.PKG_NAME} ${env.PKG_VERSION} (https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging/${env.PKG_NAME}/${env.PKG_VERSION}) to DevPi Production? "
-                            //         }
-                            //         bat "venv\\venv36\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && venv\\venv36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging && venv\\venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} production/release"
-                            //     } catch(err){
-                            //         echo "User response timed out. Packages not deployed to DevPi Production."
-                            //     }
-                            // }
                         }
                 }
             }
             post {
                 success {
-                    // echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
                     bat "venv\\venv36\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && venv\\venv36\\Scripts\\devpi.exe use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && venv\\venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} ${env.DEVPI_USR}/${env.BRANCH_NAME}"
 
                 }
@@ -951,48 +953,12 @@ pipeline {
                     when{
                         equals expected: true, actual: params.DEPLOY_DOCS
                     }
+                    environment{
+                        PKG_NAME = get_package_name("DIST-INFO", "py3exiv2bind.dist-info/METADATA")
+                    }
                     steps{
                         unstash "DOCS_ARCHIVE"
-                        // script {
-                        //     if(!params.BUILD_DOCS){
-                        //         bat "python -m pipenv run python setup.py build_sphinx"
-                        //     }
-                        // }
-
-                        // dir("build/docs/html/"){
                         deploy_docs(env.PKG_NAME, "build/docs/html")
-                            // script{
-                            //     try{
-                            //         timeout(30) {
-                            //             input "Update project documentation to https://www.library.illinois.edu/dccdocs/${env.PKG_NAME}"
-                            //         }
-                            //         sshPublisher(
-                            //             publishers: [
-                            //                 sshPublisherDesc(
-                            //                     configName: 'apache-ns - lib-dccuser-updater', 
-                            //                     sshLabel: [label: 'Linux'], 
-                            //                     transfers: [sshTransfer(excludes: '', 
-                            //                     execCommand: '', 
-                            //                     execTimeout: 120000, 
-                            //                     flatten: false, 
-                            //                     makeEmptyDirs: false, 
-                            //                     noDefaultExcludes: false, 
-                            //                     patternSeparator: '[, ]+', 
-                            //                     remoteDirectory: "${env.PKG_NAME}",
-                            //                     remoteDirectorySDF: false, 
-                            //                     removePrefix: 'build/docs/html',
-                            //                     sourceFiles: 'build/docs/html/**')],
-                            //                 usePromotionTimestamp: false, 
-                            //                 useWorkspaceInPromotion: false, 
-                            //                 verbose: true
-                            //                 )
-                            //             ]
-                            //         )
-                            //     } catch(exc){
-                            //         echo "User response timed out. Documentation not published."
-                            //     }
-                            // }
-                        // }
                     }
                 }
 
