@@ -731,8 +731,8 @@ pipeline {
 
             environment{
                 PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
-                PKG_NAME = pythonPackageName(toolName: "CPython-3.6")
-                PKG_VERSION = pythonPackageVersion(toolName: "CPython-3.6")
+                PKG_NAME = get_package_name("DIST-INFO", "py3exiv2bind.dist-info/METADATA")
+                PKG_VERSION = get_package_version("DIST-INFO", "py3exiv2bind.dist-info/METADATA")
             }
             stages{
                 stage("Upload to DevPi Staging"){
@@ -975,6 +975,9 @@ pipeline {
                 stage("Deploy Online Documentation") {
                     when{
                         equals expected: true, actual: params.DEPLOY_DOCS
+                    }
+                    environment{
+                        PKG_NAME = get_package_name("DIST-INFO", "py3exiv2bind.dist-info/METADATA")
                     }
                     steps{
                         unstash "DOCS_ARCHIVE"
