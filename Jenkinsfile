@@ -172,6 +172,25 @@ pipeline {
 //                                }
                             }
                         }
+
+                        stage("Getting Distribution Info"){
+                            environment{
+                                PATH = "${tool 'CPython-3.7'};$PATH"
+                            }
+                            steps{
+                                dir("source"){
+                                    bat "python setup.py dist_info"
+                                }
+                            }
+                            post{
+                                success{
+                                    dir("source"){
+                                        stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
+                                        archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
+                                    }
+                                }
+                            }
+                        }
                         stage("Installing Required System Level Dependencies"){
                             steps{
                                 lock("system_python_${NODE_NAME}"){
