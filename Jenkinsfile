@@ -247,9 +247,6 @@ pipeline {
                 }
             }
             post{
-                success{
-                    echo "Configured ${env.PKG_NAME}, version ${env.PKG_VERSION}, for testing."
-                }
                 failure {
                     dir("source"){
                         bat returnStatus: true, script: "python -m pipenv --rm"
@@ -302,16 +299,14 @@ pipeline {
                     
                 }     
                 stage("Building Sphinx Documentation"){
-                    environment{
-                        DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
-                    }
+
                     steps {
-                        // echo "Building docs on ${env.NODE_NAME}"
                         dir("source"){
-//                            lock("system_pipenv_${NODE_NAME}"){
-//                                powershell "& python -m pipenv run python setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs | Tee-Object -FilePath ${WORKSPACE}\\logs\\build_sphinx.log"
-                            bat "${WORKSPACE}\\venv\\venv36\\Scripts\\sphinx-build docs/source ${WORKSPACE}/build/docs/html -b html -d ${WORKSPACE}\\build\\docs\\.doctrees --no-color -w ${WORKSPACE}\\logs\\build_sphinx.log"
-//                            }
+                            script{
+                                def DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
+                                bat "${WORKSPACE}\\venv\\venv36\\Scripts\\sphinx-build docs/source ${WORKSPACE}/build/docs/html -b html -d ${WORKSPACE}\\build\\docs\\.doctrees --no-color -w ${WORKSPACE}\\logs\\build_sphinx.log"
+                                zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                            }
                         }
                     }
                     post{
@@ -321,14 +316,14 @@ pipeline {
                         }
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${env.DOC_ZIP_FILENAME}"
-                            stash includes: "dist/${env.DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
+
+                            stash includes: "dist/*doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
 
                         }
                         cleanup{
                             cleanWs(patterns: [
                                     [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
-                                    [pattern: "dist/${env.DOC_ZIP_FILENAME}", type: 'INCLUDE']
+                                    [pattern: "dist/*doc.zip,", type: 'INCLUDE']
                                 ]
                             )
                         }
