@@ -191,21 +191,21 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Installing Required System Level Dependencies"){
-                            steps{
-                                lock("system_python_${NODE_NAME}"){
-                                    bat "python -m pip install --upgrade pip --quiet"
-                                }
-                            }
-                            post{
-                                always{
-                                    lock("system_python_${NODE_NAME}"){
-                                        bat "(if not exist logs mkdir logs) && python -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
-                                    }
-                                    archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
-                                }
-                            }
-                        }
+                        //stage("Installing Required System Level Dependencies"){
+                        //    steps{
+                        //        lock("system_python_${NODE_NAME}"){
+                        //            bat "python -m pip install --upgrade pip --quiet"
+                        //        }
+                        //    }
+                        //    post{
+                        //        always{
+                        //            lock("system_python_${NODE_NAME}"){
+                        //                bat "(if not exist logs mkdir logs) && python -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
+                        //            }
+                        //            archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
+                        //        }
+                        //    }
+                        //}
                         stage("Installing Pipfile"){
                             options{
                                 timeout(5)
