@@ -107,7 +107,7 @@ class BuildCMakeExt(build_ext):
             self.cmake_exec,
             f'-H{source_dir}',
             f'-B{self.build_temp}',
-            f'-G{self.get_build_generator_name()}'
+            # f'-G{self.get_build_generator_name()}'
         ]
 
         package_source = os.path.join(source_dir, "py3exiv2bind")
