@@ -17,7 +17,7 @@ def test_wheel(pkgRegex, python_version){
 }
 
 def get_package_version(stashName, metadataFile){
-    ws {
+    node {
         unstash "${stashName}"
         script{
             def props = readProperties interpolate: true, file: "${metadataFile}"
@@ -28,7 +28,7 @@ def get_package_version(stashName, metadataFile){
 }
 
 def get_package_name(stashName, metadataFile){
-    ws {
+    node {
         unstash "${stashName}"
         script{
             def props = readProperties interpolate: true, file: "${metadataFile}"
@@ -131,9 +131,10 @@ def runTox(tox_exec){
 }
 
 pipeline {
-    agent {
-        label "Windows && VS2015 && Python3 && longfilenames"
-    }
+    agent none
+    //agent {
+    //    label "Windows && VS2015 && Python3 && longfilenames"
+    //}
     
     triggers {
         cron('@daily')
@@ -145,10 +146,10 @@ pipeline {
         buildDiscarder logRotator(artifactDaysToKeepStr: '10', artifactNumToKeepStr: '10', daysToKeepStr: '', numToKeepStr: '')
     }
     environment {
-        PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+
         DEVPI = credentials("DS_devpi")
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
-        WORKON_HOME ="${WORKSPACE}\\pipenv\\"
+        //WORKON_HOME ="${WORKSPACE}\\pipenv\\"
         PIPENV_NOSPIN="DISABLED"
     }
     parameters {
@@ -165,6 +166,12 @@ pipeline {
         stage("Configure") {
             parallel{
                 stage("Setting up Workspace"){
+                    agent {
+                        label "Windows && VS2015 && Python3 && longfilenames"
+                    }
+                    environment{
+                        PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                    }
                     stages{
                         //stage("Purge all Existing Data in Workspace"){
                         //    when{
@@ -260,6 +267,12 @@ pipeline {
 
         }
         stage("Building") {
+            agent {
+                label "Windows && VS2015 && Python3 && longfilenames"
+            }
+            environment{
+                PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+            }
             stages{
                 stage("Building Python Package"){
                     options{
@@ -273,7 +286,7 @@ pipeline {
                     }
                     steps {
                         lock("system_pipenv_${NODE_NAME}"){
-
+                            bat "if not exist logs mkdir logs"
                             powershell(
                                 script: "& python -m pipenv run python setup.py build -b build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/36/lib/ --build-temp build/36/temp build_ext --inplace | tee ${WORKSPACE}\\logs\\build.log"
                             )
@@ -303,7 +316,9 @@ pipeline {
                         PKG_VERSION = get_package_version("DIST-INFO", "py3exiv2bind.dist-info/METADATA")
                     }
                     steps {
-                        bat "${WORKSPACE}\\venv\\venv36\\Scripts\\sphinx-build docs/source ${WORKSPACE}/build/docs/html -b html -d ${WORKSPACE}\\build\\docs\\.doctrees --no-color -w ${WORKSPACE}\\logs\\build_sphinx.log"
+                        bat "if not exist logs mkdir logs"
+                        bat "if not exist build\\docs\\html mkdir build\\docs\\html"
+                        bat "python -m pipenv run python -m sphinx docs/source build/docs/html -b html -d build\\docs\\.doctrees --no-color -w logs\\build_sphinx.log"
                     }
                     post{
                         always {
@@ -334,11 +349,16 @@ pipeline {
         stage("Testing") {
             environment{
                 junit_filename = "junit-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
+                PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+            }
+            agent {
+                label "Windows && VS2015 && Python3 && longfilenames"
             }
             stages{
                 stage("Setting up Test Env"){
                     steps{
                         unstash "built_source"
+                        bat "python -m venv venv\\venv36 && venv\\venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv36\\Scripts\\pip.exe install --upgrade setuptools && venv\\venv36\\Scripts\\pip.exe install -r requirements-dev.txt"
                     }
                 }
 
@@ -525,13 +545,17 @@ pipeline {
 
         }
         stage("Packaging") {
-            environment {
-                CMAKE_PATH = "${tool 'cmake3.13'}"
-                PATH = "${env.CMAKE_PATH};$PATH"
-                CL = "/MP"
-            }
+
             parallel{
                 stage("Python 3.6 whl"){
+                    agent {
+                        label "Windows && VS2015 && Python3 && longfilenames"
+                    }
+                    environment {
+                        CMAKE_PATH = "${tool 'cmake3.13'}"
+                        //PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};${env.CMAKE_PATH};$PATH"
+                        CL = "/MP"
+                    }
                     stages{
                         stage("Create venv for 3.6"){
                             environment {
@@ -544,7 +568,7 @@ pipeline {
                         }
                         stage("Creating bdist Wheel for 3.6"){
                             environment {
-                                PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'CPython-3.6'};$PATH"
+                                PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'CPython-3.6'};${env.CMAKE_PATH};$PATH"
                             }
                             steps {
                                 bat "python setup.py build -b build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/36/lib --build-temp build/36/temp build_ext --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
@@ -576,12 +600,20 @@ pipeline {
                     }
                 }
                 stage("Python sdist"){
+                    agent {
+                        label "Windows && VS2015 && Python3 && longfilenames"
+                    }
+                    environment {
+                        CMAKE_PATH = "${tool 'cmake3.13'}"
+                        PATH = "${tool 'CPython-3.7'};${env.CMAKE_PATH};$PATH"
+                    }
                     steps {
                         bat "python setup.py sdist -d ${WORKSPACE}\\dist --format zip"
                     }
                     post{
                         success{
                             stash includes: 'dist/*.zip,dist/*.tar.gz', name: "sdist"
+                            archiveArtifacts artifacts: "dist/*.tar.gz,dist/*.zip", fingerprint: true
                         }
                     }
                 }
@@ -597,11 +629,14 @@ pipeline {
                     }
                     environment {
                         CMAKE_PATH = "${tool 'cmake3.13'}"
-                        PATH = "${env.CMAKE_PATH};${tool 'CPython-3.7'};$PATH"
+                        //PATH = "${env.CMAKE_PATH};${tool 'CPython-3.7'};$PATH"
                         CL = "/MP"
                     }
                     stages{
                         stage("Create venv for 3.7"){
+                            environment {
+                                PATH = "${tool 'CPython-3.7'};${env.CMAKE_PATH};$PATH"
+                            }
                             steps {
                                 bat "python -m venv venv\\venv37 && venv\\venv37\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv37\\Scripts\\pip.exe install wheel setuptools --upgrade"
                             }
@@ -609,7 +644,7 @@ pipeline {
                     
                         stage("Creating bdist Wheel for 3.7"){
                             environment {
-                                PATH = "${WORKSPACE}\\venv\\venv37\\scripts;${tool 'CPython-3.6'};$PATH"
+                                PATH = "${WORKSPACE}\\venv\\venv37\\scripts;${tool 'CPython-3.7'};${env.CMAKE_PATH};$PATH"
                             }
                             steps {
                                 bat "python setup.py build -b build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/37/lib/ --build-temp build/37/temp build_ext --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
@@ -617,6 +652,7 @@ pipeline {
                             post{
                                 success{
                                     stash includes: 'dist/*.whl', name: "whl 3.7"
+                                    archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
                                 }
                                 cleanup{
                                     cleanWs(
@@ -639,8 +675,6 @@ pipeline {
                                 PATH = "${tool 'CPython-3.7'};$PATH"
                             }
                             steps{
-
-
                                 unstash "whl 3.7"
                                 test_wheel("*cp37*.whl", "37")
 
@@ -649,21 +683,19 @@ pipeline {
                                 cleanup{
                                     deleteDir()
                                 }
+                                success{
+                                    archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
+                                }
                             }
                         }
                     }
                 }
             }
-            post{
-                success{
-                    unstash "whl 3.7"
-                    unstash "whl 3.6"
-                    unstash "sdist"
-                    archiveArtifacts artifacts: "dist/*.whl,dist/*.tar.gz,dist/*.zip", fingerprint: true
-                }
-            }
         }
         stage("Deploy to DevPi") {
+            agent {
+                label "Windows && VS2015 && Python3 && longfilenames"
+            }
             when {
                 allOf{
                     anyOf{
@@ -905,6 +937,9 @@ pipeline {
         stage("Deploy"){
             parallel {
                 stage("Deploy Online Documentation") {
+                    agent {
+                        label "Windows && VS2015 && Python3 && longfilenames"
+                    }
                     when{
                         equals expected: true, actual: params.DEPLOY_DOCS
                     }
@@ -920,26 +955,26 @@ pipeline {
             }
         }
     }
-    post {
-        cleanup {
-            cleanWs(
-                deleteDirs: true,
-                patterns: [
-                    [pattern: 'dist/', type: 'INCLUDE'],
-                    [pattern: 'build/', type: 'INCLUDE'],
-                    [pattern: 'reports', type: 'INCLUDE'],
-                    [pattern: 'logs', type: 'INCLUDE'],
-                    [pattern: 'certs', type: 'INCLUDE'],
-                    [pattern: '*.dist-info/', type: 'INCLUDE'],
-                    [pattern: '*.egg-info/', type: 'INCLUDE'],
-                    [pattern: 'venv/', type: 'INCLUDE'],
-                    [pattern: '*tmp', type: 'INCLUDE'],
-//                    [pattern: "source/**/*.dll", type: 'INCLUDE'],
-//                    [pattern: "source/**/*.pyd", type: 'INCLUDE'],
-//                    [pattern: "source/**/*.exe", type: 'INCLUDE'],
-//                    [pattern: "source/**/*.exe", type: 'INCLUDE']
-                    ]
-                )
-        }
-    }
+    //post {
+    //    cleanup {
+    //        cleanWs(
+    //            deleteDirs: true,
+    //            patterns: [
+    //                [pattern: 'dist/', type: 'INCLUDE'],
+    //                [pattern: 'build/', type: 'INCLUDE'],
+    //                [pattern: 'reports', type: 'INCLUDE'],
+    //                [pattern: 'logs', type: 'INCLUDE'],
+    //                [pattern: 'certs', type: 'INCLUDE'],
+    //                [pattern: '*.dist-info/', type: 'INCLUDE'],
+    //                [pattern: '*.egg-info/', type: 'INCLUDE'],
+    //                [pattern: 'venv/', type: 'INCLUDE'],
+    //                [pattern: '*tmp', type: 'INCLUDE'],
+//  //                  [pattern: "source/**/*.dll", type: 'INCLUDE'],
+//  //                  [pattern: "source/**/*.pyd", type: 'INCLUDE'],
+//  //                  [pattern: "source/**/*.exe", type: 'INCLUDE'],
+//  //                  [pattern: "source/**/*.exe", type: 'INCLUDE']
+    //                ]
+    //            )
+    //    }
+    //}
 }
