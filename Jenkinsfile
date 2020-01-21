@@ -3,6 +3,20 @@
 import org.ds.*
 
 @Library(["devpi", "PythonHelpers"]) _
+
+def CONFIGURATIONS = [
+    "3.6": [
+            pkgRegex: "*cp36*.whl",
+            python_install_url:"https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe",
+            test_docker_image: "python:3.6-windowsservercore"
+        ],
+    "3.7": [
+            pkgRegex: "*cp37*.whl",
+            python_install_url:"https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe",
+            test_docker_image: "python:3.7"
+        ]
+]
+
 def test_wheel(pkgRegex, python_version){
     script{
 
@@ -544,147 +558,57 @@ pipeline {
             }
 
         }
-        stage("Packaging") {
-
-            parallel{
-                stage("Python 3.6 whl"){
-                    agent {
-                        label "Windows && VS2015 && Python3 && longfilenames"
-                    }
-                    environment {
-                        CMAKE_PATH = "${tool 'cmake3.13'}"
-                        //PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};${env.CMAKE_PATH};$PATH"
-                        CL = "/MP"
-                    }
-                    stages{
-                        stage("Create venv for 3.6"){
-                            environment {
-                                PATH = "${tool 'CPython-3.6'};$PATH"
-                            }
-
-                            steps {
-                                bat "python -m venv venv\\venv36 && venv\\venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv36\\Scripts\\pip.exe install wheel setuptools --upgrade"
-                            }
-                        }
-                        stage("Creating bdist Wheel for 3.6"){
-                            environment {
-                                PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'CPython-3.6'};${env.CMAKE_PATH};$PATH"
-                            }
-                            steps {
-                                bat "python setup.py build -b build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/36/lib --build-temp build/36/temp build_ext --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
-                            }
-                            post{
-                               success{
-                                    stash includes: 'dist/*.whl', name: "whl 3.6"
-                                }
-                            }
-                        }
-                        stage("Testing 3.6 Wheel"){
-                            agent { label 'Windows && Python3' }
-                            environment {
-                                PATH = "${tool 'CPython-3.6'};$PATH"
-                            }
-                            steps{
-
-
-                                unstash "whl 3.6"
-                                test_wheel("*cp36*.whl", "36")
-
-                            }
-                            post{
-                                cleanup{
-                                    deleteDir()
-                                }
-                            }
-                        }
+        stage('Creating Binary Packages') {
+            matrix{
+                agent none
+                axes{
+                    axis {
+                        name "PYTHON_VERSION"
+                        values(
+                            "3.6",
+                            "3.7"
+                        )
                     }
                 }
-                stage("Python sdist"){
-                    agent {
-                        label "Windows && VS2015 && Python3 && longfilenames"
-                    }
-                    environment {
-                        CMAKE_PATH = "${tool 'cmake3.13'}"
-                        PATH = "${tool 'CPython-3.7'};${env.CMAKE_PATH};$PATH"
-                    }
-                    steps {
-                        bat "python setup.py sdist -d ${WORKSPACE}\\dist --format zip"
-                    }
-                    post{
-                        success{
-                            stash includes: 'dist/*.zip,dist/*.tar.gz', name: "sdist"
-                            archiveArtifacts artifacts: "dist/*.tar.gz,dist/*.zip", fingerprint: true
-                        }
-                    }
-                }
-                stage("Python 3.7 whl"){
-                    agent {
-                        node {
-                            label "Windows && Python3 && VS2015"
-                        }
-                    }
-                    options{
-                        retry 2
-                        timeout(10)
-                    }
-                    environment {
-                        CMAKE_PATH = "${tool 'cmake3.13'}"
-                        //PATH = "${env.CMAKE_PATH};${tool 'CPython-3.7'};$PATH"
-                        CL = "/MP"
-                    }
-                    stages{
-                        stage("Create venv for 3.7"){
-                            environment {
-                                PATH = "${tool 'CPython-3.7'};${env.CMAKE_PATH};$PATH"
-                            }
-                            steps {
-                                bat "python -m venv venv\\venv37 && venv\\venv37\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv37\\Scripts\\pip.exe install wheel setuptools --upgrade"
+                stages{
+                    stage("Creating bdist wheel"){
+                        agent{
+                            dockerfile {
+                                filename 'ci/docker/windows/build/msvc/Dockerfile'
+                                label 'windows && Docker'
+                                additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} ${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
                             }
                         }
-                    
-                        stage("Creating bdist Wheel for 3.7"){
-                            environment {
-                                PATH = "${WORKSPACE}\\venv\\venv37\\scripts;${tool 'CPython-3.7'};${env.CMAKE_PATH};$PATH"
-                            }
-                            steps {
-                                bat "python setup.py build -b build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/37/lib/ --build-temp build/37/temp build_ext --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
-                            }
-                            post{
-                                success{
-                                    stash includes: 'dist/*.whl', name: "whl 3.7"
-                                    archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
-                                }
-                                cleanup{
-                                    cleanWs(
-                                        deleteDirs: true,
-                                        patterns: [
-                                            [pattern: 'dist', type: 'INCLUDE'],
-                                            [pattern: '*tmp', type: 'INCLUDE'],
-                                            [pattern: '.eggs/', type: 'INCLUDE'],
-                                            [pattern: 'build/', type: 'INCLUDE'],
-                                            [pattern: 'venv/venv37.', type: 'INCLUDE'],
-                                            [pattern: '*.egg-info/', type: 'INCLUDE'],
-                                            ]
-                                        )
-                                }
-                            }
-                        }
-                        stage("Testing 3.7 Wheel"){
-                            agent { label 'Windows && Python3' }
-                            environment {
-                                PATH = "${tool 'CPython-3.7'};$PATH"
-                            }
-                            steps{
-                                unstash "whl 3.7"
-                                test_wheel("*cp37*.whl", "37")
 
+                        steps{
+                            bat "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist"
+                        }
+                        post{
+                            success{
+                                stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION}"
+                                archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
                             }
-                            post{
-                                cleanup{
-                                    deleteDir()
-                                }
-                                success{
-                                    archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
+                        }
+                    }
+                    stage("Testing wheel"){
+                        agent{
+                            dockerfile {
+                                filename 'ci/docker/windows/build/test/msvc/Dockerfile'
+                                label 'windows && docker'
+                                additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image}"
+                            }
+                        }
+
+                    steps{
+                        unstash "whl ${PYTHON_VERSION}"
+                        bat "python --version"
+
+                            script{
+                                findFiles(glob: "**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex}").each{
+                                    bat(
+                                        script: "tox --installpkg=${WORKSPACE}\\${it} -e py",
+                                        label: "Testing ${it}"
+                                    )
                                 }
                             }
                         }
@@ -692,6 +616,147 @@ pipeline {
                 }
             }
         }
+        //stage("Packaging") {
+        //    parallel{
+        //        stage("Python 3.6 whl"){
+        //            agent {
+        //                label "Windows && VS2015 && Python3 && longfilenames"
+        //            }
+        //            environment {
+        //                CMAKE_PATH = "${tool 'cmake3.13'}"
+        //                //PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};${env.CMAKE_PATH};$PATH"
+        //                CL = "/MP"
+        //            }
+        //            stages{
+        //                stage("Create venv for 3.6"){
+        //                    environment {
+        //                        PATH = "${tool 'CPython-3.6'};$PATH"
+        //                    }
+        //                    steps {
+        //                        bat "python -m venv venv\\venv36 && venv\\venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv36\\Scripts\\pip.exe install wheel setuptools --upgrade"
+        //                    }
+        //                }
+        //                stage("Creating bdist Wheel for 3.6"){
+        //                    environment {
+        //                        PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'CPython-3.6'};${env.CMAKE_PATH};$PATH"
+        //                    }
+        //                    steps {
+        //                        bat "python setup.py build -b build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/36/lib --build-temp build/36/temp build_ext --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+        //                    }
+        //                    post{
+        //                       success{
+        //                            stash includes: 'dist/*.whl', name: "whl 3.6"
+        //                        }
+        //                    }
+        //                }
+        //                stage("Testing 3.6 Wheel"){
+        //                    agent { label 'Windows && Python3' }
+        //                    environment {
+        //                        PATH = "${tool 'CPython-3.6'};$PATH"
+        //                    }
+        //                    steps{
+        //                        unstash "whl 3.6"
+        //                        test_wheel("*cp36*.whl", "36")
+        //                    }
+        //                    post{
+        //                        cleanup{
+        //                            deleteDir()
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+        //        stage("Python sdist"){
+        //            agent {
+        //                label "Windows && VS2015 && Python3 && longfilenames"
+        //            }
+        //            environment {
+        //                CMAKE_PATH = "${tool 'cmake3.13'}"
+        //                PATH = "${tool 'CPython-3.7'};${env.CMAKE_PATH};$PATH"
+        //            }
+        //            steps {
+        //                bat "python setup.py sdist -d ${WORKSPACE}\\dist --format zip"
+        //            }
+        //            post{
+        //                success{
+        //                    stash includes: 'dist/*.zip,dist/*.tar.gz', name: "sdist"
+        //                    archiveArtifacts artifacts: "dist/*.tar.gz,dist/*.zip", fingerprint: true
+        //                }
+        //            }
+        //        }
+        //        stage("Python 3.7 whl"){
+        //            agent {
+        //                node {
+        //                    label "Windows && Python3 && VS2015"
+        //                }
+        //            }
+        //            options{
+        //                retry 2
+        //                timeout(10)
+        //            }
+        //            environment {
+        //                CMAKE_PATH = "${tool 'cmake3.13'}"
+        //                //PATH = "${env.CMAKE_PATH};${tool 'CPython-3.7'};$PATH"
+        //                CL = "/MP"
+        //            }
+        //            stages{
+        //                stage("Create venv for 3.7"){
+        //                    environment {
+        //                        PATH = "${tool 'CPython-3.7'};${env.CMAKE_PATH};$PATH"
+        //                    }
+        //                    steps {
+        //                        bat "python -m venv venv\\venv37 && venv\\venv37\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv37\\Scripts\\pip.exe install wheel setuptools --upgrade"
+        //                    }
+        //                }
+        //                stage("Creating bdist Wheel for 3.7"){
+        //                    environment {
+        //                        PATH = "${WORKSPACE}\\venv\\venv37\\scripts;${tool 'CPython-3.7'};${env.CMAKE_PATH};$PATH"
+        //                    }
+        //                    steps {
+        //                        bat "python setup.py build -b build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/37/lib/ --build-temp build/37/temp build_ext --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
+        //                    }
+        //                    post{
+        //                        success{
+        //                            stash includes: 'dist/*.whl', name: "whl 3.7"
+        //                            archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
+        //                        }
+        //                        cleanup{
+        //                            cleanWs(
+        //                                deleteDirs: true,
+        //                                patterns: [
+        //                                    [pattern: 'dist', type: 'INCLUDE'],
+        //                                    [pattern: '*tmp', type: 'INCLUDE'],
+        //                                    [pattern: '.eggs/', type: 'INCLUDE'],
+        //                                    [pattern: 'build/', type: 'INCLUDE'],
+        //                                    [pattern: 'venv/venv37.', type: 'INCLUDE'],
+        //                                    [pattern: '*.egg-info/', type: 'INCLUDE'],
+        //                                    ]
+        //                                )
+        //                        }
+        //                    }
+        //                }
+        //                stage("Testing 3.7 Wheel"){
+        //                    agent { label 'Windows && Python3' }
+        //                    environment {
+        //                        PATH = "${tool 'CPython-3.7'};$PATH"
+        //                    }
+        //                    steps{
+        //                        unstash "whl 3.7"
+        //                        test_wheel("*cp37*.whl", "37")
+        //                    }
+        //                    post{
+        //                        cleanup{
+        //                            deleteDir()
+        //                        }
+        //                        success{
+        //                            archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
+        //}
         stage("Deploy to DevPi") {
             agent {
                 label "Windows && VS2015 && Python3 && longfilenames"
