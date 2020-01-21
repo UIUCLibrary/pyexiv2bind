@@ -9,15 +9,10 @@ def test_wheel(pkgRegex, python_version){
         bat "python -m venv venv\\${NODE_NAME}\\${python_version} && venv\\${NODE_NAME}\\${python_version}\\Scripts\\python.exe -m pip install pip --upgrade && venv\\${NODE_NAME}\\${python_version}\\Scripts\\pip.exe install tox --upgrade"
 
         def python_wheel = findFiles glob: "**/${pkgRegex}"
-        dir("source"){
-            python_wheel.each{
-                echo "Testing ${it}"
-                bat "${WORKSPACE}\\venv\\${NODE_NAME}\\${python_version}\\Scripts\\tox.exe --installpkg=${WORKSPACE}\\${it} -e py${python_version}"
-            }
-
+        python_wheel.each{
+            echo "Testing ${it}"
+            bat "${WORKSPACE}\\venv\\${NODE_NAME}\\${python_version}\\Scripts\\tox.exe --installpkg=${WORKSPACE}\\${it} -e py${python_version}"
         }
-
-
     }
 }
 
@@ -147,14 +142,12 @@ pipeline {
     options {
         disableConcurrentBuilds()  //each branch has 1 job running at a time
         timeout(120)  // Timeout after 120 minutes. This shouldn't take this long but it hangs for some reason
-        checkoutToSubdirectory("source")
         buildDiscarder logRotator(artifactDaysToKeepStr: '10', artifactNumToKeepStr: '10', daysToKeepStr: '', numToKeepStr: '')
     }
     environment {
         PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
         DEVPI = credentials("DS_devpi")
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
-        PIPENV_CACHE_DIR="${WORKSPACE}\\..\\.virtualenvs\\cache\\"
         WORKON_HOME ="${WORKSPACE}\\pipenv\\"
         PIPENV_NOSPIN="DISABLED"
     }
@@ -173,33 +166,28 @@ pipeline {
             parallel{
                 stage("Setting up Workspace"){
                     stages{
-                        stage("Purge all Existing Data in Workspace"){
-                            when{
-                                anyOf{
-                                    equals expected: true, actual: params.FRESH_WORKSPACE
-                                    triggeredBy "TimerTriggerCause"
-                                }
-                            }
-                            steps{
-                                rebuild_workspace("source")
-                            }
-                        }
-
+                        //stage("Purge all Existing Data in Workspace"){
+                        //    when{
+                        //        anyOf{
+                        //            equals expected: true, actual: params.FRESH_WORKSPACE
+                        //            triggeredBy "TimerTriggerCause"
+                        //        }
+                        //    }
+                        //    steps{
+                        //        rebuild_workspace("source")
+                        //    }
+                        //}
                         stage("Getting Distribution Info"){
                             environment{
                                 PATH = "${tool 'CPython-3.7'};${tool 'cmake3.13'};$PATH"
                             }
                             steps{
-                                dir("source"){
-                                    bat "python setup.py dist_info"
-                                }
+                                bat "python setup.py dist_info"
                             }
                             post{
                                 success{
-                                    dir("source"){
-                                        stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
-                                        archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
-                                    }
+                                    stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
+                                    archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
                                 }
                             }
                         }
@@ -224,10 +212,7 @@ pipeline {
                                 retry 2
                             }
                             steps {
-                                dir("source"){
-                                    bat "python -m pipenv install --dev --deploy && python -m pipenv run pip list > ..\\logs\\pippackages_pipenv_${NODE_NAME}.log && python -m pipenv check"
-
-                                }
+                                bat "python -m pipenv install --dev --deploy && python -m pipenv run pip list > logs\\pippackages_pipenv_${NODE_NAME}.log && python -m pipenv check"
                             }
                             post{
                                 always{
@@ -249,7 +234,7 @@ pipeline {
                                         bat "python -m venv venv36 && venv\\venv36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                                     }
                                 }
-                                bat "venv\\venv36\\Scripts\\pip.exe install -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed && venv\\venv36\\scripts\\pip.exe install \"tox>=3.8.2,<3.10\""
+                                bat "venv\\venv36\\Scripts\\pip.exe install -r requirements.txt -r requirements-dev.txt --upgrade-strategy only-if-needed && venv\\venv36\\scripts\\pip.exe install \"tox>=3.8.2,<3.10\""
                             }
                             post{
                                 success{
@@ -265,9 +250,7 @@ pipeline {
             }
             post{
                 failure {
-                    dir("source"){
-                        bat returnStatus: true, script: "python -m pipenv --rm"
-                    }
+                    bat returnStatus: true, script: "python -m pipenv --rm"
 
                     deleteDir()
                 }
@@ -288,13 +271,11 @@ pipeline {
                         CL = "/MP"
                     }
                     steps {
-                        dir("source"){
-                            lock("system_pipenv_${NODE_NAME}"){
+                        lock("system_pipenv_${NODE_NAME}"){
 
-                                powershell(
-                                    script: "& python -m pipenv run python setup.py build -b ..../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib/ --build-temp ../build/36/temp build_ext --inplace | tee ${WORKSPACE}\\logs\\build.log"
-                                )
-                            }
+                            powershell(
+                                script: "& python -m pipenv run python setup.py build -b build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/36/lib/ --build-temp build/36/temp build_ext --inplace | tee ${WORKSPACE}\\logs\\build.log"
+                            )
                         }
                     }
                     post{
@@ -310,7 +291,7 @@ pipeline {
                             cleanWs(patterns: [[pattern: 'logs/build.log', type: 'INCLUDE']])
                         }
                         success{
-                          stash includes: 'source/py3exiv2bind/**/*.dll,source/py3exiv2bind/**/*.pyd,source/py3exiv2bind/**/*.exe"', name: "built_source"
+                          stash includes: 'py3exiv2bind/**/*.dll,py3exiv2bind/**/*.pyd,py3exiv2bind/**/*.exe"', name: "built_source"
                         }
                     }
                     
@@ -321,10 +302,7 @@ pipeline {
                         PKG_VERSION = get_package_version("DIST-INFO", "py3exiv2bind.dist-info/METADATA")
                     }
                     steps {
-                        dir("source"){
-                            bat "${WORKSPACE}\\venv\\venv36\\Scripts\\sphinx-build docs/source ${WORKSPACE}/build/docs/html -b html -d ${WORKSPACE}\\build\\docs\\.doctrees --no-color -w ${WORKSPACE}\\logs\\build_sphinx.log"
-
-                        }
+                        bat "${WORKSPACE}\\venv\\venv36\\Scripts\\sphinx-build docs/source ${WORKSPACE}/build/docs/html -b html -d ${WORKSPACE}\\build\\docs\\.doctrees --no-color -w ${WORKSPACE}\\logs\\build_sphinx.log"
                     }
                     post{
                         always {
@@ -389,9 +367,7 @@ pipeline {
                                     }
                                     steps{
                                         deleteDir()
-                                        dir("source"){
-                                            checkout scm
-                                        }
+                                        checkout scm
                                     }
                                 }
                                 stage("Install Tox"){
@@ -411,9 +387,7 @@ pipeline {
                                         timeout(15)
                                     }
                                     steps {
-                                        dir("source"){
-                                            runTox("${WORKSPACE}\\venv\\venv36\\Scripts\\tox.exe")
-                                        }
+                                        runTox("${WORKSPACE}\\venv\\venv36\\Scripts\\tox.exe")
 
                                     }
                                 }
@@ -434,8 +408,8 @@ pipeline {
                                         disableDeferredWipeout: true,
                                         patterns: [
                                             [pattern: 'dist', type: 'INCLUDE'],
+                                            [pattern: 'build', type: 'INCLUDE'],
                                             [pattern: 'reports', type: 'INCLUDE'],
-                                            [pattern: "source", type: 'INCLUDE'],
                                             [pattern: '*tmp', type: 'INCLUDE'],
                                             ]
                                     )
@@ -447,9 +421,7 @@ pipeline {
                                 PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;${PATH}"
                             }
                             steps {
-                                dir("source"){
-                                    bat "sphinx-build docs/source ${WORKSPACE}\\reports\\doctest -b doctest -d ${WORKSPACE}\\build\\docs\\.doctrees --no-color -w ${WORKSPACE}\\logs\\doctest_warnings.log"
-                                }
+                                bat "sphinx-build docs/source ${WORKSPACE}\\reports\\doctest -b doctest -d ${WORKSPACE}\\build\\docs\\.doctrees --no-color -w ${WORKSPACE}\\logs\\doctest_warnings.log"
                             }
                             post{
                                 always {
@@ -466,9 +438,7 @@ pipeline {
                             stages{
                                 stage("Generate stubs") {
                                     steps{
-                                        dir("source"){
-                                          bat "stubgen -p py3exiv2bind -o ${WORKSPACE}\\mypy_stubs"
-                                        }
+                                      bat "stubgen -p py3exiv2bind -o ${WORKSPACE}\\mypy_stubs"
                                     }
 
                                 }
@@ -478,9 +448,7 @@ pipeline {
                                     }
                                     steps{
                                         bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
-                                        dir("source"){
-                                            bat returnStatus: true, script: "mypy -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
-                                        }
+                                        bat returnStatus: true, script: "mypy -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
                                     }
                                     post {
                                         always {
@@ -508,10 +476,7 @@ pipeline {
                           }
                           steps{
                             bat "(if not exist logs mkdir logs) && pip install flake8"
-
-                            dir("source"){
-                                bat returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
-                            }
+                            bat returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
                           }
                           post {
                             always {
@@ -527,9 +492,7 @@ pipeline {
                             timeout(2)
                           }
                           steps{
-                            dir("source"){
                                 bat "python -m pipenv run coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=${WORKSPACE}/reports/pytest/${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
-                            }
                           }
                           post{
                             always{
@@ -542,10 +505,7 @@ pipeline {
             }
             post{
                 success{
-                    dir("source"){
-                        bat "python -m pipenv run coverage combine && python -m pipenv run coverage xml -o ${WORKSPACE}\\reports\\coverage.xml && python -m pipenv run coverage html -d ${WORKSPACE}\\reports\\coverage"
-
-                    }
+                    bat "python -m pipenv run coverage combine && python -m pipenv run coverage xml -o ${WORKSPACE}\\reports\\coverage.xml && python -m pipenv run coverage html -d ${WORKSPACE}\\reports\\coverage"
                     publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
                     publishCoverage adapters: [
                                     coberturaAdapter('reports/coverage.xml')
@@ -556,7 +516,6 @@ pipeline {
                     cleanWs(patterns: [
                             [pattern: 'reports/coverage.xml', type: 'INCLUDE'],
                             [pattern: 'reports/coverage', type: 'INCLUDE'],
-                            [pattern: 'source/.coverage', type: 'INCLUDE']
                         ]
                     )
 
@@ -587,9 +546,7 @@ pipeline {
                                 PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'CPython-3.6'};$PATH"
                             }
                             steps {
-                                dir("source"){
-                                    bat "python setup.py build -b ../build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/36/lib --build-temp ../build/36/temp build_ext --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
-                                }
+                                bat "python setup.py build -b build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/36/lib --build-temp build/36/temp build_ext --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
                             }
                             post{
                                success{
@@ -619,9 +576,7 @@ pipeline {
                 }
                 stage("Python sdist"){
                     steps {
-                        dir("source"){
-                            bat "python setup.py sdist -d ${WORKSPACE}\\dist --format zip"
-                        }
+                        bat "python setup.py sdist -d ${WORKSPACE}\\dist --format zip"
                     }
                     post{
                         success{
@@ -656,9 +611,7 @@ pipeline {
                                 PATH = "${WORKSPACE}\\venv\\venv37\\scripts;${tool 'CPython-3.6'};$PATH"
                             }
                             steps {
-                                dir("source"){
-                                    bat "python setup.py build -b ../build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib ../build/37/lib/ --build-temp ../build/37/temp build_ext --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
-                                }
+                                bat "python setup.py build -b build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/37/lib/ --build-temp build/37/temp build_ext --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
                             }
                             post{
                                 success{
@@ -670,7 +623,6 @@ pipeline {
                                         disableDeferredWipeout: true,
                                         patterns: [
                                             [pattern: 'dist', type: 'INCLUDE'],
-                                            [pattern: 'source', type: 'INCLUDE'],
                                             [pattern: '*tmp', type: 'INCLUDE'],
                                             [pattern: 'venv37', type: 'INCLUDE'],
                                             ]
@@ -981,7 +933,6 @@ pipeline {
 //                    [pattern: "source/**/*.pyd", type: 'INCLUDE'],
 //                    [pattern: "source/**/*.exe", type: 'INCLUDE'],
 //                    [pattern: "source/**/*.exe", type: 'INCLUDE']
-                    [pattern: "source", type: 'INCLUDE']
                     ]
                 )
         }
