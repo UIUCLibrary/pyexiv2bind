@@ -621,11 +621,13 @@ pipeline {
                                 cleanup{
                                     cleanWs(
                                         deleteDirs: true,
-                                        disableDeferredWipeout: true,
                                         patterns: [
                                             [pattern: 'dist', type: 'INCLUDE'],
                                             [pattern: '*tmp', type: 'INCLUDE'],
-                                            [pattern: 'venv37', type: 'INCLUDE'],
+                                            [pattern: '.eggs/', type: 'INCLUDE'],
+                                            [pattern: 'build/', type: 'INCLUDE'],
+                                            [pattern: 'venv/venv37.', type: 'INCLUDE'],
+                                            [pattern: '*.egg-info/', type: 'INCLUDE'],
                                             ]
                                         )
                                 }
@@ -922,13 +924,15 @@ pipeline {
         cleanup {
             cleanWs(
                 deleteDirs: true,
-                disableDeferredWipeout: true,
                 patterns: [
-                    [pattern: 'dist', type: 'INCLUDE'],
-//                    [pattern: 'build', type: 'INCLUDE'],
+                    [pattern: 'dist/', type: 'INCLUDE'],
+                    [pattern: 'build/', type: 'INCLUDE'],
                     [pattern: 'reports', type: 'INCLUDE'],
                     [pattern: 'logs', type: 'INCLUDE'],
                     [pattern: 'certs', type: 'INCLUDE'],
+                    [pattern: '*.dist-info/', type: 'INCLUDE'],
+                    [pattern: '*.egg-info/', type: 'INCLUDE'],
+                    [pattern: 'venv/', type: 'INCLUDE'],
                     [pattern: '*tmp', type: 'INCLUDE'],
 //                    [pattern: "source/**/*.dll", type: 'INCLUDE'],
 //                    [pattern: "source/**/*.pyd", type: 'INCLUDE'],
