@@ -212,7 +212,8 @@ pipeline {
                                 retry 2
                             }
                             steps {
-                                bat "python -m pipenv install --dev --deploy && python -m pipenv run pip list > logs\\pippackages_pipenv_${NODE_NAME}.log && python -m pipenv check"
+
+                                bat "(if not exist logs mkdir logs) && python -m pipenv install --dev --deploy && python -m pipenv run pip list > logs\\pippackages_pipenv_${NODE_NAME}.log && python -m pipenv check"
                             }
                             post{
                                 always{
