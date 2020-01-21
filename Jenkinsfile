@@ -282,42 +282,44 @@ pipeline {
         }
         stage("Building") {
             agent {
-                label "Windows && VS2015 && Python3 && longfilenames"
+                dockerfile {
+                    filename 'ci/docker/windows/build/msvc/Dockerfile'
+                    label 'windows && Docker'
+                    additionalBuildArgs "${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
+                }
             }
-            environment{
-                PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-            }
+            //    label "Windows && VS2015 && Python3 && longfilenames"
+            //}
+            //environment{
+            //    PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+            //}
             stages{
                 stage("Building Python Package"){
                     options{
-                        lock("CMakeBuilding")
-                        retry 2
                         timeout(10)
                     }
-                    environment {
-                        PATH = "${tool 'CPython-3.6'};${tool 'cmake3.13'};$PATH"
-                        CL = "/MP"
-                    }
+                    //environment {
+                    //    PATH = "${tool 'CPython-3.6'};${tool 'cmake3.13'};$PATH"
+                    //    CL = "/MP"
+                    //}
                     steps {
-                        lock("system_pipenv_${NODE_NAME}"){
-                            bat "if not exist logs mkdir logs"
-                            powershell(
-                                script: "& python -m pipenv run python setup.py build -b build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/36/lib/ --build-temp build/36/temp build_ext --inplace | tee ${WORKSPACE}\\logs\\build.log"
-                            )
-                        }
+                        bat "if not exist logs mkdir logs"
+                        bat "python setup.py build -b build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/36/lib/ --build-temp build/36/temp build_ext --inplace"
+                        //powershell(
+                        //    script: "& python -m pipenv run python setup.py build -b build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/36/lib/ --build-temp build/36/temp build_ext --inplace | tee ${WORKSPACE}\\logs\\build.log"
+                        //)
                     }
                     post{
-                        always{
-                            recordIssues(tools: [
-                                    pyLint(name: 'Setuptools Build: PyLint', pattern: 'logs/build.log'),
-                                    msBuild(name: 'Setuptools Build: MSBuild', pattern: 'logs/build.log')
-                                ]
-                                )
-
-                        }
-                        cleanup{
-                            cleanWs(patterns: [[pattern: 'logs/build.log', type: 'INCLUDE']])
-                        }
+                        //always{
+                        //    recordIssues(tools: [
+                        //            pyLint(name: 'Setuptools Build: PyLint', pattern: 'logs/build.log'),
+                        //            msBuild(name: 'Setuptools Build: MSBuild', pattern: 'logs/build.log')
+                        //        ]
+                        //        )
+                        //}
+                        //cleanup{
+                        //    cleanWs(patterns: [[pattern: 'logs/build.log', type: 'INCLUDE']])
+                        //}
                         success{
                           stash includes: 'py3exiv2bind/**/*.dll,py3exiv2bind/**/*.pyd,py3exiv2bind/**/*.exe"', name: "built_source"
                         }
@@ -332,7 +334,7 @@ pipeline {
                     steps {
                         bat "if not exist logs mkdir logs"
                         bat "if not exist build\\docs\\html mkdir build\\docs\\html"
-                        bat "python -m pipenv run python -m sphinx docs/source build/docs/html -b html -d build\\docs\\.doctrees --no-color -w logs\\build_sphinx.log"
+                        bat "python -m sphinx docs/source build/docs/html -b html -d build\\docs\\.doctrees --no-color -w logs\\build_sphinx.log"
                     }
                     post{
                         always {
