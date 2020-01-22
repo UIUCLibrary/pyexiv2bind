@@ -497,17 +497,10 @@ pipeline {
                 }
             }
         }
-
-        stage("Deploy to DevPi") {
-            agent {
-                label "Windows && VS2015 && Python3 && longfilenames"
-            }
+        stage("Deploy to Devpi"){
             when {
                 allOf{
-                    anyOf{
-                        equals expected: true, actual: params.DEPLOY_DEVPI
-                        triggeredBy "TimerTriggerCause"
-                    }
+                    equals expected: true, actual: params.DEPLOY_DEVPI
                     anyOf {
                         equals expected: "master", actual: env.BRANCH_NAME
                         equals expected: "dev", actual: env.BRANCH_NAME
@@ -515,233 +508,263 @@ pipeline {
                 }
                 beforeAgent true
             }
-
+            agent none
             environment{
-                PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
-                PKG_NAME = get_package_name("DIST-INFO", "py3exiv2bind.dist-info/METADATA")
-                PKG_VERSION = get_package_version("DIST-INFO", "py3exiv2bind.dist-info/METADATA")
+                DEVPI = credentials("DS_devpi")
             }
             stages{
-                stage("Upload to DevPi Staging"){
+                stage("Deploy to Devpi Staging") {
+                    agent {
+                        dockerfile {
+                            filename 'ci/docker/deploy/devpi/test/windows/Dockerfile'
+                            label 'linux&&docker'
+                            additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                          }
+                    }
                     steps {
-                        unstash "DOCS_ARCHIVE"
                         unstash "whl 3.6"
                         unstash "whl 3.7"
                         unstash "sdist"
-                        bat "pip install devpi-client && devpi use https://devpi.library.illinois.edu && devpi login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && devpi upload --from-dir dist"
+                        sh(
+                            label: "Connecting to DevPi Server",
+                            script: 'devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi'
+                        )
+                        sh(
+                            label: "Uploading to DevPi Staging",
+                            script: """devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging --clientdir ${WORKSPACE}/devpi
+devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
+                        )
                     }
-                }
-                stage("Test DevPi Packages") {
-                    options{
-                        timestamps()
-                    }
-                    parallel {
-                        stage("Testing DevPi .zip Package with Python 3.6 and 3.7"){
-                            environment {
-                                PATH = "${tool 'CPython-3.7'};${tool 'CPython-3.6'};$PATH"
-                            }
-                            agent {
-                                node {
-                                    label "Windows && Python3 && VS2015"
-                                }
-                            }
-                            options {
-                                skipDefaultCheckout(true)
-
-                            }
-                            stages{
-                                stage("Creating venv to Test Sdist"){
-                                        steps {
-                                            bat "python -m venv venv\\venv36 && venv\\venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv36\\Scripts\\pip.exe install setuptools --upgrade && venv\\venv36\\Scripts\\pip.exe install \"tox<3.7\" detox devpi-client"
-                                        }
-
-                                }
-                                stage("Testing DevPi Zip Package"){
-
-                                    environment {
-                                        PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-                                    }
-                                    steps {
-                                        timeout(20){
-                                            devpiTest(
-                                                devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
-                                                url: "https://devpi.library.illinois.edu",
-                                                index: "${env.BRANCH_NAME}_staging",
-                                                pkgName: "${env.PKG_NAME}",
-                                                pkgVersion: "${env.PKG_VERSION}",
-                                                pkgRegex: "zip",
-                                                detox: false
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            post {
-                                cleanup{
-                                    cleanWs(
-                                        deleteDirs: true,
-                                        disableDeferredWipeout: true,
-                                        patterns: [
-                                            [pattern: '*tmp', type: 'INCLUDE'],
-                                            [pattern: 'certs', type: 'INCLUDE']
-                                            ]
-                                    )
-                                }
-                                failure{
-                                    deleteDir()
-                                }
-                            }
-
-                        }
-
-                        stage("Testing DevPi .whl Package with Python 3.6"){
-                            agent {
-                                node {
-                                    label "Windows && Python3"
-                                }
-                            }
-
-                            options {
-                                skipDefaultCheckout(true)
-                            }
-                            stages{
-                                stage("Creating venv to Test py36 .whl"){
-                                    environment {
-                                        PATH = "${tool 'CPython-3.6'};$PATH"
-                                    }
-                                    steps {
-                                        bat "(if not exist venv\\36 mkdir venv\\36) && python -m venv venv\\36 && venv\\36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\36\\Scripts\\pip.exe install setuptools --upgrade && venv\\36\\Scripts\\pip.exe install \"tox<3.7\" devpi-client"
-                                    }
-
-                                }
-                                stage("Testing DevPi .whl Package with Python 3.6"){
-                                    options{
-                                        timeout(20)
-                                    }
-                                    environment {
-                                        PATH = "${WORKSPACE}\\venv\\36\\Scripts;$PATH"
-                                    }
-
-                                    steps {
-
-                                        devpiTest(
-                                                devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
-                                                url: "https://devpi.library.illinois.edu",
-                                                index: "${env.BRANCH_NAME}_staging",
-                                                pkgName: "${env.PKG_NAME}",
-                                                pkgVersion: "${env.PKG_VERSION}",
-                                                pkgRegex: "36.*whl",
-                                                detox: false,
-                                                toxEnvironment: "py36"
-                                            )
-
-                                    }
-                                }
-                            }
-                            post {
-                                failure {
-                                    deleteDir()
-                                }
-                                cleanup{
-                                    cleanWs(
-                                        deleteDirs: true,
-                                        disableDeferredWipeout: true,
-                                        patterns: [
-                                            [pattern: '*tmp', type: 'INCLUDE'],
-                                            [pattern: 'certs', type: 'INCLUDE']
-                                            ]
-                                    )
-                                }
-                            }
-                        }
-                        stage("Testing DevPi .whl Package with Python 3.7"){
-                            agent {
-                                node {
-                                    label "Windows && Python3"
-                                }
-                            }
-
-                            options {
-                                skipDefaultCheckout(true)
-                            }
-                            stages{
-                                stage("Creating venv to Test py37 .whl"){
-                                    environment {
-                                        PATH = "${tool 'CPython-3.7'};$PATH"
-                                    }
-                                    steps {
-                                        lock("system_python_${NODE_NAME}"){
-                                            bat "python -m venv venv\\37"
-                                        }
-                                        bat "venv\\37\\Scripts\\python.exe -m pip install pip --upgrade && venv\\37\\Scripts\\pip.exe install setuptools --upgrade && venv\\37\\Scripts\\pip.exe install \"tox<3.7\" devpi-client"
-                                    }
-
-                                }
-                                stage("Testing DevPi .whl Package with Python 3.7"){
-                                    options{
-                                        timeout(20)
-                                    }
-                                    environment {
-                                        PATH = "${WORKSPACE}\\venv\\37\\Scripts;$PATH"
-                                    }
-
-                                    steps {
-
-                                        devpiTest(
-                                                devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
-                                                url: "https://devpi.library.illinois.edu",
-                                                index: "${env.BRANCH_NAME}_staging",
-                                                pkgName: "${env.PKG_NAME}",
-                                                pkgVersion: "${env.PKG_VERSION}",
-                                                pkgRegex: "37.*whl",
-                                                detox: false,
-                                                toxEnvironment: "py37"
-                                            )
-
-                                    }
-                                }
-                            }
-                            post {
-                                failure {
-                                    deleteDir()
-                                }
-                                cleanup{
-                                    cleanWs(
-                                        deleteDirs: true,
-                                        disableDeferredWipeout: true,
-                                        patterns: [
-                                            [pattern: '*tmp', type: 'INCLUDE'],
-                                            [pattern: 'certs', type: 'INCLUDE']
-                                            ]
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-                stage("Deploy to DevPi Production") {
-                        when {
-                            allOf{
-                                equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
-                                branch "master"
-                            }
-                            beforeAgent true
-                        }
-                        steps {
-                            deploy_devpi_production("venv\\venv36\\Scripts\\devpi.exe", env.PKG_NAME, env.PKG_VERSION, env.BRANCH_NAME, env.DEVPI_USR, env.DEVPI_PSW)
-                        }
-                }
-            }
-            post {
-                success {
-                    bat "venv\\venv36\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && venv\\venv36\\Scripts\\devpi.exe use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && venv\\venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} ${env.DEVPI_USR}/${env.BRANCH_NAME}"
-
-                }
-                cleanup{
-                    remove_from_devpi("venv\\venv36\\Scripts\\devpi.exe", "${env.PKG_NAME}", "${env.PKG_VERSION}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
                 }
             }
         }
+        //stage("Deploy to DevPi") {
+        //    agent {
+        //        label "Windows && VS2015 && Python3 && longfilenames"
+        //    }
+        //    when {
+        //        allOf{
+        //            anyOf{
+        //                equals expected: true, actual: params.DEPLOY_DEVPI
+        //                triggeredBy "TimerTriggerCause"
+        //            }
+        //            anyOf {
+        //                equals expected: "master", actual: env.BRANCH_NAME
+        //                equals expected: "dev", actual: env.BRANCH_NAME
+        //            }
+        //        }
+        //        beforeAgent true
+        //    }
+        //    environment{
+        //        PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
+        //        PKG_NAME = get_package_name("DIST-INFO", "py3exiv2bind.dist-info/METADATA")
+        //        PKG_VERSION = get_package_version("DIST-INFO", "py3exiv2bind.dist-info/METADATA")
+        //    }
+        //    stages{
+        //        stage("Upload to DevPi Staging"){
+        //            steps {
+        //                unstash "DOCS_ARCHIVE"
+        //                unstash "whl 3.6"
+        //                unstash "whl 3.7"
+        //                unstash "sdist"
+        //                bat "pip install devpi-client && devpi use https://devpi.library.illinois.edu && devpi login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && devpi upload --from-dir dist"
+        //            }
+        //        }
+        //        stage("Test DevPi Packages") {
+        //            options{
+        //                timestamps()
+        //            }
+        //            parallel {
+        //                stage("Testing DevPi .zip Package with Python 3.6 and 3.7"){
+        //                    environment {
+        //                        PATH = "${tool 'CPython-3.7'};${tool 'CPython-3.6'};$PATH"
+        //                    }
+        //                    agent {
+        //                        node {
+        //                            label "Windows && Python3 && VS2015"
+        //                        }
+        //                    }
+        //                    options {
+        //                        skipDefaultCheckout(true)
+        //                    }
+        //                    stages{
+        //                        stage("Creating venv to Test Sdist"){
+        //                                steps {
+        //                                    bat "python -m venv venv\\venv36 && venv\\venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv36\\Scripts\\pip.exe install setuptools --upgrade && venv\\venv36\\Scripts\\pip.exe install \"tox<3.7\" detox devpi-client"
+        //                                }
+        //                        }
+        //                        stage("Testing DevPi Zip Package"){
+        //                            environment {
+        //                                PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+        //                            }
+        //                            steps {
+        //                                timeout(20){
+        //                                    devpiTest(
+        //                                        devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
+        //                                        url: "https://devpi.library.illinois.edu",
+        //                                        index: "${env.BRANCH_NAME}_staging",
+        //                                        pkgName: "${env.PKG_NAME}",
+        //                                        pkgVersion: "${env.PKG_VERSION}",
+        //                                        pkgRegex: "zip",
+        //                                        detox: false
+        //                                    )
+        //                                }
+        //                            }
+        //                        }
+        //                    }
+        //                    post {
+        //                        cleanup{
+        //                            cleanWs(
+        //                                deleteDirs: true,
+        //                                disableDeferredWipeout: true,
+        //                                patterns: [
+        //                                    [pattern: '*tmp', type: 'INCLUDE'],
+        //                                    [pattern: 'certs', type: 'INCLUDE']
+        //                                    ]
+        //                            )
+        //                        }
+        //                        failure{
+        //                            deleteDir()
+        //                        }
+        //                    }
+        //                }
+        //                stage("Testing DevPi .whl Package with Python 3.6"){
+        //                    agent {
+        //                        node {
+        //                            label "Windows && Python3"
+        //                        }
+        //                    }
+        //                    options {
+        //                        skipDefaultCheckout(true)
+        //                    }
+        //                    stages{
+        //                        stage("Creating venv to Test py36 .whl"){
+        //                            environment {
+        //                                PATH = "${tool 'CPython-3.6'};$PATH"
+        //                            }
+        //                            steps {
+        //                                bat "(if not exist venv\\36 mkdir venv\\36) && python -m venv venv\\36 && venv\\36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\36\\Scripts\\pip.exe install setuptools --upgrade && venv\\36\\Scripts\\pip.exe install \"tox<3.7\" devpi-client"
+        //                            }
+        //                        }
+        //                        stage("Testing DevPi .whl Package with Python 3.6"){
+        //                            options{
+        //                                timeout(20)
+        //                            }
+        //                            environment {
+        //                                PATH = "${WORKSPACE}\\venv\\36\\Scripts;$PATH"
+        //                            }
+        //                            steps {
+        //                                devpiTest(
+        //                                        devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
+        //                                        url: "https://devpi.library.illinois.edu",
+        //                                        index: "${env.BRANCH_NAME}_staging",
+        //                                        pkgName: "${env.PKG_NAME}",
+        //                                        pkgVersion: "${env.PKG_VERSION}",
+        //                                        pkgRegex: "36.*whl",
+        //                                        detox: false,
+        //                                        toxEnvironment: "py36"
+        //                                    )
+        //                            }
+        //                        }
+        //                    }
+        //                    post {
+        //                        failure {
+        //                            deleteDir()
+        //                        }
+        //                        cleanup{
+        //                            cleanWs(
+        //                                deleteDirs: true,
+        //                                disableDeferredWipeout: true,
+        //                                patterns: [
+        //                                    [pattern: '*tmp', type: 'INCLUDE'],
+        //                                    [pattern: 'certs', type: 'INCLUDE']
+        //                                    ]
+        //                            )
+        //                        }
+        //                    }
+        //                }
+        //                stage("Testing DevPi .whl Package with Python 3.7"){
+        //                    agent {
+        //                        node {
+        //                            label "Windows && Python3"
+        //                        }
+        //                    }
+        //                    options {
+        //                        skipDefaultCheckout(true)
+        //                    }
+        //                    stages{
+        //                        stage("Creating venv to Test py37 .whl"){
+        //                            environment {
+        //                                PATH = "${tool 'CPython-3.7'};$PATH"
+        //                            }
+        //                            steps {
+        //                                lock("system_python_${NODE_NAME}"){
+        //                                    bat "python -m venv venv\\37"
+        //                                }
+        //                                bat "venv\\37\\Scripts\\python.exe -m pip install pip --upgrade && venv\\37\\Scripts\\pip.exe install setuptools --upgrade && venv\\37\\Scripts\\pip.exe install \"tox<3.7\" devpi-client"
+        //                            }
+        //                        }
+        //                        stage("Testing DevPi .whl Package with Python 3.7"){
+        //                            options{
+        //                                timeout(20)
+        //                            }
+        //                            environment {
+        //                                PATH = "${WORKSPACE}\\venv\\37\\Scripts;$PATH"
+        //                            }
+        //                            steps {
+        //                                devpiTest(
+        //                                        devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
+        //                                        url: "https://devpi.library.illinois.edu",
+        //                                        index: "${env.BRANCH_NAME}_staging",
+        //                                        pkgName: "${env.PKG_NAME}",
+        //                                        pkgVersion: "${env.PKG_VERSION}",
+        //                                        pkgRegex: "37.*whl",
+        //                                        detox: false,
+        //                                        toxEnvironment: "py37"
+        //                                    )
+        //                            }
+        //                        }
+        //                    }
+        //                    post {
+        //                        failure {
+        //                            deleteDir()
+        //                        }
+        //                        cleanup{
+        //                            cleanWs(
+        //                                deleteDirs: true,
+        //                                disableDeferredWipeout: true,
+        //                                patterns: [
+        //                                    [pattern: '*tmp', type: 'INCLUDE'],
+        //                                    [pattern: 'certs', type: 'INCLUDE']
+        //                                    ]
+        //                            )
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+        //        stage("Deploy to DevPi Production") {
+        //                when {
+        //                    allOf{
+        //                        equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
+        //                        branch "master"
+        //                    }
+        //                    beforeAgent true
+        //                }
+        //                steps {
+        //                    deploy_devpi_production("venv\\venv36\\Scripts\\devpi.exe", env.PKG_NAME, env.PKG_VERSION, env.BRANCH_NAME, env.DEVPI_USR, env.DEVPI_PSW)
+        //                }
+        //        }
+        //    }
+        //    post {
+        //        success {
+        //            bat "venv\\venv36\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && venv\\venv36\\Scripts\\devpi.exe use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && venv\\venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} ${env.DEVPI_USR}/${env.BRANCH_NAME}"
+        //        }
+        //        cleanup{
+        //            remove_from_devpi("venv\\venv36\\Scripts\\devpi.exe", "${env.PKG_NAME}", "${env.PKG_VERSION}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
+        //        }
+        //    }
+        //}
         stage("Deploy"){
             parallel {
                 stage("Deploy Online Documentation") {
