@@ -227,46 +227,46 @@ pipeline {
                         //        }
                         //    }
                         //}
-                        stage("Installing Pipfile"){
-                            options{
-                                timeout(5)
-                                retry 2
-                            }
-                            steps {
-
-                                bat "(if not exist logs mkdir logs) && python -m pipenv install --dev --deploy && python -m pipenv run pip list > logs\\pippackages_pipenv_${NODE_NAME}.log && python -m pipenv check"
-                            }
-                            post{
-                                always{
-                                    archiveArtifacts artifacts: "logs/pippackages_pipenv_*.log"
-                                }
-                                cleanup{
-                                    cleanWs(patterns: [[pattern: "logs/pippackages_pipenv_*.log", type: 'INCLUDE']])
-                                }
-                            }
-                        }
-                        stage("Creating Virtualenv for Building"){
-                            steps{
-                                bat "python -m venv venv\\venv36"
-                                script {
-                                    try {
-                                        bat "call venv\\venv36\\Scripts\\python.exe -m pip install -U pip"
-                                    }
-                                    catch (exc) {
-                                        bat "python -m venv venv36 && venv\\venv36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
-                                    }
-                                }
-                                bat "venv\\venv36\\Scripts\\pip.exe install -r requirements.txt -r requirements-dev.txt --upgrade-strategy only-if-needed && venv\\venv36\\scripts\\pip.exe install \"tox>=3.8.2,<3.10\""
-                            }
-                            post{
-                                success{
-                                    bat "venv\\venv36\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
-                                    archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
-                                    cleanWs patterns: [[pattern: "logs/pippackages_venv_*.log", type: 'INCLUDE']]
-                                }
-
-                            }
-                        }
+//                         stage("Installing Pipfile"){
+//                             options{
+//                                 timeout(5)
+//                                 retry 2
+//                             }
+//                             steps {
+//
+//                                 bat "(if not exist logs mkdir logs) && python -m pipenv install --dev --deploy && python -m pipenv run pip list > logs\\pippackages_pipenv_${NODE_NAME}.log && python -m pipenv check"
+//                             }
+//                             post{
+//                                 always{
+//                                     archiveArtifacts artifacts: "logs/pippackages_pipenv_*.log"
+//                                 }
+//                                 cleanup{
+//                                     cleanWs(patterns: [[pattern: "logs/pippackages_pipenv_*.log", type: 'INCLUDE']])
+//                                 }
+//                             }
+//                         }
+//                         stage("Creating Virtualenv for Building"){
+//                             steps{
+//                                 bat "python -m venv venv\\venv36"
+//                                 script {
+//                                     try {
+//                                         bat "call venv\\venv36\\Scripts\\python.exe -m pip install -U pip"
+//                                     }
+//                                     catch (exc) {
+//                                         bat "python -m venv venv36 && venv\\venv36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+//                                     }
+//                                 }
+//                                 bat "venv\\venv36\\Scripts\\pip.exe install -r requirements.txt -r requirements-dev.txt --upgrade-strategy only-if-needed && venv\\venv36\\scripts\\pip.exe install \"tox>=3.8.2,<3.10\""
+//                             }
+//                             post{
+//                                 success{
+//                                     bat "venv\\venv36\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
+//                                     archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
+//                                     cleanWs patterns: [[pattern: "logs/pippackages_venv_*.log", type: 'INCLUDE']]
+//                                 }
+//
+//                             }
+//                         }
                     }
                 }
             }
