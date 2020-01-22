@@ -605,6 +605,16 @@ pipeline {
                             bat "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist"
                         }
                         post{
+                            always{
+                                script{
+                                    findFiles(glob: "*.pyd").each{
+                                        bat(
+                                            label: "Checking Python extension for dependents",
+                                            script: "dumpbin /DEPENDENTS ${it.path}"
+                                            )
+                                    }
+                                }
+                            }
                             success{
                                 stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION}"
                                 archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
