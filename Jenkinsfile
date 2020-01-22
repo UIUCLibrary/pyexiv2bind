@@ -17,18 +17,18 @@ def CONFIGURATIONS = [
         ]
 ]
 
-def test_wheel(pkgRegex, python_version){
-    script{
-
-        bat "python -m venv venv\\${NODE_NAME}\\${python_version} && venv\\${NODE_NAME}\\${python_version}\\Scripts\\python.exe -m pip install pip --upgrade && venv\\${NODE_NAME}\\${python_version}\\Scripts\\pip.exe install tox --upgrade"
-
-        def python_wheel = findFiles glob: "**/${pkgRegex}"
-        python_wheel.each{
-            echo "Testing ${it}"
-            bat "${WORKSPACE}\\venv\\${NODE_NAME}\\${python_version}\\Scripts\\tox.exe --installpkg=${WORKSPACE}\\${it} -e py${python_version}"
-        }
-    }
-}
+//def test_wheel(pkgRegex, python_version){
+//    script{
+//
+//        bat "python -m venv venv\\${NODE_NAME}\\${python_version} && venv\\${NODE_NAME}\\${python_version}\\Scripts\\python.exe -m pip install pip --upgrade && venv\\${NODE_NAME}\\${python_version}\\Scripts\\pip.exe install tox --upgrade"
+//
+//        def python_wheel = findFiles glob: "**/${pkgRegex}"
+//        python_wheel.each{
+//            echo "Testing ${it}"
+//            bat "${WORKSPACE}\\venv\\${NODE_NAME}\\${python_version}\\Scripts\\tox.exe --installpkg=${WORKSPACE}\\${it} -e py${python_version}"
+//        }
+//    }
+//}
 
 def get_package_version(stashName, metadataFile){
     node {
@@ -53,16 +53,16 @@ def get_package_name(stashName, metadataFile){
 }
 
 
-def rebuild_workspace(sourceDir){
-    script{
-        deleteDir()
-        dir("${sourceDir}"){
-            checkout scm
-            bat "dir"
-        }
-
-    }
-}
+//def rebuild_workspace(sourceDir){
+//    script{
+//        deleteDir()
+//        dir("${sourceDir}"){
+//            checkout scm
+//            bat "dir"
+//        }
+//
+//    }
+//}
 def deploy_docs(pkgName, prefix){
     script{
         try{
@@ -125,24 +125,24 @@ def deploy_devpi_production(DEVPI, PKG_NAME, PKG_VERSION, BRANCH_NAME, USR, PSW)
 
 }
 
-def runTox(tox_exec){
-    script{
-        try{
-            bat "where python"
-            bat "if not exist ${WORKSPACE}\\logs mkdir ${WORKSPACE}\\logs"
-            bat  (
-                label: "Run Tox",
-                script: "${tox_exec} --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --result-json=${WORKSPACE}\\logs\\tox_report.json"
-            )
-
-        } catch (exc) {
-            bat (
-                label: "Run Tox with new environments",
-                script: "${tox_exec} --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox --recreate -vv --result-json=${WORKSPACE}\\logs\\tox_report.json"
-            )
-        }
-    }
-}
+//def runTox(tox_exec){
+//    script{
+//        try{
+//            bat "where python"
+//            bat "if not exist ${WORKSPACE}\\logs mkdir ${WORKSPACE}\\logs"
+//            bat  (
+//                label: "Run Tox",
+//                script: "${tox_exec} --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --result-json=${WORKSPACE}\\logs\\tox_report.json"
+//            )
+//
+//        } catch (exc) {
+//            bat (
+//                label: "Run Tox with new environments",
+//                script: "${tox_exec} --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox --recreate -vv --result-json=${WORKSPACE}\\logs\\tox_report.json"
+//            )
+//        }
+//    }
+//}
 
 pipeline {
     agent none
@@ -275,6 +275,7 @@ pipeline {
                         stage("Run Tox test") {
                             when {
                                equals expected: true, actual: params.TEST_RUN_TOX
+                               beforeAgent true
                             }
 
 
@@ -507,6 +508,7 @@ pipeline {
                         equals expected: "dev", actual: env.BRANCH_NAME
                     }
                 }
+                beforeAgent true
             }
 
             environment{
@@ -718,6 +720,7 @@ pipeline {
                                 equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
                                 branch "master"
                             }
+                            beforeAgent true
                         }
                         steps {
                             deploy_devpi_production("venv\\venv36\\Scripts\\devpi.exe", env.PKG_NAME, env.PKG_VERSION, env.BRANCH_NAME, env.DEVPI_USR, env.DEVPI_PSW)
@@ -742,6 +745,7 @@ pipeline {
                     }
                     when{
                         equals expected: true, actual: params.DEPLOY_DOCS
+                        beforeAgent true
                     }
                     environment{
                         PKG_NAME = get_package_name("DIST-INFO", "py3exiv2bind.dist-info/METADATA")
