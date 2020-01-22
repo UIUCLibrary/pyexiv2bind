@@ -619,15 +619,15 @@ pipeline {
                         }
 
                         steps{
-                            script{
-                                if(PYTHON_VERSION == "3.7"){
-                                    try{
-                                        unstash "build_37"
-                                    } catch (exc) {
-                                        echo "Unable to unstash build files for ${PYTHON_VERSION}."
-                                    }
-                                }
-                            }
+                            //script{
+                            //    if(PYTHON_VERSION == "3.7"){
+                            //        try{
+                            //            unstash "build_37"
+                            //        } catch (exc) {
+                            //            echo "Unable to unstash build files for ${PYTHON_VERSION}."
+                            //        }
+                            //    }
+                            //}
                             bat "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist"
                         }
                         post{
@@ -645,6 +645,7 @@ pipeline {
                                 stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION}"
                                 archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
                             }
+
                         }
                     }
                     stage("Testing wheel"){
