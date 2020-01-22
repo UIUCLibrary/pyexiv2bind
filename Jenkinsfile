@@ -449,7 +449,12 @@ pipeline {
                                 stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION}"
                                 archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
                             }
-
+                            cleanup{
+                                cleanWs(
+                                    deleteDirs: true,
+                                    patterns: [[pattern: 'dist/', type: 'INCLUDE']]
+                                )
+                            }
                         }
                     }
                     stage("Testing wheel"){
@@ -463,7 +468,10 @@ pipeline {
 
                         steps{
                             unstash "whl ${PYTHON_VERSION}"
-                            bat "python --version"
+                            bat(
+                                label: "Checking Python version",
+                                script: "python --version"
+                                )
 
                             script{
                                 findFiles(glob: "**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex}").each{
@@ -475,9 +483,14 @@ pipeline {
                             }
                         }
                         post{
-                            failure{
-                                powershell "Remove-Item -Recurse -Force .tox"
-                                bat "tree /A /F "
+                            cleanup{
+                                cleanWs(
+                                    deleteDirs: true,
+                                    patterns: [
+                                        [pattern: 'dist/', type: 'INCLUDE'],
+                                        [pattern: '.tox/', type: 'INCLUDE'],
+                                        ]
+                                )
                             }
                         }
                     }
