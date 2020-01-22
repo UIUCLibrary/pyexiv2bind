@@ -625,6 +625,7 @@ pipeline {
                         }
                         post{
                             failure{
+                                powershell "Remove-Item -Recurse -Force .tox"
                                 bat "tree /A /F "
                             }
                         }
