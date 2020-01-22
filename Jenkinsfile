@@ -610,9 +610,9 @@ pipeline {
                             }
                         }
 
-                    steps{
-                        unstash "whl ${PYTHON_VERSION}"
-                        bat "python --version"
+                        steps{
+                            unstash "whl ${PYTHON_VERSION}"
+                            bat "python --version"
 
                             script{
                                 findFiles(glob: "**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex}").each{
@@ -621,6 +621,11 @@ pipeline {
                                         label: "Testing ${it}"
                                     )
                                 }
+                            }
+                        }
+                        post{
+                            failure{
+                                bat "tree /A /F "
                             }
                         }
                     }
