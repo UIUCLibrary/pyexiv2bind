@@ -677,24 +677,31 @@ pipeline {
         //                }
         //            }
         //        }
-        //        stage("Python sdist"){
-        //            agent {
-        //                label "Windows && VS2015 && Python3 && longfilenames"
-        //            }
-        //            environment {
-        //                CMAKE_PATH = "${tool 'cmake3.13'}"
-        //                PATH = "${tool 'CPython-3.7'};${env.CMAKE_PATH};$PATH"
-        //            }
-        //            steps {
-        //                bat "python setup.py sdist -d ${WORKSPACE}\\dist --format zip"
-        //            }
-        //            post{
-        //                success{
-        //                    stash includes: 'dist/*.zip,dist/*.tar.gz', name: "sdist"
-        //                    archiveArtifacts artifacts: "dist/*.tar.gz,dist/*.zip", fingerprint: true
-        //                }
-        //            }
-        //        }
+               stage("Python sdist"){
+                    agent{
+                        dockerfile {
+                            filename 'ci/docker/windows/build/msvc/Dockerfile'
+                            label 'windows && Docker'
+                            additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} ${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
+                        }
+                    }
+//                    agent {
+//                        label "Windows && VS2015 && Python3 && longfilenames"
+//                    }
+//                    environment {
+//                        CMAKE_PATH = "${tool 'cmake3.13'}"
+//                        PATH = "${tool 'CPython-3.7'};${env.CMAKE_PATH};$PATH"
+//                    }
+                   steps {
+                       bat "python setup.py sdist -d ${WORKSPACE}\\dist --format zip"
+                   }
+                   post{
+                       success{
+                           stash includes: 'dist/*.zip,dist/*.tar.gz', name: "sdist"
+                           archiveArtifacts artifacts: "dist/*.tar.gz,dist/*.zip", fingerprint: true
+                       }
+                   }
+               }
         //        stage("Python 3.7 whl"){
         //            agent {
         //                node {
