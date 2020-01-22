@@ -365,66 +365,75 @@ pipeline {
         stage("Testing") {
             environment{
                 junit_filename = "junit-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
-                PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+//                 PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
             }
             agent {
-                label "Windows && VS2015 && Python3 && longfilenames"
+                dockerfile {
+                    filename 'ci/docker/windows/build/msvc/Dockerfile'
+                    label 'windows && Docker'
+                    additionalBuildArgs "${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
+                }
             }
+//             agent {
+//                 label "Windows && VS2015 && Python3 && longfilenames"
+//             }
             stages{
                 stage("Setting up Test Env"){
                     steps{
                         unstash "built_source"
-                        bat "python -m venv venv\\venv36 && venv\\venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv36\\Scripts\\pip.exe install --upgrade setuptools && venv\\venv36\\Scripts\\pip.exe install -r requirements-dev.txt"
+                        bat "if not exist logs mkdir logs"
+//                         bat "python -m venv venv\\venv36 && venv\\venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv36\\Scripts\\pip.exe install --upgrade setuptools && venv\\venv36\\Scripts\\pip.exe install -r requirements-dev.txt"
                     }
                 }
 
                 stage("Running Tests"){
 
-                    failFast true
+//                     failFast true
                     parallel {
                         stage("Run Tox test") {
-                            agent{
-                                node {
-        //                        Runs in own node because tox tests delete the coverage data produced
-                                    label "Windows && VS2015 && Python3 && longfilenames"
-                                }
-                            }
+//                             agent{
+//                                 node {
+//         //                        Runs in own node because tox tests delete the coverage data produced
+//                                     label "Windows && VS2015 && Python3 && longfilenames"
+//                                 }
+//                             }
                             when {
                                equals expected: true, actual: params.TEST_RUN_TOX
                             }
 
 
                             stages{
-                                stage("Purge all Existing Data in Node"){
-                                    when{
-                                        anyOf{
-                                            equals expected: true, actual: params.FRESH_WORKSPACE
-                                            triggeredBy "TimerTriggerCause"
-                                        }
-                                    }
-                                    steps{
-                                        deleteDir()
-                                        checkout scm
-                                    }
-                                }
-                                stage("Install Tox"){
-                                    environment {
-                                        PATH = "${tool 'CPython-3.6'};$PATH"
-                                    }
-                                    steps{
-                                        bat 'python -m venv venv\\venv36 && venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet && venv\\venv36\\scripts\\pip.exe install "tox>=3.8.2,<3.10" --upgrade'
-                                    }
-                                }
+//                                 stage("Purge all Existing Data in Node"){
+//                                     when{
+//                                         anyOf{
+//                                             equals expected: true, actual: params.FRESH_WORKSPACE
+//                                             triggeredBy "TimerTriggerCause"
+//                                         }
+//                                     }
+//                                     steps{
+//                                         deleteDir()
+//                                         checkout scm
+//                                     }
+//                                 }
+//                                 stage("Install Tox"){
+// //                                     environment {
+// //                                         PATH = "${tool 'CPython-3.6'};$PATH"
+// //                                     }
+//                                     steps{
+//                                         bat 'python -m venv venv\\venv36 && venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet && venv\\venv36\\scripts\\pip.exe install "tox>=3.8.2,<3.10" --upgrade'
+//                                     }
+//                                 }
                                 stage("Running Tox"){
-                                    environment {
-                                        PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-                                        CL = "/MP"
-                                    }
+//                                     environment {
+//                                         PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+//                                         CL = "/MP"
+//                                     }
                                     options{
                                         timeout(15)
                                     }
                                     steps {
-                                        runTox("${WORKSPACE}\\venv\\venv36\\Scripts\\tox.exe")
+                                        bat "tox -e py -vv"
+//                                         runTox("${WORKSPACE}\\venv\\venv36\\Scripts\\tox.exe")
 
                                     }
                                 }
@@ -434,31 +443,31 @@ pipeline {
                                 always{
                                     archiveArtifacts allowEmptyArchive: true, artifacts: '.tox/py*/log/*.log,.tox/log/*.log,logs/tox_report.json'
                                 }
-                                failure {
-                                    dir("${WORKSPACE}\\.tox"){
-                                        deleteDir()
-                                    }
-                                }
-                                cleanup{
-                                    cleanWs(
-                                        deleteDirs: true,
-                                        disableDeferredWipeout: true,
-                                        patterns: [
-                                            [pattern: 'dist', type: 'INCLUDE'],
-                                            [pattern: 'build', type: 'INCLUDE'],
-                                            [pattern: 'reports', type: 'INCLUDE'],
-                                            [pattern: '*tmp', type: 'INCLUDE'],
-                                            ]
-                                    )
-                                }
+//                                 failure {
+//                                     dir("${WORKSPACE}\\.tox"){
+//                                         deleteDir()
+//                                     }
+//                                 }
+//                                 cleanup{
+//                                     cleanWs(
+//                                         deleteDirs: true,
+//                                         disableDeferredWipeout: true,
+//                                         patterns: [
+//                                             [pattern: 'dist', type: 'INCLUDE'],
+//                                             [pattern: 'build', type: 'INCLUDE'],
+//                                             [pattern: 'reports', type: 'INCLUDE'],
+//                                             [pattern: '*tmp', type: 'INCLUDE'],
+//                                             ]
+//                                     )
+//                                 }
                             }
                         }
                         stage("Run Doctest Tests"){
-                            environment{
-                                PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;${PATH}"
-                            }
+//                             environment{
+//                                 PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;${PATH}"
+//                             }
                             steps {
-                                bat "sphinx-build docs/source ${WORKSPACE}\\reports\\doctest -b doctest -d ${WORKSPACE}\\build\\docs\\.doctrees --no-color -w ${WORKSPACE}\\logs\\doctest_warnings.log"
+                                bat "sphinx-build docs/source reports\\doctest -b doctest -d build\\docs\\.doctrees --no-color -w logs\\doctest_warnings.log"
                             }
                             post{
                                 always {
@@ -469,9 +478,9 @@ pipeline {
                             }
                         }
                         stage("MyPy Static Analysis") {
-                            environment {
-                                PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
-                            }
+//                             environment {
+//                                 PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
+//                             }
                             stages{
                                 stage("Generate stubs") {
                                     steps{
@@ -508,11 +517,11 @@ pipeline {
                           options{
                             timeout(2)
                           }
-                          environment {
-                            PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
-                          }
+//                           environment {
+//                             PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
+//                           }
                           steps{
-                            bat "(if not exist logs mkdir logs) && pip install flake8"
+//                             bat "(if not exist logs mkdir logs) && pip install flake8"
                             bat returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
                           }
                           post {
@@ -529,7 +538,7 @@ pipeline {
                             timeout(2)
                           }
                           steps{
-                                bat "python -m pipenv run coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=${WORKSPACE}/reports/pytest/${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                bat "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=${WORKSPACE}/reports/pytest/${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
                           }
                           post{
                             always{
