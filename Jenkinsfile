@@ -471,7 +471,7 @@ pipeline {
                         dockerfile {
                             filename 'ci/docker/windows/build/msvc/Dockerfile'
                             label 'windows && Docker'
-                            additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} ${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
+                            additionalBuildArgs "${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
                         }
                     }
 //                    agent {
