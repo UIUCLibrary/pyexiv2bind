@@ -177,56 +177,84 @@ pipeline {
         booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation")
     }
     stages {
-        stage("Configure") {
-            parallel{
-                stage("Setting up Workspace"){
-                    agent {
-                        label "Windows && VS2015 && Python3 && longfilenames"
-                    }
-                    environment{
-                        PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-                    }
-                    stages{
-                        //stage("Purge all Existing Data in Workspace"){
-                        //    when{
-                        //        anyOf{
-                        //            equals expected: true, actual: params.FRESH_WORKSPACE
-                        //            triggeredBy "TimerTriggerCause"
-                        //        }
-                        //    }
-                        //    steps{
-                        //        rebuild_workspace("source")
-                        //    }
-                        //}
-                        stage("Getting Distribution Info"){
-                            environment{
-                                PATH = "${tool 'CPython-3.7'};${tool 'cmake3.13'};$PATH"
-                            }
-                            steps{
-                                bat "python setup.py dist_info"
-                            }
-                            post{
-                                success{
-                                    stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
-                                    archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
-                                }
-                            }
-                        }
-                        //stage("Installing Required System Level Dependencies"){
-                        //    steps{
-                        //        lock("system_python_${NODE_NAME}"){
-                        //            bat "python -m pip install --upgrade pip --quiet"
-                        //        }
-                        //    }
-                        //    post{
-                        //        always{
-                        //            lock("system_python_${NODE_NAME}"){
-                        //                bat "(if not exist logs mkdir logs) && python -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
-                        //            }
-                        //            archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
-                        //        }
-                        //    }
-                        //}
+        stage("Getting Distribution Info"){
+            agent {
+                dockerfile {
+                    filename 'ci/docker/windows/build/msvc/Dockerfile'
+                    label 'windows && Docker'
+                    additionalBuildArgs "${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
+                }
+            }
+            //environment{
+            //    PATH = "${tool 'CPython-3.7'};${tool 'cmake3.13'};$PATH"
+            //}
+            steps{
+                bat "python setup.py dist_info"
+            }
+            post{
+                success{
+                    stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
+                    archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
+                }
+            }
+        }
+        //stage("Configure") {
+         //   parallel{
+         //       stage("Setting up Workspace"){
+         //           agent {
+         //               label "Windows && VS2015 && Python3 && longfilenames"
+         //           }
+         //           environment{
+         //               PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+         //           }
+         //           stages{
+         //               //stage("Purge all Existing Data in Workspace"){
+         //               //    when{
+         //               //        anyOf{
+         //               //            equals expected: true, actual: params.FRESH_WORKSPACE
+         //               //            triggeredBy "TimerTriggerCause"
+         //               //        }
+         //               //    }
+         //               //    steps{
+         //               //        rebuild_workspace("source")
+         //               //    }
+         //               //}
+         //               stage("Getting Distribution Info"){
+         //                   agent {
+         //                       dockerfile {
+         //                           filename 'ci/docker/windows/build/msvc/Dockerfile'
+         //                           label 'windows && Docker'
+         //                           additionalBuildArgs "${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
+         //                       }
+         //                   }
+         //                   //environment{
+         //                   //    PATH = "${tool 'CPython-3.7'};${tool 'cmake3.13'};$PATH"
+         //                   //}
+         //                   steps{
+         //                       bat "python setup.py dist_info"
+         //                   }
+         //                   post{
+         //                       success{
+         //                           stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
+         //                           archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
+         //                       }
+         //                   }
+         //               }
+         //               //stage("Installing Required System Level Dependencies"){
+         //               //    steps{
+         //               //        lock("system_python_${NODE_NAME}"){
+         //               //            bat "python -m pip install --upgrade pip --quiet"
+         //               //        }
+         //               //    }
+         //               //    post{
+         //               //        always{
+         //               //            lock("system_python_${NODE_NAME}"){
+         //               //                bat "(if not exist logs mkdir logs) && python -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
+         //               //            }
+         //               //            archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
+         //               //        }
+         //               //    }
+         //               //}
 //                         stage("Installing Pipfile"){
 //                             options{
 //                                 timeout(5)
@@ -266,10 +294,10 @@ pipeline {
 //                                 }
 //
 //                             }
-//                         }
-                    }
-                }
-            }
+//          //               }
+            //        }
+            //    }
+            //}
             //post{
             //    failure {
             //        bat returnStatus: true, script: "python -m pipenv --rm"
@@ -277,7 +305,7 @@ pipeline {
             //    }
             //}
 
-        }
+        //}
         stage("Building") {
             agent {
                 dockerfile {
