@@ -270,14 +270,12 @@ pipeline {
                     }
                 }
             }
-            post{
-                failure {
-                    bat returnStatus: true, script: "python -m pipenv --rm"
-
-                    deleteDir()
-                }
-
-            }
+            //post{
+            //    failure {
+            //        bat returnStatus: true, script: "python -m pipenv --rm"
+            //        deleteDir()
+            //    }
+            //}
 
         }
         stage("Building") {
@@ -321,7 +319,7 @@ pipeline {
                         //    cleanWs(patterns: [[pattern: 'logs/build.log', type: 'INCLUDE']])
                         //}
                         success{
-                          stash includes: 'build/**"', name: "build_36"
+                          stash includes: 'build/**"', name: "build_37"
                           stash includes: 'py3exiv2bind/**/*.dll,py3exiv2bind/**/*.pyd,py3exiv2bind/**/*.exe"', name: "built_source"
                         }
                     }
@@ -594,9 +592,9 @@ pipeline {
 
                         steps{
                             script{
-                                if(PYTHON_VERSION == "3.6"){
+                                if(PYTHON_VERSION == "3.7"){
                                     try{
-                                        unstash "build_36"
+                                        unstash "build_37"
                                     } catch (exc) {
                                         echo "Unable to unstash build files for ${PYTHON_VERSION}."
                                     }
