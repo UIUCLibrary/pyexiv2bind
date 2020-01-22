@@ -386,11 +386,27 @@ pipeline {
                             [pattern: 'reports/coverage', type: 'INCLUDE'],
                         ]
                     )
-
                 }
             }
-
         }
+        stage("Python sdist"){
+            agent{
+                dockerfile {
+                    filename 'ci/docker/windows/build/msvc/Dockerfile'
+                    label 'windows && Docker'
+                    additionalBuildArgs "${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
+                }
+            }
+           steps {
+               bat "python setup.py sdist -d ${WORKSPACE}\\dist --format zip"
+           }
+           post{
+               success{
+                   stash includes: 'dist/*.zip,dist/*.tar.gz', name: "sdist"
+                   archiveArtifacts artifacts: "dist/*.tar.gz,dist/*.zip", fingerprint: true
+               }
+           }
+       }
         stage('Creating Binary Packages') {
             matrix{
                 agent none
@@ -466,31 +482,7 @@ pipeline {
                 }
             }
         }
-               stage("Python sdist"){
-                    agent{
-                        dockerfile {
-                            filename 'ci/docker/windows/build/msvc/Dockerfile'
-                            label 'windows && Docker'
-                            additionalBuildArgs "${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
-                        }
-                    }
-//                    agent {
-//                        label "Windows && VS2015 && Python3 && longfilenames"
-//                    }
-//                    environment {
-//                        CMAKE_PATH = "${tool 'cmake3.13'}"
-//                        PATH = "${tool 'CPython-3.7'};${env.CMAKE_PATH};$PATH"
-//                    }
-                   steps {
-                       bat "python setup.py sdist -d ${WORKSPACE}\\dist --format zip"
-                   }
-                   post{
-                       success{
-                           stash includes: 'dist/*.zip,dist/*.tar.gz', name: "sdist"
-                           archiveArtifacts artifacts: "dist/*.tar.gz,dist/*.zip", fingerprint: true
-                       }
-                   }
-               }
+
         stage("Deploy to DevPi") {
             agent {
                 label "Windows && VS2015 && Python3 && longfilenames"
