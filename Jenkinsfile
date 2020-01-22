@@ -304,7 +304,7 @@ pipeline {
                     //}
                     steps {
                         bat "if not exist logs mkdir logs"
-                        bat "python setup.py build -b build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/36/lib/ --build-temp build/36/temp build_ext --inplace"
+                        bat "python setup.py build -b build -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib/ --build-temp build/temp build_ext --inplace"
                         //powershell(
                         //    script: "& python -m pipenv run python setup.py build -b build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/36/lib/ --build-temp build/36/temp build_ext --inplace | tee ${WORKSPACE}\\logs\\build.log"
                         //)
@@ -321,6 +321,7 @@ pipeline {
                         //    cleanWs(patterns: [[pattern: 'logs/build.log', type: 'INCLUDE']])
                         //}
                         success{
+                          stash includes: 'build/**"', name: "build_36"
                           stash includes: 'py3exiv2bind/**/*.dll,py3exiv2bind/**/*.pyd,py3exiv2bind/**/*.exe"', name: "built_source"
                         }
                     }
@@ -592,6 +593,15 @@ pipeline {
                         }
 
                         steps{
+                            script{
+                                if(PYTHON_VERSION == "3.6"){
+                                    try{
+                                        unstash "build_36"
+                                    } catch (exc) {
+                                        echo "Unable to unstash build files for ${PYTHON_VERSION}."
+                                    }
+                                }
+                            }
                             bat "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist"
                         }
                         post{
