@@ -347,7 +347,7 @@ pipeline {
                         //    cleanWs(patterns: [[pattern: 'logs/build.log', type: 'INCLUDE']])
                         //}
                         success{
-                          stash includes: 'build/**"', name: "build_37"
+                          stash includes: 'build/**', name: "build_37"
                           stash includes: 'py3exiv2bind/**/*.dll,py3exiv2bind/**/*.pyd,py3exiv2bind/**/*.exe"', name: "built_source"
                         }
                     }
