@@ -146,10 +146,6 @@ def runTox(tox_exec){
 
 pipeline {
     agent none
-    //agent {
-    //    label "Windows && VS2015 && Python3 && longfilenames"
-    //}
-    
     triggers {
        parameterizedCron '@daily % DEPLOY_DEVPI=true; TEST_RUN_TOX=true'
     }
@@ -163,7 +159,6 @@ pipeline {
 
         DEVPI = credentials("DS_devpi")
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
-        //WORKON_HOME ="${WORKSPACE}\\pipenv\\"
         PIPENV_NOSPIN="DISABLED"
     }
     parameters {
@@ -172,7 +167,6 @@ pipeline {
         
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to https://devpi.library.illinois.edu/production/release")
-        // choice(choices: 'None\nrelease', description: "Release the build to production. Only available in the Master branch", name: 'RELEASE')
         string(name: 'URL_SUBFOLDER', defaultValue: "py3exiv2bind", description: 'The directory that the docs should be saved under')
         booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation")
     }
@@ -185,9 +179,6 @@ pipeline {
                     additionalBuildArgs "${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
                 }
             }
-            //environment{
-            //    PATH = "${tool 'CPython-3.7'};${tool 'cmake3.13'};$PATH"
-            //}
             steps{
                 bat "python setup.py dist_info"
             }
@@ -198,114 +189,6 @@ pipeline {
                 }
             }
         }
-        //stage("Configure") {
-         //   parallel{
-         //       stage("Setting up Workspace"){
-         //           agent {
-         //               label "Windows && VS2015 && Python3 && longfilenames"
-         //           }
-         //           environment{
-         //               PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-         //           }
-         //           stages{
-         //               //stage("Purge all Existing Data in Workspace"){
-         //               //    when{
-         //               //        anyOf{
-         //               //            equals expected: true, actual: params.FRESH_WORKSPACE
-         //               //            triggeredBy "TimerTriggerCause"
-         //               //        }
-         //               //    }
-         //               //    steps{
-         //               //        rebuild_workspace("source")
-         //               //    }
-         //               //}
-         //               stage("Getting Distribution Info"){
-         //                   agent {
-         //                       dockerfile {
-         //                           filename 'ci/docker/windows/build/msvc/Dockerfile'
-         //                           label 'windows && Docker'
-         //                           additionalBuildArgs "${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
-         //                       }
-         //                   }
-         //                   //environment{
-         //                   //    PATH = "${tool 'CPython-3.7'};${tool 'cmake3.13'};$PATH"
-         //                   //}
-         //                   steps{
-         //                       bat "python setup.py dist_info"
-         //                   }
-         //                   post{
-         //                       success{
-         //                           stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
-         //                           archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
-         //                       }
-         //                   }
-         //               }
-         //               //stage("Installing Required System Level Dependencies"){
-         //               //    steps{
-         //               //        lock("system_python_${NODE_NAME}"){
-         //               //            bat "python -m pip install --upgrade pip --quiet"
-         //               //        }
-         //               //    }
-         //               //    post{
-         //               //        always{
-         //               //            lock("system_python_${NODE_NAME}"){
-         //               //                bat "(if not exist logs mkdir logs) && python -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
-         //               //            }
-         //               //            archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
-         //               //        }
-         //               //    }
-         //               //}
-//                         stage("Installing Pipfile"){
-//                             options{
-//                                 timeout(5)
-//                                 retry 2
-//                             }
-//                             steps {
-//
-//                                 bat "(if not exist logs mkdir logs) && python -m pipenv install --dev --deploy && python -m pipenv run pip list > logs\\pippackages_pipenv_${NODE_NAME}.log && python -m pipenv check"
-//                             }
-//                             post{
-//                                 always{
-//                                     archiveArtifacts artifacts: "logs/pippackages_pipenv_*.log"
-//                                 }
-//                                 cleanup{
-//                                     cleanWs(patterns: [[pattern: "logs/pippackages_pipenv_*.log", type: 'INCLUDE']])
-//                                 }
-//                             }
-//                         }
-//                         stage("Creating Virtualenv for Building"){
-//                             steps{
-//                                 bat "python -m venv venv\\venv36"
-//                                 script {
-//                                     try {
-//                                         bat "call venv\\venv36\\Scripts\\python.exe -m pip install -U pip"
-//                                     }
-//                                     catch (exc) {
-//                                         bat "python -m venv venv36 && venv\\venv36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
-//                                     }
-//                                 }
-//                                 bat "venv\\venv36\\Scripts\\pip.exe install -r requirements.txt -r requirements-dev.txt --upgrade-strategy only-if-needed && venv\\venv36\\scripts\\pip.exe install \"tox>=3.8.2,<3.10\""
-//                             }
-//                             post{
-//                                 success{
-//                                     bat "venv\\venv36\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
-//                                     archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
-//                                     cleanWs patterns: [[pattern: "logs/pippackages_venv_*.log", type: 'INCLUDE']]
-//                                 }
-//
-//                             }
-//          //               }
-            //        }
-            //    }
-            //}
-            //post{
-            //    failure {
-            //        bat returnStatus: true, script: "python -m pipenv --rm"
-            //        deleteDir()
-            //    }
-            //}
-
-        //}
         stage("Building") {
             agent {
                 dockerfile {
@@ -314,40 +197,17 @@ pipeline {
                     additionalBuildArgs "${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
                 }
             }
-            //    label "Windows && VS2015 && Python3 && longfilenames"
-            //}
-            //environment{
-            //    PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-            //}
             stages{
                 stage("Building Python Package"){
                     options{
                         timeout(10)
                     }
-                    //environment {
-                    //    PATH = "${tool 'CPython-3.6'};${tool 'cmake3.13'};$PATH"
-                    //    CL = "/MP"
-                    //}
                     steps {
                         bat "if not exist logs mkdir logs"
                         bat "python setup.py build -b build -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib/ --build-temp build/temp build_ext --inplace"
-                        //powershell(
-                        //    script: "& python -m pipenv run python setup.py build -b build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/36/lib/ --build-temp build/36/temp build_ext --inplace | tee ${WORKSPACE}\\logs\\build.log"
-                        //)
                     }
                     post{
-                        //always{
-                        //    recordIssues(tools: [
-                        //            pyLint(name: 'Setuptools Build: PyLint', pattern: 'logs/build.log'),
-                        //            msBuild(name: 'Setuptools Build: MSBuild', pattern: 'logs/build.log')
-                        //        ]
-                        //        )
-                        //}
-                        //cleanup{
-                        //    cleanWs(patterns: [[pattern: 'logs/build.log', type: 'INCLUDE']])
-                        //}
                         success{
-                          stash includes: 'build/**', name: "build_37"
                           stash includes: 'py3exiv2bind/**/*.dll,py3exiv2bind/**/*.pyd,py3exiv2bind/**/*.exe"', name: "built_source"
                         }
                     }
@@ -392,7 +252,6 @@ pipeline {
         stage("Testing") {
             environment{
                 junit_filename = "junit-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
-//                 PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
             }
             agent {
                 dockerfile {
@@ -401,15 +260,11 @@ pipeline {
                     additionalBuildArgs "${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
                 }
             }
-//             agent {
-//                 label "Windows && VS2015 && Python3 && longfilenames"
-//             }
             stages{
                 stage("Setting up Test Env"){
                     steps{
                         unstash "built_source"
                         bat "if not exist logs mkdir logs"
-//                         bat "python -m venv venv\\venv36 && venv\\venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv36\\Scripts\\pip.exe install --upgrade setuptools && venv\\venv36\\Scripts\\pip.exe install -r requirements-dev.txt"
                     }
                 }
 
@@ -418,50 +273,18 @@ pipeline {
 //                     failFast true
                     parallel {
                         stage("Run Tox test") {
-//                             agent{
-//                                 node {
-//         //                        Runs in own node because tox tests delete the coverage data produced
-//                                     label "Windows && VS2015 && Python3 && longfilenames"
-//                                 }
-//                             }
                             when {
                                equals expected: true, actual: params.TEST_RUN_TOX
                             }
 
 
                             stages{
-//                                 stage("Purge all Existing Data in Node"){
-//                                     when{
-//                                         anyOf{
-//                                             equals expected: true, actual: params.FRESH_WORKSPACE
-//                                             triggeredBy "TimerTriggerCause"
-//                                         }
-//                                     }
-//                                     steps{
-//                                         deleteDir()
-//                                         checkout scm
-//                                     }
-//                                 }
-//                                 stage("Install Tox"){
-// //                                     environment {
-// //                                         PATH = "${tool 'CPython-3.6'};$PATH"
-// //                                     }
-//                                     steps{
-//                                         bat 'python -m venv venv\\venv36 && venv\\venv36\\scripts\\python.exe -m pip install pip --upgrade --quiet && venv\\venv36\\scripts\\pip.exe install "tox>=3.8.2,<3.10" --upgrade'
-//                                     }
-//                                 }
                                 stage("Running Tox"){
-//                                     environment {
-//                                         PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-//                                         CL = "/MP"
-//                                     }
                                     options{
                                         timeout(15)
                                     }
                                     steps {
                                         bat "tox -e py -vv"
-//                                         runTox("${WORKSPACE}\\venv\\venv36\\Scripts\\tox.exe")
-
                                     }
                                 }
                             }
@@ -470,29 +293,9 @@ pipeline {
                                 always{
                                     archiveArtifacts allowEmptyArchive: true, artifacts: '.tox/py*/log/*.log,.tox/log/*.log,logs/tox_report.json'
                                 }
-//                                 failure {
-//                                     dir("${WORKSPACE}\\.tox"){
-//                                         deleteDir()
-//                                     }
-//                                 }
-//                                 cleanup{
-//                                     cleanWs(
-//                                         deleteDirs: true,
-//                                         disableDeferredWipeout: true,
-//                                         patterns: [
-//                                             [pattern: 'dist', type: 'INCLUDE'],
-//                                             [pattern: 'build', type: 'INCLUDE'],
-//                                             [pattern: 'reports', type: 'INCLUDE'],
-//                                             [pattern: '*tmp', type: 'INCLUDE'],
-//                                             ]
-//                                     )
-//                                 }
                             }
                         }
                         stage("Run Doctest Tests"){
-//                             environment{
-//                                 PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;${PATH}"
-//                             }
                             steps {
                                 bat "sphinx-build docs/source reports\\doctest -b doctest -d build\\docs\\.doctrees --no-color -w logs\\doctest_warnings.log"
                             }
@@ -505,9 +308,6 @@ pipeline {
                             }
                         }
                         stage("MyPy Static Analysis") {
-//                             environment {
-//                                 PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
-//                             }
                             stages{
                                 stage("Generate stubs") {
                                     steps{
@@ -544,11 +344,7 @@ pipeline {
                           options{
                             timeout(2)
                           }
-//                           environment {
-//                             PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
-//                           }
                           steps{
-//                             bat "(if not exist logs mkdir logs) && pip install flake8"
                             bat returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
                           }
                           post {
@@ -619,15 +415,6 @@ pipeline {
                         }
 
                         steps{
-                            //script{
-                            //    if(PYTHON_VERSION == "3.7"){
-                            //        try{
-                            //            unstash "build_37"
-                            //        } catch (exc) {
-                            //            echo "Unable to unstash build files for ${PYTHON_VERSION}."
-                            //        }
-                            //    }
-                            //}
                             bat "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist"
                         }
                         post{
@@ -680,56 +467,6 @@ pipeline {
                 }
             }
         }
-        //stage("Packaging") {
-        //    parallel{
-        //        stage("Python 3.6 whl"){
-        //            agent {
-        //                label "Windows && VS2015 && Python3 && longfilenames"
-        //            }
-        //            environment {
-        //                CMAKE_PATH = "${tool 'cmake3.13'}"
-        //                //PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};${env.CMAKE_PATH};$PATH"
-        //                CL = "/MP"
-        //            }
-        //            stages{
-        //                stage("Create venv for 3.6"){
-        //                    environment {
-        //                        PATH = "${tool 'CPython-3.6'};$PATH"
-        //                    }
-        //                    steps {
-        //                        bat "python -m venv venv\\venv36 && venv\\venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv36\\Scripts\\pip.exe install wheel setuptools --upgrade"
-        //                    }
-        //                }
-        //                stage("Creating bdist Wheel for 3.6"){
-        //                    environment {
-        //                        PATH = "${WORKSPACE}\\venv\\venv36\\scripts;${tool 'CPython-3.6'};${env.CMAKE_PATH};$PATH"
-        //                    }
-        //                    steps {
-        //                        bat "python setup.py build -b build/36/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/36/lib --build-temp build/36/temp build_ext --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
-        //                    }
-        //                    post{
-        //                       success{
-        //                            stash includes: 'dist/*.whl', name: "whl 3.6"
-        //                        }
-        //                    }
-        //                }
-        //                stage("Testing 3.6 Wheel"){
-        //                    agent { label 'Windows && Python3' }
-        //                    environment {
-        //                        PATH = "${tool 'CPython-3.6'};$PATH"
-        //                    }
-        //                    steps{
-        //                        unstash "whl 3.6"
-        //                        test_wheel("*cp36*.whl", "36")
-        //                    }
-        //                    post{
-        //                        cleanup{
-        //                            deleteDir()
-        //                        }
-        //                    }
-        //                }
-        //            }
-        //        }
                stage("Python sdist"){
                     agent{
                         dockerfile {
@@ -755,79 +492,6 @@ pipeline {
                        }
                    }
                }
-        //        stage("Python 3.7 whl"){
-        //            agent {
-        //                node {
-        //                    label "Windows && Python3 && VS2015"
-        //                }
-        //            }
-        //            options{
-        //                retry 2
-        //                timeout(10)
-        //            }
-        //            environment {
-        //                CMAKE_PATH = "${tool 'cmake3.13'}"
-        //                //PATH = "${env.CMAKE_PATH};${tool 'CPython-3.7'};$PATH"
-        //                CL = "/MP"
-        //            }
-        //            stages{
-        //                stage("Create venv for 3.7"){
-        //                    environment {
-        //                        PATH = "${tool 'CPython-3.7'};${env.CMAKE_PATH};$PATH"
-        //                    }
-        //                    steps {
-        //                        bat "python -m venv venv\\venv37 && venv\\venv37\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv37\\Scripts\\pip.exe install wheel setuptools --upgrade"
-        //                    }
-        //                }
-        //                stage("Creating bdist Wheel for 3.7"){
-        //                    environment {
-        //                        PATH = "${WORKSPACE}\\venv\\venv37\\scripts;${tool 'CPython-3.7'};${env.CMAKE_PATH};$PATH"
-        //                    }
-        //                    steps {
-        //                        bat "python setup.py build -b build/37/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/37/lib/ --build-temp build/37/temp build_ext --cmake-exec=${env.CMAKE_PATH}\\cmake.exe bdist_wheel -d ${WORKSPACE}\\dist"
-        //                    }
-        //                    post{
-        //                        success{
-        //                            stash includes: 'dist/*.whl', name: "whl 3.7"
-        //                            archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
-        //                        }
-        //                        cleanup{
-        //                            cleanWs(
-        //                                deleteDirs: true,
-        //                                patterns: [
-        //                                    [pattern: 'dist', type: 'INCLUDE'],
-        //                                    [pattern: '*tmp', type: 'INCLUDE'],
-        //                                    [pattern: '.eggs/', type: 'INCLUDE'],
-        //                                    [pattern: 'build/', type: 'INCLUDE'],
-        //                                    [pattern: 'venv/venv37.', type: 'INCLUDE'],
-        //                                    [pattern: '*.egg-info/', type: 'INCLUDE'],
-        //                                    ]
-        //                                )
-        //                        }
-        //                    }
-        //                }
-        //                stage("Testing 3.7 Wheel"){
-        //                    agent { label 'Windows && Python3' }
-        //                    environment {
-        //                        PATH = "${tool 'CPython-3.7'};$PATH"
-        //                    }
-        //                    steps{
-        //                        unstash "whl 3.7"
-        //                        test_wheel("*cp37*.whl", "37")
-        //                    }
-        //                    post{
-        //                        cleanup{
-        //                            deleteDir()
-        //                        }
-        //                        success{
-        //                            archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
-        //                        }
-        //                    }
-        //                }
-        //            }
-        //        }
-        //    }
-        //}
         stage("Deploy to DevPi") {
             agent {
                 label "Windows && VS2015 && Python3 && longfilenames"
@@ -1091,26 +755,4 @@ pipeline {
             }
         }
     }
-    //post {
-    //    cleanup {
-    //        cleanWs(
-    //            deleteDirs: true,
-    //            patterns: [
-    //                [pattern: 'dist/', type: 'INCLUDE'],
-    //                [pattern: 'build/', type: 'INCLUDE'],
-    //                [pattern: 'reports', type: 'INCLUDE'],
-    //                [pattern: 'logs', type: 'INCLUDE'],
-    //                [pattern: 'certs', type: 'INCLUDE'],
-    //                [pattern: '*.dist-info/', type: 'INCLUDE'],
-    //                [pattern: '*.egg-info/', type: 'INCLUDE'],
-    //                [pattern: 'venv/', type: 'INCLUDE'],
-    //                [pattern: '*tmp', type: 'INCLUDE'],
-//  //                  [pattern: "source/**/*.dll", type: 'INCLUDE'],
-//  //                  [pattern: "source/**/*.pyd", type: 'INCLUDE'],
-//  //                  [pattern: "source/**/*.exe", type: 'INCLUDE'],
-//  //                  [pattern: "source/**/*.exe", type: 'INCLUDE']
-    //                ]
-    //            )
-    //    }
-    //}
 }
