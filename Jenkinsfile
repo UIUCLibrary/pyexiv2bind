@@ -437,7 +437,7 @@ pipeline {
                         post{
                             always{
                                 script{
-                                    findFiles(glob: "build/**/*.pyd").each{
+                                    findFiles(glob: "build/lib/**/*.pyd").each{
                                         bat(
                                             label: "Checking Python extension for dependents",
                                             script: "dumpbin /DEPENDENTS ${it.path}"
