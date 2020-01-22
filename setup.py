@@ -75,22 +75,10 @@ class BuildCMakeExt(build_ext):
         for extension in self.extensions:
             self.build_extension(extension)
 
-
-        MSVCP_library = find_library("MSVCP140")
-        if MSVCP_library is not None:
-            self.announce("Including Visual C++ Redistributable for Visual Studio runtime")
-            self.copy_file(MSVCP_library, os.path.join(self.build_lib, self.package_dir))
-        #
-
     def build_extension(self, ext):
         self.configure_cmake(ext)
         self.build_cmake(ext)
         self.build_install_cmake(ext)
-        self.bundle_shared_library_deps(ext)
-
-    def bundle_shared_library_deps(self, extension: Extension):
-        print("bundling")
-        pass
 
     def configure_cmake(self, extension: Extension):
         source_dir = os.path.abspath(os.path.dirname(__file__))
