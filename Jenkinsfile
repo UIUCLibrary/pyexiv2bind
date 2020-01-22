@@ -168,8 +168,7 @@ pipeline {
     parameters {
         booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
         booleanParam(name: "TEST_RUN_TOX", defaultValue: false, description: "Run Tox Tests")
-        // TODO: set back to false
-        booleanParam(name: "DEPLOY_DEVPI", defaultValue: true, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
+        booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to https://devpi.library.illinois.edu/production/release")
         string(name: 'URL_SUBFOLDER', defaultValue: "py3exiv2bind", description: 'The directory that the docs should be saved under')
         booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation")
@@ -565,6 +564,7 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                                     script{
                                         def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATA"
                                         cleanWs(patterns: [[pattern: "py3exiv2bind.dist-info/METADATA", type: 'INCLUDE']])
+                                        bat "python --version"
                                         bat(
                                             label: "Connecting to DevPi index",
                                             script: "devpi use https://devpi.library.illinois.edu --clientdir certs\\ && devpi login %DEVPI_USR% --password %DEVPI_PSW% --clientdir certs\\ && devpi use ${env.BRANCH_NAME}_staging --clientdir certs\\"
