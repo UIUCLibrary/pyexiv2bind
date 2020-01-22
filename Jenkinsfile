@@ -2,8 +2,6 @@
 @Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
 import org.ds.*
 
-@Library(["devpi", "PythonHelpers"]) _
-
 def CONFIGURATIONS = [
     "3.6": [
             pkgRegex: "*cp36*.whl",
@@ -148,6 +146,10 @@ pipeline {
     agent none
     triggers {
        parameterizedCron '@daily % DEPLOY_DEVPI=true; TEST_RUN_TOX=true'
+    }
+    libraries {
+      lib('devpi')
+      lib('PythonHelpers')
     }
 
     options {
