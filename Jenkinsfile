@@ -582,6 +582,22 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                 }
             }
             post{
+                success{
+                    node('linux && docker') {
+                       script{
+                            docker.build("py3exiv2bind:devpi.${env.BUILD_ID}",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+                                unstash "DIST-INFO"
+                                def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
+                                sh(
+                                    label: "Connecting to DevPi Server",
+                                    script: 'devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi'
+                                )
+                                sh "devpi use /DS_Jenkins/${env.BRANCH_NAME}_staging --clientdir ${WORKSPACE}/devpi"
+                                sh "devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.BRANCH_NAME} --clientdir ${WORKSPACE}/devpi"
+                            }
+                       }
+                    }
+                }
                 cleanup{
                     node('linux && docker') {
                        script{
