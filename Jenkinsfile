@@ -559,7 +559,7 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                             }
                             axis {
                                 name 'PYTHON_VERSION'
-                                values '3.6', "3.7"
+                                values '3.6'
                             }
                         }
                         agent none
