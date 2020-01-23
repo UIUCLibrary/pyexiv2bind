@@ -7,7 +7,8 @@ def CONFIGURATIONS = [
             pkgRegex: "*cp36*.whl",
             python_install_url:"https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe",
             test_docker_image: "python:3.6-windowsservercore",
-            tox_env: "py36"
+            tox_env: "py36",
+
         ],
     "3.7": [
             pkgRegex: "*cp37*.whl",
@@ -570,9 +571,16 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                                             script: "devpi use https://devpi.library.illinois.edu --clientdir certs\\ && devpi login %DEVPI_USR% --password %DEVPI_PSW% --clientdir certs\\ && devpi use ${env.BRANCH_NAME}_staging --clientdir certs\\"
                                             )
 
+                                        def fdevpiPackageRegex
+
+                                        if(FORMAT == "whl"){
+                                            devpiPackageRegex = "${CONFIGURATIONS[PYTHON_VERSION].pkgRegex}"
+                                        } else {
+                                            devpiPackageRegex = "${FORMAT}"
+                                        }
                                         bat(
                                             label: "Running tests on Devpi",
-                                            script: "devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s ${FORMAT} --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"
+                                            script: "devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s ${devpiPackageRegex} --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"
                                         )
                                     }
                                 }
