@@ -562,15 +562,20 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                                 values '3.6', "3.7"
                             }
                         }
-                        agent {
-                          dockerfile {
-                            additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image}"
-                            filename 'ci/docker/deploy/devpi/test/windows/Dockerfile'
-                            label 'windows && docker'
-                          }
-                        }
+                        agent none
                         stages{
-                            stage("Testing DevPi Package"){
+                            stage("Testing DevPi Wheel Package"){
+                                agent {
+                                  dockerfile {
+                                    additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image}"
+                                    filename 'ci/docker/deploy/devpi/test/windows/whl/Dockerfile'
+                                    label 'windows && docker'
+                                  }
+                                }
+                                when{
+                                    equals expected: "whl", actual: FORMAT
+                                    beforeAgent true
+                                }
                                 options{
                                     timeout(10)
                                 }
@@ -583,18 +588,39 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                                         bat(
                                             label: "Connecting to DevPi index",
                                             script: "devpi use https://devpi.library.illinois.edu --clientdir certs\\ && devpi login %DEVPI_USR% --password %DEVPI_PSW% --clientdir certs\\ && devpi use ${env.BRANCH_NAME}_staging --clientdir certs\\"
-                                            )
+                                        )
 
-                                        def fdevpiPackageRegex
-
-                                        if(FORMAT == "whl"){
-                                            devpiPackageRegex = "${CONFIGURATIONS[PYTHON_VERSION].devpi_wheel_regex}"
-                                        } else {
-                                            devpiPackageRegex = "${FORMAT}"
-                                        }
                                         bat(
                                             label: "Running tests on Devpi",
-                                            script: "devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s ${devpiPackageRegex} --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"
+                                            script: "devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s ${CONFIGURATIONS[PYTHON_VERSION].devpi_wheel_regex} --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"
+                                        )
+                                    }
+                                }
+                            }
+                            stage("Testing DevPi source Package"){
+                                agent {
+                                    dockerfile {
+                                        additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image}"
+                                        filename 'ci/docker/deploy/devpi/test/windows/source/Dockerfile'
+                                        label 'windows && docker'
+                                    }
+                                }
+                                when{
+                                    equals expected: "zip", actual: FORMAT
+                                    beforeAgent true
+                                }
+                                steps{
+                                    script{
+                                        def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATA"
+                                            cleanWs(patterns: [[pattern: "py3exiv2bind.dist-info/METADATA", type: 'INCLUDE']])
+                                        bat "python --version"
+                                        bat(
+                                            label: "Connecting to DevPi index",
+                                            script: "devpi use https://devpi.library.illinois.edu --clientdir certs\\ && devpi login %DEVPI_USR% --password %DEVPI_PSW% --clientdir certs\\ && devpi use ${env.BRANCH_NAME}_staging --clientdir certs\\"
+                                        )
+                                        bat(
+                                            label: "Running tests on Devpi",
+                                            script: "devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s zip --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"
                                         )
                                     }
                                 }
