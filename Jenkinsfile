@@ -157,12 +157,10 @@ pipeline {
 
     options {
         disableConcurrentBuilds()  //each branch has 1 job running at a time
-        timeout(120)  // Timeout after 120 minutes. This shouldn't take this long but it hangs for some reason
+//         timeout(120)  // Timeout after 120 minutes. This shouldn't take this long but it hangs for some reason
         buildDiscarder logRotator(artifactDaysToKeepStr: '10', artifactNumToKeepStr: '10', daysToKeepStr: '', numToKeepStr: '')
     }
     environment {
-
-        DEVPI = credentials("DS_devpi")
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
         PIPENV_NOSPIN="DISABLED"
     }
@@ -182,6 +180,9 @@ pipeline {
                     label 'windows && Docker'
                     additionalBuildArgs "${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
                 }
+            }
+            options{
+                timeout(3)
             }
             steps{
                 bat "python setup.py dist_info"
@@ -271,6 +272,9 @@ pipeline {
                 }
 
                 stage("Running Tests"){
+                    options{
+                        timeout(15)
+                    }
 
 //                     failFast true
                     parallel {
@@ -432,7 +436,9 @@ pipeline {
                                 additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} ${(env.CHOCOLATEY_SOURCE != null) ? "--build-arg CHOCOLATEY_SOURCE=${env.CHOCOLATEY_SOURCE}": ''}"
                             }
                         }
-
+                        options{
+                            timeout(15)
+                        }
                         steps{
                             bat "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist"
                         }
@@ -466,6 +472,9 @@ pipeline {
                                 label 'windows && docker'
                                 additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image}"
                             }
+                        }
+                        options{
+                            timeout(5)
                         }
                         steps{
                             unstash "whl ${PYTHON_VERSION}"
@@ -520,6 +529,9 @@ pipeline {
                             label 'linux&&docker'
                             additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                           }
+                    }
+                    options{
+                        timeout(5)
                     }
                     steps {
                         unstash "whl 3.6"
