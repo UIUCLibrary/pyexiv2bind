@@ -8,13 +8,15 @@ def CONFIGURATIONS = [
             python_install_url:"https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe",
             test_docker_image: "python:3.6-windowsservercore",
             tox_env: "py36",
+            devpi_wheel_regex: "cp36"
 
         ],
     "3.7": [
             pkgRegex: "*cp37*.whl",
             python_install_url:"https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe",
             test_docker_image: "python:3.7",
-            tox_env: "py37"
+            tox_env: "py37",
+            devpi_wheel_regex: "cp37"
         ]
 ]
 
@@ -586,7 +588,7 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                                         def fdevpiPackageRegex
 
                                         if(FORMAT == "whl"){
-                                            devpiPackageRegex = "${CONFIGURATIONS[PYTHON_VERSION].pkgRegex}"
+                                            devpiPackageRegex = "${CONFIGURATIONS[PYTHON_VERSION].devpi_wheel_regex}"
                                         } else {
                                             devpiPackageRegex = "${FORMAT}"
                                         }
