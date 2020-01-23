@@ -610,9 +610,10 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                                     beforeAgent true
                                 }
                                 steps{
+                                    unstash "DIST-INFO"
                                     script{
                                         def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATA"
-                                            cleanWs(patterns: [[pattern: "py3exiv2bind.dist-info/METADATA", type: 'INCLUDE']])
+                                        cleanWs(patterns: [[pattern: "py3exiv2bind.dist-info/METADATA", type: 'INCLUDE']])
                                         bat "python --version"
                                         bat(
                                             label: "Connecting to DevPi index",
