@@ -41,7 +41,8 @@ SHELL ["powershell", "-command"]
 RUN Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 ARG CHOCOLATEY_SOURCE=""
 ADD ci/docker/deploy/devpi/test/windows/source/packages.config packages.config
-RUN If($Env:CHOCOLATEY_SOURCE -ne $null     ){Write-Host "using $Env:CHOCOLATEY_SOURCE" ; choco install -y --source=$Env:CHOCOLATEY_SOURCE packages.config} Else {choco install -y packages.config} ; `
+RUN $ErrorActionPreference = 'Stop'; `
+    If($Env:CHOCOLATEY_SOURCE -ne $null     ){Write-Host "using $Env:CHOCOLATEY_SOURCE" ; choco install -y --source=$Env:CHOCOLATEY_SOURCE packages.config} Else {choco install -y packages.config} ; `
     Remove-Item C:\ProgramData\chocolatey\bin\cpack.exe ; `
     Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse
 
