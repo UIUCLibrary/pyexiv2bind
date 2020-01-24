@@ -554,12 +554,12 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                     matrix {
                         axes {
                             axis {
-                                name 'FORMAT'
-                                values 'zip', "whl"
-                            }
-                            axis {
                                 name 'PYTHON_VERSION'
                                 values '3.6', '3.7'
+                            }
+                            axis {
+                                name 'FORMAT'
+                                values 'zip', "whl"
                             }
                         }
                         agent none
@@ -600,7 +600,7 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                             stage("Testing DevPi source Package"){
                                 agent {
                                     dockerfile {
-                                        additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image}"
+                                        additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url}"
                                         filename 'ci/docker/deploy/devpi/test/windows/source/Dockerfile'
                                         label 'windows && docker'
                                     }
