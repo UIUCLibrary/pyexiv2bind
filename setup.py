@@ -63,6 +63,8 @@ class BuildCMakeExt(build_ext):
             'MSC v.1900 32 bit (Intel)': "Visual Studio 14 2015",
             'MSC v.1915 64 bit (AMD64)': "Visual Studio 14 2015 Win64",
             'MSC v.1915 32 bit (Intel)': "Visual Studio 14 2015",
+            'MSC v.1916 64 bit (AMD64)': "Visual Studio 14 2015 Win64",
+            'MSC v.1916 32 bit (Intel)': "Visual Studio 14 2015",
             'GCC': "Unix Makefiles",
             'Clang': "Unix Makefiles",
         }
@@ -73,22 +75,10 @@ class BuildCMakeExt(build_ext):
         for extension in self.extensions:
             self.build_extension(extension)
 
-
-        MSVCP_library = find_library("MSVCP140")
-        if MSVCP_library is not None:
-            self.announce("Including Visual C++ Redistributable for Visual Studio runtime")
-            self.copy_file(MSVCP_library, os.path.join(self.build_lib, self.package_dir))
-        #
-
     def build_extension(self, ext):
         self.configure_cmake(ext)
         self.build_cmake(ext)
         self.build_install_cmake(ext)
-        self.bundle_shared_library_deps(ext)
-
-    def bundle_shared_library_deps(self, extension: Extension):
-        print("bundling")
-        pass
 
     def configure_cmake(self, extension: Extension):
         source_dir = os.path.abspath(os.path.dirname(__file__))
@@ -105,7 +95,7 @@ class BuildCMakeExt(build_ext):
             self.cmake_exec,
             f'-H{source_dir}',
             f'-B{self.build_temp}',
-            f'-G{self.get_build_generator_name()}'
+            # f'-G{self.get_build_generator_name()}'
         ]
 
         package_source = os.path.join(source_dir, "py3exiv2bind")

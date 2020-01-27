@@ -24,4 +24,6 @@ if (pyexiv2bind_generate_python_bindings)
 
     #target_link_libraries(core glue)
     install(TARGETS core LIBRARY DESTINATION py3exiv2bind)
+    set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION ${CMAKE_INSTALL_PREFIX}/py3exiv2bind)
+    include(InstallRequiredSystemLibraries)
 endif (pyexiv2bind_generate_python_bindings)
