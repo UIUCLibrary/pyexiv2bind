@@ -217,6 +217,16 @@ pipeline {
                         success{
                           stash includes: 'py3exiv2bind/**/*.dll,py3exiv2bind/**/*.pyd,py3exiv2bind/**/*.exe"', name: "built_source"
                         }
+                        failure{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                    [pattern: 'dist/', type: 'INCLUDE'],
+                                    [pattern: 'build/', type: 'INCLUDE'],
+                                    [pattern: '.eggs/', type: 'INCLUDE'],
+                                    ]
+                            )
+                        }
                     }
                     
                 }     
