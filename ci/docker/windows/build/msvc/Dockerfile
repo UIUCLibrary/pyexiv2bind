@@ -1,5 +1,5 @@
 # escape=`
-ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019
+ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:3.5
 FROM ${FROM_IMAGE}
 
 # Reset the shell.
