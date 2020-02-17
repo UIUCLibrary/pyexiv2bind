@@ -3,36 +3,36 @@ ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc
 FROM ${FROM_IMAGE}
 
 # Reset the shell.
-SHELL ["cmd", "/S", "/C"]
-RUN mkdir c:\\TEMP
-ADD https://aka.ms/vscollect.exe C:/TEMP/collect.exe
-
-# Download channel for fixed install.
-ARG CHANNEL_URL=https://aka.ms/vs/16/release/channel
-ADD ${CHANNEL_URL} C:/TEMP/VisualStudio.chman
-
-# Download and install Build Tools for Visual Studio 2019 for native desktop workload.
-
-ADD https://aka.ms/vs/16/release/vs_buildtools.exe C:/TEMP/vs_buildtools.exe
-
-RUN (C:\\TEMP\\vs_buildtools.exe `
-    --quiet --wait --norestart --nocache `
-    --channelUri C:\\TEMP\\VisualStudio.chman `
-    --installChannelUri C:\\TEMP\\VisualStudio.chman `
-    --add Microsoft.VisualStudio.Workload.VCTools `
-    --add Microsoft.VisualStudio.Component.Windows10SDK `
-    --add Microsoft.VisualStudio.Component.Windows10SDK.18362 `
-    --add Microsoft.VisualStudio.Component.VC.CMake.Project `
-    --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64	 `
-    --includeRecommended `
-    --add Microsoft.VisualStudio.Component.NuGet `
-    --installPath C:\BuildTools `
-  || IF "%ERRORLEVEL%"=="3010" C:\TEMP\collect.exe -zip:C:\vslogs.zip && EXIT 0 )`
-  && C:\TEMP\collect.exe -zip:C:\vslogs.zip `
-  && @echo Cleaning up temp files`
-  && del /S /F /Q %temp% `
-  && del /S /F /Q %Windir%\Temp `
-  && @echo Done cleaning up files in temp directories
+#SHELL ["cmd", "/S", "/C"]
+#RUN mkdir c:\\TEMP
+#ADD https://aka.ms/vscollect.exe C:/TEMP/collect.exe
+#
+## Download channel for fixed install.
+#ARG CHANNEL_URL=https://aka.ms/vs/16/release/channel
+#ADD ${CHANNEL_URL} C:/TEMP/VisualStudio.chman
+#
+## Download and install Build Tools for Visual Studio 2019 for native desktop workload.
+#
+#ADD https://aka.ms/vs/16/release/vs_buildtools.exe C:/TEMP/vs_buildtools.exe
+#
+#RUN (C:\\TEMP\\vs_buildtools.exe `
+#    --quiet --wait --norestart --nocache `
+#    --channelUri C:\\TEMP\\VisualStudio.chman `
+#    --installChannelUri C:\\TEMP\\VisualStudio.chman `
+#    --add Microsoft.VisualStudio.Workload.VCTools `
+#    --add Microsoft.VisualStudio.Component.Windows10SDK `
+#    --add Microsoft.VisualStudio.Component.Windows10SDK.18362 `
+#    --add Microsoft.VisualStudio.Component.VC.CMake.Project `
+#    --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64	 `
+#    --includeRecommended `
+#    --add Microsoft.VisualStudio.Component.NuGet `
+#    --installPath C:\BuildTools `
+#  || IF "%ERRORLEVEL%"=="3010" C:\TEMP\collect.exe -zip:C:\vslogs.zip && EXIT 0 )`
+#  && C:\TEMP\collect.exe -zip:C:\vslogs.zip `
+#  && @echo Cleaning up temp files`
+#  && del /S /F /Q %temp% `
+#  && del /S /F /Q %Windir%\Temp `
+#  && @echo Done cleaning up files in temp directories
 
 
 #RUN @"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -InputFormat None -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))" `
