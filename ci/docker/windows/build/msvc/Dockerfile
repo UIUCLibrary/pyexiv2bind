@@ -38,7 +38,7 @@ FROM ${FROM_IMAGE}
 #RUN @"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -InputFormat None -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))" `
 #    && SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
 SHELL ["powershell", "-command"]
-RUN Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+RUN $env:chocolateyUseWindowsCompression = 'true' ; Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 ARG CHOCOLATEY_SOURCE=""
 ADD ci/docker/windows/build/msvc/packages.config packages.config
 RUN If($Env:CHOCOLATEY_SOURCE -ne $null     ){Write-Host "using $Env:CHOCOLATEY_SOURCE" ; choco install -y --source=$Env:CHOCOLATEY_SOURCE packages.config} Else {choco install -y packages.config} ; `
