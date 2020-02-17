@@ -39,9 +39,9 @@ FROM ${FROM_IMAGE}
 #    && SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
 SHELL ["powershell", "-command"]
 RUN $env:chocolateyUseWindowsCompression = 'true' ; Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-ARG CHOCOLATEY_SOURCE=""
+ARG CHOCOLATEY_SOURCE="https://chocolatey.org/api/v2"
 ADD ci/docker/windows/build/msvc/packages.config packages.config
-RUN If($Env:CHOCOLATEY_SOURCE -ne $null     ){Write-Host "using $Env:CHOCOLATEY_SOURCE" ; choco install -y --no-progress --source=$Env:CHOCOLATEY_SOURCE packages.config} Else {choco install -y --no-progress packages.config} ; `
+RUN C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress --source=$Env:CHOCOLATEY_SOURCE packages.config ;`
     Remove-Item C:\ProgramData\chocolatey\bin\cpack.exe ; `
     Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse
 
