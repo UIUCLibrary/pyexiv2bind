@@ -224,6 +224,7 @@ pipeline {
                                     [pattern: 'dist/', type: 'INCLUDE'],
                                     [pattern: 'build/', type: 'INCLUDE'],
                                     [pattern: '.eggs/', type: 'INCLUDE'],
+                                    [pattern: 'logs/', type: 'INCLUDE'],
                                     ]
                             )
                         }
