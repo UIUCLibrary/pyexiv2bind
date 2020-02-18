@@ -194,11 +194,10 @@ pipeline {
                     additionalBuildArgs "${get_build_args()}"
                 }
             }
-            options{
-                timeout(3)
-            }
             steps{
-                bat "python setup.py dist_info"
+                timeout(3){
+                    bat "python setup.py dist_info"
+                }
             }
             post{
                 success{
