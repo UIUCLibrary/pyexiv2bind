@@ -128,16 +128,6 @@ def deploy_devpi_production(DEVPI, PKG_NAME, PKG_VERSION, BRANCH_NAME, USR, PSW)
 
 }
 
-def get_build_args(){
-    script{
-        def CHOCOLATEY_SOURCE = ""
-        try{
-            CHOCOLATEY_SOURCE = powershell(script: "(Get-ChildItem Env:Path).value", returnStdout: true).trim()
-        } finally {
-            return CHOCOLATEY_SOURCE?.trim() ? '--build-arg' + CHOCOLATEY_SOURCE : ''
-        }
-    }
-}
 
 //def runTox(tox_exec){
 //    script{
@@ -191,7 +181,7 @@ pipeline {
                 dockerfile {
                     filename 'ci/docker/windows/build/msvc/Dockerfile'
                     label 'windows && Docker'
-                    additionalBuildArgs "${get_build_args()}"
+                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
                 }
             }
             steps{
@@ -211,7 +201,7 @@ pipeline {
                 dockerfile {
                     filename 'ci/docker/windows/build/msvc/Dockerfile'
                     label 'windows && Docker'
-                    additionalBuildArgs "${get_build_args()}"
+                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
                 }
             }
             stages{
@@ -283,7 +273,7 @@ pipeline {
                 dockerfile {
                     filename 'ci/docker/windows/build/msvc/Dockerfile'
                     label 'windows && Docker'
-                    additionalBuildArgs "${get_build_args()}"
+                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
                 }
             }
             stages{
@@ -425,7 +415,7 @@ pipeline {
                 dockerfile {
                     filename 'ci/docker/windows/build/msvc/Dockerfile'
                     label 'windows && Docker'
-                    additionalBuildArgs "${get_build_args()}"
+                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
                 }
             }
            steps {
@@ -456,7 +446,7 @@ pipeline {
                             dockerfile {
                                 filename 'ci/docker/windows/build/msvc/Dockerfile'
                                 label 'windows && Docker'
-                                additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} ${get_build_args()}"
+                                additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} --build-arg CHOCOLATEY_SOURCE"
                             }
                         }
                         options{
@@ -588,7 +578,7 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                             stage("Testing DevPi Wheel Package"){
                                 agent {
                                   dockerfile {
-                                    additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image} ${get_build_args()}"
+                                    additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image} additionalBuildArgs --build-arg CHOCOLATEY_SOURCE"
                                     filename 'ci/docker/deploy/devpi/test/windows/whl/Dockerfile'
                                     label 'windows && docker'
                                   }
@@ -621,7 +611,7 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                             stage("Testing DevPi source Package"){
                                 agent {
                                     dockerfile {
-                                        additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} ${get_build_args()}"
+                                        additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} --build-arg CHOCOLATEY_SOURCE"
                                         filename 'ci/docker/deploy/devpi/test/windows/source/Dockerfile'
                                         label 'windows && docker'
                                     }
