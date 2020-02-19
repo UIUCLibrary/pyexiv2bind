@@ -493,7 +493,7 @@ pipeline {
                             dockerfile {
                                 filename 'ci/docker/windows/build/test/msvc/Dockerfile'
                                 label 'windows && docker'
-                                additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image} ${get_build_args()}"
+                                additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image} --build-arg CHOCOLATEY_SOURCE}"
                             }
                         }
                         options{
