@@ -23,8 +23,7 @@ RUN certutil -generateSSTFromWU roots.sst ; `
 
 ARG PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe
 
-RUN $ErrorActionPreference = 'Stop'; `
-    Invoke-WebRequest $Env:PYTHON_INSTALLER_URL -OutFile c:\python-installer.exe ; `
+RUN Invoke-WebRequest $Env:PYTHON_INSTALLER_URL -OutFile c:\python-installer.exe ; `
     Start-Process python-installer.exe -ArgumentList '/quiet InstallAllUsers=1 PrependPath=1' -Wait ; `
     Remove-Item c:\python-installer.exe -Force
 
