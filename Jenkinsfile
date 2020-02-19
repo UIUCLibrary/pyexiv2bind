@@ -578,7 +578,7 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                             stage("Testing DevPi Wheel Package"){
                                 agent {
                                   dockerfile {
-                                    additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image} additionalBuildArgs --build-arg CHOCOLATEY_SOURCE"
+                                    additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image} --build-arg CHOCOLATEY_SOURCE"
                                     filename 'ci/docker/deploy/devpi/test/windows/whl/Dockerfile'
                                     label 'windows && docker'
                                   }
