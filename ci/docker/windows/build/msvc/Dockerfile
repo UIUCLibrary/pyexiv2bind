@@ -8,7 +8,7 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Ne
 ARG CHOCOLATEY_SOURCE="https://chocolatey.org/api/v2"
 ADD ci/docker/windows/build/msvc/packages.config packages.config
 RUN $SOURCE = $(if( -not ([string]::IsNullOrEmpty($Env:CHOCOLATEY_SOURCE ))) `
-    { "--source=$Env:CHOCOLATEY_SOURCE"  } `
+    { \"--source=$Env:CHOCOLATEY_SOURCE\" } `
     else `
     { "" }) ; `
     C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress $SOURCE packages.config ;`
