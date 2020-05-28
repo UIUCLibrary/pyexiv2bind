@@ -17,6 +17,13 @@ def CONFIGURATIONS = [
             test_docker_image: "python:3.7",
             tox_env: "py37",
             devpi_wheel_regex: "cp37"
+        ],
+    "3.8": [
+            pkgRegex: "*cp38*.whl",
+            python_install_url:"https://www.python.org/ftp/python/3.8.3/python-3.8.3-amd64.exe",
+            test_docker_image: "python:3.8",
+            tox_env: "py38",
+            devpi_wheel_regex: "cp38"
         ]
 ]
 
@@ -436,7 +443,8 @@ pipeline {
                         name "PYTHON_VERSION"
                         values(
                             "3.6",
-                            "3.7"
+                            "3.7",
+                            "3.8"
                         )
                     }
                 }
