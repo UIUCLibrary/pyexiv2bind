@@ -10,6 +10,7 @@ import platform
 import subprocess
 import sysconfig
 from setuptools.command.build_clib import build_clib
+from distutils.sysconfig import customize_compiler
 from ctypes.util import find_library
 # CMAKE = shutil.which("cmake")
 PACKAGE_NAME = "py3exiv2bind"
@@ -77,7 +78,26 @@ class BuildCMakeExt(build_clib):
         return cmake_build_systems_lut[python_compiler]
 
     def run(self):
-        pass
+        # super().run()
+        if not self.libraries:
+            return
+
+        # Yech -- this is cut 'n pasted from build_ext.py!
+        from distutils.ccompiler import new_compiler
+        self.compiler = new_compiler(compiler=self.compiler,
+                                     dry_run=self.dry_run,
+                                     force=self.force)
+        customize_compiler(self.compiler)
+
+        if self.include_dirs is not None:
+            self.compiler.set_include_dirs(self.include_dirs)
+        if self.define is not None:
+            # 'define' option is a list of (name,value) tuples
+            for (name,value) in self.define:
+                self.compiler.define_macro(name, value)
+        if self.undef is not None:
+            for macro in self.undef:
+                self.compiler.undefine_macro(macro)
         for library in self.libraries:
             self.build_extension(library)
 
@@ -113,7 +133,7 @@ class BuildCMakeExt(build_clib):
         configure_command.append(
             f'-DCMAKE_BUILD_TYPE={build_configuration_name}')
         build_ext_cmd = self.get_finalized_command("build_ext")
-        configure_command.append(f'-DCMAKE_INSTALL_PREFIX={build_ext_cmd.build_temp}')
+        configure_command.append(f'-DCMAKE_INSTALL_PREFIX={os.path.abspath(build_ext_cmd.build_temp)}')
         configure_command.append(f'-DPYTHON_EXECUTABLE:FILEPATH={sys.executable}')
         # configure_command.append(f'-DPYTHON_LIBRARY={os.path.join(sys.exec_prefix, "Scripts")}')
         configure_command.append(f'-DPYTHON_INCLUDE_DIR={sysconfig.get_path("include")}')
@@ -130,7 +150,7 @@ class BuildCMakeExt(build_clib):
             print("Running as a debug", file=sys.stderr)
             subprocess.check_call(configure_command)
         else:
-            self.spawn(configure_command)
+            self.compiler.spawn(configure_command)
         # self.spawn(configure_command)
 
     def build_cmake(self, extension: Extension):
@@ -138,7 +158,8 @@ class BuildCMakeExt(build_clib):
         build_command = [
             self.cmake_exec,
             "--build",
-            self.build_temp, "--target", "exiv2lib"
+            self.build_temp,
+            # "--target", "exiv2lib"
         ]
 
         self.announce("Building binaries", level=3)
@@ -160,7 +181,7 @@ class BuildCMakeExt(build_clib):
         if sys.gettrace():
             subprocess.check_call(build_command)
         else:
-            self.spawn(build_command)
+            self.compiler.spawn(build_command)
 
     def build_install_cmake(self, extension: Extension):
 
@@ -198,7 +219,7 @@ class BuildCMakeExt(build_clib):
             print("Running as a debug", file=sys.stderr)
             subprocess.check_call(install_command)
         else:
-            self.spawn(install_command)
+            self.compiler.spawn(install_command)
 
 
 class BuildExiv2(BuildCMakeExt):
@@ -209,7 +230,7 @@ class BuildExiv2(BuildCMakeExt):
             "-Dpyexiv2bind_generate_venv:BOOL=OFF",
             "-DBUILD_SHARED_LIBS:BOOL=OFF",
             # "-DEXIV2_VERSION_TAG:STRING=11e66c6c9eceeddd2263c3591af6317cbd05c1b6",
-            "-DEXIV2_VERSION_TAG:STRING=0.27",
+            # "-DEXIV2_VERSION_TAG:STRING=0.27",
             "-DBUILD_TESTING:BOOL=OFF",
         ]
 # exiv2 = CMakeExtension("exiv2_wrapper")
