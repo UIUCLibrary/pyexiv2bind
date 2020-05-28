@@ -102,6 +102,10 @@ class BuildCMakeExt(build_clib):
             self.build_extension(library)
 
     def build_extension(self, ext):
+        if self.compiler.compiler_type != "unix":
+            if not self.compiler.initialized:
+                self.compiler.initialize()
+
         self.configure_cmake(ext)
         self.build_cmake(ext)
         self.build_install_cmake(ext)
