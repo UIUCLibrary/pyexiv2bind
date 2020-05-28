@@ -189,6 +189,10 @@ class BuildCMakeExt(build_clib):
         build_ext_cmd.include_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "include")))
         build_ext_cmd.include_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp)))
         build_ext_cmd.library_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "lib")))
+        for e in build_ext_cmd.extensions:
+            e.include_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "include")))
+            e.include_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp)))
+            e.library_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "lib")))
 
         if sys.gettrace():
             print("Running as a debug", file=sys.stderr)
