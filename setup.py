@@ -292,6 +292,8 @@ class BuildPybind11Extension(build_ext):
         super().finalize_options()
 
     def run(self):
+        self.include_dirs.insert(0, os.path.abspath(os.path.join(self.build_temp, "include")))
+        self.library_dirs.insert(0, os.path.abspath(os.path.join(self.build_temp, "lib")))
         pybind11_include_path = self.get_pybind11_include_path()
         if pybind11_include_path is not None:
             self.include_dirs.insert(0, pybind11_include_path)
@@ -336,20 +338,24 @@ class BuildPybind11Extension(build_ext):
         return missing_libs
 
     def build_extension(self, ext):
+        missing = self.find_missing_libraries(ext)
         if self.compiler.compiler_type == "unix":
             ext.extra_compile_args.append("-std=c++14")
         else:
             ext.extra_compile_args.append("/std:c++14")
 
             # self.compiler.add_library("shell32")
-            # ext.libraries.append("shell32")
 
-        missing = self.find_missing_libraries(ext)
+            ext.libraries.append("shell32")
+
 
         if len(missing) > 0:
             self.announce(f"missing required deps [{', '.join(missing)}]. "
                           f"Trying to build them", 5)
             self.run_command("build_clib")
+            build_clib_cmd = self.get_finalized_command("build_clib")
+
+            ext.include_dirs.append(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "include")))
         super().build_extension(ext)
 
     def get_pybind11_include_path(self):
