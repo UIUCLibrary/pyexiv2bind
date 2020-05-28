@@ -44,7 +44,7 @@ if (BUILD_TESTING)
             CXX_STANDARD 11
             )
     target_include_directories(cpp_tests PRIVATE ${PROJECT_SOURCE_DIR}/py3exiv2bind/core)
-    target_link_libraries(cpp_tests PRIVATE Catch exiv2lib)
+    target_link_libraries(cpp_tests PRIVATE Catch2::Catch2 exiv2lib)
 #    target_link_libraries(cpp_tests PRIVATE Catch glue)
 
     add_test(NAME cpp_tests
@@ -61,7 +61,7 @@ if (BUILD_TESTING)
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
             CXX_STANDARD 11
             )
-    target_link_libraries(test_editing PRIVATE exiv2lib Catch)
+    target_link_libraries(test_editing PRIVATE exiv2lib Catch2::Catch2)
     target_compile_definitions(test_editing PRIVATE TEST_IMAGE_PATH="${TEST_IMAGE_PATH}")
 
 endif ()

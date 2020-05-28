@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.16)
 project(pyexiv2bind)
 
 find_package(PythonInterp 3)
@@ -49,12 +49,17 @@ endif(pyexiv2bind_generate_venv)
 option(pyexiv2bind_build_tests "build test suite" ON)
 include_directories(${CMAKE_BINARY_DIR})
 #include_directories(${install_dir}/include)
-
-
+include(FetchContent)
 FetchContent_Declare(libpybind11
         URL https://github.com/pybind/pybind11/archive/v2.2.3.tar.gz
         URL_HASH SHA1=0acaeb967f09dbef53a1e2a4366780548597beba
         )
+
+FetchContent_Declare(catch2
+        URL https://github.com/catchorg/Catch2/archive/v2.12.2.tar.gz
+        )
+FetchContent_MakeAvailable(catch2)
+
 if(pyexiv2bind_generate_python_bindings)
     if (NOT libpybind11_POPULATED)
         FetchContent_Populate(libpybind11)

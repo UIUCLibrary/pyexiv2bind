@@ -68,9 +68,9 @@ if (NOT expat_POPULATED)
     option(BUILD_shared "" OFF)
     option(BUILD_tests "" NO)
     option(BUILD_tools "" NO)
-    option(INSTALL "" NO)
+#    option(INSTALL "" NO)
 
-    add_subdirectory(${expat_SOURCE_DIR}/expat ${expat_BINARY_DIR} EXCLUDE_FROM_ALL)
+    add_subdirectory(${expat_SOURCE_DIR}/expat ${expat_BINARY_DIR})
 endif ()
 FetchContent_Declare(
         libexiv2
@@ -120,4 +120,5 @@ if (NOT libexiv2_POPULATED)
     add_dependencies(exiv2lib zlibstatic)
 endif ()
 add_dependencies(exiv2lib expat)
+install(DIRECTORY ${libexiv2_SOURCE_DIR}/include/ DESTINATION include)
 
