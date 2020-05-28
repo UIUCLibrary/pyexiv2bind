@@ -73,6 +73,8 @@ class BuildCMakeExt(build_clib):
             'MSC v.1915 32 bit (Intel)': "Visual Studio 14 2015",
             'MSC v.1916 64 bit (AMD64)': "Visual Studio 14 2015 Win64",
             'MSC v.1916 32 bit (Intel)': "Visual Studio 14 2015",
+            'MSC v.1924 64 bit (AMD64)': "Visual Studio 14 2015 Win64",
+            'MSC v.1924 32 bit (Intel)': "Visual Studio 14 2015",
             'MSC v.1925 64 bit (AMD64)': "Visual Studio 14 2015 Win64",
             'MSC v.1925 32 bit (Intel)': "Visual Studio 14 2015",
             'GCC': "Unix Makefiles",
@@ -215,14 +217,14 @@ class BuildCMakeExt(build_clib):
 
         if "Visual Studio" in self.get_build_generator_name():
             install_command += ["--", "/NOLOGO", "/verbosity:quiet"]
-
-        build_ext_cmd.include_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "include")))
-        build_ext_cmd.include_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp)))
-        build_ext_cmd.library_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "lib")))
-        for e in build_ext_cmd.extensions:
-            e.include_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "include")))
-            e.include_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp)))
-            e.library_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "lib")))
+        self.compiler.add_include_dir(os.path.abspath(os.path.join(build_ext_cmd.build_temp, "include")))
+        self.compiler.add_include_dir(os.path.abspath(os.path.join(build_ext_cmd.build_temp)))
+        self.compiler.add_library_dir(os.path.abspath(os.path.join(build_ext_cmd.build_temp, "lib")))
+        # build_ext_cmd.library_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "lib")))
+        # for e in build_ext_cmd.extensions:
+            # e.include_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "include")))
+            # e.include_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp)))
+            # e.library_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "lib")))
 
         if sys.gettrace():
             print("Running as a debug", file=sys.stderr)
@@ -345,7 +347,7 @@ class BuildPybind11Extension(build_ext):
             ext.extra_compile_args.append("-std=c++14")
         else:
             ext.extra_compile_args.append("/std:c++14")
-            ext.libraries.append("Shell32")
+            ext.libraries.append("shell32")
 
         missing = self.find_missing_libraries(ext)
 
