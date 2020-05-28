@@ -152,7 +152,7 @@ class BuildCMakeExt(build_clib):
 
         build_ext_cmd = self.get_finalized_command("build_ext")
         if build_ext_cmd.parallel:
-            build_command.extend(["-j", str(self.parallel)])
+            build_command.extend(["-j", str(build_ext_cmd.parallel)])
 
         if "Visual Studio" in self.get_build_generator_name():
             build_command += ["--", "/NOLOGO", "/verbosity:minimal"]
