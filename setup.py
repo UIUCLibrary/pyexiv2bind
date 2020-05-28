@@ -1,7 +1,9 @@
 import os
+import re
 import sys
 import shutil
 import tarfile
+from typing import List
 from urllib import request
 
 from setuptools import setup, Extension
@@ -245,6 +247,38 @@ exiv2 = ("exiv2", {
     "CMAKE_SOURCE_DIR": os.path.dirname(__file__)
 })
 
+DEPS_REGEX = \
+    r'(?<=(Image has the following dependencies:(\n){2}))((?<=\s).*\.dll\n)*'
+
+def parse_dumpbin_deps(file) -> List[str]:
+
+    dlls = []
+    dep_regex = re.compile(DEPS_REGEX)
+
+    with open(file) as f:
+        d = dep_regex.search(f.read())
+        for x in d.group(0).split("\n"):
+            if x.strip() == "":
+                continue
+            dll = x.strip()
+            dlls.append(dll)
+    return dlls
+
+
+def remove_system_dlls(dlls):
+    non_system_dlls = []
+    for dll in dlls:
+        if dll.startswith("api-ms-win-crt"):
+            continue
+
+        if dll.startswith("python"):
+            continue
+
+        if dll == "KERNEL32.dll":
+            continue
+        non_system_dlls.append(dll)
+    return non_system_dlls
+
 
 class BuildPybind11Extension(build_ext):
     user_options = build_ext.user_options + [
@@ -283,12 +317,12 @@ class BuildPybind11Extension(build_ext):
                         f'/out:{output_file}'
                     ]
                 )
-                # deps = parse_dumpbin_deps(file=output_file)
-                # deps = remove_system_dlls(deps)
-                # dest = os.path.dirname(dll_name)
-                # for dep in deps:
-                #     dll = self.find_deps(dep)
-                #     shutil.copy(dll, dest)
+                deps = parse_dumpbin_deps(file=output_file)
+                deps = remove_system_dlls(deps)
+                dest = os.path.dirname(dll_name)
+                for dep in deps:
+                    dll = self.find_deps(dep)
+                    shutil.copy(dll, dest)
 
     def find_deps(self, lib):
 
