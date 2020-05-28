@@ -84,7 +84,7 @@ class BuildCMakeExt(build_clib):
         return cmake_build_systems_lut[python_compiler]
 
     def run(self):
-        # super().run()
+
         if not self.libraries:
             return
 
@@ -104,8 +104,13 @@ class BuildCMakeExt(build_clib):
         if self.undef is not None:
             for macro in self.undef:
                 self.compiler.undefine_macro(macro)
+
+        if self.compiler.compiler_type != "unix":
+            self.compiler.add_library("shell32")
+
         for library in self.libraries:
             self.build_extension(library)
+
 
     def build_extension(self, ext):
         if self.compiler.compiler_type != "unix":
@@ -134,20 +139,13 @@ class BuildCMakeExt(build_clib):
             # f'-G{self.get_build_generator_name()}'
         ]
 
-        package_source = os.path.join(source_dir, "py3exiv2bind")
-
-        # if self.inplace == 1:
-        #     configure_command.append(
-        #         f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{build_configuration_name.upper()}={package_source}')
 
         configure_command.append(
             f'-DCMAKE_BUILD_TYPE={build_configuration_name}')
         build_ext_cmd = self.get_finalized_command("build_ext")
         configure_command.append(f'-DCMAKE_INSTALL_PREFIX={os.path.abspath(build_ext_cmd.build_temp)}')
         configure_command.append(f'-DPYTHON_EXECUTABLE:FILEPATH={sys.executable}')
-        # configure_command.append(f'-DPYTHON_LIBRARY={os.path.join(sys.exec_prefix, "Scripts")}')
         configure_command.append(f'-DPYTHON_INCLUDE_DIR={sysconfig.get_path("include")}')
-        # configure_command.append(f'-DPYTHON_INCLUDE_DIR={os.path.join(sys.exec_prefix, "Scripts")}')
         configure_command.append(f'-DPython_ADDITIONAL_VERSIONS={sys.version_info.major}.{sys.version_info.minor}')
 
         configure_command.append('-Dpyexiv2bind_generate_python_bindings:BOOL=NO')
@@ -162,7 +160,6 @@ class BuildCMakeExt(build_clib):
             subprocess.check_call(configure_command)
         else:
             self.compiler.spawn(configure_command)
-        # self.spawn(configure_command)
 
     def build_cmake(self, extension: Extension):
 
@@ -217,14 +214,9 @@ class BuildCMakeExt(build_clib):
 
         if "Visual Studio" in self.get_build_generator_name():
             install_command += ["--", "/NOLOGO", "/verbosity:quiet"]
-        self.compiler.add_include_dir(os.path.abspath(os.path.join(build_ext_cmd.build_temp, "include")))
-        self.compiler.add_include_dir(os.path.abspath(os.path.join(build_ext_cmd.build_temp)))
-        self.compiler.add_library_dir(os.path.abspath(os.path.join(build_ext_cmd.build_temp, "lib")))
-        # build_ext_cmd.library_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "lib")))
-        # for e in build_ext_cmd.extensions:
-            # e.include_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "include")))
-            # e.include_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp)))
-            # e.library_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "lib")))
+
+        build_ext_cmd.include_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "include")))
+        build_ext_cmd.library_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "lib")))
 
         if sys.gettrace():
             print("Running as a debug", file=sys.stderr)
@@ -236,6 +228,7 @@ class BuildCMakeExt(build_clib):
 class BuildExiv2(BuildCMakeExt):
 
     def __init__(self, dist):
+
         super().__init__(dist)
         self.extra_cmake_options += [
             "-Dpyexiv2bind_generate_venv:BOOL=OFF",
@@ -244,6 +237,8 @@ class BuildExiv2(BuildCMakeExt):
             # "-DEXIV2_VERSION_TAG:STRING=0.27",
             "-DBUILD_TESTING:BOOL=OFF",
         ]
+
+
 # exiv2 = CMakeExtension("exiv2_wrapper")
 
 exiv2 = ("exiv2", {
@@ -300,11 +295,11 @@ class BuildPybind11Extension(build_ext):
 
     def run(self):
         pybind11_include_path = self.get_pybind11_include_path()
-
         if pybind11_include_path is not None:
-            self.include_dirs.append(pybind11_include_path)
+            self.include_dirs.insert(0, pybind11_include_path)
 
         super().run()
+
         for e in self.extensions:
             dll_name = \
                 os.path.join(self.build_lib, self.get_ext_filename(e.name))
@@ -347,7 +342,9 @@ class BuildPybind11Extension(build_ext):
             ext.extra_compile_args.append("-std=c++14")
         else:
             ext.extra_compile_args.append("/std:c++14")
-            ext.libraries.append("shell32")
+
+            # self.compiler.add_library("shell32")
+            # ext.libraries.append("shell32")
 
         missing = self.find_missing_libraries(ext)
 
@@ -382,10 +379,10 @@ class BuildPybind11Extension(build_ext):
         for root, dirs, files in os.walk(pybind11_source):
             for f in files:
                 if f == "pybind11.h":
-                    return os.path.relpath(
+                    return os.path.abspath(os.path.relpath(
                         os.path.join(root, ".."),
                         os.path.dirname(__file__)
-                    )
+                    ))
 
 
 
