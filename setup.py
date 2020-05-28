@@ -105,9 +105,6 @@ class BuildCMakeExt(build_clib):
             for macro in self.undef:
                 self.compiler.undefine_macro(macro)
 
-        if self.compiler.compiler_type != "unix":
-            self.compiler.add_library("shell32")
-
         for library in self.libraries:
             self.build_extension(library)
 
@@ -217,7 +214,8 @@ class BuildCMakeExt(build_clib):
 
         build_ext_cmd.include_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "include")))
         build_ext_cmd.library_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "lib")))
-
+        if self.compiler.compiler_type != "unix":
+            build_ext_cmd.libraries.append("shell32")
         if sys.gettrace():
             print("Running as a debug", file=sys.stderr)
             subprocess.check_call(install_command)
