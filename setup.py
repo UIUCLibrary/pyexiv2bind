@@ -309,7 +309,7 @@ class BuildPybind11Extension(build_ext):
             ext.extra_compile_args.append("-std=c++14")
         else:
             ext.extra_compile_args.append("/std:c++14")
-            # ext.libraries.append("Shell32")
+            ext.libraries.append("Shell32")
 
         missing = self.find_missing_libraries(ext)
 
