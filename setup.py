@@ -285,8 +285,8 @@ class BuildPybind11Extension(build_ext):
 
         if len(missing) > 0:
             self.announce(f"missing required deps [{', '.join(missing)}]. "
-                          f"Trying to get them with conan", 5)
-            self.run_command("build_conan")
+                          f"Trying to build them", 5)
+            self.run_command("build_clib")
         super().build_extension(ext)
 
     def get_pybind11_include_path(self):
