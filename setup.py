@@ -410,7 +410,7 @@ class BuildPybind11Extension(build_ext):
 
             # self.compiler.add_library("shell32")
             # build_ext_cmd.libraries += extension[1]['libraries']
-            ext.libraries.append("shell32")
+            # ext.libraries.append("shell32")
 
 
         if len(missing) > 0:
