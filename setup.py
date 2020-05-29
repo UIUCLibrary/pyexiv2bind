@@ -180,11 +180,15 @@ class BuildCMakeExt(build_clib):
         #             print(o)
                 # print(x)
         #         pass
-    def find_target(self, target_name: str) -> Optional[str]:
+    def find_target(self, target_name: str, build_type=None) -> Optional[str]:
         for f in os.scandir(os.path.join(self.cmake_api_dir, "reply")):
             if f"target-{target_name}-" not in f.name:
                 continue
+            if build_type is not None:
+                if build_type not in f.name:
+                    continue
             return f.path
+
         return None
 
     def find_dep_libs_from_cmake(self, target_json, remove_prefix):
@@ -194,14 +198,16 @@ class BuildCMakeExt(build_clib):
                 link = t.get("link")
                 if link is not  None:
                     cf = link['commandFragments']
-                    deps = map(lambda i: os.path.splitext(i)[0],
-                            map(lambda i: os.path.split(i)[-1],
+                    deps = map(lambda i: os.path.split(i)[-1],
                                 map(lambda z: z['fragment'],
                                     filter(lambda fragment: fragment['role'] == "libraries", cf)
                                     )
                                 )
-                               )
 
+                    splitted = []
+                    for d in deps:
+                        splitted += d.split(" ")
+                    deps = map(lambda i: os.path.splitext(i)[0], splitted)
                     if remove_prefix:
                         return list(map(lambda i: i.replace("lib","") if i.startswith("lib") else i, deps))
                     return list(deps)
@@ -418,7 +424,14 @@ class BuildPybind11Extension(build_ext):
 
         new_libs = []
         for lib in ext.libraries:
-            t = build_clib_cmd.find_target(lib)
+            if self.compiler.compiler_type != "unix":
+                if self.debug is None:
+                    build_configuration = "Release"
+                else:
+                    build_configuration = "Debug"
+            else:
+                build_configuration = None
+            t = build_clib_cmd.find_target(lib, build_configuration)
             deps = build_clib_cmd.find_dep_libs_from_cmake(t, remove_prefix=self.compiler.compiler_type == "unix")
             if deps is not None:
                 if lib in deps:
