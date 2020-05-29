@@ -556,6 +556,7 @@ pipeline {
                     steps {
                         unstash "whl 3.6"
                         unstash "whl 3.7"
+                        unstash "whl 3.8"
                         unstash "sdist"
                         sh(
                             label: "Connecting to DevPi Server",
@@ -573,7 +574,7 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                         axes {
                             axis {
                                 name 'PYTHON_VERSION'
-                                values '3.6', '3.7'
+                                values '3.6', '3.7', '3.8'
                             }
                             axis {
                                 name 'FORMAT'
