@@ -641,7 +641,7 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                                         )
                                         bat(
                                             label: "Running tests on Devpi",
-                                            script: "devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s zip --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"
+                                            script: "devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s zip --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -vv"
                                         )
                                     }
                                 }
