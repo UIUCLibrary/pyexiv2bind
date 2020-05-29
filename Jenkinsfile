@@ -558,6 +558,7 @@ pipeline {
                         unstash "whl 3.7"
                         unstash "whl 3.8"
                         unstash "sdist"
+                        unstash "DOCS_ARCHIVE"
                         sh(
                             label: "Connecting to DevPi Server",
                             script: 'devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi'
