@@ -493,10 +493,8 @@ pipeline {
                                 additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image} --build-arg CHOCOLATEY_SOURCE}"
                             }
                         }
-                        options{
-                            timeout(5)
-                        }
                         steps{
+
                             unstash "whl ${PYTHON_VERSION}"
                             bat(
                                 label: "Checking Python version",
@@ -504,11 +502,13 @@ pipeline {
                                 )
                             script{
                                 findFiles(glob: "**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex}").each{
-                                    bat(
-                                        script: "tox --installpkg=${WORKSPACE}\\${it} -e py",
-                                        label: "Testing ${it}"
-                                    )
-                                }
+                                    timeout(5){
+                                            bat(
+                                                script: "tox --installpkg=${WORKSPACE}\\${it} -e py",
+                                                label: "Testing ${it}"
+                                            )
+                                        }
+                                    }
                             }
                         }
                         post{
