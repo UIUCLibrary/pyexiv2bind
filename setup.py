@@ -1,9 +1,10 @@
+import json
 import os
 import re
 import sys
 import shutil
 import tarfile
-from typing import List
+from typing import List, Optional
 from urllib import request
 
 from setuptools import setup, Extension
@@ -45,6 +46,7 @@ class BuildCMakeExt(build_clib):
     def __init__(self, dist):
         super().__init__(dist)
         self.extra_cmake_options = []
+        self.cmake_api_dir = None
 
     def finalize_options(self):
         super().finalize_options()
@@ -55,6 +57,7 @@ class BuildCMakeExt(build_clib):
 
         if not os.path.exists(self.cmake_exec):
             raise Exception("CMake path not located at {}".format(self.cmake_exec))
+        self.cmake_api_dir = os.path.join(self.build_temp, ".cmake", "api", "v1")
 
     @staticmethod
     def get_build_generator_name():
@@ -122,20 +125,21 @@ class BuildCMakeExt(build_clib):
         source_dir = os.path.abspath(os.path.dirname(__file__))
 
         self.announce("Configuring CMake Project", level=3)
-        os.makedirs(self.build_temp, exist_ok=True)
-
+        self.mkpath(self.build_temp)
         if self.debug:
             build_configuration_name = 'Debug'
         else:
             build_configuration_name = 'Release'
 
+        self.mkpath(os.path.join(self.cmake_api_dir, "query"))
+        with open(os.path.join(self.cmake_api_dir, "query", "codemodel-v2"), "w"):
+            pass
+
         configure_command = [
             self.cmake_exec,
             f'-H{source_dir}',
-            f'-B{self.build_temp}',
-            # f'-G{self.get_build_generator_name()}'
+            f'-B{self.build_temp}'
         ]
-
 
         configure_command.append(
             f'-DCMAKE_BUILD_TYPE={build_configuration_name}')
@@ -157,6 +161,52 @@ class BuildCMakeExt(build_clib):
             subprocess.check_call(configure_command)
         else:
             self.compiler.spawn(configure_command)
+
+        # if target_json is not None:
+        #     with open(target_json) as f:
+        #         t = json.load(f)
+        #         cf = t['link']['commandFragments']
+        #         x = list(
+        #             map(lambda i: os.path.splitext(i)[0],
+        #                 map(lambda i: os.path.split(i)[-1],
+        #                     map(lambda z: z['fragment'],
+        #                         filter(lambda fragment: fragment['role'] == "libraries", cf)
+        #                         )
+        #                     )
+        #                 )
+        #         )
+        #         if self.compiler.compiler_type == "unix":
+        #             o = list(map(lambda i: i.replace("lib","") if i.startswith("lib") else i, x))
+        #             print(o)
+                # print(x)
+        #         pass
+    def find_target(self, target_name: str) -> Optional[str]:
+        for f in os.scandir(os.path.join(self.cmake_api_dir, "reply")):
+            if f"target-{target_name}-" not in f.name:
+                continue
+            return f.path
+        return None
+
+    def find_dep_libs_from_cmake(self, target_json):
+        if target_json is not None:
+            with open(target_json) as f:
+                t = json.load(f)
+                link = t.get("link")
+                if link is not  None:
+                    cf = link['commandFragments']
+                    deps = map(lambda i: os.path.splitext(i)[0],
+                            map(lambda i: os.path.split(i)[-1],
+                                map(lambda z: z['fragment'],
+                                    filter(lambda fragment: fragment['role'] == "libraries", cf)
+                                    )
+                                )
+                               )
+
+                    if self.compiler.compiler_type == "unix":
+                        return list(map(lambda i: i.replace("lib","") if i.startswith("lib") else i, deps))
+                    return list(deps)
+            return []
+        return None
 
     def build_cmake(self, extension: Extension):
 
@@ -187,6 +237,12 @@ class BuildCMakeExt(build_clib):
             subprocess.check_call(build_command)
         else:
             self.compiler.spawn(build_command)
+        # target_json = self.find_target(extension[0])
+        # deps = self.find_dep_libs_from_cmake(target_json)
+        # if deps is not None:
+        #     deps.remove(extension[0])
+        #     extension[1]['libraries'] = deps
+
 
     def build_install_cmake(self, extension: Extension):
 
@@ -214,6 +270,8 @@ class BuildCMakeExt(build_clib):
 
         build_ext_cmd.include_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "include")))
         build_ext_cmd.library_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "lib")))
+
+
         if self.compiler.compiler_type != "unix":
             build_ext_cmd.libraries.append("shell32")
         if sys.gettrace():
@@ -345,7 +403,7 @@ class BuildPybind11Extension(build_ext):
             ext.extra_compile_args.append("/std:c++14")
 
             # self.compiler.add_library("shell32")
-
+            # build_ext_cmd.libraries += extension[1]['libraries']
             ext.libraries.append("shell32")
 
 
@@ -356,6 +414,17 @@ class BuildPybind11Extension(build_ext):
             build_clib_cmd = self.get_finalized_command("build_clib")
 
             ext.include_dirs.append(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "include")))
+        build_clib_cmd = self.get_finalized_command("build_clib")
+
+        new_libs = []
+        for lib in ext.libraries:
+            t = build_clib_cmd.find_target(lib)
+            deps = build_clib_cmd.find_dep_libs_from_cmake(t)
+            if deps is not None:
+                if lib in deps:
+                    deps.remove(lib)
+                new_libs += deps
+        ext.libraries += new_libs
         super().build_extension(ext)
 
     def get_pybind11_include_path(self):
@@ -405,6 +474,7 @@ exiv2_extension = Extension(
         "exiv2",
         "xmp",
         "expat",
+        # "iconv"
         # "z",
     ],
     include_dirs=[
