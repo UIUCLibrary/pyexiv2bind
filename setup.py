@@ -187,7 +187,7 @@ class BuildCMakeExt(build_clib):
             return f.path
         return None
 
-    def find_dep_libs_from_cmake(self, target_json):
+    def find_dep_libs_from_cmake(self, target_json, remove_prefix):
         if target_json is not None:
             with open(target_json) as f:
                 t = json.load(f)
@@ -202,7 +202,7 @@ class BuildCMakeExt(build_clib):
                                 )
                                )
 
-                    if self.compiler.compiler_type == "unix":
+                    if remove_prefix:
                         return list(map(lambda i: i.replace("lib","") if i.startswith("lib") else i, deps))
                     return list(deps)
             return []
@@ -419,7 +419,7 @@ class BuildPybind11Extension(build_ext):
         new_libs = []
         for lib in ext.libraries:
             t = build_clib_cmd.find_target(lib)
-            deps = build_clib_cmd.find_dep_libs_from_cmake(t)
+            deps = build_clib_cmd.find_dep_libs_from_cmake(t, remove_prefix=self.compiler.compiler_type == "unix")
             if deps is not None:
                 if lib in deps:
                     deps.remove(lib)
@@ -472,8 +472,8 @@ exiv2_extension = Extension(
     ],
     libraries=[
         "exiv2",
-        "xmp",
-        "expat",
+        # "xmp",
+        # "expat",
         # "iconv"
         # "z",
     ],
