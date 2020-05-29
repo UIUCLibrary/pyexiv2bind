@@ -17,6 +17,13 @@ def CONFIGURATIONS = [
             test_docker_image: "python:3.7",
             tox_env: "py37",
             devpi_wheel_regex: "cp37"
+        ],
+    "3.8": [
+            pkgRegex: "*cp38*.whl",
+            python_install_url:"https://www.python.org/ftp/python/3.8.3/python-3.8.3-amd64.exe",
+            test_docker_image: "python:3.8",
+            tox_env: "py38",
+            devpi_wheel_regex: "cp38"
         ]
 ]
 
@@ -436,7 +443,8 @@ pipeline {
                         name "PYTHON_VERSION"
                         values(
                             "3.6",
-                            "3.7"
+                            "3.7",
+                            "3.8"
                         )
                     }
                 }
@@ -449,11 +457,10 @@ pipeline {
                                 additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} --build-arg CHOCOLATEY_SOURCE"
                             }
                         }
-                        options{
-                            timeout(15)
-                        }
                         steps{
-                            bat "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist"
+                            timeout(15){
+                                bat "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist"
+                            }
                         }
                         post{
                             always{
@@ -486,10 +493,8 @@ pipeline {
                                 additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image} --build-arg CHOCOLATEY_SOURCE}"
                             }
                         }
-                        options{
-                            timeout(5)
-                        }
                         steps{
+
                             unstash "whl ${PYTHON_VERSION}"
                             bat(
                                 label: "Checking Python version",
@@ -497,11 +502,13 @@ pipeline {
                                 )
                             script{
                                 findFiles(glob: "**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex}").each{
-                                    bat(
-                                        script: "tox --installpkg=${WORKSPACE}\\${it} -e py",
-                                        label: "Testing ${it}"
-                                    )
-                                }
+                                    timeout(5){
+                                            bat(
+                                                script: "tox --installpkg=${WORKSPACE}\\${it} -e py",
+                                                label: "Testing ${it}"
+                                            )
+                                        }
+                                    }
                             }
                         }
                         post{

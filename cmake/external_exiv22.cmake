@@ -3,6 +3,23 @@ include(ExternalProject)
 
 set(EXIV2_VERSION_TAG "" CACHE STRING "Git tag of version of exiv2 to build")
 
+function(patch_exiv2_cmake root)
+#    Removes the need to install exiv2.pc even especially important when it's not needed
+    find_file(exiv_cmakefile
+            NAMES "CMakeLists.txt"
+            PATHS ${root}
+            NO_DEFAULT_PATH
+            NO_CMAKE_PATH
+            )
+    file(READ "${exiv_cmakefile}" data)
+    set(line_to_remove "install(FILES \${CMAKE_BINARY_DIR}/exiv2.pc DESTINATION \${CMAKE_INSTALL_LIBDIR}/pkgconfig)")
+    string(REPLACE "${line_to_remove}" "" data "${data}")
+
+    file(WRITE  "${PROJECT_BINARY_DIR}/temp_cmake.txt" "${data}")
+    execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_BINARY_DIR}/temp_cmake.txt" "${exiv_cmakefile}")
+
+endfunction()
+
 function(patch_tiff_resolution root)
     list(APPEND LINES_TO_BE_REMOVED "{ 0x011a, ifd0Id }, // Exif.Image.XResolution")
     list(APPEND LINES_TO_BE_REMOVED "{ 0x011b, ifd0Id }, // Exif.Image.YResolution")
@@ -68,9 +85,9 @@ if (NOT expat_POPULATED)
     option(BUILD_shared "" OFF)
     option(BUILD_tests "" NO)
     option(BUILD_tools "" NO)
-    option(INSTALL "" NO)
+#    option(INSTALL "" NO)
 
-    add_subdirectory(${expat_SOURCE_DIR}/expat ${expat_BINARY_DIR} EXCLUDE_FROM_ALL)
+    add_subdirectory(${expat_SOURCE_DIR}/expat ${expat_BINARY_DIR})
 endif ()
 FetchContent_Declare(
         libexiv2
@@ -97,6 +114,7 @@ FetchContent_GetProperties(libexiv2)
 if (NOT libexiv2_POPULATED)
     FetchContent_Populate(libexiv2)
     patch_tiff_resolution("${libexiv2_SOURCE_DIR}")
+    patch_exiv2_cmake("${libexiv2_SOURCE_DIR}")
 
     option(BUILD_SHARED_LIBS "" OFF)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
@@ -114,10 +132,11 @@ if (NOT libexiv2_POPULATED)
     set(EXIV2_BUILD_SAMPLES OFF)
     option(EXIV2_BUILD_SAMPLES "" OFF)
     include_directories(${libexiv2_BINARY_DIR})
-    add_subdirectory(${libexiv2_SOURCE_DIR} ${libexiv2_BINARY_DIR} EXCLUDE_FROM_ALL)
+    add_subdirectory(${libexiv2_SOURCE_DIR} ${libexiv2_BINARY_DIR})
 #    target_include_directories(exiv2lib PRIVATE ${libexiv2_BINARY_DIR})
 #    include_directories(${libexiv2_BINARY_DIR})
     add_dependencies(exiv2lib zlibstatic)
 endif ()
 add_dependencies(exiv2lib expat)
+#install(DIRECTORY ${libexiv2_SOURCE_DIR}/include/ DESTINATION include)
 

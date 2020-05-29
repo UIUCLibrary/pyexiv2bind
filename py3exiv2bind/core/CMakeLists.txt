@@ -6,7 +6,7 @@ include(GenerateExportHeader)
 #target_include_directories(glue PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 #target_link_libraries(glue PUBLIC exiv2lib)
 add_subdirectory(glue)
-add_library(core MODULE core.cpp $<TARGET_OBJECTS:glue>)
+add_library(core MODULE EXCLUDE_FROM_ALL core.cpp $<TARGET_OBJECTS:glue> )
 
 if (pyexiv2bind_generate_python_bindings)
     if (SKBUILD)
