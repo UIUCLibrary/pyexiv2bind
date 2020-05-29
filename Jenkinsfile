@@ -660,33 +660,35 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                                     }
                                 }
                             }
-                            stage("Deploy to DevPi Production") {
-                                when {
-                                    allOf{
-                                        equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
-                                        branch "master"
-                                    }
-                                    beforeAgent true
+                        }
+                    }
+                }
+                stage("Deploy to DevPi Production") {
+                    when {
+                        allOf{
+                            equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
+                            branch "master"
+                        }
+                        beforeAgent true
+                    }
+                    agent {
+                        dockerfile {
+                            filename 'ci/docker/deploy/devpi/deploy/Dockerfile'
+                            label 'linux&&docker'
+                            additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                        }
+                    }
+                    steps {
+                        script {
+                            unstash "DIST-INFO"
+                            def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
+                            try{
+                                timeout(30) {
+                                    input "Release ${props.Name} ${props.Version} (https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging/${props.Name}/${props.Version}) to DevPi Production? "
                                 }
-                                agent {
-                                    dockerfile {
-                                        filename 'ci/docker/deploy/devpi/deploy/Dockerfile'
-                                        label 'linux&&docker'
-                                        additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
-                                    }
-                                }
-                                steps {
-                                    script {
-                                        try{
-                                            timeout(30) {
-                                                input "Release ${env.PKG_NAME} ${env.PKG_VERSION} (https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging/${env.PKG_NAME}/${env.PKG_VERSION}) to DevPi Production? "
-                                            }
-                                            sh "devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi  && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi && devpi use /DS_Jenkins/${env.BRANCH_NAME}_staging --clientdir ${WORKSPACE}/devpi && devpi push --index ${env.DEVPI_USR}/${env.BRANCH_NAME}_staging ${env.PKG_NAME}==${env.PKG_VERSION} production/release --clientdir ${WORKSPACE}/devpi"
-                                        } catch(err){
-                                            echo "User response timed out. Packages not deployed to DevPi Production."
-                                        }
-                                    }
-                                }
+                                sh "devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi  && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi && devpi use /DS_Jenkins/${env.BRANCH_NAME}_staging --clientdir ${WORKSPACE}/devpi && devpi push --index ${env.DEVPI_USR}/${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} production/release --clientdir ${WORKSPACE}/devpi"
+                            } catch(err){
+                                echo "User response timed out. Packages not deployed to DevPi Production."
                             }
                         }
                     }
