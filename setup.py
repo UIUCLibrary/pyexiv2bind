@@ -155,7 +155,8 @@ class BuildCMakeExt(build_clib):
         configure_command.append('-DEXIV2_ENABLE_NLS:BOOL=NO')
         configure_command.append('-DEXIV2_ENABLE_VIDEO:BOOL=OFF')
         configure_command.append('-DEXIV2_ENABLE_PNG:BOOL=OFF')
-        configure_command.append('-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON')
+        if self.compiler.compiler_type == "unix":
+            configure_command.append('-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON')
         configure_command += self.extra_cmake_options
 
         if sys.gettrace():
