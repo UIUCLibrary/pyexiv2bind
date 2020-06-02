@@ -451,13 +451,18 @@ pipeline {
         stage("Python sdist"){
             agent{
                 dockerfile {
-                    filename 'ci/docker/windows/build/msvc/Dockerfile'
-                    label 'windows && Docker'
-                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+                    filename 'ci/docker/linux/Dockerfile'
+                    label 'linux && docker'
+                    additionalBuildArgs "--build-arg PYTHON_VERSION=3.8"
                 }
+//                 dockerfile {
+//                     filename 'ci/docker/windows/build/msvc/Dockerfile'
+//                     label 'windows && Docker'
+//                     additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+//                 }
             }
            steps {
-               bat "python setup.py sdist -d ${WORKSPACE}\\dist --format zip"
+               sh "python setup.py sdist -d ${WORKSPACE}/dist --format zip"
            }
            post{
                success{
