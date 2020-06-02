@@ -151,6 +151,7 @@ class BuildCMakeExt(build_clib):
 
         configure_command.append('-Dpyexiv2bind_generate_python_bindings:BOOL=NO')
         configure_command.append('-DEXIV2_ENABLE_NLS:BOOL=NO')
+        configure_command.append('-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=YES')
         configure_command.append('-DEXIV2_ENABLE_VIDEO:BOOL=OFF')
         configure_command.append('-DEXIV2_ENABLE_PNG:BOOL=OFF')
 
