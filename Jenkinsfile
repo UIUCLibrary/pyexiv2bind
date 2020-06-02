@@ -243,7 +243,7 @@ pipeline {
                     steps {
                         sh "mkdir -p logs"
 //                         bat "if not exist logs mkdir logs"
-                        sh "python setup.py build -b build  --build-lib build/lib/ --build-temp build/temp build_ext --inplace"
+                        sh 'python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace'
                     }
                     post{
                         success{
@@ -265,11 +265,8 @@ pipeline {
                 }     
                 stage("Building Sphinx Documentation"){
                     steps {
-//                         bat "if not exist logs mkdir logs"
                         sh "mkdir -p logs"
                         sh "mkdir -p build/docs/html"
-//                         bat "if not exist build\\docs\\html mkdir build\\docs\\html"
-//                         bat "python -m sphinx docs/source build/docs/html -b html -d build\\docs\\.doctrees --no-color -w logs\\build_sphinx.log"
                         sh "python -m sphinx docs/source build/docs/html -b html -d build/docs/.doctrees --no-color -w logs/build_sphinx.log"
                     }
                     post{
