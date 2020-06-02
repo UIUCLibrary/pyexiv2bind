@@ -225,10 +225,15 @@ pipeline {
         stage("Building") {
             agent {
                 dockerfile {
-                    filename 'ci/docker/windows/build/msvc/Dockerfile'
-                    label 'windows && Docker'
-                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+                    filename 'ci/docker/linux/Dockerfile'
+                    label 'linux && docker'
+                    additionalBuildArgs "--build-arg PYTHON_VERSION=3.8"
                 }
+//                 dockerfile {
+//                     filename 'ci/docker/windows/build/msvc/Dockerfile'
+//                     label 'windows && Docker'
+//                     additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+//                 }
             }
             stages{
                 stage("Building Python Package"){
@@ -236,12 +241,13 @@ pipeline {
                         timeout(10)
                     }
                     steps {
-                        bat "if not exist logs mkdir logs"
-                        bat "python setup.py build -b build -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib/ --build-temp build/temp build_ext --inplace"
+                        sh "mkdir -p logs"
+//                         bat "if not exist logs mkdir logs"
+                        sh "python setup.py build -b build  --build-lib build/lib/ --build-temp build/temp build_ext --inplace"
                     }
                     post{
                         success{
-                          stash includes: 'py3exiv2bind/**/*.dll,py3exiv2bind/**/*.pyd,py3exiv2bind/**/*.exe"', name: "built_source"
+                          stash includes: 'py3exiv2bind/**/*.dll,py3exiv2bind/**/*.pyd,py3exiv2bind/**/*.exe,py3exiv2bind/**/*.so,', name: "built_source"
                         }
                         failure{
                             cleanWs(
@@ -259,9 +265,12 @@ pipeline {
                 }     
                 stage("Building Sphinx Documentation"){
                     steps {
-                        bat "if not exist logs mkdir logs"
-                        bat "if not exist build\\docs\\html mkdir build\\docs\\html"
-                        bat "python -m sphinx docs/source build/docs/html -b html -d build\\docs\\.doctrees --no-color -w logs\\build_sphinx.log"
+//                         bat "if not exist logs mkdir logs"
+                        sh "mkdir -p logs"
+                        sh "mkdir -p build/docs/html"
+//                         bat "if not exist build\\docs\\html mkdir build\\docs\\html"
+//                         bat "python -m sphinx docs/source build/docs/html -b html -d build\\docs\\.doctrees --no-color -w logs\\build_sphinx.log"
+                        sh "python -m sphinx docs/source build/docs/html -b html -d build/docs/.doctrees --no-color -w logs/build_sphinx.log"
                     }
                     post{
                         always {
