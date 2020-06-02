@@ -180,7 +180,7 @@ pipeline {
     }
 
     options {
-        disableConcurrentBuilds()  //each branch has 1 job running at a time
+//         disableConcurrentBuilds()  //each branch has 1 job running at a time
 //         timeout(120)  // Timeout after 120 minutes. This shouldn't take this long but it hangs for some reason
         buildDiscarder logRotator(artifactDaysToKeepStr: '10', artifactNumToKeepStr: '10', daysToKeepStr: '', numToKeepStr: '')
     }
@@ -200,14 +200,19 @@ pipeline {
         stage("Getting Distribution Info"){
             agent {
                 dockerfile {
-                    filename 'ci/docker/windows/build/msvc/Dockerfile'
-                    label 'windows && Docker'
-                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+                    filename 'ci/docker/linux/Dockerfile'
+                    label 'linux && docker'
+                    additionalBuildArgs "--build-arg PYTHON_VERSION=3.8"
                 }
+//                 dockerfile {
+//                     filename 'ci/docker/windows/build/msvc/Dockerfile'
+//                     label 'windows && Docker'
+//                     additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+//                 }
             }
             steps{
                 timeout(3){
-                    bat "python setup.py dist_info"
+                    sh "python setup.py dist_info"
                 }
             }
             post{
