@@ -57,7 +57,7 @@ class BuildCMakeExt(build_clib):
 
         if not os.path.exists(self.cmake_exec):
             raise Exception("CMake path not located at {}".format(self.cmake_exec))
-        self.cmake_api_dir = os.path.join(self.build_temp, ".cmake", "api", "v1")
+        self.cmake_api_dir = os.path.join(self.build_temp, "deps", ".cmake", "api", "v1")
 
     @staticmethod
     def get_build_generator_name():
@@ -125,7 +125,9 @@ class BuildCMakeExt(build_clib):
         source_dir = os.path.abspath(os.path.dirname(__file__))
 
         self.announce("Configuring CMake Project", level=3)
-        self.mkpath(self.build_temp)
+        dep_build_path = os.path.join(self.build_temp, "deps")
+        self.mkpath(dep_build_path)
+
         if self.debug:
             build_configuration_name = 'Debug'
         else:
@@ -138,23 +140,22 @@ class BuildCMakeExt(build_clib):
         configure_command = [
             self.cmake_exec,
             f'-H{source_dir}',
-            f'-B{self.build_temp}'
+            f'-B{dep_build_path}'
         ]
 
         configure_command.append(
             f'-DCMAKE_BUILD_TYPE={build_configuration_name}')
         build_ext_cmd = self.get_finalized_command("build_ext")
-        configure_command.append(f'-DCMAKE_INSTALL_PREFIX={os.path.abspath(build_ext_cmd.build_temp)}')
+        configure_command.append(f'-DCMAKE_INSTALL_PREFIX={os.path.abspath(self.build_clib)}')
         configure_command.append(f'-DPYTHON_EXECUTABLE:FILEPATH={sys.executable}')
         configure_command.append(f'-DPYTHON_INCLUDE_DIR={sysconfig.get_path("include")}')
         configure_command.append(f'-DPython_ADDITIONAL_VERSIONS={sys.version_info.major}.{sys.version_info.minor}')
 
         configure_command.append('-Dpyexiv2bind_generate_python_bindings:BOOL=NO')
         configure_command.append('-DEXIV2_ENABLE_NLS:BOOL=NO')
-        configure_command.append('-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=YES')
         configure_command.append('-DEXIV2_ENABLE_VIDEO:BOOL=OFF')
         configure_command.append('-DEXIV2_ENABLE_PNG:BOOL=OFF')
-
+        configure_command.append('-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON')
         configure_command += self.extra_cmake_options
 
         if sys.gettrace():
@@ -192,7 +193,7 @@ class BuildCMakeExt(build_clib):
 
         return None
 
-    def find_dep_libs_from_cmake(self, target_json, remove_prefix):
+    def find_dep_libs_from_cmake(self, ext, target_json, remove_prefix):
         if target_json is not None:
             with open(target_json) as f:
                 t = json.load(f)
@@ -208,7 +209,28 @@ class BuildCMakeExt(build_clib):
                     splitted = []
                     for d in deps:
                         splitted += d.split(" ")
-                    deps = map(lambda i: os.path.splitext(i)[0], splitted)
+
+                    prefix_removed = []
+                    for d in splitted:
+                        if d in ext.libraries:
+                            continue
+
+                        for l in ext.libraries:
+                            if d.startswith(l):
+                                continue
+
+                        if d.startswith("-Wl"):
+                            ext.extra_link_args.append(d)
+
+                            # print(f'------------  {d}  ----------', file=sys.stderr)
+                            continue
+                        if d == "-l:":
+                            continue
+                        if d.startswith("-l"):
+                            prefix_removed.append(d.replace("-l", ""))
+                        else:
+                            prefix_removed.append(d)
+                    deps = map(lambda i: os.path.splitext(i)[0], prefix_removed)
                     if remove_prefix:
                         return list(map(lambda i: i.replace("lib","") if i.startswith("lib") else i, deps))
                     return list(deps)
@@ -216,11 +238,10 @@ class BuildCMakeExt(build_clib):
         return None
 
     def build_cmake(self, extension: Extension):
-
+        dep_build_path = os.path.join(self.build_temp, "deps")
         build_command = [
             self.cmake_exec,
-            "--build",
-            self.build_temp,
+            "--build", dep_build_path,
             # "--target", "exiv2lib"
         ]
 
@@ -252,10 +273,10 @@ class BuildCMakeExt(build_clib):
 
 
     def build_install_cmake(self, extension: Extension):
-
+        dep_build_path = os.path.join(self.build_temp, "deps")
         install_command = [
             self.cmake_exec,
-            "--build", self.build_temp
+            "--build", dep_build_path
         ]
 
         self.announce("Adding binaries to Python build path", level=3)
@@ -278,7 +299,7 @@ class BuildCMakeExt(build_clib):
         build_ext_cmd.include_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "include")))
         build_ext_cmd.library_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "lib")))
 
-
+        self.mkpath(os.path.join(self.build_clib, "bin"))
         if self.compiler.compiler_type != "unix":
             build_ext_cmd.libraries.append("shell32")
         if sys.gettrace():
@@ -433,7 +454,7 @@ class BuildPybind11Extension(build_ext):
             else:
                 build_configuration = None
             t = build_clib_cmd.find_target(lib, build_configuration)
-            deps = build_clib_cmd.find_dep_libs_from_cmake(t, remove_prefix=self.compiler.compiler_type == "unix")
+            deps = build_clib_cmd.find_dep_libs_from_cmake(ext, t, remove_prefix=self.compiler.compiler_type == "unix")
             if deps is not None:
                 if lib in deps:
                     deps.remove(lib)
