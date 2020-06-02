@@ -222,8 +222,6 @@ class BuildCMakeExt(build_clib):
 
                         if d.startswith("-Wl"):
                             ext.extra_link_args.append(d)
-
-                            # print(f'------------  {d}  ----------', file=sys.stderr)
                             continue
                         if d == "-l:":
                             continue
@@ -459,6 +457,10 @@ class BuildPybind11Extension(build_ext):
                     deps.remove(lib)
                 new_libs += deps
         ext.libraries += new_libs
+
+        # remove the duplicated
+        ext.libraries = list(set(ext.libraries))
+
         super().build_extension(ext)
 
     def get_pybind11_include_path(self):
