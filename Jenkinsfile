@@ -242,7 +242,6 @@ pipeline {
                     }
                     steps {
                         sh "mkdir -p logs"
-//                         bat "if not exist logs mkdir logs"
                         sh 'python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace'
                     }
                     post{
@@ -303,16 +302,22 @@ pipeline {
             }
             agent {
                 dockerfile {
-                    filename 'ci/docker/windows/build/msvc/Dockerfile'
-                    label 'windows && Docker'
-                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+                    filename 'ci/docker/linux/Dockerfile'
+                    label 'linux && docker'
+                    additionalBuildArgs "--build-arg PYTHON_VERSION=3.8"
                 }
+//                 dockerfile {
+//                     filename 'ci/docker/windows/build/msvc/Dockerfile'
+//                     label 'windows && Docker'
+//                     additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+//                 }
             }
             stages{
                 stage("Setting up Test Env"){
                     steps{
                         unstash "built_source"
-                        bat "if not exist logs mkdir logs"
+                        sh "mkdir -p logs"
+//                         bat "if not exist logs mkdir logs"
                     }
                 }
 
@@ -336,7 +341,7 @@ pipeline {
                                         timeout(15)
                                     }
                                     steps {
-                                        bat "tox -e py -vv"
+                                        sh "tox -e py -vv"
                                     }
                                 }
                             }
@@ -349,7 +354,7 @@ pipeline {
                         }
                         stage("Run Doctest Tests"){
                             steps {
-                                bat "sphinx-build docs/source reports\\doctest -b doctest -d build\\docs\\.doctrees --no-color -w logs\\doctest_warnings.log"
+                                sh "sphinx-build docs/source reports/doctest -b doctest -d build/docs/.doctrees --no-color -w logs/doctest_warnings.log"
                             }
                             post{
                                 always {
@@ -363,17 +368,18 @@ pipeline {
                             stages{
                                 stage("Generate stubs") {
                                     steps{
-                                      bat "stubgen -p py3exiv2bind -o ${WORKSPACE}\\mypy_stubs"
+                                      sh "stubgen -p py3exiv2bind -o ${WORKSPACE}//mypy_stubs"
                                     }
 
                                 }
                                 stage("Run MyPy") {
                                     environment{
-                                        MYPYPATH = "${WORKSPACE}\\mypy_stubs"
+                                        MYPYPATH = "${WORKSPACE}/mypy_stubs"
                                     }
                                     steps{
-                                        bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
-                                        bat returnStatus: true, script: "mypy -p py3exiv2bind --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
+                                        sh "mkdir -p reports/mypy/html"
+//                                         bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
+                                        sh returnStatus: true, script: "mypy -p py3exiv2bind --html-report ${WORKSPACE}/reports/mypy/html > ${WORKSPACE}/logs/mypy.log"
                                     }
                                     post {
                                         always {
@@ -397,7 +403,7 @@ pipeline {
                             timeout(2)
                           }
                           steps{
-                            bat returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
+                            sh returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
                           }
                           post {
                             always {
@@ -413,7 +419,7 @@ pipeline {
                             timeout(2)
                           }
                           steps{
-                                bat "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=${WORKSPACE}/reports/pytest/${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                sh "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=${WORKSPACE}/reports/pytest/${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
                           }
                           post{
                             always{
@@ -426,7 +432,7 @@ pipeline {
             }
             post{
                 success{
-                    bat "python -m pipenv run coverage combine && python -m pipenv run coverage xml -o ${WORKSPACE}\\reports\\coverage.xml && python -m pipenv run coverage html -d ${WORKSPACE}\\reports\\coverage"
+                    sh "coverage combine && coverage xml -o ${WORKSPACE}/reports/coverage.xml && coverage html -d ${WORKSPACE}/reports/coverage"
                     publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
                     publishCoverage adapters: [
                                     coberturaAdapter('reports/coverage.xml')
