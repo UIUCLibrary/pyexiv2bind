@@ -454,6 +454,13 @@ class BuildPybind11Extension(build_ext):
                     build_configuration = "Release"
                 else:
                     build_configuration = "Debug"
+                lib_path = self.compiler.find_library_file(
+                    os.path.abspath(os.path.join(build_clib_cmd.build_clib, build_configuration),
+                                    lib)
+                )
+                if lib_path is not None:
+                    ext.library_dirs.append(os.path.dirname(lib_path))
+
             else:
                 build_configuration = None
             t = build_clib_cmd.find_target(lib, build_configuration)
