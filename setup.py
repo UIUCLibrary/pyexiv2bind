@@ -301,8 +301,6 @@ class BuildCMakeExt(build_clib):
         build_ext_cmd.library_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "lib")))
 
         self.mkpath(os.path.join(self.build_clib, "bin"))
-        if self.compiler.compiler_type != "unix":
-            build_ext_cmd.libraries.append("shell32")
         if sys.gettrace():
             print("Running as a debug", file=sys.stderr)
             subprocess.check_call(install_command)
