@@ -464,11 +464,11 @@ class BuildPybind11Extension(build_ext):
                     if lib in deps:
                         deps.remove(lib)
                     new_libs += deps
-                ext.extra_compile_args += flags
+                # ext.extra_compile_args += flags
         ext.libraries += new_libs
 
         # remove the duplicated
-        ext.libraries = list(set(ext.libraries))
+        # ext.libraries = list(set(ext.libraries))
 
         super().build_extension(ext)
 
