@@ -4,7 +4,7 @@ import re
 import sys
 import shutil
 import tarfile
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from urllib import request
 
 from setuptools import setup, Extension
@@ -15,6 +15,7 @@ import sysconfig
 from setuptools.command.build_clib import build_clib
 from distutils.sysconfig import customize_compiler
 from ctypes.util import find_library
+from functools import reduce
 # CMAKE = shutil.which("cmake")
 PACKAGE_NAME = "py3exiv2bind"
 PYBIND11_DEFAULT_URL = \
@@ -194,13 +195,18 @@ class BuildCMakeExt(build_clib):
 
         return None
 
-    def find_dep_libs_from_cmake(self, ext, target_json, remove_prefix):
+    def find_dep_libs_from_cmake(self, ext, target_json, remove_prefix) -> Optional[Tuple[list, list]]:
         if target_json is not None:
             with open(target_json) as f:
                 t = json.load(f)
                 link = t.get("link")
-                if link is not  None:
+                if link is not None:
                     cf = link['commandFragments']
+                    flags = reduce(
+                        lambda a, b: {**b, **a},
+                        filter(lambda fragment: fragment['role'] == "flags", cf)
+                    )['fragment'].split()
+
                     deps = map(lambda i: os.path.split(i)[-1],
                                 map(lambda z: z['fragment'],
                                     filter(lambda fragment: fragment['role'] == "libraries", cf)
@@ -231,9 +237,9 @@ class BuildCMakeExt(build_clib):
                             prefix_removed.append(d)
                     deps = map(lambda i: os.path.splitext(i)[0], prefix_removed)
                     if remove_prefix:
-                        return list(map(lambda i: i.replace("lib","") if i.startswith("lib") else i, deps))
-                    return list(deps)
-            return []
+                        return list(map(lambda i: i.replace("lib","") if i.startswith("lib") else i, deps)), flags
+                    return list(deps), flags
+            return [], []
         return None
 
     def build_cmake(self, extension: Extension):
@@ -451,11 +457,14 @@ class BuildPybind11Extension(build_ext):
             else:
                 build_configuration = None
             t = build_clib_cmd.find_target(lib, build_configuration)
-            deps = build_clib_cmd.find_dep_libs_from_cmake(ext, t, remove_prefix=self.compiler.compiler_type == "unix")
-            if deps is not None:
-                if lib in deps:
-                    deps.remove(lib)
-                new_libs += deps
+            res = build_clib_cmd.find_dep_libs_from_cmake(ext, t, remove_prefix=self.compiler.compiler_type == "unix")
+            if res is not None:
+                deps, flags = res
+                if deps is not None:
+                    if lib in deps:
+                        deps.remove(lib)
+                    new_libs += deps
+                ext.extra_compile_args += flags
         ext.libraries += new_libs
 
         # remove the duplicated
