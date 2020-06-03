@@ -1068,7 +1068,7 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                                 steps{
                                     unstash "DIST-INFO"
                                     script{
-                                        def props = readProperties interpolate: true, file: "uiucprescon.ocr.dist-info/METADATA"
+                                        def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATA"
 
                                         if(isUnix()){
                                             sh(
