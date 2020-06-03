@@ -1059,26 +1059,59 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
 //                                         label 'windows && docker'
 //                                     }
 //                                 }
-                                when{
-                                    equals expected: "zip", actual: FORMAT
-                                    beforeAgent true
-                                }
+//                                 when{
+//                                     equals expected: "zip", actual: FORMAT
+//                                     beforeAgent true
+//                                 }
                                 steps{
                                     unstash "DIST-INFO"
                                     script{
-                                        def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATA"
-                                        cleanWs(patterns: [[pattern: "py3exiv2bind.dist-info/METADATA", type: 'INCLUDE']])
-                                        bat "python --version"
-                                        bat(
-                                            label: "Connecting to DevPi index",
-                                            script: "devpi use https://devpi.library.illinois.edu --clientdir certs\\ && devpi login %DEVPI_USR% --password %DEVPI_PSW% --clientdir certs\\ && devpi use ${env.BRANCH_NAME}_staging --clientdir certs\\"
-                                        )
-                                        bat(
-                                            label: "Running tests on Devpi",
-                                            script: "devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s zip --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -vv"
-                                        )
+                                        def props = readProperties interpolate: true, file: "uiucprescon.ocr.dist-info/METADATA"
+
+                                        if(isUnix()){
+                                            sh(
+                                                label: "Checking Python version",
+                                                script: "python --version"
+                                            )
+                                            sh(
+                                                label: "Connecting to DevPi index",
+                                                script: "devpi use https://devpi.library.illinois.edu --clientdir certs && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir certs && devpi use ${env.BRANCH_NAME}_staging --clientdir certs"
+                                            )
+                                            sh(
+                                                label: "Running tests on Devpi",
+                                                script: "devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s ${CONFIGURATIONS[PYTHON_VERSION].devpiSelector[FORMAT]} --clientdir certs -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"
+                                            )
+                                        } else {
+                                            bat(
+                                                label: "Checking Python version",
+                                                script: "python --version"
+                                            )
+                                            bat(
+                                                label: "Connecting to DevPi index",
+                                                script: "devpi use https://devpi.library.illinois.edu --clientdir certs\\ && devpi login %DEVPI_USR% --password %DEVPI_PSW% --clientdir certs\\ && devpi use ${env.BRANCH_NAME}_staging --clientdir certs\\"
+                                            )
+                                            bat(
+                                                label: "Running tests on Devpi",
+                                                script: "devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s ${CONFIGURATIONS[PYTHON_VERSION].devpiSelector[FORMAT]} --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"
+                                            )
+                                        }
                                     }
                                 }
+//                                     unstash "DIST-INFO"
+//                                     script{
+//                                         def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATA"
+//                                         cleanWs(patterns: [[pattern: "py3exiv2bind.dist-info/METADATA", type: 'INCLUDE']])
+//                                         bat "python --version"
+//                                         bat(
+//                                             label: "Connecting to DevPi index",
+//                                             script: "devpi use https://devpi.library.illinois.edu --clientdir certs\\ && devpi login %DEVPI_USR% --password %DEVPI_PSW% --clientdir certs\\ && devpi use ${env.BRANCH_NAME}_staging --clientdir certs\\"
+//                                         )
+//                                         bat(
+//                                             label: "Running tests on Devpi",
+//                                             script: "devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s zip --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -vv"
+//                                         )
+//                                     }
+//                                 }
                             }
                         }
                     }
