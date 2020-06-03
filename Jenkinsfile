@@ -967,7 +967,8 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
             post{
                 success{
                     node('linux && docker') {
-                       script{
+                        checkout scm
+                        script{
                             docker.build("py3exiv2bind:devpi.${env.BUILD_ID}",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
                                 unstash "DIST-INFO"
                                 def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
@@ -978,7 +979,7 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                                 sh "devpi use /DS_Jenkins/${env.BRANCH_NAME}_staging --clientdir ${WORKSPACE}/devpi"
                                 sh "devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.BRANCH_NAME} --clientdir ${WORKSPACE}/devpi"
                             }
-                       }
+                        }
                     }
                 }
                 cleanup{
