@@ -2,31 +2,335 @@
 @Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
 import org.ds.*
 
+// def CONFIGURATIONS = [
+//     "3.6": [
+//             pkgRegex: "*cp36*.whl",
+//             python_install_url:"https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe",
+//             test_docker_image: "python:3.6-windowsservercore",
+//             tox_env: "py36",
+//             devpi_wheel_regex: "cp36"
+//
+//         ],
+//     "3.7": [
+//             pkgRegex: "*cp37*.whl",
+//             python_install_url:"https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe",
+//             test_docker_image: "python:3.7",
+//             tox_env: "py37",
+//             devpi_wheel_regex: "cp37"
+//         ],
+//     "3.8": [
+//             pkgRegex: "*cp38*.whl",
+//             python_install_url:"https://www.python.org/ftp/python/3.8.3/python-3.8.3-amd64.exe",
+//             test_docker_image: "python:3.8",
+//             tox_env: "py38",
+//             devpi_wheel_regex: "cp38"
+//         ]
+// ]
+
 def CONFIGURATIONS = [
-    "3.6": [
-            pkgRegex: "*cp36*.whl",
-            python_install_url:"https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe",
-            test_docker_image: "python:3.6-windowsservercore",
+        "3.6" : [
+            os: [
+                windows:[
+                    agents: [
+                        build: [
+                            dockerfile: [
+                                filename: 'ci/docker/windows/build/msvc/Dockerfile',
+                                label: 'Windows&&Docker',
+                                additionalBuildArgs: '--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe --build-arg CHOCOLATEY_SOURCE'
+                            ]
+                        ],
+                        test:[
+                            wheel: [
+                                dockerfile: [
+                                    filename: 'ci/docker/windows/test/msvc/Dockerfile',
+                                    label: 'Windows&&Docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.6-windowsservercore --build-arg CHOCOLATEY_SOURCE',
+                                    baseImage: "python:3.6-windowsservercore"
+                                ]
+                            ],
+                            sdist: [
+                                dockerfile: [
+                                    filename: 'ci/docker/windows/build/msvc/Dockerfile',
+                                    label: 'Windows&&Docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe --build-arg CHOCOLATEY_SOURCE'
+                                ]
+                            ]
+                        ],
+                        devpi: [
+                            wheel: [
+                                dockerfile: [
+                                    filename: 'ci/docker/deploy/devpi/test/windows/whl/Dockerfile',
+                                    label: 'Windows&&Docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.6-windowsservercore'
+                                ]
+                            ],
+                            sdist: [
+                                dockerfile: [
+                                    filename: 'ci/docker/deploy/devpi/test/windows/source/Dockerfile',
+                                    label: 'Windows&&Docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe --build-arg CHOCOLATEY_SOURCE'
+                                ]
+                            ]
+                        ]
+                    ],
+                    pkgRegex: [
+                        wheel: "*cp36*.whl",
+                        sdist: "py3exiv2bind-*.zip"
+                    ]
+                ],
+                linux: [
+                    agents: [
+                        build: [
+                            dockerfile: [
+                                filename: 'ci/docker/linux/build/Dockerfile',
+                                label: 'linux&&docker',
+                                additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                            ]
+                        ],
+                        test: [
+                            sdist: [
+                                dockerfile: [
+                                    filename: 'ci/docker/linux/build/Dockerfile',
+                                    label: 'linux&&docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                ]
+                            ]
+                        ],
+                        devpi: [
+                            whl: [
+                                dockerfile: [
+                                    filename: 'ci/docker/deploy/devpi/test/linux/Dockerfile',
+                                    label: 'linux&&docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                ]
+                            ],
+                            sdist: [
+                                dockerfile: [
+                                    filename: 'ci/docker/deploy/devpi/test/linux/Dockerfile',
+                                    label: 'linux&&docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                ]
+                            ]
+                        ]
+                    ],
+                    pkgRegex: [
+                        wheel: "*cp36*.whl",
+                        sdist: "py3exiv2bind-*.zip"
+                    ]
+                ]
+            ],
             tox_env: "py36",
-            devpi_wheel_regex: "cp36"
-
+            devpiSelector: [
+                sdist: "zip",
+                wheel: "36.*whl",
+            ],
+            pkgRegex: [
+                wheel: "*cp36*.whl",
+                sdist: "*.zip"
+            ]
         ],
-    "3.7": [
-            pkgRegex: "*cp37*.whl",
-            python_install_url:"https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe",
-            test_docker_image: "python:3.7",
+        "3.7" : [
+            os: [
+                windows: [
+                    agents: [
+                        build: [
+                            dockerfile: [
+                                filename: 'ci/docker/windows/build/msvc/Dockerfile',
+                                label: 'Windows&&Docker',
+                                additionalBuildArgs: '--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe --build-arg CHOCOLATEY_SOURCE'
+                            ]
+                        ],
+                        test: [
+                            sdist: [
+                                dockerfile: [
+                                    filename: 'ci/docker/windows/build/msvc/Dockerfile',
+                                    label: 'Windows&&Docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe --build-arg CHOCOLATEY_SOURCE'
+                                ]
+                            ],
+                            wheel: [
+                                dockerfile: [
+                                    filename: 'ci/docker/windows/test/msvc/Dockerfile',
+                                    additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.7',
+                                    label: 'windows && docker',
+                                ]
+                            ]
+                        ],
+                        devpi: [
+                            wheel: [
+                                dockerfile: [
+                                    filename: 'ci/docker/deploy/devpi/test/windows/whl/Dockerfile',
+                                    label: 'Windows&&Docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.7'
+                                ]
+                            ],
+                            sdist: [
+                                dockerfile: [
+                                    filename: 'ci/docker/deploy/devpi/test/windows/source/Dockerfile',
+                                    label: 'Windows&&Docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe --build-arg CHOCOLATEY_SOURCE'
+                                ]
+                            ]
+                        ]
+                    ],
+                    pkgRegex: [
+                        wheel: "*cp37*.whl",
+                        sdist: "*.zip"
+                    ]
+                ],
+                linux: [
+                    agents: [
+                        build: [
+                            dockerfile: [
+                                filename: 'ci/docker/linux/build/Dockerfile',
+                                label: 'linux&&docker',
+                                additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                            ]
+                        ],
+                        test: [
+                            sdist: [
+                                dockerfile: [
+                                    filename: 'ci/docker/linux/build/Dockerfile',
+                                    label: 'linux&&docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                ]
+                            ]
+                        ],
+                        devpi: [
+                            wheel: [
+                                dockerfile: [
+                                    filename: 'ci/docker/deploy/devpi/test/linux/Dockerfile',
+                                    label: 'linux&&docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                ]
+                            ],
+                            sdist: [
+                                dockerfile: [
+                                    filename: 'ci/docker/deploy/devpi/test/linux/Dockerfile',
+                                    label: 'linux&&docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                ]
+                            ]
+                        ]
+                    ],
+                    pkgRegex: [
+                        wheel: "*cp37*.whl",
+                        sdist: "py3exiv2bind-*.zip"
+                    ]
+                ]
+            ],
             tox_env: "py37",
-            devpi_wheel_regex: "cp37"
+            devpiSelector: [
+                sdist: "zip",
+                wheel: "37.*whl",
+            ],
+            pkgRegex: [
+                wheel: "*cp37*.whl",
+                sdist: "*.zip"
+            ]
         ],
-    "3.8": [
-            pkgRegex: "*cp38*.whl",
-            python_install_url:"https://www.python.org/ftp/python/3.8.3/python-3.8.3-amd64.exe",
-            test_docker_image: "python:3.8",
-            tox_env: "py38",
-            devpi_wheel_regex: "cp38"
-        ]
-]
+        "3.8" : [
+            os: [
+                windows: [
+                    agents: [
+                        build: [
+                            dockerfile: [
+                                filename: 'ci/docker/windows/build/msvc/Dockerfile',
+                                label: 'Windows&&Docker',
+                                additionalBuildArgs: '--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.8.3/python-3.8.3-amd64.exe --build-arg CHOCOLATEY_SOURCE'
+                            ]
+                        ],
+                        test: [
+                            sdist: [
+                                dockerfile: [
+                                    filename: 'ci/docker/windows/build/msvc/Dockerfile',
+                                    label: 'Windows&&Docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.8.3/python-3.8.3-amd64.exe --build-arg CHOCOLATEY_SOURCE'
+                                ]
+                            ],
+                            wheel: [
+                                dockerfile: [
+                                    filename: 'ci/docker/windows/test/msvc/Dockerfile',
+                                    additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.8',
+                                    label: 'windows && docker',
+                                ]
+                            ]
+                        ],
+                        devpi: [
+                            wheel: [
+                                dockerfile: [
+                                    filename: 'ci/docker/deploy/devpi/test/windows/whl/Dockerfile',
+                                    label: 'Windows&&Docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.8'
+                                ]
+                            ],
+                            sdist: [
+                                dockerfile: [
+                                    filename: 'ci/docker/deploy/devpi/test/windows/source/Dockerfile',
+                                    label: 'Windows&&Docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.8.3/python-3.8.3-amd64.exe --build-arg CHOCOLATEY_SOURCE'
+                                ]
+                            ]
+                        ]
 
+                    ],
+                    pkgRegex: [
+                        wheel: "*cp38*.whl",
+                        sdist: "py3exiv2bind-*.zip"
+                    ]
+                ],
+                linux: [
+                    agents: [
+                        build: [
+                            dockerfile: [
+                                filename: 'ci/docker/linux/build/Dockerfile',
+                                label: 'linux&&docker',
+                                additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                            ]
+                        ],
+                        test: [
+                            sdist: [
+                                dockerfile: [
+                                    filename: 'ci/docker/linux/build/Dockerfile',
+                                    label: 'linux&&docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                ]
+                            ]
+                        ],
+                        devpi: [
+                            wheel: [
+                                dockerfile: [
+                                    filename: 'ci/docker/deploy/devpi/test/linux/Dockerfile',
+                                    label: 'linux&&docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                ]
+                            ],
+                            sdist: [
+                                dockerfile: [
+                                    filename: 'ci/docker/deploy/devpi/test/linux/Dockerfile',
+                                    label: 'linux&&docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                ]
+                            ]
+                        ]
+                    ],
+                    pkgRegex: [
+                        wheel: "*cp38*.whl",
+                        sdist: "py3exiv2bind-*.zip"
+                    ]
+                ]
+            ],
+            tox_env: "py38",
+            devpiSelector: [
+                sdist: "zip",
+                wheel: "38.*whl",
+            ],
+            pkgRegex: [
+                wheel: "*cp38*.whl",
+                sdist: "*.zip"
+            ]
+        ],
+    ]
 //def test_wheel(pkgRegex, python_version){
 //    script{
 //
@@ -471,7 +775,7 @@ pipeline {
                }
            }
        }
-        stage('Creating Binary Packages') {
+        stage('Testing Packages') {
             matrix{
                 agent none
                 axes{
@@ -483,16 +787,50 @@ pipeline {
                             "3.8"
                         )
                     }
+                    axis {
+                        name 'PLATFORM'
+                        values(
+                            "windows",
+                            "linux"
+                        )
+                    }
+                    axis {
+                        name 'FORMAT'
+                        values(
+                            "sdist",
+                            "wheel"
+                        )
+                    }
+
+                }
+                excludes{
+                    exclude {
+                        axis {
+                            name 'PLATFORM'
+                            values 'linux'
+                        }
+                        axis {
+                            name 'FORMAT'
+                            values 'wheel'
+                        }
+                    }
                 }
                 stages{
                     stage("Creating bdist wheel"){
-                        agent{
+                        agent {
                             dockerfile {
-                                filename 'ci/docker/windows/build/msvc/Dockerfile'
-                                label 'windows && Docker'
-                                additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} --build-arg CHOCOLATEY_SOURCE"
-                            }
+                                filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.build.dockerfile.filename}"
+                                label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.build.dockerfile.label}"
+                                additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.build.dockerfile.additionalBuildArgs}"
+                             }
                         }
+//                         agent{
+//                             dockerfile {
+//                                 filename 'ci/docker/windows/build/msvc/Dockerfile'
+//                                 label 'windows && Docker'
+//                                 additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} --build-arg CHOCOLATEY_SOURCE"
+//                             }
+//                         }
                         steps{
                             timeout(15){
                                 bat "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist"
@@ -522,13 +860,20 @@ pipeline {
                         }
                     }
                     stage("Testing wheel"){
-                        agent{
+                        agent {
                             dockerfile {
-                                filename 'ci/docker/windows/build/test/msvc/Dockerfile'
-                                label 'windows && docker'
-                                additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image} --build-arg CHOCOLATEY_SOURCE}"
-                            }
+                                filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].dockerfile.filename}"
+                                label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].dockerfile.label}"
+                                additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].dockerfile.additionalBuildArgs}"
+                             }
                         }
+//                         agent{
+//                             dockerfile {
+//                                 filename 'ci/docker/windows/build/test/msvc/Dockerfile'
+//                                 label 'windows && docker'
+//                                 additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image} --build-arg CHOCOLATEY_SOURCE}"
+//                             }
+//                         }
                         steps{
 
                             unstash "whl ${PYTHON_VERSION}"
@@ -537,7 +882,8 @@ pipeline {
                                 script: "python --version"
                                 )
                             script{
-                                findFiles(glob: "**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex}").each{
+                                findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex[FORMAT]}").each{
+//                                 findFiles(glob: "**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex}").each{
                                     timeout(5){
                                             bat(
                                                 script: "tox --installpkg=${WORKSPACE}\\${it} -e py",
@@ -615,17 +961,36 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                             }
                             axis {
                                 name 'FORMAT'
-                                values 'zip', "whl"
+                                values 'sdist', "wheel"
                             }
+                            axis {
+                                name 'PLATFORM'
+                                values(
+                                    "windows",
+                                    "linux"
+                                )
+                            }
+                        }
+                        excludes{
+                             exclude {
+                                 axis {
+                                     name 'PLATFORM'
+                                     values 'linux'
+                                 }
+                                 axis {
+                                     name 'FORMAT'
+                                     values 'wheel'
+                                 }
+                             }
                         }
                         agent none
                         stages{
                             stage("Testing DevPi Wheel Package"){
                                 agent {
                                   dockerfile {
-                                    additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image} --build-arg CHOCOLATEY_SOURCE"
-                                    filename 'ci/docker/deploy/devpi/test/windows/whl/Dockerfile'
-                                    label 'windows && docker'
+                                    filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpi[FORMAT].dockerfile.filename}"
+                                    additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpi[FORMAT].dockerfile.additionalBuildArgs}"
+                                    label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpi[FORMAT].dockerfile.label}"
                                   }
                                 }
                                 when{
@@ -655,12 +1020,19 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                             }
                             stage("Testing DevPi source Package"){
                                 agent {
-                                    dockerfile {
-                                        additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} --build-arg CHOCOLATEY_SOURCE"
-                                        filename 'ci/docker/deploy/devpi/test/windows/source/Dockerfile'
-                                        label 'windows && docker'
-                                    }
+                                  dockerfile {
+                                    filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpi[FORMAT].dockerfile.filename}"
+                                    additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpi[FORMAT].dockerfile.additionalBuildArgs}"
+                                    label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpi[FORMAT].dockerfile.label}"
+                                  }
                                 }
+//                                 agent {
+//                                     dockerfile {
+//                                         additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} --build-arg CHOCOLATEY_SOURCE"
+//                                         filename 'ci/docker/deploy/devpi/test/windows/source/Dockerfile'
+//                                         label 'windows && docker'
+//                                     }
+//                                 }
                                 when{
                                     equals expected: "zip", actual: FORMAT
                                     beforeAgent true
