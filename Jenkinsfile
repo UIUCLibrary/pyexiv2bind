@@ -1050,9 +1050,9 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                             stage("Testing DevPi Package"){
                                 agent {
                                   dockerfile {
-                                    filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpi[FORMAT].dockerfile.filename}"
-                                    additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpi[FORMAT].dockerfile.additionalBuildArgs}"
-                                    label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpi[FORMAT].dockerfile.label}"
+                                    filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.filename}"
+                                    additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].agents.os[PLATFORM].devpi[FORMAT].dockerfile.additionalBuildArgs}"
+                                    label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.label}"
                                   }
                                 }
 //                                 agent {
