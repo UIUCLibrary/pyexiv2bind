@@ -42,7 +42,7 @@ def CONFIGURATIONS = [
                         test:[
                             wheel: [
                                 dockerfile: [
-                                    filename: 'ci/docker/windows/test/msvc/Dockerfile',
+                                    filename: 'ci/docker/windows/build/test/msvc/Dockerfile',
                                     label: 'Windows&&Docker',
                                     additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.6-windowsservercore --build-arg CHOCOLATEY_SOURCE',
                                     baseImage: "python:3.6-windowsservercore"
@@ -150,7 +150,7 @@ def CONFIGURATIONS = [
                             ],
                             wheel: [
                                 dockerfile: [
-                                    filename: 'ci/docker/windows/test/msvc/Dockerfile',
+                                    filename: 'ci/docker/windows/build/test/msvc/Dockerfile',
                                     additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.7',
                                     label: 'windows && docker',
                                 ]
@@ -250,7 +250,7 @@ def CONFIGURATIONS = [
                             ],
                             wheel: [
                                 dockerfile: [
-                                    filename: 'ci/docker/windows/test/msvc/Dockerfile',
+                                    filename: 'ci/docker/windows/build/test/msvc/Dockerfile',
                                     additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.8',
                                     label: 'windows && docker',
                                 ]
