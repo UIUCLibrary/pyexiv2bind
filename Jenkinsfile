@@ -1,31 +1,5 @@
 #!groovy
 @Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
-import org.ds.*
-
-// def CONFIGURATIONS = [
-//     "3.6": [
-//             pkgRegex: "*cp36*.whl",
-//             python_install_url:"https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe",
-//             test_docker_image: "python:3.6-windowsservercore",
-//             tox_env: "py36",
-//             devpi_wheel_regex: "cp36"
-//
-//         ],
-//     "3.7": [
-//             pkgRegex: "*cp37*.whl",
-//             python_install_url:"https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe",
-//             test_docker_image: "python:3.7",
-//             tox_env: "py37",
-//             devpi_wheel_regex: "cp37"
-//         ],
-//     "3.8": [
-//             pkgRegex: "*cp38*.whl",
-//             python_install_url:"https://www.python.org/ftp/python/3.8.3/python-3.8.3-amd64.exe",
-//             test_docker_image: "python:3.8",
-//             tox_env: "py38",
-//             devpi_wheel_regex: "cp38"
-//         ]
-// ]
 
 def CONFIGURATIONS = [
         "3.6" : [
@@ -331,18 +305,7 @@ def CONFIGURATIONS = [
             ]
         ],
     ]
-//def test_wheel(pkgRegex, python_version){
-//    script{
-//
-//        bat "python -m venv venv\\${NODE_NAME}\\${python_version} && venv\\${NODE_NAME}\\${python_version}\\Scripts\\python.exe -m pip install pip --upgrade && venv\\${NODE_NAME}\\${python_version}\\Scripts\\pip.exe install tox --upgrade"
-//
-//        def python_wheel = findFiles glob: "**/${pkgRegex}"
-//        python_wheel.each{
-//            echo "Testing ${it}"
-//            bat "${WORKSPACE}\\venv\\${NODE_NAME}\\${python_version}\\Scripts\\tox.exe --installpkg=${WORKSPACE}\\${it} -e py${python_version}"
-//        }
-//    }
-//}
+
 
 def get_package_version(stashName, metadataFile){
     node {
@@ -367,16 +330,6 @@ def get_package_name(stashName, metadataFile){
 }
 
 
-//def rebuild_workspace(sourceDir){
-//    script{
-//        deleteDir()
-//        dir("${sourceDir}"){
-//            checkout scm
-//            bat "dir"
-//        }
-//
-//    }
-//}
 def deploy_docs(pkgName, prefix){
     script{
         try{
@@ -425,18 +378,6 @@ def remove_from_devpi(pkgName, pkgVersion, devpiIndex, devpiUsername, devpiPassw
     }
 
 }
-// def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUsername, devpiPassword){
-//     script {
-//             try {
-//                 bat "${devpiExecutable} login ${devpiUsername} --password ${devpiPassword}"
-//                 bat "${devpiExecutable} use ${devpiIndex}"
-//                 bat "${devpiExecutable} remove -y ${pkgName}==${pkgVersion}"
-//             } catch (Exception ex) {
-//                 echo "Failed to remove ${pkgName}==${pkgVersion} from ${devpiIndex}"
-//         }
-//
-//     }
-// }
 
 
 def deploy_devpi_production(DEVPI, PKG_NAME, PKG_VERSION, BRANCH_NAME, USR, PSW){
@@ -454,25 +395,6 @@ def deploy_devpi_production(DEVPI, PKG_NAME, PKG_VERSION, BRANCH_NAME, USR, PSW)
 }
 
 
-//def runTox(tox_exec){
-//    script{
-//        try{
-//            bat "where python"
-//            bat "if not exist ${WORKSPACE}\\logs mkdir ${WORKSPACE}\\logs"
-//            bat  (
-//                label: "Run Tox",
-//                script: "${tox_exec} --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --result-json=${WORKSPACE}\\logs\\tox_report.json"
-//            )
-//
-//        } catch (exc) {
-//            bat (
-//                label: "Run Tox with new environments",
-//                script: "${tox_exec} --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox --recreate -vv --result-json=${WORKSPACE}\\logs\\tox_report.json"
-//            )
-//        }
-//    }
-//}
-
 pipeline {
     agent none
     triggers {
@@ -482,7 +404,6 @@ pipeline {
       lib('devpi')
       lib('PythonHelpers')
     }
-
     options {
 //         disableConcurrentBuilds()  //each branch has 1 job running at a time
 //         timeout(120)  // Timeout after 120 minutes. This shouldn't take this long but it hangs for some reason
@@ -507,11 +428,6 @@ pipeline {
                     label 'linux && docker'
                     additionalBuildArgs "--build-arg PYTHON_VERSION=3.8"
                 }
-//                 dockerfile {
-//                     filename 'ci/docker/windows/build/msvc/Dockerfile'
-//                     label 'windows && Docker'
-//                     additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
-//                 }
             }
             steps{
                 timeout(3){
@@ -532,11 +448,6 @@ pipeline {
                     label 'linux && docker'
                     additionalBuildArgs "--build-arg PYTHON_VERSION=3.8"
                 }
-//                 dockerfile {
-//                     filename 'ci/docker/windows/build/msvc/Dockerfile'
-//                     label 'windows && Docker'
-//                     additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
-//                 }
             }
             stages{
                 stage("Building Python Package"){
@@ -563,8 +474,7 @@ pipeline {
                             )
                         }
                     }
-                    
-                }     
+                }
                 stage("Building Sphinx Documentation"){
                     steps {
                         sh "mkdir -p logs"
@@ -585,7 +495,6 @@ pipeline {
                                 zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
                                 stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
                             }
-
                         }
                         cleanup{
                             cleanWs(patterns: [
@@ -598,7 +507,6 @@ pipeline {
                 }
             }
         }
-        
         stage("Testing") {
             environment{
                 junit_filename = "junit-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
@@ -609,35 +517,24 @@ pipeline {
                     label 'linux && docker'
                     additionalBuildArgs "--build-arg PYTHON_VERSION=3.8"
                 }
-//                 dockerfile {
-//                     filename 'ci/docker/windows/build/msvc/Dockerfile'
-//                     label 'windows && Docker'
-//                     additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
-//                 }
             }
             stages{
                 stage("Setting up Test Env"){
                     steps{
                         unstash "built_source"
                         sh "mkdir -p logs"
-//                         bat "if not exist logs mkdir logs"
                     }
                 }
-
                 stage("Running Tests"){
                     options{
                         timeout(15)
                     }
-
-//                     failFast true
                     parallel {
                         stage("Run Tox test") {
                             when {
                                equals expected: true, actual: params.TEST_RUN_TOX
                                beforeAgent true
                             }
-
-
                             stages{
                                 stage("Running Tox"){
                                     options{
@@ -648,7 +545,6 @@ pipeline {
                                     }
                                 }
                             }
-
                             post {
                                 always{
                                     archiveArtifacts allowEmptyArchive: true, artifacts: '.tox/py*/log/*.log,.tox/log/*.log,logs/tox_report.json'
@@ -663,7 +559,6 @@ pipeline {
                                 always {
                                     archiveArtifacts artifacts: "reports/doctest/output.txt", allowEmptyArchive: true
                                     recordIssues(tools: [sphinxBuild(name: 'Doctest', pattern: 'logs/doctest_warnings.log', id: 'doctest')])
-
                                 }
                             }
                         }
@@ -673,7 +568,6 @@ pipeline {
                                     steps{
                                       sh "stubgen -p py3exiv2bind -o ${WORKSPACE}//mypy_stubs"
                                     }
-
                                 }
                                 stage("Run MyPy") {
                                     environment{
@@ -681,7 +575,6 @@ pipeline {
                                     }
                                     steps{
                                         sh "mkdir -p reports/mypy/html"
-//                                         bat "if not exist reports\\mypy\\html mkdir reports\\mypy\\html"
                                         sh returnStatus: true, script: "mypy -p py3exiv2bind --html-report ${WORKSPACE}/reports/mypy/html > ${WORKSPACE}/logs/mypy.log"
                                     }
                                     post {
@@ -699,7 +592,7 @@ pipeline {
                                         patterns: [[pattern: 'mypy_stubs', type: 'INCLUDE']]
                                     )
                                 }
-                              }
+                            }
                         }
                         stage("Flake8") {
                           options{
@@ -718,17 +611,17 @@ pipeline {
                           }
                         }
                         stage("Running Unit Tests"){
-                          options{
-                            timeout(2)
-                          }
-                          steps{
-                                sh "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=${WORKSPACE}/reports/pytest/${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
-                          }
-                          post{
-                            always{
-                                junit "reports/pytest/${env.junit_filename}"
+                            options{
+                                timeout(2)
                             }
-                          }
+                            steps{
+                                sh "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=${WORKSPACE}/reports/pytest/${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                            }
+                            post{
+                                always{
+                                    junit "reports/pytest/${env.junit_filename}"
+                                }
+                            }
                         }
                     }
                 }
@@ -737,10 +630,12 @@ pipeline {
                 success{
                     sh "coverage combine && coverage xml -o ${WORKSPACE}/reports/coverage.xml && coverage html -d ${WORKSPACE}/reports/coverage"
                     publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
-                    publishCoverage adapters: [
-                                    coberturaAdapter('reports/coverage.xml')
-                                    ],
-                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
+                    publishCoverage(
+                        adapters: [
+                            coberturaAdapter('reports/coverage.xml')
+                        ],
+                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
+                    )
                 }
                 cleanup{
                     cleanWs(patterns: [
@@ -758,11 +653,6 @@ pipeline {
                     label 'linux && docker'
                     additionalBuildArgs "--build-arg PYTHON_VERSION=3.8"
                 }
-//                 dockerfile {
-//                     filename 'ci/docker/windows/build/msvc/Dockerfile'
-//                     label 'windows && Docker'
-//                     additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
-//                 }
             }
            steps {
                sh "python setup.py sdist -d ${WORKSPACE}/dist --format zip"
@@ -800,7 +690,6 @@ pipeline {
                             "wheel"
                         )
                     }
-
                 }
                 excludes{
                     exclude {
@@ -827,19 +716,12 @@ pipeline {
                             equals expected: "wheel", actual: FORMAT
                             beforeAgent true
                         }
-//                         agent{
-//                             dockerfile {
-//                                 filename 'ci/docker/windows/build/msvc/Dockerfile'
-//                                 label 'windows && Docker'
-//                                 additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} --build-arg CHOCOLATEY_SOURCE"
-//                             }
-//                         }
                         steps{
                             timeout(15){
                                 bat(
                                     script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist",
                                     label: "Building Wheel for Python ${PYTHON_VERSION} for ${PLATFORM}"
-                                    )
+                                )
                             }
                         }
                         post{
@@ -849,7 +731,7 @@ pipeline {
                                         bat(
                                             label: "Checking Python extension for dependents",
                                             script: "dumpbin /DEPENDENTS ${it.path}"
-                                            )
+                                        )
                                     }
                                 }
                             }
@@ -873,13 +755,6 @@ pipeline {
                                 additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].dockerfile.additionalBuildArgs}"
                              }
                         }
-//                         agent{
-//                             dockerfile {
-//                                 filename 'ci/docker/windows/build/test/msvc/Dockerfile'
-//                                 label 'windows && docker'
-//                                 additionalBuildArgs "--build-arg PYTHON_DOCKER_IMAGE_BASE=${CONFIGURATIONS[PYTHON_VERSION].test_docker_image} --build-arg CHOCOLATEY_SOURCE}"
-//                             }
-//                         }
                         steps{
                             script{
                                 if(FORMAT == "wheel") {
@@ -901,7 +776,6 @@ pipeline {
                             }
                             script{
                                 findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex[FORMAT]}").each{
-//                                 findFiles(glob: "**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex}").each{
                                     timeout(15){
                                         if(PLATFORM == "windows"){
                                             bat(
@@ -925,7 +799,7 @@ pipeline {
                                     patterns: [
                                         [pattern: 'dist/', type: 'INCLUDE'],
                                         [pattern: '.tox/', type: 'INCLUDE'],
-                                        ]
+                                    ]
                                 )
                             }
                         }
@@ -1013,39 +887,6 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                         }
                         agent none
                         stages{
-//                             stage("Testing DevPi Wheel Package"){
-//                                 agent {
-//                                   dockerfile {
-//                                     filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpi[FORMAT].dockerfile.filename}"
-//                                     additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpi[FORMAT].dockerfile.additionalBuildArgs}"
-//                                     label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpi[FORMAT].dockerfile.label}"
-//                                   }
-//                                 }
-//                                 when{
-//                                     equals expected: "whl", actual: FORMAT
-//                                     beforeAgent true
-//                                 }
-//                                 options{
-//                                     timeout(10)
-//                                 }
-//                                 steps{
-//                                     unstash "DIST-INFO"
-//                                     script{
-//                                         def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATA"
-//                                         cleanWs(patterns: [[pattern: "py3exiv2bind.dist-info/METADATA", type: 'INCLUDE']])
-//                                         bat "python --version"
-//                                         bat(
-//                                             label: "Connecting to DevPi index",
-//                                             script: "devpi use https://devpi.library.illinois.edu --clientdir certs\\ && devpi login %DEVPI_USR% --password %DEVPI_PSW% --clientdir certs\\ && devpi use ${env.BRANCH_NAME}_staging --clientdir certs\\"
-//                                         )
-//
-//                                         bat(
-//                                             label: "Running tests on Devpi",
-//                                             script: "devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s ${CONFIGURATIONS[PYTHON_VERSION].devpi_wheel_regex} --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"
-//                                         )
-//                                     }
-//                                 }
-//                             }
                             stage("Testing DevPi Package"){
                                 agent {
                                   dockerfile {
@@ -1054,17 +895,6 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                                     label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.label}"
                                   }
                                 }
-//                                 agent {
-//                                     dockerfile {
-//                                         additionalBuildArgs "--build-arg PYTHON_INSTALLER_URL=${CONFIGURATIONS[PYTHON_VERSION].python_install_url} --build-arg CHOCOLATEY_SOURCE"
-//                                         filename 'ci/docker/deploy/devpi/test/windows/source/Dockerfile'
-//                                         label 'windows && docker'
-//                                     }
-//                                 }
-//                                 when{
-//                                     equals expected: "zip", actual: FORMAT
-//                                     beforeAgent true
-//                                 }
                                 steps{
                                     unstash "DIST-INFO"
                                     script{
@@ -1099,21 +929,6 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                                         }
                                     }
                                 }
-//                                     unstash "DIST-INFO"
-//                                     script{
-//                                         def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATA"
-//                                         cleanWs(patterns: [[pattern: "py3exiv2bind.dist-info/METADATA", type: 'INCLUDE']])
-//                                         bat "python --version"
-//                                         bat(
-//                                             label: "Connecting to DevPi index",
-//                                             script: "devpi use https://devpi.library.illinois.edu --clientdir certs\\ && devpi login %DEVPI_USR% --password %DEVPI_PSW% --clientdir certs\\ && devpi use ${env.BRANCH_NAME}_staging --clientdir certs\\"
-//                                         )
-//                                         bat(
-//                                             label: "Running tests on Devpi",
-//                                             script: "devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s zip --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -vv"
-//                                         )
-//                                     }
-//                                 }
                             }
                         }
                     }
@@ -1184,234 +999,6 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                 }
             }
         }
-//         TODO: PUT BACK DEPLOY TO DEVPI Production
-        //stage("Deploy to DevPi") {
-        //    agent {
-        //        label "Windows && VS2015 && Python3 && longfilenames"
-        //    }
-        //    when {
-        //        allOf{
-        //            anyOf{
-        //                equals expected: true, actual: params.DEPLOY_DEVPI
-        //                triggeredBy "TimerTriggerCause"
-        //            }
-        //            anyOf {
-        //                equals expected: "master", actual: env.BRANCH_NAME
-        //                equals expected: "dev", actual: env.BRANCH_NAME
-        //            }
-        //        }
-        //        beforeAgent true
-        //    }
-        //    environment{
-        //        PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;$PATH"
-        //        PKG_NAME = get_package_name("DIST-INFO", "py3exiv2bind.dist-info/METADATA")
-        //        PKG_VERSION = get_package_version("DIST-INFO", "py3exiv2bind.dist-info/METADATA")
-        //    }
-        //    stages{
-        //        stage("Upload to DevPi Staging"){
-        //            steps {
-        //                unstash "DOCS_ARCHIVE"
-        //                unstash "whl 3.6"
-        //                unstash "whl 3.7"
-        //                unstash "sdist"
-        //                bat "pip install devpi-client && devpi use https://devpi.library.illinois.edu && devpi login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && devpi upload --from-dir dist"
-        //            }
-        //        }
-        //        stage("Test DevPi Packages") {
-        //            options{
-        //                timestamps()
-        //            }
-        //            parallel {
-        //                stage("Testing DevPi .zip Package with Python 3.6 and 3.7"){
-        //                    environment {
-        //                        PATH = "${tool 'CPython-3.7'};${tool 'CPython-3.6'};$PATH"
-        //                    }
-        //                    agent {
-        //                        node {
-        //                            label "Windows && Python3 && VS2015"
-        //                        }
-        //                    }
-        //                    options {
-        //                        skipDefaultCheckout(true)
-        //                    }
-        //                    stages{
-        //                        stage("Creating venv to Test Sdist"){
-        //                                steps {
-        //                                    bat "python -m venv venv\\venv36 && venv\\venv36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\venv36\\Scripts\\pip.exe install setuptools --upgrade && venv\\venv36\\Scripts\\pip.exe install \"tox<3.7\" detox devpi-client"
-        //                                }
-        //                        }
-        //                        stage("Testing DevPi Zip Package"){
-        //                            environment {
-        //                                PATH = "${WORKSPACE}\\venv\\venv36\\Scripts;${tool 'cmake3.13'};${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-        //                            }
-        //                            steps {
-        //                                timeout(20){
-        //                                    devpiTest(
-        //                                        devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
-        //                                        url: "https://devpi.library.illinois.edu",
-        //                                        index: "${env.BRANCH_NAME}_staging",
-        //                                        pkgName: "${env.PKG_NAME}",
-        //                                        pkgVersion: "${env.PKG_VERSION}",
-        //                                        pkgRegex: "zip",
-        //                                        detox: false
-        //                                    )
-        //                                }
-        //                            }
-        //                        }
-        //                    }
-        //                    post {
-        //                        cleanup{
-        //                            cleanWs(
-        //                                deleteDirs: true,
-        //                                disableDeferredWipeout: true,
-        //                                patterns: [
-        //                                    [pattern: '*tmp', type: 'INCLUDE'],
-        //                                    [pattern: 'certs', type: 'INCLUDE']
-        //                                    ]
-        //                            )
-        //                        }
-        //                        failure{
-        //                            deleteDir()
-        //                        }
-        //                    }
-        //                }
-        //                stage("Testing DevPi .whl Package with Python 3.6"){
-        //                    agent {
-        //                        node {
-        //                            label "Windows && Python3"
-        //                        }
-        //                    }
-        //                    options {
-        //                        skipDefaultCheckout(true)
-        //                    }
-        //                    stages{
-        //                        stage("Creating venv to Test py36 .whl"){
-        //                            environment {
-        //                                PATH = "${tool 'CPython-3.6'};$PATH"
-        //                            }
-        //                            steps {
-        //                                bat "(if not exist venv\\36 mkdir venv\\36) && python -m venv venv\\36 && venv\\36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\36\\Scripts\\pip.exe install setuptools --upgrade && venv\\36\\Scripts\\pip.exe install \"tox<3.7\" devpi-client"
-        //                            }
-        //                        }
-        //                        stage("Testing DevPi .whl Package with Python 3.6"){
-        //                            options{
-        //                                timeout(20)
-        //                            }
-        //                            environment {
-        //                                PATH = "${WORKSPACE}\\venv\\36\\Scripts;$PATH"
-        //                            }
-        //                            steps {
-        //                                devpiTest(
-        //                                        devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
-        //                                        url: "https://devpi.library.illinois.edu",
-        //                                        index: "${env.BRANCH_NAME}_staging",
-        //                                        pkgName: "${env.PKG_NAME}",
-        //                                        pkgVersion: "${env.PKG_VERSION}",
-        //                                        pkgRegex: "36.*whl",
-        //                                        detox: false,
-        //                                        toxEnvironment: "py36"
-        //                                    )
-        //                            }
-        //                        }
-        //                    }
-        //                    post {
-        //                        failure {
-        //                            deleteDir()
-        //                        }
-        //                        cleanup{
-        //                            cleanWs(
-        //                                deleteDirs: true,
-        //                                disableDeferredWipeout: true,
-        //                                patterns: [
-        //                                    [pattern: '*tmp', type: 'INCLUDE'],
-        //                                    [pattern: 'certs', type: 'INCLUDE']
-        //                                    ]
-        //                            )
-        //                        }
-        //                    }
-        //                }
-        //                stage("Testing DevPi .whl Package with Python 3.7"){
-        //                    agent {
-        //                        node {
-        //                            label "Windows && Python3"
-        //                        }
-        //                    }
-        //                    options {
-        //                        skipDefaultCheckout(true)
-        //                    }
-        //                    stages{
-        //                        stage("Creating venv to Test py37 .whl"){
-        //                            environment {
-        //                                PATH = "${tool 'CPython-3.7'};$PATH"
-        //                            }
-        //                            steps {
-        //                                lock("system_python_${NODE_NAME}"){
-        //                                    bat "python -m venv venv\\37"
-        //                                }
-        //                                bat "venv\\37\\Scripts\\python.exe -m pip install pip --upgrade && venv\\37\\Scripts\\pip.exe install setuptools --upgrade && venv\\37\\Scripts\\pip.exe install \"tox<3.7\" devpi-client"
-        //                            }
-        //                        }
-        //                        stage("Testing DevPi .whl Package with Python 3.7"){
-        //                            options{
-        //                                timeout(20)
-        //                            }
-        //                            environment {
-        //                                PATH = "${WORKSPACE}\\venv\\37\\Scripts;$PATH"
-        //                            }
-        //                            steps {
-        //                                devpiTest(
-        //                                        devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
-        //                                        url: "https://devpi.library.illinois.edu",
-        //                                        index: "${env.BRANCH_NAME}_staging",
-        //                                        pkgName: "${env.PKG_NAME}",
-        //                                        pkgVersion: "${env.PKG_VERSION}",
-        //                                        pkgRegex: "37.*whl",
-        //                                        detox: false,
-        //                                        toxEnvironment: "py37"
-        //                                    )
-        //                            }
-        //                        }
-        //                    }
-        //                    post {
-        //                        failure {
-        //                            deleteDir()
-        //                        }
-        //                        cleanup{
-        //                            cleanWs(
-        //                                deleteDirs: true,
-        //                                disableDeferredWipeout: true,
-        //                                patterns: [
-        //                                    [pattern: '*tmp', type: 'INCLUDE'],
-        //                                    [pattern: 'certs', type: 'INCLUDE']
-        //                                    ]
-        //                            )
-        //                        }
-        //                    }
-        //                }
-        //            }
-        //        }
-        //        stage("Deploy to DevPi Production") {
-        //                when {
-        //                    allOf{
-        //                        equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
-        //                        branch "master"
-        //                    }
-        //                    beforeAgent true
-        //                }
-        //                steps {
-        //                    deploy_devpi_production("venv\\venv36\\Scripts\\devpi.exe", env.PKG_NAME, env.PKG_VERSION, env.BRANCH_NAME, env.DEVPI_USR, env.DEVPI_PSW)
-        //                }
-        //        }
-        //    }
-        //    post {
-        //        success {
-        //            bat "venv\\venv36\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && venv\\venv36\\Scripts\\devpi.exe use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && venv\\venv36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} ${env.DEVPI_USR}/${env.BRANCH_NAME}"
-        //        }
-        //        cleanup{
-        //            remove_from_devpi("venv\\venv36\\Scripts\\devpi.exe", "${env.PKG_NAME}", "${env.PKG_VERSION}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
-        //        }
-        //    }
-        //}
         stage("Deploy"){
             parallel {
                 stage("Deploy Online Documentation") {
@@ -1430,7 +1017,6 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                         deploy_docs(env.PKG_NAME, "build/docs/html")
                     }
                 }
-
             }
         }
     }
