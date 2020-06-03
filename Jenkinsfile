@@ -824,6 +824,10 @@ pipeline {
                                 additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.build.dockerfile.additionalBuildArgs}"
                              }
                         }
+                        when{
+                            equals expected: "wheel", actual: FORMAT
+                            beforeAgent true
+                        }
 //                         agent{
 //                             dockerfile {
 //                                 filename 'ci/docker/windows/build/msvc/Dockerfile'
