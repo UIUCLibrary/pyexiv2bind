@@ -989,7 +989,7 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                             }
                             axis {
                                 name 'FORMAT'
-                                values 'sdist', "wheel"
+                                values "wheel", 'sdist'
                             }
                             axis {
                                 name 'PLATFORM'
