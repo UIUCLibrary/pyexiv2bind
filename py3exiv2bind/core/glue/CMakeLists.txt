@@ -1,4 +1,4 @@
-add_library(glue OBJECT
+add_library(glue OBJECT EXCLUDE_FROM_ALL
         glue.cpp
         glue.h
         Image.cpp
