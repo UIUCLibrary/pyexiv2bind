@@ -906,12 +906,12 @@ pipeline {
                                     timeout(15){
                                         if(PLATFORM == "windows"){
                                             bat(
-                                                script: "tox --installpkg=${it.path} -e py",
+                                                script: "tox --installpkg=${it.path} -e py -vv",
                                                 label: "Testing ${it}"
                                             )
                                         } else {
                                             sh(
-                                                script: "tox --installpkg=${it.path} -e py",
+                                                script: "tox --installpkg=${it.path} -e py -vv",
                                                 label: "Testing ${it}"
                                             )
                                         }
