@@ -82,7 +82,7 @@ def CONFIGURATIONS = [
                     agents: [
                         build: [
                             dockerfile: [
-                                filename: 'ci/docker/linux/build/Dockerfile',
+                                filename: 'ci/docker/linux/Dockerfile',
                                 label: 'linux&&docker',
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
@@ -90,7 +90,7 @@ def CONFIGURATIONS = [
                         test: [
                             sdist: [
                                 dockerfile: [
-                                    filename: 'ci/docker/linux/build/Dockerfile',
+                                    filename: 'ci/docker/linux/Dockerfile',
                                     label: 'linux&&docker',
                                     additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                 ]
@@ -182,7 +182,7 @@ def CONFIGURATIONS = [
                     agents: [
                         build: [
                             dockerfile: [
-                                filename: 'ci/docker/linux/build/Dockerfile',
+                                filename: 'ci/docker/linux/Dockerfile',
                                 label: 'linux&&docker',
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
@@ -190,7 +190,7 @@ def CONFIGURATIONS = [
                         test: [
                             sdist: [
                                 dockerfile: [
-                                    filename: 'ci/docker/linux/build/Dockerfile',
+                                    filename: 'ci/docker/linux/Dockerfile',
                                     label: 'linux&&docker',
                                     additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                 ]
@@ -283,7 +283,7 @@ def CONFIGURATIONS = [
                     agents: [
                         build: [
                             dockerfile: [
-                                filename: 'ci/docker/linux/build/Dockerfile',
+                                filename: 'ci/docker/linux/Dockerfile',
                                 label: 'linux&&docker',
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
@@ -291,7 +291,7 @@ def CONFIGURATIONS = [
                         test: [
                             sdist: [
                                 dockerfile: [
-                                    filename: 'ci/docker/linux/build/Dockerfile',
+                                    filename: 'ci/docker/linux/Dockerfile',
                                     label: 'linux&&docker',
                                     additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                 ]
