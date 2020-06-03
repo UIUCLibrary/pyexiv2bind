@@ -1051,7 +1051,7 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                                 agent {
                                   dockerfile {
                                     filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.filename}"
-                                    additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].agents.os[PLATFORM].devpi[FORMAT].dockerfile.additionalBuildArgs}"
+                                    additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.additionalBuildArgs}"
                                     label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.label}"
                                   }
                                 }
