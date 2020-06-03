@@ -900,7 +900,7 @@ pipeline {
                             script{
                                 findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex[FORMAT]}").each{
 //                                 findFiles(glob: "**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex}").each{
-                                    timeout(5){
+                                    timeout(15){
                                         if(PLATFORM == "windows"){
                                             bat(
                                                 script: "tox --installpkg=${it.path} -e py",
