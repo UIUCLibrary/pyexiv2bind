@@ -863,7 +863,7 @@ pipeline {
                             }
                         }
                     }
-                    stage("Testing wheel"){
+                    stage("Testing package"){
                         agent {
                             dockerfile {
                                 filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].dockerfile.filename}"
@@ -879,22 +879,41 @@ pipeline {
 //                             }
 //                         }
                         steps{
-
-                            unstash "whl ${PYTHON_VERSION}"
-                            bat(
-                                label: "Checking Python version",
-                                script: "python --version"
-                                )
+                            script{
+                                if(FORMAT == "wheel") {
+                                    unstash "whl ${PYTHON_VERSION}"
+                                } else {
+                                    unstash "sdist"
+                                }
+                                if(PLATFORM == "windows"){
+                                    bat(
+                                        label: "Checking Python version",
+                                        script: "python --version"
+                                        )
+                                } else{
+                                    sh(
+                                        label: "Checking Python version",
+                                        script: "python --version"
+                                    )
+                                }
+                            }
                             script{
                                 findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex[FORMAT]}").each{
 //                                 findFiles(glob: "**/${CONFIGURATIONS[PYTHON_VERSION].pkgRegex}").each{
                                     timeout(5){
+                                        if(PLATFORM == "windows"){
                                             bat(
+                                                script: "tox --installpkg=${WORKSPACE}\\${it} -e py",
+                                                label: "Testing ${it}"
+                                            )
+                                        } else {
+                                            sh(
                                                 script: "tox --installpkg=${WORKSPACE}\\${it} -e py",
                                                 label: "Testing ${it}"
                                             )
                                         }
                                     }
+                                }
                             }
                         }
                         post{
