@@ -669,25 +669,25 @@ pipeline {
                 agent none
                 axes{
                     axis {
-                        name "PYTHON_VERSION"
-                        values(
-                            "3.6",
-                            "3.7",
-                            "3.8"
-                        )
-                    }
-                    axis {
                         name 'PLATFORM'
                         values(
-                            "windows",
-                            "linux"
+                            "linux",
+                            "windows"
                         )
                     }
                     axis {
                         name 'FORMAT'
                         values(
-                            "sdist",
-                            "wheel"
+                            "wheel",
+                            "sdist"
+                        )
+                    }
+                    axis {
+                        name "PYTHON_VERSION"
+                        values(
+                            "3.6",
+                            "3.7",
+                            "3.8"
                         )
                     }
                 }
