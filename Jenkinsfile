@@ -976,6 +976,9 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                     }
                 }
                 stage("Test DevPi packages") {
+                    options{
+                        lock("py3exiv2bind-devpi")
+                    }
                     matrix {
                         axes {
                             axis {
