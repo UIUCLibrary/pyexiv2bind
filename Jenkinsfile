@@ -822,6 +822,9 @@ pipeline {
             environment{
                 DEVPI = credentials("DS_devpi")
             }
+            options{
+                lock("py3exiv2bind-devpi")
+            }
             stages{
                 stage("Deploy to Devpi Staging") {
                     agent {
@@ -852,9 +855,6 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                     }
                 }
                 stage("Test DevPi packages") {
-                    options{
-                        lock("py3exiv2bind-devpi")
-                    }
                     matrix {
                         axes {
                             axis {
