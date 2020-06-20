@@ -42,4 +42,5 @@ RUN Invoke-WebRequest $Env:PYTHON_INSTALLER_URL -OutFile c:\python-installer.exe
 
 RUN python -m pip install --upgrade pip ; `
     pip install --upgrade setuptools ; `
-    pip install wheel pipenv sphinx tox devpi-client
+    pip install wheel ; `
+    pip install pipenv sphinx tox devpi-client
