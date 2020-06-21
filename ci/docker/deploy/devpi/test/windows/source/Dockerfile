@@ -20,6 +20,7 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
         choco source add -n=CHOCOLATEY_SOURCE --priority=1 -s=\"$env:CHOCOLATEY_SOURCE\"; `
         choco source remove -n=chocolatey ;`
     }; `
+    Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
     Remove-Item C:\ProgramData\chocolatey\bin\cpack.exe
 
 ADD ci/docker/shared/chocolatey/packages.config choco/packages.config
@@ -27,6 +28,7 @@ ADD ci/docker/shared/chocolatey/packages.config choco/packages.config
 RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress choco/packages.config ;`
     Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse ; `
+    refreshenv ; `
     get-command cmake ; `
     get-command git ; `
     if ( -not (Test-Path 'C:\BuildTools\Common7\Tools\VsDevCmd.bat')) `
