@@ -20,8 +20,8 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
         choco source add -n=CHOCOLATEY_SOURCE --priority=1 -s=\"$env:CHOCOLATEY_SOURCE\"; `
         choco source remove -n=chocolatey ;`
     }; `
-    Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
-    Remove-Item C:\ProgramData\chocolatey\bin\cpack.exe
+    Remove-Item C:\ProgramData\chocolatey\bin\cpack.exe ; `
+    Remove-Item -Force -Recurse ${Env:TEMP}\*
 
 ADD ci/docker/shared/chocolatey/packages.config choco/packages.config
 
