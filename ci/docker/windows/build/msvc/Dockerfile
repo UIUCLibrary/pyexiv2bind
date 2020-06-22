@@ -32,15 +32,15 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
     if (!(Test-Path 'C:\Program Files\CMake\bin\cmake.exe')) `
     { `
-        throw \"cmake.exe not found\" ; `
+        throw 'cmake.exe not found ; `
     }; `
-    if (!(Test-Path 'C:\Program Files\Git\git.exe')) `
+    if (!(Test-Path 'C:\Program Files\Git\cmd\git.exe')) `
     { `
-        throw \"cmake.exe not found\" ; `
+        throw 'git.exe not found' ; `
     }; `
     if (! (Test-Path 'C:\BuildTools\Common7\Tools\VsDevCmd.bat')) `
     { `
-        throw \"VsDevCmd.bat not found\" ; `
+        throw 'VsDevCmd.bat not found' ; `
     }; `
     Write-Host "Finished install packages with Chocolatey"
 
