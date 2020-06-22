@@ -18,7 +18,7 @@ def CONFIGURATIONS = [
                                 dockerfile: [
                                     filename: 'ci/docker/windows/build/test/msvc/Dockerfile',
                                     label: 'Windows&&Docker',
-                                    additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.6-windowsservercore --build-arg CHOCOLATEY_SOURCE',
+                                    additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.6-windowsservercore',
                                     baseImage: "python:3.6-windowsservercore"
                                 ]
                             ],
