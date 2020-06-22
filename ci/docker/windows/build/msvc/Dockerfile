@@ -30,7 +30,7 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse ; `
     refreshenv ; `
     Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
-    if (!(Test-Path 'C:\Program Files\CMake\cmake.exe')) `
+    if (!(Test-Path 'C:\Program Files\CMake\bin\cmake.exe')) `
     { `
         throw \"cmake.exe not found\" ; `
     }; `

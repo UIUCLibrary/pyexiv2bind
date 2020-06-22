@@ -29,7 +29,7 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress choco/packages.config ;`
     Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse ; `
     Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
-    if (!(Test-Path 'C:\Program Files\CMake\cmake.exe')) `
+    if (!(Test-Path 'C:\Program Files\CMake\bin\cmake.exe')) `
     { `
         throw \"cmake.exe not found\" ; `
     }; `
