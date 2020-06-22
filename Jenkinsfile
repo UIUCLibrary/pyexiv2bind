@@ -451,9 +451,6 @@ pipeline {
             }
             stages{
                 stage("Building Python Package"){
-                    options{
-
-                    }
                     steps {
                         timeout(10){
                             sh(label: "Building python package",
