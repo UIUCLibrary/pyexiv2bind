@@ -10,6 +10,17 @@ ARG CMAKE_DOWNLOAD_URL=https://github.com/Kitware/CMake/releases/download/v3.17.
 RUN wget -O /tmp/install_cmake.sh $CMAKE_DOWNLOAD_URL
 RUN chmod +x /tmp/install_cmake.sh  && /tmp/install_cmake.sh  --skip-license
 RUN apt update && apt install -y ninja-build
-RUN python -m pip install pip --upgrade && pip install wheel sphinx tox pytest coverage pytest-cov lxml mypy flake8 devpi-client
+
+RUN python -m pip install pip --upgrade && \
+    pip install wheel && \
+    pip install setuptools --upgrade
+
+ADD requirements.txt ci/docker/shared/python/requirements-ci.txt /requirements/
+
+RUN pip install --no-index --find-links=/wheels/ \
+         -r /requirements/requirements.txt \
+         -r /requirements/requirements-ci.txt
+
+ENV PIP_FIND_LINKS=/wheels/
 USER user
 WORKDIR /home/user

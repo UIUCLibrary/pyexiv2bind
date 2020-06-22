@@ -56,16 +56,18 @@ RUN Invoke-WebRequest $Env:PYTHON_INSTALLER_URL -OutFile c:\python-installer.exe
     Start-Process python-installer.exe -ArgumentList '/quiet InstallAllUsers=1 PrependPath=1' -Wait ; `
     Remove-Item c:\python-installer.exe -Force
 
-ENV PIPENV_CACHE_DIR=c:\pipenv_cache `
-    WORKON_HOME=c:\venvs `
-    PIPENV_NOSPIN=True `
-    PIP_DOWNLOAD_CACHE=c:\pip_cache
 
 #ADD ci/docker/windows/build/msvc/Profile.ps1 C:\Windows\System32\WindowsPowerShell\v1.0\Profile.ps1
 
 RUN python -m pip install --upgrade pip ; `
     pip install --upgrade setuptools ; `
-    pip install wheel pipenv sphinx tox mypy lxml pytest flake8 pytest-cov pytest-bdd
-#
-ADD requirements.txt c:/temp/
-RUN cd c:\temp ; pip install -r requirements.txt
+    pip install wheel
+
+ADD requirements.txt ci/docker/shared/python/requirements-ci.txt c:/temp/
+RUN pip wheel python -m pip wheel --wheel-dir=c:\wheels `
+        -r c:/temp/requirements.txt `
+        -r c:/temp/requirements-ci.txt ; `
+     pip install --no-index --find-links c:\wheels\ `
+         -r c:/temp/requirements.txt `
+         -r c:/temp/requirements-ci.txt
+ENV PIP_FIND_LINKS=c:\wheels\

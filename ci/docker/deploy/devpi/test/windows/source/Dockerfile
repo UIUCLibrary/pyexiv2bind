@@ -56,6 +56,13 @@ RUN Invoke-WebRequest $Env:PYTHON_INSTALLER_URL -OutFile c:\python-installer.exe
     Remove-Item c:\python-installer.exe -Force
 
 RUN python -m pip install --upgrade pip ; `
-    pip install --upgrade setuptools ; `
     pip install wheel ; `
-    pip install pipenv sphinx tox devpi-client
+    pip install --upgrade setuptools
+
+ADD requirements.txt ci/docker/shared/python/requirements-ci.txt c:/temp/
+RUN pip wheel python -m pip wheel --wheel-dir=c:\wheels `
+        -r c:/temp/requirements.txt `
+        -r c:/temp/requirements-ci.txt ; `
+     pip install --no-index --find-links c:\wheels\ `
+         -r c:/temp/requirements-ci.txt
+ENV PIP_FIND_LINKS=c:\wheels\

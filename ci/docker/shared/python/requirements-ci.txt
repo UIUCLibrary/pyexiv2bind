@@ -1,0 +1,11 @@
+coverage
+devpi-client
+flake8
+lxml
+mypy
+pytest
+pytest-bdd
+pytest-cov
+pytest-runner
+sphinx
+tox
