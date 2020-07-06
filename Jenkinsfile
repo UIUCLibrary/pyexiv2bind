@@ -798,6 +798,7 @@ pipeline {
                             cleanup{
                                 cleanWs(
                                     deleteDirs: true,
+                                    notFailBuild: true,
                                     patterns: [
                                         [pattern: 'dist/', type: 'INCLUDE'],
                                         [pattern: '.tox/', type: 'INCLUDE'],
