@@ -978,18 +978,6 @@ pipeline {
                                 )
                             }
                         }
-                        excludes{
-                             exclude {
-                                 axis {
-                                     name 'PLATFORM'
-                                     values 'linux'
-                                 }
-                                 axis {
-                                     name 'FORMAT'
-                                     values 'wheel'
-                                 }
-                             }
-                        }
                         agent none
                         stages{
                             stage("Testing DevPi Package"){
