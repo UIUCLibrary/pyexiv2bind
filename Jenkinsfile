@@ -412,6 +412,7 @@ pipeline {
     environment {
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
         PIPENV_NOSPIN="DISABLED"
+        PIP_EXTRA_INDEX_URL="https://jenkins.library.illinois.edu/nexus/repository/pypi-proxy/simple"
     }
     parameters {
         booleanParam(name: "TEST_RUN_TOX", defaultValue: false, description: "Run Tox Tests")
