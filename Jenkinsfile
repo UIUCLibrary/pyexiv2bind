@@ -837,18 +837,20 @@ pipeline {
                         }
                         steps{
                             script{
+                                if( PLATFORM == "linux"){
+                                    unstash "whl ${PYTHON_VERSION} ${PLATFORM} manylinux"
+                                } else{
+                                    unstash "whl ${PYTHON_VERSION} ${PLATFORM}"
+                                }
                                 findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}").each{
                                     timeout(15){
                                         if(isUnix()){
-                                            unstash "whl ${PYTHON_VERSION} ${PLATFORM} manylinux"
-
                                             sh(label: "Testing ${it}",
                                                script: """python --version
                                                           tox --installpkg=${it.path} -e py -vv
                                                           """
                                             )
                                         } else {
-                                            unstash "whl ${PYTHON_VERSION} ${PLATFORM}"
                                             bat(label: "Testing ${it}",
                                                 script: """python --version
                                                            tox --installpkg=${it.path} -e py -vv
