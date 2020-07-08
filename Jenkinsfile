@@ -817,7 +817,7 @@ pipeline {
                         }
                         post{
                             always{
-                                stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM} manylinux"
+                                stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION} manylinux"
                             }
                             success{
                                 archiveArtifacts(
@@ -838,7 +838,7 @@ pipeline {
                         steps{
                             script{
                                 if( PLATFORM == "linux"){
-                                    unstash "whl ${PYTHON_VERSION} ${PLATFORM} manylinux"
+                                    unstash "whl ${PYTHON_VERSION} manylinux"
                                 } else{
                                     unstash "whl ${PYTHON_VERSION} ${PLATFORM}"
                                 }
@@ -909,8 +909,11 @@ pipeline {
                     }
                     steps {
                         unstash "whl 3.6 windows"
+                        unstash "whl 3.6 manylinux"
                         unstash "whl 3.7 windows"
+                        unstash "whl 3.7 manylinux"
                         unstash "whl 3.8 windows"
+                        unstash "whl 3.8 manylinux"
                         unstash "sdist"
                         unstash "DOCS_ARCHIVE"
                         sh(
