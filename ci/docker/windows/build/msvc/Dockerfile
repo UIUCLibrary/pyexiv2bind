@@ -58,7 +58,7 @@ RUN Invoke-WebRequest $Env:PYTHON_INSTALLER_URL -OutFile c:\python-installer.exe
 
 
 #ADD ci/docker/windows/build/msvc/Profile.ps1 C:\Windows\System32\WindowsPowerShell\v1.0\Profile.ps1
-
+ARG PIP_EXTRA_INDEX_URL
 RUN python -m pip install --upgrade pip ; `
     pip install --upgrade setuptools ; `
     pip install wheel

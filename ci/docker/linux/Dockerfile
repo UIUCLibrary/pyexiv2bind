@@ -8,6 +8,7 @@ FROM python:${PYTHON_VERSION} as wheel_builder
 COPY --from=cmake_dowloader /tmp/install_cmake.sh /tmp/install_cmake.sh
 RUN chmod +x /tmp/install_cmake.sh  && \
     /tmp/install_cmake.sh  --skip-license
+ARG PIP_EXTRA_INDEX_URL
 RUN python -m pip install pip --upgrade && \
     pip install wheel && \
     pip install setuptools --upgrade
@@ -30,6 +31,7 @@ ARG GROUP_ID=1000
 RUN groupadd -g $GROUP_ID user && \
     useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user
 COPY --from=wheel_builder --chown=user:user /wheels /wheels/
+ARG PIP_EXTRA_INDEX_URL
 RUN python -m pip install pip --upgrade && \
     pip install wheel && \
     pip install setuptools --upgrade
