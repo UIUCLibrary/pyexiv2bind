@@ -64,7 +64,7 @@ RUN python -m pip install --upgrade pip ; `
     pip install wheel
 
 ADD requirements.txt ci/docker/shared/python/requirements-ci.txt c:/temp/
-RUN pip wheel python -m pip wheel --wheel-dir=c:\wheels `
+RUN pip wheel --wheel-dir=c:\wheels `
         -r c:/temp/requirements.txt `
         -r c:/temp/requirements-ci.txt ; `
      pip install --no-index --find-links c:\wheels\ `
