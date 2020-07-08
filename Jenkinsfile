@@ -733,6 +733,7 @@ pipeline {
                         }
                         post{
                             always{
+                                stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION} ${FORMAT}"
                                 script{
                                     if(!isUnix()){
                                         findFiles(glob: "build/lib/**/*.pyd").each{
@@ -745,7 +746,6 @@ pipeline {
                                 }
                             }
                             success{
-                                stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION}"
                                 archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
                             }
                             cleanup{
@@ -766,35 +766,20 @@ pipeline {
                         }
                         steps{
                             script{
-                                unstash "sdist"
-//                                 if(FORMAT == "wheel") {
-//                                     unstash "whl ${PYTHON_VERSION}"
-//                                 } else {
-//                                 }
-                                if(PLATFORM == "windows"){
-                                    bat(
-                                        label: "Checking Python version",
-                                        script: "python --version"
-                                        )
-                                } else{
-                                    sh(
-                                        label: "Checking Python version",
-                                        script: "python --version"
-                                    )
-                                }
-                            }
-                            script{
-                                findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['sdist']}").each{
+                                unstash "whl ${PYTHON_VERSION} ${FORMAT}"
+                                findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}").each{
                                     timeout(15){
-                                        if(PLATFORM == "windows"){
-                                            bat(
-                                                script: "tox --installpkg=${it.path} -e py -vv",
-                                                label: "Testing ${it}"
+                                        if(isUnix()){
+                                            sh(label: "Testing ${it}",
+                                               script: """python --version
+                                                          tox --installpkg=${it.path} -e py -vv
+                                                          """
                                             )
                                         } else {
-                                            sh(
-                                                script: "tox --installpkg=${it.path} -e py -vv",
-                                                label: "Testing ${it}"
+                                            bat(label: "Testing ${it}",
+                                                script: """python --version
+                                                           tox --installpkg=${it.path} -e py -vv
+                                                           """
                                             )
                                         }
                                     }
@@ -848,9 +833,9 @@ pipeline {
                         timeout(5)
                     }
                     steps {
-                        unstash "whl 3.6"
-                        unstash "whl 3.7"
-                        unstash "whl 3.8"
+                        unstash "whl 3.6 windows"
+                        unstash "whl 3.7 windows"
+                        unstash "whl 3.8 windows"
                         unstash "sdist"
                         unstash "DOCS_ARCHIVE"
                         sh(
