@@ -392,6 +392,14 @@ def get_package_name(stashName, metadataFile){
     }
 }
 
+def getDevPiStagingIndex(){
+
+    if (env.TAG_NAME?.trim()){
+        return "tag_staging"
+    } else{
+        return "${env.BRANCH_NAME}_staging"
+    }
+}
 
 def deploy_docs(pkgName, prefix){
     script{
@@ -891,6 +899,7 @@ pipeline {
             agent none
             environment{
                 DEVPI = credentials("DS_devpi")
+                devpiStagingIndex = getDevPiStagingIndex()
             }
             options{
                 lock("py3exiv2bind-devpi")
@@ -917,14 +926,13 @@ pipeline {
                         unstash "sdist"
                         unstash "DOCS_ARCHIVE"
                         sh(
-                            label: "Connecting to DevPi Server",
-                            script: 'devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi'
-                        )
-                        sh(
-                            label: "Uploading to DevPi Staging",
-                            script: """devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging --clientdir ${WORKSPACE}/devpi
-devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
-                        )
+                        label: "Uploading to DevPi Staging",
+                        script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+                                   devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+                                   devpi use /${env.DEVPI_USR}/${env.devpiStagingIndex} --clientdir ./devpi
+                                   devpi upload --from-dir dist --clientdir ./devpi
+                                   """
+                    )
                     }
                 }
                 stage("Test DevPi packages") {
@@ -975,29 +983,23 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
 
                                         if(isUnix()){
                                             sh(
-                                                label: "Checking Python version",
-                                                script: "python --version"
-                                            )
-                                            sh(
-                                                label: "Connecting to DevPi index",
-                                                script: "devpi use https://devpi.library.illinois.edu --clientdir certs && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir certs && devpi use ${env.BRANCH_NAME}_staging --clientdir certs"
-                                            )
-                                            sh(
-                                                label: "Running tests on Devpi",
-                                                script: "devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s ${CONFIGURATIONS[PYTHON_VERSION].devpiSelector[FORMAT]} --clientdir certs -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"
+                                                label: "Running tests on Packages on DevPi",
+                                                script: """python --version
+                                                           devpi use https://devpi.library.illinois.edu --clientdir certs
+                                                           devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir certs
+                                                           devpi use ${env.devpiStagingIndex} --clientdir certs
+                                                           devpi test --index ${env.devpiStagingIndex} ${props.Name}==${props.Version} -s ${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector[FORMAT]} --clientdir certs -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v
+                                                           """
                                             )
                                         } else {
                                             bat(
-                                                label: "Checking Python version",
-                                                script: "python --version"
-                                            )
-                                            bat(
-                                                label: "Connecting to DevPi index",
-                                                script: "devpi use https://devpi.library.illinois.edu --clientdir certs\\ && devpi login %DEVPI_USR% --password %DEVPI_PSW% --clientdir certs\\ && devpi use ${env.BRANCH_NAME}_staging --clientdir certs\\"
-                                            )
-                                            bat(
-                                                label: "Running tests on Devpi",
-                                                script: "devpi test --index ${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} -s ${CONFIGURATIONS[PYTHON_VERSION].devpiSelector[FORMAT]} --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v"
+                                                label: "Running tests on Packages on DevPi",
+                                                script: """python --version
+                                                           devpi use https://devpi.library.illinois.edu --clientdir certs\\
+                                                           devpi login %DEVPI_USR% --password %DEVPI_PSW% --clientdir certs\\
+                                                           devpi use ${env.devpiStagingIndex} --clientdir certs\\
+                                                           devpi test --index ${env.devpiStagingIndex} ${props.Name}==${props.Version} -s ${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector[FORMAT]} --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v
+                                                           """
                                             )
                                         }
                                     }
@@ -1010,9 +1012,19 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                     when {
                         allOf{
                             equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
-                            branch "master"
+                            anyOf {
+                                branch "master"
+                                tag "*"
+                            }
                         }
                         beforeAgent true
+                        beforeInput true
+                    }
+                    options{
+                      timeout(time: 1, unit: 'DAYS')
+                    }
+                    input {
+                      message 'Release to DevPi Production? '
                     }
                     agent {
                         dockerfile {
@@ -1025,14 +1037,13 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                         script {
                             unstash "DIST-INFO"
                             def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
-                            try{
-                                timeout(30) {
-                                    input "Release ${props.Name} ${props.Version} (https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging/${props.Name}/${props.Version}) to DevPi Production? "
-                                }
-                                sh "devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi  && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi && devpi use /DS_Jenkins/${env.BRANCH_NAME}_staging --clientdir ${WORKSPACE}/devpi && devpi push --index ${env.DEVPI_USR}/${env.BRANCH_NAME}_staging ${props.Name}==${props.Version} production/release --clientdir ${WORKSPACE}/devpi"
-                            } catch(err){
-                                echo "User response timed out. Packages not deployed to DevPi Production."
-                            }
+                            sh(
+                                label: "Pushing to DS_Jenkins/${env.BRANCH_NAME} index",
+                                script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+                                           devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+                                           devpi push --index DS_Jenkins/${env.devpiStagingIndex} ${props.Name}==${props.Version} production/release --clientdir ./devpi
+                                           """
+                            )
                         }
                     }
                 }
@@ -1043,14 +1054,18 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                         checkout scm
                         script{
                             docker.build("py3exiv2bind:devpi.${env.BUILD_ID}",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
-                                unstash "DIST-INFO"
-                                def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
-                                sh(
-                                    label: "Connecting to DevPi Server",
-                                    script: 'devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi'
-                                )
-                                sh "devpi use /DS_Jenkins/${env.BRANCH_NAME}_staging --clientdir ${WORKSPACE}/devpi"
-                                sh "devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.BRANCH_NAME} --clientdir ${WORKSPACE}/devpi"
+                                if (!env.TAG_NAME?.trim()){
+                                    unstash "DIST-INFO"
+                                    def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
+                                    sh(
+                                        label: "Connecting to DevPi Server",
+                                        script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+                                                   devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+                                                   devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
+                                                   devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
+                                                   """
+                                    )
+                                }
                             }
                         }
                     }
@@ -1062,11 +1077,13 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                                 unstash "DIST-INFO"
                                 def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
                                 sh(
-                                    label: "Connecting to DevPi Server",
-                                    script: 'devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi'
-                                )
-                                sh "devpi use /DS_Jenkins/${env.BRANCH_NAME}_staging --clientdir ${WORKSPACE}/devpi"
-                                sh "devpi remove -y ${props.Name}==${props.Version} --clientdir ${WORKSPACE}/devpi"
+                                label: "Connecting to DevPi Server",
+                                script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+                                           devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+                                           devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
+                                           devpi remove -y ${props.Name}==${props.Version} --clientdir ./devpi
+                                           """
+                               )
                             }
                        }
                     }
