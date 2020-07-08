@@ -382,7 +382,13 @@ class BuildPybind11Extension(build_ext):
 
     def run(self):
         self.include_dirs.insert(0, os.path.abspath(os.path.join(self.build_temp, "include")))
-        self.library_dirs.insert(0, os.path.abspath(os.path.join(self.build_temp, "lib")))
+        lib_dir = os.path.abspath(os.path.join(self.build_temp, "lib"))
+        if os.path.exists(lib_dir):
+            self.library_dirs.insert(0, lib_dir)
+        lib64_dir = os.path.abspath(os.path.join(self.build_temp, "lib64"))
+        if os.path.exists(lib64_dir):
+            self.library_dirs.insert(0, lib64_dir)
+
         pybind11_include_path = self.get_pybind11_include_path()
         if pybind11_include_path is not None:
             self.include_dirs.insert(0, pybind11_include_path)
