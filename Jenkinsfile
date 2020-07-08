@@ -698,13 +698,6 @@ pipeline {
                             "windows"
                         )
                     }
-//                     axis {
-//                         name 'FORMAT'
-//                         values(
-//                             "wheel",
-//                             "sdist"
-//                         )
-//                     }
                     axis {
                         name "PYTHON_VERSION"
                         values(
@@ -714,18 +707,6 @@ pipeline {
                         )
                     }
                 }
-//                 excludes{
-//                     exclude {
-//                         axis {
-//                             name 'PLATFORM'
-//                             values 'linux'
-//                         }
-//                         axis {
-//                             name 'FORMAT'
-//                             values 'wheel'
-//                         }
-//                     }
-//                 }
                 stages{
                     stage("Creating bdist wheel"){
                         agent {
@@ -773,6 +754,33 @@ pipeline {
                                 cleanWs(
                                     deleteDirs: true,
                                     patterns: [[pattern: 'dist/', type: 'INCLUDE']]
+                                )
+                            }
+                        }
+                    }
+                    stage("Create manylinux wheel"){
+                        agent {
+                          docker {
+                            image 'quay.io/pypa/manylinux2014_x86_64'
+                            label 'linux && docker'
+                          }
+                        }
+                        when{
+                            equals expected: "linux", actual: PLATFORM
+                            beforeAgent true
+                        }
+                        steps{
+                            unstash "whl ${PYTHON_VERSION} ${PLATFORM}"
+                            sh "auditwheel repair ./dist/*.whl -w ./dist"
+                        }
+                        post{
+                            always{
+                                stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM} manylinux"
+                            }
+                            success{
+                                archiveArtifacts(
+                                    artifacts: "dist/*manylinux*.whl",
+                                    fingerprint: true
                                 )
                             }
                         }
