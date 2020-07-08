@@ -714,26 +714,33 @@ pipeline {
                                 additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.build.dockerfile.additionalBuildArgs}"
                              }
                         }
-                        when{
-                            equals expected: "wheel", actual: FORMAT
-                            beforeAgent true
-                        }
                         steps{
                             timeout(15){
-                                bat(
-                                    script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ${WORKSPACE}\\dist",
-                                    label: "Building Wheel for Python ${PYTHON_VERSION} for ${PLATFORM}"
-                                )
+                                script{
+                                    if(isUnix()){
+                                        sh(label: "Building Wheel for Python ${PYTHON_VERSION} for ${PLATFORM}",
+                                            script: 'python setup.py build -b build/ -$(grep -c ^processor /proc/cpuinfo) --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist'
+                                        )
+                                    } else{
+                                        bat(
+                                            script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist",
+                                            label: "Building Wheel for Python ${PYTHON_VERSION} for ${PLATFORM}"
+                                        )
+                                    }
+                                }
                             }
+
                         }
                         post{
                             always{
                                 script{
-                                    findFiles(glob: "build/lib/**/*.pyd").each{
-                                        bat(
-                                            label: "Checking Python extension for dependents",
-                                            script: "dumpbin /DEPENDENTS ${it.path}"
-                                        )
+                                    if(!isUnix()){
+                                        findFiles(glob: "build/lib/**/*.pyd").each{
+                                            bat(
+                                                label: "Checking Python extension for dependents",
+                                                script: "dumpbin /DEPENDENTS ${it.path}"
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -752,9 +759,9 @@ pipeline {
                     stage("Testing package"){
                         agent {
                             dockerfile {
-                                filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].dockerfile.filename}"
-                                label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].dockerfile.label}"
-                                additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test[FORMAT].dockerfile.additionalBuildArgs}"
+                                filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.filename}"
+                                label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.label}"
+                                additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.additionalBuildArgs}"
                              }
                         }
                         steps{
