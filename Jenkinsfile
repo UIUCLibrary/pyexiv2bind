@@ -68,6 +68,13 @@ def CONFIGURATIONS = [
                                     label: 'linux&&docker',
                                     additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                 ]
+                            ],
+                            wheel: [
+                                dockerfile: [
+                                    filename: 'ci/docker/linux/Dockerfile',
+                                    label: 'linux&&docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                ]
                             ]
                         ],
                         devpi: [
@@ -163,6 +170,13 @@ def CONFIGURATIONS = [
                         ],
                         test: [
                             sdist: [
+                                dockerfile: [
+                                    filename: 'ci/docker/linux/Dockerfile',
+                                    label: 'linux&&docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                ]
+                            ],
+                            wheel: [
                                 dockerfile: [
                                     filename: 'ci/docker/linux/Dockerfile',
                                     label: 'linux&&docker',
@@ -264,6 +278,13 @@ def CONFIGURATIONS = [
                         ],
                         test: [
                             sdist: [
+                                dockerfile: [
+                                    filename: 'ci/docker/linux/Dockerfile',
+                                    label: 'linux&&docker',
+                                    additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                ]
+                            ],
+                            wheel: [
                                 dockerfile: [
                                     filename: 'ci/docker/linux/Dockerfile',
                                     label: 'linux&&docker',
@@ -765,8 +786,8 @@ pipeline {
                              }
                         }
                         steps{
+                            unstash "whl ${PYTHON_VERSION} ${PLATFORM}"
                             script{
-                                unstash "whl ${PYTHON_VERSION} ${PLATFORM}"
                                 findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}").each{
                                     timeout(15){
                                         if(isUnix()){
