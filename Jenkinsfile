@@ -733,7 +733,7 @@ pipeline {
                         }
                         post{
                             always{
-                                stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION} ${FORMAT}"
+                                stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
                                 script{
                                     if(!isUnix()){
                                         findFiles(glob: "build/lib/**/*.pyd").each{
@@ -766,7 +766,7 @@ pipeline {
                         }
                         steps{
                             script{
-                                unstash "whl ${PYTHON_VERSION} ${FORMAT}"
+                                unstash "whl ${PYTHON_VERSION} ${PLATFORM}"
                                 findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}").each{
                                     timeout(15){
                                         if(isUnix()){
