@@ -719,7 +719,7 @@ pipeline {
                                 script{
                                     if(isUnix()){
                                         sh(label: "Building Wheel for Python ${PYTHON_VERSION} for ${PLATFORM}",
-                                            script: 'python setup.py build -b build/ -$(grep -c ^processor /proc/cpuinfo) --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist'
+                                            script: 'python setup.py build -b build/ -j $(grep -c ^processor /proc/cpuinfo) --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist'
                                         )
                                     } else{
                                         bat(
