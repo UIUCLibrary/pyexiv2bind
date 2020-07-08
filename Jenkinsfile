@@ -677,13 +677,13 @@ pipeline {
                             "windows"
                         )
                     }
-                    axis {
-                        name 'FORMAT'
-                        values(
-                            "wheel",
-                            "sdist"
-                        )
-                    }
+//                     axis {
+//                         name 'FORMAT'
+//                         values(
+//                             "wheel",
+//                             "sdist"
+//                         )
+//                     }
                     axis {
                         name "PYTHON_VERSION"
                         values(
@@ -693,18 +693,18 @@ pipeline {
                         )
                     }
                 }
-                excludes{
-                    exclude {
-                        axis {
-                            name 'PLATFORM'
-                            values 'linux'
-                        }
-                        axis {
-                            name 'FORMAT'
-                            values 'wheel'
-                        }
-                    }
-                }
+//                 excludes{
+//                     exclude {
+//                         axis {
+//                             name 'PLATFORM'
+//                             values 'linux'
+//                         }
+//                         axis {
+//                             name 'FORMAT'
+//                             values 'wheel'
+//                         }
+//                     }
+//                 }
                 stages{
                     stage("Creating bdist wheel"){
                         agent {
@@ -759,11 +759,11 @@ pipeline {
                         }
                         steps{
                             script{
-                                if(FORMAT == "wheel") {
-                                    unstash "whl ${PYTHON_VERSION}"
-                                } else {
-                                    unstash "sdist"
-                                }
+                                unstash "sdist"
+//                                 if(FORMAT == "wheel") {
+//                                     unstash "whl ${PYTHON_VERSION}"
+//                                 } else {
+//                                 }
                                 if(PLATFORM == "windows"){
                                     bat(
                                         label: "Checking Python version",
@@ -777,7 +777,7 @@ pipeline {
                                 }
                             }
                             script{
-                                findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex[FORMAT]}").each{
+                                findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['sdist']}").each{
                                     timeout(15){
                                         if(PLATFORM == "windows"){
                                             bat(
