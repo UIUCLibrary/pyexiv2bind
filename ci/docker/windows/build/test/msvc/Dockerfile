@@ -12,7 +12,7 @@ RUN certutil -addstore -f root roots.sst ; `
     del roots.sst
 
 ADD requirements.txt ci/docker/shared/python/requirements-ci.txt c:/temp/
-RUN pip wheel python -m pip wheel --wheel-dir=c:\wheels `
+RUN pip wheel --wheel-dir=c:\wheels `
         -r c:/temp/requirements.txt `
         -r c:/temp/requirements-ci.txt
 
