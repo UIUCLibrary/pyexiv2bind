@@ -11,6 +11,7 @@ COPY --from=certsgen c:/roots.sst roots.sst
 RUN certutil -addstore -f root roots.sst ; `
     del roots.sst
 
+ARG PIP_EXTRA_INDEX_URL
 ADD requirements.txt ci/docker/shared/python/requirements-ci.txt c:/temp/
 RUN pip wheel --wheel-dir=c:\wheels `
         -r c:/temp/requirements.txt `
@@ -23,7 +24,7 @@ COPY --from=certsgen c:/roots.sst roots.sst
 RUN certutil -addstore -f root roots.sst ; `
     del roots.sst
 COPY --from=wheel_builder c:/wheels/ c:/wheels/
-
+ARG PIP_EXTRA_INDEX_URL
 ADD requirements.txt ci/docker/shared/python/requirements-ci.txt c:/temp/
 RUN pip install --no-index --find-links c:\wheels\ `
          -r c:/temp/requirements.txt `

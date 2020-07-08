@@ -25,7 +25,7 @@ def CONFIGURATIONS = [
                                 dockerfile: [
                                     filename: 'ci/docker/windows/build/test/msvc/Dockerfile',
                                     label: 'Windows&&Docker',
-                                    additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.6-windowsservercore',
+                                    additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.6-windowsservercore --build-arg PIP_EXTRA_INDEX_URL',
                                     baseImage: "python:3.6-windowsservercore"
                                 ]
                             ],
@@ -153,7 +153,7 @@ def CONFIGURATIONS = [
                             wheel: [
                                 dockerfile: [
                                     filename: 'ci/docker/windows/build/test/msvc/Dockerfile',
-                                    additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.7',
+                                    additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.7 --build-arg PIP_EXTRA_INDEX_URL',
                                     label: 'windows && docker',
                                 ]
                             ]
@@ -274,7 +274,7 @@ def CONFIGURATIONS = [
                             wheel: [
                                 dockerfile: [
                                     filename: 'ci/docker/windows/build/test/msvc/Dockerfile',
-                                    additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.8',
+                                    additionalBuildArgs: '--build-arg PYTHON_DOCKER_IMAGE_BASE=python:3.8 --build-arg PIP_EXTRA_INDEX_URL',
                                     label: 'windows && docker',
                                 ]
                             ]
