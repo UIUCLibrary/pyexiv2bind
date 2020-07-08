@@ -54,6 +54,10 @@ def CONFIGURATIONS = [
                             ]
                         ]
                     ],
+                    devpiSelector: [
+                        sdist: "zip",
+                        wheel: "36m-win*.*whl",
+                    ],
                     pkgRegex: [
                         wheel: "*cp36*.whl",
                         sdist: "py3exiv2bind-*.zip"
@@ -107,6 +111,10 @@ def CONFIGURATIONS = [
                                 ]
                             ]
                         ]
+                    ],
+                    devpiSelector: [
+                        sdist: "zip",
+                        wheel: "36m-manylinux*.*whl",
                     ],
                     pkgRegex: [
                         wheel: "*cp36*.whl",
@@ -175,10 +183,14 @@ def CONFIGURATIONS = [
                             ]
                         ]
                     ],
+                    devpiSelector: [
+                        sdist: "zip",
+                        wheel: "37m-win*.*whl",
+                    ],
                     pkgRegex: [
                         wheel: "*cp37*.whl",
                         sdist: "*.zip"
-                    ]
+                    ],
                 ],
                 linux: [
                     agents: [
@@ -228,6 +240,10 @@ def CONFIGURATIONS = [
                                 ]
                             ]
                         ]
+                    ],
+                    devpiSelector: [
+                        sdist: "zip",
+                        wheel: "37m-manylinux*.*whl",
                     ],
                     pkgRegex: [
                         wheel: "*cp37*.whl",
@@ -297,6 +313,10 @@ def CONFIGURATIONS = [
                         ]
 
                     ],
+                    devpiSelector: [
+                        sdist: "zip",
+                        wheel: "38-win*.*whl",
+                    ],
                     pkgRegex: [
                         wheel: "*cp38*.whl",
                         sdist: "py3exiv2bind-*.zip"
@@ -350,6 +370,10 @@ def CONFIGURATIONS = [
                                 ]
                             ]
                         ]
+                    ],
+                    devpiSelector: [
+                        sdist: "zip",
+                        wheel: "38-manylinux*.*whl",
                     ],
                     pkgRegex: [
                         wheel: "*cp38*.whl",
