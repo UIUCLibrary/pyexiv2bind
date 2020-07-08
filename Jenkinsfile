@@ -13,6 +13,13 @@ def CONFIGURATIONS = [
                                 additionalBuildArgs: '--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe --build-arg CHOCOLATEY_SOURCE'
                             ]
                         ],
+                        package: [
+                            dockerfile: [
+                                filename: 'ci/docker/windows/build/msvc/Dockerfile',
+                                label: 'Windows&&Docker',
+                                additionalBuildArgs: '--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe --build-arg CHOCOLATEY_SOURCE'
+                            ]
+                        ],
                         test:[
                             wheel: [
                                 dockerfile: [
@@ -56,7 +63,14 @@ def CONFIGURATIONS = [
                     agents: [
                         build: [
                             dockerfile: [
-                                filename: 'ci/docker/linux/Dockerfile',
+                                filename: 'ci/docker/linux/test/Dockerfile',
+                                label: 'linux&&docker',
+                                additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                            ]
+                        ],
+                        package: [
+                            dockerfile: [
+                                filename: 'ci/docker/linux/package/Dockerfile',
                                 label: 'linux&&docker',
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
@@ -64,14 +78,14 @@ def CONFIGURATIONS = [
                         test: [
                             sdist: [
                                 dockerfile: [
-                                    filename: 'ci/docker/linux/Dockerfile',
+                                    filename: 'ci/docker/linux/test/Dockerfile',
                                     label: 'linux&&docker',
                                     additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                 ]
                             ],
                             wheel: [
                                 dockerfile: [
-                                    filename: 'ci/docker/linux/Dockerfile',
+                                    filename: 'ci/docker/linux/test/Dockerfile',
                                     label: 'linux&&docker',
                                     additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                 ]
@@ -80,14 +94,14 @@ def CONFIGURATIONS = [
                         devpi: [
                             whl: [
                                 dockerfile: [
-                                    filename: 'ci/docker/linux/Dockerfile',
+                                    filename: 'ci/docker/linux/test/Dockerfile',
                                     label: 'linux&&docker',
                                     additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                 ]
                             ],
                             sdist: [
                                 dockerfile: [
-                                    filename: 'ci/docker/linux/Dockerfile',
+                                    filename: 'ci/docker/linux/test/Dockerfile',
                                     label: 'linux&&docker',
                                     additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                 ]
@@ -115,6 +129,13 @@ def CONFIGURATIONS = [
                 windows: [
                     agents: [
                         build: [
+                            dockerfile: [
+                                filename: 'ci/docker/windows/build/msvc/Dockerfile',
+                                label: 'Windows&&Docker',
+                                additionalBuildArgs: '--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe --build-arg CHOCOLATEY_SOURCE'
+                            ]
+                        ],
+                        package: [
                             dockerfile: [
                                 filename: 'ci/docker/windows/build/msvc/Dockerfile',
                                 label: 'Windows&&Docker',
@@ -163,22 +184,29 @@ def CONFIGURATIONS = [
                     agents: [
                         build: [
                             dockerfile: [
-                                filename: 'ci/docker/linux/Dockerfile',
+                                filename: 'ci/docker/linux/test/Dockerfile',
                                 label: 'linux&&docker',
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                            ]
+                        ],
+                        package: [
+                            dockerfile: [
+                                filename: 'ci/docker/linux/package/Dockerfile',
+                                label: 'linux&&docker',
+                                additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
                         ],
                         test: [
                             sdist: [
                                 dockerfile: [
-                                    filename: 'ci/docker/linux/Dockerfile',
+                                    filename: 'ci/docker/linux/test/Dockerfile',
                                     label: 'linux&&docker',
                                     additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                 ]
                             ],
                             wheel: [
                                 dockerfile: [
-                                    filename: 'ci/docker/linux/Dockerfile',
+                                    filename: 'ci/docker/linux/test/Dockerfile',
                                     label: 'linux&&docker',
                                     additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                 ]
@@ -187,14 +215,14 @@ def CONFIGURATIONS = [
                         devpi: [
                             wheel: [
                                 dockerfile: [
-                                    filename: 'ci/docker/linux/Dockerfile',
+                                    filename: 'ci/docker/linux/test/Dockerfile',
                                     label: 'linux&&docker',
                                     additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                 ]
                             ],
                             sdist: [
                                 dockerfile: [
-                                    filename: 'ci/docker/linux/Dockerfile',
+                                    filename: 'ci/docker/linux/test/Dockerfile',
                                     label: 'linux&&docker',
                                     additionalBuildArgs: '--build-arg PYTHON_VERSION=3.7 --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                 ]
@@ -222,6 +250,13 @@ def CONFIGURATIONS = [
                 windows: [
                     agents: [
                         build: [
+                            dockerfile: [
+                                filename: 'ci/docker/windows/build/msvc/Dockerfile',
+                                label: 'Windows&&Docker',
+                                additionalBuildArgs: '--build-arg PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.8.3/python-3.8.3-amd64.exe --build-arg CHOCOLATEY_SOURCE'
+                            ]
+                        ],
+                        package: [
                             dockerfile: [
                                 filename: 'ci/docker/windows/build/msvc/Dockerfile',
                                 label: 'Windows&&Docker',
@@ -271,22 +306,29 @@ def CONFIGURATIONS = [
                     agents: [
                         build: [
                             dockerfile: [
-                                filename: 'ci/docker/linux/Dockerfile',
+                                filename: 'ci/docker/linux/test/Dockerfile',
                                 label: 'linux&&docker',
                                 additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                            ]
+                        ],
+                        package: [
+                            dockerfile: [
+                                filename: 'ci/docker/linux/package/Dockerfile',
+                                label: 'linux&&docker',
+                                additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                             ]
                         ],
                         test: [
                             sdist: [
                                 dockerfile: [
-                                    filename: 'ci/docker/linux/Dockerfile',
+                                    filename: 'ci/docker/linux/test/Dockerfile',
                                     label: 'linux&&docker',
                                     additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                 ]
                             ],
                             wheel: [
                                 dockerfile: [
-                                    filename: 'ci/docker/linux/Dockerfile',
+                                    filename: 'ci/docker/linux/test/Dockerfile',
                                     label: 'linux&&docker',
                                     additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                 ]
@@ -295,14 +337,14 @@ def CONFIGURATIONS = [
                         devpi: [
                             wheel: [
                                 dockerfile: [
-                                    filename: 'ci/docker/linux/Dockerfile',
+                                    filename: 'ci/docker/linux/test/Dockerfile',
                                     label: 'linux&&docker',
                                     additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                 ]
                             ],
                             sdist: [
                                 dockerfile: [
-                                    filename: 'ci/docker/linux/Dockerfile',
+                                    filename: 'ci/docker/linux/test/Dockerfile',
                                     label: 'linux&&docker',
                                     additionalBuildArgs: '--build-arg PYTHON_VERSION=3.8 --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                 ]
@@ -445,7 +487,7 @@ pipeline {
         stage("Getting Distribution Info"){
             agent {
                 dockerfile {
-                    filename 'ci/docker/linux/Dockerfile'
+                    filename 'ci/docker/linux/test/Dockerfile'
                     label 'linux && docker'
                     additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                 }
@@ -465,7 +507,7 @@ pipeline {
         stage("Building") {
             agent {
                 dockerfile {
-                    filename 'ci/docker/linux/Dockerfile'
+                    filename 'ci/docker/linux/test/Dockerfile'
                     label 'linux && docker'
                     additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                 }
@@ -536,7 +578,7 @@ pipeline {
             }
             agent {
                 dockerfile {
-                    filename 'ci/docker/linux/Dockerfile'
+                    filename 'ci/docker/linux/test/Dockerfile'
                     label 'linux && docker'
                     additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                 }
@@ -672,7 +714,7 @@ pipeline {
         stage("Python sdist"){
             agent{
                 dockerfile {
-                    filename 'ci/docker/linux/Dockerfile'
+                    filename 'ci/docker/linux/test/Dockerfile'
                     label 'linux && docker'
                     additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                 }
@@ -711,9 +753,9 @@ pipeline {
                     stage("Creating bdist wheel"){
                         agent {
                             dockerfile {
-                                filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.build.dockerfile.filename}"
+                                filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.package.dockerfile.filename}"
                                 label "${PLATFORM} && docker"
-                                additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.build.dockerfile.additionalBuildArgs}"
+                                additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.package.dockerfile.additionalBuildArgs}"
                              }
                         }
                         steps{
