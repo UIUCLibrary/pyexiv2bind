@@ -920,9 +920,9 @@ pipeline {
                         steps{
                             script{
                                 if( platform == "linux"){
-                                    unstash "whl ${pythonVersion} manylinux"
+                                    unstash "whl ${PYTHON_VERSION} manylinux"
                                 } else{
-                                    unstash "whl ${pythonVersion} ${platform}"
+                                    unstash "whl ${PYTHON_VERSION} ${platform}"
                                 }
                                 catchError(stageResult: 'FAILURE') {
                                     test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}", 15)
