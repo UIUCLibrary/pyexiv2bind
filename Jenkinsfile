@@ -780,6 +780,40 @@ pipeline {
                     }
                 }
                 stages{
+                    stage("Testing sdist package"){
+                        agent {
+                            dockerfile {
+                                filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.filename}"
+                                label "${PLATFORM} && docker"
+                                additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.additionalBuildArgs}"
+                             }
+                        }
+                        steps{
+                            catchError(stageResult: 'FAILURE') {
+                                script{
+                                    unstash "sdist"
+                                    findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['sdist']}").each{
+                                        timeout(15){
+                                            if(isUnix()){
+                                                sh(label: "Testing ${it}",
+                                                   script: """python --version
+                                                              ls -la /wheels/
+                                                              tox --installpkg=${it.path} -e py -vv
+                                                              """
+                                                )
+                                            } else {
+                                                bat(label: "Testing ${it}",
+                                                    script: """python --version
+                                                               tox --installpkg=${it.path} -e py -vv
+                                                               """
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                     stage("Creating bdist wheel"){
                         agent {
                             dockerfile {
