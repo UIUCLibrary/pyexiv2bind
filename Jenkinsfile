@@ -598,9 +598,6 @@ pipeline {
             }
         }
         stage("Testing") {
-            environment{
-                junit_filename = "junit-${env.GIT_COMMIT.substring(0,7)}-pytest.xml"
-            }
             agent {
                 dockerfile {
                     filename 'ci/docker/linux/test/Dockerfile'
@@ -685,6 +682,7 @@ pipeline {
                           }
                           post {
                             always {
+                                stash includes: "reports/pytest/junit-pytest.xml", name: 'FLAKE8_REPORT'
                                 recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
                             }
                             cleanup{
@@ -695,12 +693,13 @@ pipeline {
                         stage("Running Unit Tests"){
                             steps{
                                 timeout(2){
-                                    sh "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=./reports/pytest/${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                    sh "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=./reports/pytest/junit-pytest.xml"
                                 }
                             }
                             post{
                                 always{
-                                    junit "reports/pytest/${env.junit_filename}"
+                                    stash includes: "reports/pytest/junit-pytest.xml", name: 'PYTEST_REPORT'
+                                    junit "reports/pytest/junit-pytest.xml"
                                 }
                             }
                         }
@@ -710,6 +709,7 @@ pipeline {
             post{
                 success{
                     sh "coverage combine && coverage xml -o ./reports/coverage.xml && coverage html -d ./reports/coverage"
+                    stash includes: "reports/coverage.xml", name: 'COVERAGE_REPORT'
                     publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
                     publishCoverage(
                         adapters: [
@@ -745,11 +745,11 @@ pipeline {
             steps{
                 checkout scm
                 sh "git fetch --all"
-//                 unstash "COVERAGE_REPORT"
-//                 unstash "PYTEST_REPORT"
+                unstash "COVERAGE_REPORT"
+                unstash "PYTEST_REPORT"
 //                 unstash "BANDIT_REPORT"
 //                 unstash "PYLINT_REPORT"
-//                 unstash "FLAKE8_REPORT"
+                unstash "FLAKE8_REPORT"
 //                 script{
 //                     withSonarQubeEnv(installationName:"sonarcloud", credentialsId: 'sonarcloud-py3exiv2bind') {
 //                         unstash "DIST-INFO"
