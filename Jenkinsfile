@@ -625,9 +625,6 @@ pipeline {
                     }
                 }
                 stage("Running Tests"){
-                    options{
-                        timeout(15)
-                    }
                     parallel {
                         stage("Run Tox test") {
                             when {
