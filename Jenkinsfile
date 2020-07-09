@@ -713,11 +713,10 @@ pipeline {
                           }
                         }
                         stage("Running Unit Tests"){
-                            options{
-                                timeout(2)
-                            }
                             steps{
-                                sh "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=./reports/pytest/${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                timeout(2){
+                                    sh "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=./reports/pytest/${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                }
                             }
                             post{
                                 always{
@@ -772,7 +771,7 @@ pipeline {
 //                 unstash "PYLINT_REPORT"
 //                 unstash "FLAKE8_REPORT"
 //                 script{
-//                     withSonarQubeEnv(installationName:"sonarcloud", credentialsId: 'sonarcloud-uiucprescon.packager') {
+//                     withSonarQubeEnv(installationName:"sonarcloud", credentialsId: 'sonarcloud-py3exiv2bind') {
 //                         unstash "DIST-INFO"
 //                         def props = readProperties(interpolate: true, file: "py3exiv2bind.dist-info/METADATA")
 //                         if (env.CHANGE_ID){
