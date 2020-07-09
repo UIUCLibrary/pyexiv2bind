@@ -664,7 +664,7 @@ pipeline {
                             stages{
                                 stage("Generate stubs") {
                                     steps{
-                                      sh "stubgen -p py3exiv2bind -o ${WORKSPACE}//mypy_stubs"
+                                      sh "stubgen -p py3exiv2bind -o ./mypy_stubs"
                                     }
                                 }
                                 stage("Run MyPy") {
@@ -700,7 +700,7 @@ pipeline {
                             timeout(2)
                           }
                           steps{
-                            sh returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
+                            sh returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ./logs/flake8.log"
                           }
                           post {
                             always {
@@ -716,7 +716,7 @@ pipeline {
                                 timeout(2)
                             }
                             steps{
-                                sh "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=${WORKSPACE}/reports/pytest/${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                sh "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=./reports/pytest/${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
                             }
                             post{
                                 always{
@@ -729,7 +729,7 @@ pipeline {
             }
             post{
                 success{
-                    sh "coverage combine && coverage xml -o ${WORKSPACE}/reports/coverage.xml && coverage html -d ${WORKSPACE}/reports/coverage"
+                    sh "coverage combine && coverage xml -o ./reports/coverage.xml && coverage html -d ./reports/coverage"
                     publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
                     publishCoverage(
                         adapters: [
@@ -756,7 +756,7 @@ pipeline {
                 }
             }
            steps {
-               sh "python setup.py sdist -d ${WORKSPACE}/dist --format zip"
+               sh "python setup.py sdist -d ./dist --format zip"
            }
            post{
                success{
