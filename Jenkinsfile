@@ -644,9 +644,9 @@ pipeline {
                                 MYPYPATH = "${WORKSPACE}/mypy_stubs"
                             }
                             steps{
-                                sh "stubgen -p py3exiv2bind -o ./mypy_stubs"
                                 sh(returnStatus: true,
-                                   script: '''mkdir -p reports/mypy/html
+                                   script: '''stubgen -p py3exiv2bind -o ./mypy_stubs
+                                              mkdir -p reports/mypy/html
                                               mypy -p py3exiv2bind --html-report reports/mypy/html > logs/mypy.log
                                               '''
                                   )
