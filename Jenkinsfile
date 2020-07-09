@@ -761,10 +761,10 @@ pipeline {
             }
             post {
                 always{
-                    archiveArtifacts(
-                        allowEmptyArchive: true,
-                        artifacts: ".scannerwork/report-task.txt"
-                    )
+//                     archiveArtifacts(
+//                         allowEmptyArchive: true,
+//                         artifacts: ".scannerwork/report-task.txt"
+//                     )
                     script{
                         if(fileExists('reports/sonar-report.json')){
                             stash includes: "reports/sonar-report.json", name: 'SONAR_REPORT'
