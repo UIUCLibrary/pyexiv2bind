@@ -765,7 +765,7 @@ pipeline {
                }
            }
        }
-        stage('Testing Packages') {
+        stage('Distribution Packages') {
             matrix{
                 agent none
                 axes{
