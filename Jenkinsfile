@@ -394,17 +394,6 @@ def CONFIGURATIONS = [
     ]
 
 
-def get_package_version(stashName, metadataFile){
-    node {
-        unstash "${stashName}"
-        script{
-            def props = readProperties interpolate: true, file: "${metadataFile}"
-            deleteDir()
-            return props.Version
-        }
-    }
-}
-
 def get_package_name(stashName, metadataFile){
     node {
         unstash "${stashName}"
@@ -457,36 +446,6 @@ def deploy_docs(pkgName, prefix){
             echo "User response timed out. Documentation not published."
         }
     }
-}
-def remove_from_devpi(pkgName, pkgVersion, devpiIndex, devpiUsername, devpiPassword){
-    script {
-        docker.build("devpi", "-f ci/docker/deploy/devpi/deploy/Dockerfile .").inside{
-            try {
-                sh "devpi login ${devpiUsername} --password ${devpiPassword} --clientdir ${WORKSPACE}/devpi"
-                sh "devpi use ${devpiIndex} --clientdir ${WORKSPACE}/devpi"
-                sh "devpi remove -y ${pkgName}==${pkgVersion} --clientdir ${WORKSPACE}/devpi"
-            } catch (Exception ex) {
-                echo "Failed to remove ${pkgName}==${pkgVersion} from ${devpiIndex}"
-            }
-
-        }
-    }
-
-}
-
-
-def deploy_devpi_production(DEVPI, PKG_NAME, PKG_VERSION, BRANCH_NAME, USR, PSW){
-    script {
-        try{
-            timeout(30) {
-                input "Release ${PKG_NAME} ${PKG_VERSION} (https://devpi.library.illinois.edu/DS_Jenkins/${BRANCH_NAME}_staging/${PKG_NAME}/${PKG_VERSION}) to DevPi Production? "
-            }
-            bat "${DEVPI} login ${DEVPI_USR} --password ${DEVPI_PSW} && ${DEVPI} use /DS_Jenkins/${BRANCH_NAME}_staging && ${DEVPI} push ${PKG_NAME}==${PKG_VERSION} production/release"
-        } catch(err){
-            echo "User response timed out. Packages not deployed to DevPi Production."
-        }
-    }
-
 }
 
 
