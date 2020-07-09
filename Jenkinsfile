@@ -1172,22 +1172,22 @@ pipeline {
                 }
             }
         }
-        stage("Deploy"){
-            parallel {
-                stage("Deploy Online Documentation") {
-                    agent {
-                        label "Windows && VS2015 && Python3 && longfilenames"
-                    }
-                    when{
-                        equals expected: true, actual: params.DEPLOY_DOCS
-                        beforeAgent true
-                    }
-                    steps{
-                        unstash "DOCS_ARCHIVE"
-                        deploy_docs(get_package_name("DIST-INFO", "py3exiv2bind.dist-info/METADATA"), "build/docs/html")
-                    }
-                }
-            }
-        }
+//         stage("Deploy"){
+//             parallel {
+//                 stage("Deploy Online Documentation") {
+//                     agent {
+//                         label "Windows && VS2015 && Python3 && longfilenames"
+//                     }
+//                     when{
+//                         equals expected: true, actual: params.DEPLOY_DOCS
+//                         beforeAgent true
+//                     }
+//                     steps{
+//                         unstash "DOCS_ARCHIVE"
+//                         deploy_docs(get_package_name("DIST-INFO", "py3exiv2bind.dist-info/METADATA"), "build/docs/html")
+//                     }
+//                 }
+//             }
+//         }
     }
 }
