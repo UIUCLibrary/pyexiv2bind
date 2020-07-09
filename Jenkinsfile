@@ -688,7 +688,7 @@ pipeline {
                 }
             }
             post{
-                success{
+                always{
                     sh "coverage combine && coverage xml -o ./reports/coverage.xml && coverage html -d ./reports/coverage"
                     stash includes: "reports/coverage.xml", name: 'COVERAGE_REPORT'
                     publishCoverage(
