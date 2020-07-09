@@ -897,7 +897,7 @@ pipeline {
                             }
                         }
                     }
-                    stage("Testing package"){
+                    stage("Testing Wheel Package"){
                         agent {
                             dockerfile {
                                 filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.filename}"
