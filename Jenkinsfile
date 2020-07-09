@@ -1035,26 +1035,25 @@ pipeline {
                             additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                           }
                     }
-                    options{
-                        timeout(5)
-                    }
                     steps {
-                        unstash "whl 3.6 windows"
-                        unstash "whl 3.6 manylinux"
-                        unstash "whl 3.7 windows"
-                        unstash "whl 3.7 manylinux"
-                        unstash "whl 3.8 windows"
-                        unstash "whl 3.8 manylinux"
-                        unstash "sdist"
-                        unstash "DOCS_ARCHIVE"
-                        sh(
-                            label: "Uploading to DevPi Staging",
-                            script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-                                       devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
-                                       devpi use /${env.DEVPI_USR}/${env.devpiStagingIndex} --clientdir ./devpi
-                                       devpi upload --from-dir dist --clientdir ./devpi
-                                       """
-                        )
+                        timeout(5){
+                            unstash "whl 3.6 windows"
+                            unstash "whl 3.6 manylinux"
+                            unstash "whl 3.7 windows"
+                            unstash "whl 3.7 manylinux"
+                            unstash "whl 3.8 windows"
+                            unstash "whl 3.8 manylinux"
+                            unstash "sdist"
+                            unstash "DOCS_ARCHIVE"
+                            sh(
+                                label: "Uploading to DevPi Staging",
+                                script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+                                           devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+                                           devpi use /${env.DEVPI_USR}/${env.devpiStagingIndex} --clientdir ./devpi
+                                           devpi upload --from-dir dist --clientdir ./devpi
+                                           """
+                            )
+                        }
                     }
                 }
                 stage("Test DevPi packages") {
