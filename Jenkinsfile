@@ -572,9 +572,12 @@ pipeline {
                 }
                 stage("Building Sphinx Documentation"){
                     steps {
-                        sh "mkdir -p logs"
-                        sh "mkdir -p build/docs/html"
-                        sh "python -m sphinx docs/source build/docs/html -b html -d build/docs/.doctrees --no-color -w logs/build_sphinx.log"
+                        sh(label: "Running Sphinx",
+                           script: '''mkdir -p logs
+                                      mkdir -p build/docs/html
+                                      python -m sphinx docs/source build/docs/html -b html -d build/docs/.doctrees --no-color -w logs/build_sphinx.log
+                                      '''
+                          )
                     }
                     post{
                         always {
@@ -661,7 +664,7 @@ pipeline {
                             stages{
                                 stage("Generate stubs") {
                                     steps{
-                                      sh "stubgen -p py3exiv2bind -o ${WORKSPACE}//mypy_stubs"
+                                      sh "stubgen -p py3exiv2bind -o ./mypy_stubs"
                                     }
                                 }
                                 stage("Run MyPy") {
@@ -669,8 +672,11 @@ pipeline {
                                         MYPYPATH = "${WORKSPACE}/mypy_stubs"
                                     }
                                     steps{
-                                        sh "mkdir -p reports/mypy/html"
-                                        sh returnStatus: true, script: "mypy -p py3exiv2bind --html-report ${WORKSPACE}/reports/mypy/html > ${WORKSPACE}/logs/mypy.log"
+                                        sh(returnStatus: true,
+                                           script: '''mkdir -p reports/mypy/html
+                                                      mypy -p py3exiv2bind --html-report reports/mypy/html > logs/mypy.log
+                                                      '''
+                                          )
                                     }
                                     post {
                                         always {
@@ -694,7 +700,7 @@ pipeline {
                             timeout(2)
                           }
                           steps{
-                            sh returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ${WORKSPACE}/logs/flake8.log"
+                            sh returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ./logs/flake8.log"
                           }
                           post {
                             always {
@@ -710,7 +716,7 @@ pipeline {
                                 timeout(2)
                             }
                             steps{
-                                sh "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=${WORKSPACE}/reports/pytest/${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
+                                sh "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=./reports/pytest/${env.junit_filename} --junit-prefix=${env.NODE_NAME}-pytest"
                             }
                             post{
                                 always{
@@ -723,7 +729,7 @@ pipeline {
             }
             post{
                 success{
-                    sh "coverage combine && coverage xml -o ${WORKSPACE}/reports/coverage.xml && coverage html -d ${WORKSPACE}/reports/coverage"
+                    sh "coverage combine && coverage xml -o ./reports/coverage.xml && coverage html -d ./reports/coverage"
                     publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
                     publishCoverage(
                         adapters: [
@@ -750,7 +756,7 @@ pipeline {
                 }
             }
            steps {
-               sh "python setup.py sdist -d ${WORKSPACE}/dist --format zip"
+               sh "python setup.py sdist -d ./dist --format zip"
            }
            post{
                success{
@@ -759,7 +765,7 @@ pipeline {
                }
            }
        }
-        stage('Testing Packages') {
+        stage('Distribution Packages') {
             matrix{
                 agent none
                 axes{
@@ -780,6 +786,40 @@ pipeline {
                     }
                 }
                 stages{
+                    stage("Testing sdist package"){
+                        agent {
+                            dockerfile {
+                                filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.filename}"
+                                label "${PLATFORM} && docker"
+                                additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.additionalBuildArgs}"
+                             }
+                        }
+                        steps{
+                            catchError(stageResult: 'FAILURE') {
+                                script{
+                                    unstash "sdist"
+                                    findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['sdist']}").each{
+                                        timeout(15){
+                                            if(isUnix()){
+                                                sh(label: "Testing ${it}",
+                                                   script: """python --version
+                                                              ls -la /wheels/
+                                                              tox --installpkg=${it.path} -e py -vv
+                                                              """
+                                                )
+                                            } else {
+                                                bat(label: "Testing ${it}",
+                                                    script: """python --version
+                                                               tox --installpkg=${it.path} -e py -vv
+                                                               """
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                     stage("Creating bdist wheel"){
                         agent {
                             dockerfile {
@@ -857,7 +897,7 @@ pipeline {
                             }
                         }
                     }
-                    stage("Testing package"){
+                    stage("Testing Wheel Package"){
                         agent {
                             dockerfile {
                                 filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.filename}"
