@@ -636,11 +636,10 @@ pipeline {
                             }
                             stages{
                                 stage("Running Tox"){
-                                    options{
-                                        timeout(15)
-                                    }
                                     steps {
-                                        sh "tox -e py -vv"
+                                        timeout(15){
+                                            sh "tox -e py -vv"
+                                        }
                                     }
                                 }
                             }
@@ -697,11 +696,10 @@ pipeline {
                             }
                         }
                         stage("Flake8") {
-                          options{
-                            timeout(2)
-                          }
                           steps{
-                            sh returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ./logs/flake8.log"
+                            timeout(2){
+                                sh returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ./logs/flake8.log"
+                            }
                           }
                           post {
                             always {
