@@ -500,8 +500,6 @@ pipeline {
       lib('PythonHelpers')
     }
     options {
-//         disableConcurrentBuilds()  //each branch has 1 job running at a time
-//         timeout(120)  // Timeout after 120 minutes. This shouldn't take this long but it hangs for some reason
         buildDiscarder logRotator(artifactDaysToKeepStr: '10', artifactNumToKeepStr: '10', daysToKeepStr: '', numToKeepStr: '')
     }
     environment {
@@ -950,13 +948,13 @@ pipeline {
                         unstash "sdist"
                         unstash "DOCS_ARCHIVE"
                         sh(
-                        label: "Uploading to DevPi Staging",
-                        script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-                                   devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
-                                   devpi use /${env.DEVPI_USR}/${env.devpiStagingIndex} --clientdir ./devpi
-                                   devpi upload --from-dir dist --clientdir ./devpi
-                                   """
-                    )
+                            label: "Uploading to DevPi Staging",
+                            script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+                                       devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+                                       devpi use /${env.DEVPI_USR}/${env.devpiStagingIndex} --clientdir ./devpi
+                                       devpi upload --from-dir dist --clientdir ./devpi
+                                       """
+                        )
                     }
                 }
                 stage("Test DevPi packages") {
