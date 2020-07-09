@@ -445,37 +445,28 @@ def getDevPiStagingIndex(){
 }
 
 def deploy_docs(pkgName, prefix){
-    script{
-        try{
-            timeout(30) {
-                input "Update project documentation to https://www.library.illinois.edu/dccdocs/${pkgName}"
-            }
-            sshPublisher(
-                publishers: [
-                    sshPublisherDesc(
-                        configName: 'apache-ns - lib-dccuser-updater', 
-                        sshLabel: [label: 'Linux'], 
-                        transfers: [sshTransfer(excludes: '', 
-                        execCommand: '', 
-                        execTimeout: 120000, 
-                        flatten: false, 
-                        makeEmptyDirs: false, 
-                        noDefaultExcludes: false, 
-                        patternSeparator: '[, ]+', 
-                        remoteDirectory: "${pkgName}",
-                        remoteDirectorySDF: false, 
-                        removePrefix: "${prefix}",
-                        sourceFiles: "${prefix}/**")],
-                    usePromotionTimestamp: false, 
-                    useWorkspaceInPromotion: false, 
-                    verbose: true
-                    )
-                ]
+    sshPublisher(
+        publishers: [
+            sshPublisherDesc(
+                configName: 'apache-ns - lib-dccuser-updater',
+                sshLabel: [label: 'Linux'],
+                transfers: [sshTransfer(excludes: '',
+                execCommand: '',
+                execTimeout: 120000,
+                flatten: false,
+                makeEmptyDirs: false,
+                noDefaultExcludes: false,
+                patternSeparator: '[, ]+',
+                remoteDirectory: "${pkgName}",
+                remoteDirectorySDF: false,
+                removePrefix: "${prefix}",
+                sourceFiles: "${prefix}/**")],
+            usePromotionTimestamp: false,
+            useWorkspaceInPromotion: false,
+            verbose: true
             )
-        } catch(exc){
-            echo "User response timed out. Documentation not published."
-        }
-    }
+        ]
+    )
 }
 
 
@@ -1080,7 +1071,7 @@ pipeline {
                       timeout(time: 1, unit: 'DAYS')
                     }
                     input {
-                      message 'Release to DevPi Production? '
+                      message 'Release to DevPi Production?'
                     }
                     agent {
                         dockerfile {
@@ -1146,22 +1137,28 @@ pipeline {
                 }
             }
         }
-//         stage("Deploy"){
-//             parallel {
-//                 stage("Deploy Online Documentation") {
-//                     agent {
-//                         label "Windows && VS2015 && Python3 && longfilenames"
-//                     }
-//                     when{
-//                         equals expected: true, actual: params.DEPLOY_DOCS
-//                         beforeAgent true
-//                     }
-//                     steps{
-//                         unstash "DOCS_ARCHIVE"
-//                         deploy_docs(get_package_name("DIST-INFO", "py3exiv2bind.dist-info/METADATA"), "build/docs/html")
-//                     }
-//                 }
-//             }
-//         }
+        stage("Deploy"){
+            parallel {
+                stage("Deploy Online Documentation") {
+                    agent any
+                    when{
+                        equals expected: true, actual: params.DEPLOY_DOCS
+                        beforeAgent true
+                        beforeInput true
+                        beforeInput true
+                    }
+                    options{
+                        timeout(30)
+                    }
+                    input{
+                        message 'Update project documentation?'
+                    }
+                    steps{
+                        unstash "DOCS_ARCHIVE"
+                        deploy_docs(get_package_name("DIST-INFO", "py3exiv2bind.dist-info/METADATA"), "build/docs/html")
+                    }
+                }
+            }
+        }
     }
 }
