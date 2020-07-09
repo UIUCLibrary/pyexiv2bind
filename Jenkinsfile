@@ -394,7 +394,28 @@ def CONFIGURATIONS = [
     ]
 
 def test_pkg(glob, platform, pythonVersion){
-
+    if( platform == "linux"){
+        unstash "whl ${pythonVersion} manylinux"
+    } else{
+        unstash "whl ${pythonVersion} ${platform}"
+    }
+    findFiles( glob: glob).each{
+        timeout(15){
+            if(isUnix()){
+                sh(label: "Testing ${it}",
+                   script: """python --version
+                              tox --installpkg=${it.path} -e py -vv
+                              """
+                )
+            } else {
+                bat(label: "Testing ${it}",
+                    script: """python --version
+                               tox --installpkg=${it.path} -e py -vv
+                               """
+                )
+            }
+        }
+    }
 }
 
 def get_sonarqube_unresolved_issues(report_task_file){
@@ -929,9 +950,8 @@ pipeline {
                              }
                         }
                         steps{
-                            script{
-                                echo "testing"
-                                test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}", PLATFORM, PYTHON_VERSION)
+                            test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}", PLATFORM, PYTHON_VERSION)
+//                             script{
 //                                 if( PLATFORM == "linux"){
 //                                     unstash "whl ${PYTHON_VERSION} manylinux"
 //                                 } else{
@@ -954,7 +974,7 @@ pipeline {
 //                                         }
 //                                     }
 //                                 }
-                            }
+//                             }
                         }
                         post{
                             cleanup{
