@@ -608,14 +608,11 @@ pipeline {
                             }
                         }
                         stage("MyPy Static Analysis") {
-                            environment{
-                                MYPYPATH = "${WORKSPACE}/mypy_stubs"
-                            }
                             steps{
                                 sh(returnStatus: true,
                                    script: '''stubgen -p py3exiv2bind -o ./mypy_stubs
                                               mkdir -p reports/mypy/html
-                                              mypy -p py3exiv2bind --html-report reports/mypy/html > logs/mypy.log
+                                              MYPYPATH="$WORKSPACE/mypy_stubs" mypy -p py3exiv2bind --html-report reports/mypy/html > logs/mypy.log
                                               '''
                                   )
                             }
