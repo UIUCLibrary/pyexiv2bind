@@ -746,31 +746,26 @@ pipeline {
                                 )
                         }
                     }
-                    timeout(time: 1, unit: 'HOURS') {
-                        def sonarqube_result = waitForQualityGate(abortPipeline: false)
-                        if (sonarqube_result.status != 'OK') {
-                            unstable "SonarQube quality gate: ${sonarqube_result.status}"
-                        }
-                        def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
-                        writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
-                    }
+//                     timeout(time: 1, unit: 'HOURS') {
+//                         def sonarqube_result = waitForQualityGate(abortPipeline: false)
+//                         if (sonarqube_result.status != 'OK') {
+//                             unstable "SonarQube quality gate: ${sonarqube_result.status}"
+//                         }
+//                         def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
+//                         writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
+//                     }
                 }
             }
-            post {
-                always{
-//                     archiveArtifacts(
-//                         allowEmptyArchive: true,
-//                         artifacts: ".scannerwork/report-task.txt"
-//                     )
-                    script{
-                        if(fileExists('reports/sonar-report.json')){
-//                             stash includes: "reports/sonar-report.json", name: 'SONAR_REPORT'
-                            archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
-                            recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
-                        }
-                    }
-                }
-            }
+//             post {
+//                 always{
+//                     script{
+//                         if(fileExists('reports/sonar-report.json')){
+//                             archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
+//                             recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
+//                         }
+//                     }
+//                 }
+//             }
         }
         stage("Python sdist"){
             agent{
