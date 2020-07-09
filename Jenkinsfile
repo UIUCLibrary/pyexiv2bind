@@ -1192,12 +1192,9 @@ pipeline {
                         equals expected: true, actual: params.DEPLOY_DOCS
                         beforeAgent true
                     }
-                    environment{
-                        PKG_NAME = get_package_name("DIST-INFO", "py3exiv2bind.dist-info/METADATA")
-                    }
                     steps{
                         unstash "DOCS_ARCHIVE"
-                        deploy_docs(env.PKG_NAME, "build/docs/html")
+                        deploy_docs(get_package_name("DIST-INFO", "py3exiv2bind.dist-info/METADATA"), "build/docs/html")
                     }
                 }
             }
