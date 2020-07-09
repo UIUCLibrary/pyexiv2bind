@@ -572,9 +572,12 @@ pipeline {
                 }
                 stage("Building Sphinx Documentation"){
                     steps {
-                        sh "mkdir -p logs"
-                        sh "mkdir -p build/docs/html"
-                        sh "python -m sphinx docs/source build/docs/html -b html -d build/docs/.doctrees --no-color -w logs/build_sphinx.log"
+                        sh(label: "Running Sphinx",
+                           script: '''mkdir -p logs
+                                      mkdir -p build/docs/html
+                                      python -m sphinx docs/source build/docs/html -b html -d build/docs/.doctrees --no-color -w logs/build_sphinx.log
+                                      '''
+                          )
                     }
                     post{
                         always {
@@ -669,8 +672,11 @@ pipeline {
                                         MYPYPATH = "${WORKSPACE}/mypy_stubs"
                                     }
                                     steps{
-                                        sh "mkdir -p reports/mypy/html"
-                                        sh returnStatus: true, script: "mypy -p py3exiv2bind --html-report ${WORKSPACE}/reports/mypy/html > ${WORKSPACE}/logs/mypy.log"
+                                        sh(returnStatus: true,
+                                           script: '''mkdir -p reports/mypy/html
+                                                      mypy -p py3exiv2bind --html-report reports/mypy/html > logs/mypy.log
+                                                      '''
+                                          )
                                     }
                                     post {
                                         always {
