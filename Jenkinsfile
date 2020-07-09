@@ -855,19 +855,6 @@ pipeline {
                         steps{
                             timeout(15){
                                 build_wheel()
-                                echo "Building"
-//                                 script{
-//                                     if(isUnix()){
-//                                         sh(label: "Building Wheel for Python ${PYTHON_VERSION} for ${PLATFORM}",
-//                                             script: 'python setup.py build -b build/ -j $(grep -c ^processor /proc/cpuinfo) --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist'
-//                                         )
-//                                     } else{
-//                                         bat(
-//                                             script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist",
-//                                             label: "Building Wheel for Python ${PYTHON_VERSION} for ${PLATFORM}"
-//                                         )
-//                                     }
-//                                 }
                             }
                         }
                         post{
