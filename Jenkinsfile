@@ -393,6 +393,10 @@ def CONFIGURATIONS = [
         ],
     ]
 
+def test_pkg(glob, platform, pythonVersion){
+
+}
+
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
 
@@ -927,6 +931,7 @@ pipeline {
                         steps{
                             script{
                                 echo "testing"
+                                test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}", PLATFORM, PYTHON_VERSION)
 //                                 if( PLATFORM == "linux"){
 //                                     unstash "whl ${PYTHON_VERSION} manylinux"
 //                                 } else{
