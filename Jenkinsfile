@@ -631,7 +631,7 @@ pipeline {
                           }
                           post {
                             always {
-                                stash includes: "reports/pytest/junit-pytest.xml", name: 'FLAKE8_REPORT'
+                                stash includes: "logs/flake8.log", name: 'FLAKE8_REPORT'
                                 recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
                             }
                             cleanup{
