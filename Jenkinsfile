@@ -837,27 +837,8 @@ pipeline {
                         }
                         steps{
                             catchError(stageResult: 'FAILURE') {
-                                script{
-                                    unstash "sdist"
-                                    findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['sdist']}").each{
-                                        timeout(15){
-                                            if(isUnix()){
-                                                sh(label: "Testing ${it}",
-                                                   script: """python --version
-                                                              ls -la /wheels/
-                                                              tox --installpkg=${it.path} -e py -vv
-                                                              """
-                                                )
-                                            } else {
-                                                bat(label: "Testing ${it}",
-                                                    script: """python --version
-                                                               tox --installpkg=${it.path} -e py -vv
-                                                               """
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
+                                unstash "sdist"
+                                test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['sdist']}")
                             }
                         }
                     }
@@ -952,7 +933,9 @@ pipeline {
                                 } else{
                                     unstash "whl ${pythonVersion} ${platform}"
                                 }
-                                test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}")
+                                catchError(stageResult: 'FAILURE') {
+                                    test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}")
+                                }
                             }
                         }
                         post{
