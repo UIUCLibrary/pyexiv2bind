@@ -965,6 +965,7 @@ pipeline {
                     anyOf {
                         equals expected: "master", actual: env.BRANCH_NAME
                         equals expected: "dev", actual: env.BRANCH_NAME
+                        tag "*"
                     }
                 }
                 beforeAgent true
