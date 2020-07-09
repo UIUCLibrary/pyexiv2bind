@@ -640,32 +640,22 @@ pipeline {
                             }
                         }
                         stage("MyPy Static Analysis") {
-                            stages{
-                                stage("Generate stubs") {
-                                    steps{
-                                      sh "stubgen -p py3exiv2bind -o ./mypy_stubs"
-                                    }
-                                }
-                                stage("Run MyPy") {
-                                    environment{
-                                        MYPYPATH = "${WORKSPACE}/mypy_stubs"
-                                    }
-                                    steps{
-                                        sh(returnStatus: true,
-                                           script: '''mkdir -p reports/mypy/html
-                                                      mypy -p py3exiv2bind --html-report reports/mypy/html > logs/mypy.log
-                                                      '''
-                                          )
-                                    }
-                                    post {
-                                        always {
-                                            recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
-                                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
-                                        }
-                                    }
-                                }
+                            environment{
+                                MYPYPATH = "${WORKSPACE}/mypy_stubs"
                             }
-                            post{
+                            steps{
+                                sh "stubgen -p py3exiv2bind -o ./mypy_stubs"
+                                sh(returnStatus: true,
+                                   script: '''mkdir -p reports/mypy/html
+                                              mypy -p py3exiv2bind --html-report reports/mypy/html > logs/mypy.log
+                                              '''
+                                  )
+                            }
+                            post {
+                                always {
+                                    recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
+                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                }
                                 cleanup{
                                     cleanWs(
                                         deleteDirs: true,
