@@ -632,6 +632,33 @@ pipeline {
                                 }
                             }
                         }
+                        stage("Run Pylint Static Analysis") {
+                            steps{
+                                withEnv(['PYLINTHOME=.']) {
+                                    catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
+                                        sh(
+                                            script: '''mkdir -p logs
+                                                       mkdir -p reports
+                                                       pylint py3exiv2bind -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
+                                                       ''',
+                                            label: "Running pylint"
+                                        )
+                                    }
+                                    sh(
+                                        script: 'pylint   -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt',
+                                        label: "Running pylint for sonarqube",
+                                        returnStatus: true
+                                    )
+                                }
+                            }
+                            post{
+                                always{
+                                    stash includes: "reports/pylint_issues.txt,reports/pylint.txt", name: 'PYLINT_REPORT'
+                                    archiveArtifacts allowEmptyArchive: true, artifacts: "reports/pylint.txt"
+                                    recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
+                                }
+                            }
+                        }
                         stage("Flake8") {
                           steps{
                             timeout(2){
