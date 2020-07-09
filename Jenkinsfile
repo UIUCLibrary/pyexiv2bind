@@ -583,7 +583,6 @@ pipeline {
                     post{
                         always {
                             recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', id: 'sphinx_build')])
-                            archiveArtifacts artifacts: 'logs/build_sphinx.log'
                         }
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
@@ -640,11 +639,6 @@ pipeline {
                                     }
                                 }
                             }
-                            post {
-                                always{
-                                    archiveArtifacts allowEmptyArchive: true, artifacts: '.tox/py*/log/*.log,.tox/log/*.log,logs/tox_report.json'
-                                }
-                            }
                         }
                         stage("Run Doctest Tests"){
                             steps {
@@ -652,7 +646,6 @@ pipeline {
                             }
                             post{
                                 always {
-                                    archiveArtifacts artifacts: "reports/doctest/output.txt", allowEmptyArchive: true
                                     recordIssues(tools: [sphinxBuild(name: 'Doctest', pattern: 'logs/doctest_warnings.log', id: 'doctest')])
                                 }
                             }
