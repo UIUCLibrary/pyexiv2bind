@@ -1074,7 +1074,7 @@ pipeline {
                                         script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
                                                    devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
                                                    devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
-                                                   devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
+                                                   devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.BRANCH_NAME} --clientdir ./devpi
                                                    """
                                     )
                                 }
