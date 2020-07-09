@@ -4,6 +4,7 @@ flake8
 lxml
 mypy
 pytest
+pylint
 pytest-bdd
 pytest-cov
 pytest-runner
