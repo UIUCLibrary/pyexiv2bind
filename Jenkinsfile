@@ -469,6 +469,17 @@ def deploy_docs(pkgName, prefix){
     )
 }
 
+def build_wheel(){
+    if(isUnix()){
+        sh(label: "Building Python Wheel",
+            script: 'python setup.py build -b build/ -j $(grep -c ^processor /proc/cpuinfo) --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist'
+        )
+    } else{
+        bat(label: "Building Python Wheel",
+            script: "python setup.py build -b build/ -j ${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist"
+        )
+    }
+}
 
 pipeline {
     agent none
@@ -758,26 +769,26 @@ pipeline {
                                 )
                         }
                     }
-//                     timeout(time: 1, unit: 'HOURS') {
-//                         def sonarqube_result = waitForQualityGate(abortPipeline: false)
-//                         if (sonarqube_result.status != 'OK') {
-//                             unstable "SonarQube quality gate: ${sonarqube_result.status}"
-//                         }
-//                         def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
-//                         writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
-//                     }
+                    timeout(time: 1, unit: 'HOURS') {
+                        def sonarqube_result = waitForQualityGate(abortPipeline: false)
+                        if (sonarqube_result.status != 'OK') {
+                            unstable "SonarQube quality gate: ${sonarqube_result.status}"
+                        }
+                        def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
+                        writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
+                    }
                 }
             }
-//             post {
-//                 always{
-//                     script{
-//                         if(fileExists('reports/sonar-report.json')){
-//                             archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
-//                             recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
-//                         }
-//                     }
-//                 }
-//             }
+            post {
+                always{
+                    script{
+                        if(fileExists('reports/sonar-report.json')){
+                            archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
+                            recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
+                        }
+                    }
+                }
+            }
         }
         stage("Python sdist"){
             agent{
@@ -843,18 +854,20 @@ pipeline {
                         }
                         steps{
                             timeout(15){
-                                script{
-                                    if(isUnix()){
-                                        sh(label: "Building Wheel for Python ${PYTHON_VERSION} for ${PLATFORM}",
-                                            script: 'python setup.py build -b build/ -j $(grep -c ^processor /proc/cpuinfo) --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist'
-                                        )
-                                    } else{
-                                        bat(
-                                            script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist",
-                                            label: "Building Wheel for Python ${PYTHON_VERSION} for ${PLATFORM}"
-                                        )
-                                    }
-                                }
+                                build_wheel()
+                                echo "Building"
+//                                 script{
+//                                     if(isUnix()){
+//                                         sh(label: "Building Wheel for Python ${PYTHON_VERSION} for ${PLATFORM}",
+//                                             script: 'python setup.py build -b build/ -j $(grep -c ^processor /proc/cpuinfo) --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist'
+//                                         )
+//                                     } else{
+//                                         bat(
+//                                             script: "python setup.py build -b build/ -j${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist",
+//                                             label: "Building Wheel for Python ${PYTHON_VERSION} for ${PLATFORM}"
+//                                         )
+//                                     }
+//                                 }
                             }
                         }
                         post{
