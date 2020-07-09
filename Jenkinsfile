@@ -96,7 +96,7 @@ def CONFIGURATIONS = [
                             ]
                         ],
                         devpi: [
-                            whl: [
+                            wheel: [
                                 dockerfile: [
                                     filename: 'ci/docker/linux/test/Dockerfile',
                                     label: 'linux&&docker',
