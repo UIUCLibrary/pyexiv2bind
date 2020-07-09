@@ -393,10 +393,10 @@ def CONFIGURATIONS = [
         ],
     ]
 
-def test_pkg(glob){
+def test_pkg(glob, timeout_time){
 
     findFiles( glob: glob).each{
-        timeout(15){
+        timeout(timeout_time){
             if(isUnix()){
                 sh(label: "Testing ${it}",
                    script: """python --version
@@ -829,7 +829,7 @@ pipeline {
                         steps{
                             catchError(stageResult: 'FAILURE') {
                                 unstash "sdist"
-                                test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['sdist']}")
+                                test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['sdist']}", 15)
                             }
                         }
                     }
@@ -925,7 +925,7 @@ pipeline {
                                     unstash "whl ${pythonVersion} ${platform}"
                                 }
                                 catchError(stageResult: 'FAILURE') {
-                                    test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}")
+                                    test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}", 15)
                                 }
                             }
                         }
