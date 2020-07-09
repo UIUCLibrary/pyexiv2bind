@@ -731,7 +731,7 @@ pipeline {
                 unstash "COVERAGE_REPORT"
                 unstash "PYTEST_REPORT"
 //                 unstash "BANDIT_REPORT"
-//                 unstash "PYLINT_REPORT"
+                unstash "PYLINT_REPORT"
                 unstash "FLAKE8_REPORT"
                 script{
                     withSonarQubeEnv(installationName:"sonarcloud", credentialsId: 'sonarcloud-py3exiv2bind') {
