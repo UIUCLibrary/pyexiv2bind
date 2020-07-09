@@ -469,6 +469,17 @@ def deploy_docs(pkgName, prefix){
     )
 }
 
+def build_wheel(){
+    if(isUnix()){
+        sh(label: "Building Python Wheel",
+            script: 'python setup.py build -b build/ -j $(grep -c ^processor /proc/cpuinfo) --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist'
+        )
+    } else{
+        bat(label: "Building Python Wheel",
+            script: "python setup.py build -b build/ -j ${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist"
+        )
+    }
+}
 
 pipeline {
     agent none
@@ -843,6 +854,7 @@ pipeline {
                         }
                         steps{
                             timeout(15){
+                                build_wheel()
                                 echo "Building"
 //                                 script{
 //                                     if(isUnix()){
