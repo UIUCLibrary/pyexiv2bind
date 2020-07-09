@@ -393,12 +393,8 @@ def CONFIGURATIONS = [
         ],
     ]
 
-def test_pkg(glob, platform, pythonVersion){
-    if( platform == "linux"){
-        unstash "whl ${pythonVersion} manylinux"
-    } else{
-        unstash "whl ${pythonVersion} ${platform}"
-    }
+def test_pkg(glob){
+
     findFiles( glob: glob).each{
         timeout(15){
             if(isUnix()){
@@ -950,31 +946,14 @@ pipeline {
                              }
                         }
                         steps{
-                            test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}", PLATFORM, PYTHON_VERSION)
-//                             script{
-//                                 if( PLATFORM == "linux"){
-//                                     unstash "whl ${PYTHON_VERSION} manylinux"
-//                                 } else{
-//                                     unstash "whl ${PYTHON_VERSION} ${PLATFORM}"
-//                                 }
-//                                 findFiles( glob: "dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}").each{
-//                                     timeout(15){
-//                                         if(isUnix()){
-//                                             sh(label: "Testing ${it}",
-//                                                script: """python --version
-//                                                           tox --installpkg=${it.path} -e py -vv
-//                                                           """
-//                                             )
-//                                         } else {
-//                                             bat(label: "Testing ${it}",
-//                                                 script: """python --version
-//                                                            tox --installpkg=${it.path} -e py -vv
-//                                                            """
-//                                             )
-//                                         }
-//                                     }
-//                                 }
-//                             }
+                            script{
+                                if( platform == "linux"){
+                                    unstash "whl ${pythonVersion} manylinux"
+                                } else{
+                                    unstash "whl ${pythonVersion} ${platform}"
+                                }
+                                test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}")
+                            }
                         }
                         post{
                             cleanup{
