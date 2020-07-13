@@ -483,9 +483,6 @@ def build_wheel(){
 
 pipeline {
     agent none
-    triggers {
-       parameterizedCron '@daily % DEPLOY_DEVPI=true; TEST_RUN_TOX=true'
-    }
     options {
         buildDiscarder logRotator(artifactDaysToKeepStr: '10', artifactNumToKeepStr: '10', daysToKeepStr: '', numToKeepStr: '')
     }
