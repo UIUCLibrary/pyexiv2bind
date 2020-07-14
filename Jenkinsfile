@@ -489,6 +489,7 @@ pipeline {
     parameters {
         booleanParam(name: "TEST_RUN_TOX", defaultValue: false, description: "Run Tox Tests")
         booleanParam(name: "USE_SONARQUBE", defaultValue: true, description: "Send data test data to SonarQube")
+        booleanParam(name: "BUILD_PACKAGES", defaultValue: false, description: "Build Python packages")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to https://devpi.library.illinois.edu/production/release")
         string(name: 'URL_SUBFOLDER', defaultValue: "py3exiv2bind", description: 'The directory that the docs should be saved under')
@@ -794,10 +795,18 @@ pipeline {
                     additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                 }
             }
-           steps {
+            when{
+                anyOf{
+                    equals expected: true, actual: params.BUILD_PACKAGES
+                    equals expected: true, actual: params.DEPLOY_DEVPI
+                    equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
+                }
+                beforeAgent true
+            }
+            steps {
                sh "python setup.py sdist -d ./dist --format zip"
-           }
-           post{
+            }
+            post{
                success{
                    stash includes: 'dist/*.zip,dist/*.tar.gz', name: "sdist"
                    archiveArtifacts artifacts: "dist/*.tar.gz,dist/*.zip", fingerprint: true
@@ -805,6 +814,14 @@ pipeline {
            }
        }
         stage('Distribution Packages') {
+            when{
+                anyOf{
+                    equals expected: true, actual: params.BUILD_PACKAGES
+                    equals expected: true, actual: params.DEPLOY_DEVPI
+                    equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
+                }
+                beforeAgent true
+            }
             matrix{
                 agent none
                 axes{
