@@ -481,6 +481,31 @@ def build_wheel(){
     }
 }
 
+def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
+    def props = readProperties interpolate: true, file: metadataFile
+    withSonarQubeEnv(installationName:"sonarcloud", credentialsId: sonarCredentials) {
+        if (env.CHANGE_ID){
+            sh(
+                label: "Running Sonar Scanner",
+                script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
+                )
+        } else {
+            sh(
+                label: "Running Sonar Scanner",
+                script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
+                )
+        }
+    }
+     timeout(time: 1, unit: 'HOURS') {
+         def sonarqube_result = waitForQualityGate(abortPipeline: false)
+         if (sonarqube_result.status != 'OK') {
+             unstable "SonarQube quality gate: ${sonarqube_result.status}"
+         }
+         def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
+         writeJSON file: outputJson, json: outstandingIssues
+     }
+}
+
 pipeline {
     agent none
     options {
@@ -748,31 +773,33 @@ pipeline {
 //                 unstash "BANDIT_REPORT"
                 unstash "PYLINT_REPORT"
                 unstash "FLAKE8_REPORT"
-                script{
-                    withSonarQubeEnv(installationName:"sonarcloud", credentialsId: 'sonarcloud-py3exiv2bind') {
-                        unstash "DIST-INFO"
-                        def props = readProperties(interpolate: true, file: "py3exiv2bind.dist-info/METADATA")
-                        if (env.CHANGE_ID){
-                            sh(
-                                label: "Running Sonar Scanner",
-                                script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
-                                )
-                        } else {
-                            sh(
-                                label: "Running Sonar Scanner",
-                                script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
-                                )
-                        }
-                    }
-                    timeout(time: 1, unit: 'HOURS') {
-                        def sonarqube_result = waitForQualityGate(abortPipeline: false)
-                        if (sonarqube_result.status != 'OK') {
-                            unstable "SonarQube quality gate: ${sonarqube_result.status}"
-                        }
-                        def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
-                        writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
-                    }
-                }
+                unstash "DIST-INFO"
+                sonarcloudSubmit("py3exiv2bind.dist-info/METADATA", "reports/sonar-report.json", 'sonarcloud-py3exiv2bind')
+//                 script{
+//                     withSonarQubeEnv(installationName:"sonarcloud", credentialsId: 'sonarcloud-py3exiv2bind') {
+//                         unstash "DIST-INFO"
+//                         def props = readProperties(interpolate: true, file: "py3exiv2bind.dist-info/METADATA")
+//                         if (env.CHANGE_ID){
+//                             sh(
+//                                 label: "Running Sonar Scanner",
+//                                 script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
+//                                 )
+//                         } else {
+//                             sh(
+//                                 label: "Running Sonar Scanner",
+//                                 script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
+//                                 )
+//                         }
+//                     }
+//                     timeout(time: 1, unit: 'HOURS') {
+//                         def sonarqube_result = waitForQualityGate(abortPipeline: false)
+//                         if (sonarqube_result.status != 'OK') {
+//                             unstable "SonarQube quality gate: ${sonarqube_result.status}"
+//                         }
+//                         def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
+//                         writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
+//                     }
+//                 }
             }
             post {
                 always{
