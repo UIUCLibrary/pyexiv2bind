@@ -37,10 +37,7 @@ RUN python -m pip install pip --upgrade && \
     pip install setuptools --upgrade
 
 ADD requirements.txt ci/docker/shared/python/requirements-ci.txt /requirements/
-RUN pip wheel --wheel-dir=/wheels \
-         -r /requirements/requirements.txt \
-         -r /requirements/requirements-ci.txt && \
-     pip install --no-index --find-links=/wheels/ \
+RUN pip install --no-index --find-links=/wheels/ \
          -r /requirements/requirements.txt \
          -r /requirements/requirements-ci.txt
 
