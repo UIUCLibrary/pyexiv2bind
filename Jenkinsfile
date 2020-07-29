@@ -901,8 +901,13 @@ pipeline {
                         }
                         post{
                             always{
-                                stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
                                 script{
+                                    if(PLATFORM == "linux"){
+                                        stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
+                                    } else{
+                                        stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
+                                    }
+
                                     if(!isUnix()){
                                         findFiles(glob: "build/lib/**/*.pyd").each{
                                             bat(
