@@ -892,12 +892,22 @@ pipeline {
                         steps{
                             timeout(15){
                                 build_wheel()
+                                script{
+                                    if(PLATFORM == "linux"){
+                                        sh "auditwheel repair ./dist/*.whl -w ./dist"
+                                    }
+                                }
                             }
                         }
                         post{
                             always{
-                                stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
                                 script{
+                                    if(PLATFORM == "linux"){
+                                        stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
+                                    } else{
+                                        stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
+                                    }
+
                                     if(!isUnix()){
                                         findFiles(glob: "build/lib/**/*.pyd").each{
                                             bat(
@@ -919,33 +929,33 @@ pipeline {
                             }
                         }
                     }
-                    stage("Create manylinux wheel"){
-                        agent {
-                          docker {
-                            image 'quay.io/pypa/manylinux2014_x86_64'
-                            label 'linux && docker'
-                          }
-                        }
-                        when{
-                            equals expected: "linux", actual: PLATFORM
-                            beforeAgent true
-                        }
-                        steps{
-                            unstash "whl ${PYTHON_VERSION} ${PLATFORM}"
-                            sh "auditwheel repair ./dist/*.whl -w ./dist"
-                        }
-                        post{
-                            always{
-                                stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION} manylinux"
-                            }
-                            success{
-                                archiveArtifacts(
-                                    artifacts: "dist/*manylinux*.whl",
-                                    fingerprint: true
-                                )
-                            }
-                        }
-                    }
+//                     stage("Create manylinux wheel"){
+//                         agent {
+//                           docker {
+//                             image 'quay.io/pypa/manylinux2014_x86_64'
+//                             label 'linux && docker'
+//                           }
+//                         }
+//                         when{
+//                             equals expected: "linux", actual: PLATFORM
+//                             beforeAgent true
+//                         }
+//                         steps{
+//                             unstash "whl ${PYTHON_VERSION} ${PLATFORM}"
+//                             sh "auditwheel repair ./dist/*.whl -w ./dist"
+//                         }
+//                         post{
+//                             always{
+//                                 stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION} manylinux"
+//                             }
+//                             success{
+//                                 archiveArtifacts(
+//                                     artifacts: "dist/*manylinux*.whl",
+//                                     fingerprint: true
+//                                 )
+//                             }
+//                         }
+//                     }
                     stage("Testing Wheel Package"){
                         agent {
                             dockerfile {
@@ -955,15 +965,9 @@ pipeline {
                              }
                         }
                         steps{
-                            script{
-                                if( platform == "linux"){
-                                    unstash "whl ${PYTHON_VERSION} manylinux"
-                                } else{
-                                    unstash "whl ${PYTHON_VERSION} ${platform}"
-                                }
-                                catchError(stageResult: 'FAILURE') {
-                                    test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}", 15)
-                                }
+                            unstash "whl ${PYTHON_VERSION} ${platform}"
+                            catchError(stageResult: 'FAILURE') {
+                                test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}", 15)
                             }
                         }
                         post{
@@ -1014,11 +1018,11 @@ pipeline {
                     steps {
                         timeout(5){
                             unstash "whl 3.6 windows"
-                            unstash "whl 3.6 manylinux"
+                            unstash "whl 3.6 linux"
                             unstash "whl 3.7 windows"
-                            unstash "whl 3.7 manylinux"
+                            unstash "whl 3.7 linux"
                             unstash "whl 3.8 windows"
-                            unstash "whl 3.8 manylinux"
+                            unstash "whl 3.8 linux"
                             unstash "sdist"
                             unstash "DOCS_ARCHIVE"
                             sh(
