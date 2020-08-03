@@ -392,7 +392,7 @@ def CONFIGURATIONS = [
             ]
         ],
     ]
-def testDevpiPackage(devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVersion, pkgSelector){
+def testDevpiPackage(devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVersion, pkgSelector, toxEnv){
     if(isUnix()){
         sh(
             label: "Running tests on Packages on DevPi",
@@ -400,7 +400,7 @@ def testDevpiPackage(devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVers
                        devpi use https://devpi.library.illinois.edu --clientdir certs
                        devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs
                        devpi use ${devpiIndex} --clientdir certs
-                       devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir certs -v
+                       devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir certs -e ${toxEnv} -v
                        """
         )
     } else {
@@ -410,7 +410,7 @@ def testDevpiPackage(devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVers
                        devpi use https://devpi.library.illinois.edu --clientdir certs\\
                        devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
                        devpi use ${devpiIndex} --clientdir certs\\
-                       devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir certs\\ -v
+                       devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir certs\\ -e ${toxEnv} -v
                        """
         )
     }
@@ -934,7 +934,6 @@ pipeline {
                                     } else{
                                         stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
                                     }
-
                                     if(!isUnix()){
                                         findFiles(glob: "build/lib/**/*.pyd").each{
                                             bat(
@@ -1069,7 +1068,7 @@ pipeline {
                                     unstash "DIST-INFO"
                                     script{
                                         def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATA"
-                                        testDevpiPackage(env.devpiStagingIndex, props.Name, props.Version, CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector[FORMAT])
+                                        testDevpiPackage(env.devpiStagingIndex, props.Name, props.Version, CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector[FORMAT],  CONFIGURATIONS[PYTHON_VERSION].tox_env)
                                     }
                                 }
                             }
