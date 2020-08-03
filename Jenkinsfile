@@ -895,6 +895,16 @@ pipeline {
                              }
                         }
                         steps{
+                            cleanWs(
+                                notFailBuild: true,
+                                deleteDirs: true,
+                                disableDeferredWipeout: true,
+                                patterns: [
+                                        [pattern: '.git/**', type: 'EXCLUDE'],
+                                        [pattern: 'tests/**', type: 'EXCLUDE'],
+                                        [pattern: 'tox.ini', type: 'EXCLUDE'],
+                                    ]
+                            )
                             catchError(stageResult: 'FAILURE') {
                                 unstash "sdist"
                                 test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['sdist']}", 20)
@@ -960,6 +970,16 @@ pipeline {
                              }
                         }
                         steps{
+                            cleanWs(
+                                notFailBuild: true,
+                                deleteDirs: true,
+                                disableDeferredWipeout: true,
+                                patterns: [
+                                        [pattern: '.git/**', type: 'EXCLUDE'],
+                                        [pattern: 'tests/**', type: 'EXCLUDE'],
+                                        [pattern: 'tox.ini', type: 'EXCLUDE'],
+                                    ]
+                            )
                             unstash "whl ${PYTHON_VERSION} ${platform}"
                             catchError(stageResult: 'FAILURE') {
                                 test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}", 15)
