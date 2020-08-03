@@ -956,7 +956,11 @@ pipeline {
                             cleanup{
                                 cleanWs(
                                     deleteDirs: true,
-                                    patterns: [[pattern: 'dist/', type: 'INCLUDE']]
+                                    patterns: [
+                                        [pattern: 'dist/', type: 'INCLUDE'],
+                                        [pattern: '.tox/', type: 'INCLUDE'],
+                                        [pattern: '**/__pycache__', type: 'INCLUDE'],
+                                    ]
                                 )
                             }
                         }
@@ -992,6 +996,7 @@ pipeline {
                                     notFailBuild: true,
                                     patterns: [
                                         [pattern: 'dist/', type: 'INCLUDE'],
+                                        [pattern: '**/__pycache__', type: 'INCLUDE'],
                                         [pattern: '.tox/', type: 'INCLUDE'],
                                     ]
                                 )
