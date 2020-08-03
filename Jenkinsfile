@@ -392,6 +392,29 @@ def CONFIGURATIONS = [
             ]
         ],
     ]
+def testDevpiPackage(devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVersion, pkgSelector){
+    if(isUnix()){
+        sh(
+            label: "Running tests on Packages on DevPi",
+            script: """python --version
+                       devpi use https://devpi.library.illinois.edu --clientdir certs
+                       devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs
+                       devpi use ${devpiIndex} --clientdir certs
+                       devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir certs -v
+                       """
+        )
+    } else {
+        bat(
+            label: "Running tests on Packages on DevPi",
+            script: """python --version
+                       devpi use https://devpi.library.illinois.edu --clientdir certs\\
+                       devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
+                       devpi use ${devpiIndex} --clientdir certs\\
+                       devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir certs\\ -v
+                       """
+        )
+    }
+}
 
 def test_pkg(glob, timeout_time){
 
@@ -1045,28 +1068,7 @@ pipeline {
                                     unstash "DIST-INFO"
                                     script{
                                         def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATA"
-
-                                        if(isUnix()){
-                                            sh(
-                                                label: "Running tests on Packages on DevPi",
-                                                script: """python --version
-                                                           devpi use https://devpi.library.illinois.edu --clientdir certs
-                                                           devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir certs
-                                                           devpi use ${env.devpiStagingIndex} --clientdir certs
-                                                           devpi test --index ${env.devpiStagingIndex} ${props.Name}==${props.Version} -s ${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector[FORMAT]} --clientdir certs -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v
-                                                           """
-                                            )
-                                        } else {
-                                            bat(
-                                                label: "Running tests on Packages on DevPi",
-                                                script: """python --version
-                                                           devpi use https://devpi.library.illinois.edu --clientdir certs\\
-                                                           devpi login %DEVPI_USR% --password %DEVPI_PSW% --clientdir certs\\
-                                                           devpi use ${env.devpiStagingIndex} --clientdir certs\\
-                                                           devpi test --index ${env.devpiStagingIndex} ${props.Name}==${props.Version} -s ${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector[FORMAT]} --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v
-                                                           """
-                                            )
-                                        }
+                                        testDevpiPackage(env.devpiStagingIndex, props.Name, props.Version, CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector[FORMAT])
                                     }
                                 }
                             }
