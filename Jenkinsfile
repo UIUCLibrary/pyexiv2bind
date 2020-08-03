@@ -789,8 +789,6 @@ pipeline {
                 beforeOptions true
             }
             steps{
-                checkout scm
-                sh "git fetch --all"
                 unstash "COVERAGE_REPORT"
                 unstash "PYTEST_REPORT"
 //                 unstash "BANDIT_REPORT"
@@ -920,7 +918,10 @@ pipeline {
                                 build_wheel()
                                 script{
                                     if(PLATFORM == "linux"){
-                                        sh "auditwheel repair ./dist/*.whl -w ./dist"
+                                        sh(
+                                            label: "Converting linux wheel to manylinux",
+                                            script:"auditwheel repair ./dist/*.whl -w ./dist"
+                                        )
                                     }
                                 }
                             }
