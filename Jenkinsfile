@@ -865,6 +865,9 @@ pipeline {
                         )
                     }
                 }
+                environment{
+                    TOXENV="py${PYTHON_VERSION}".replaceAll('\\.', '')
+                }
                 stages{
                     stage("Testing sdist package"){
                         agent {
