@@ -392,6 +392,29 @@ def CONFIGURATIONS = [
             ]
         ],
     ]
+def testDevpiPackage(devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVersion, pkgSelector, toxEnv){
+    if(isUnix()){
+        sh(
+            label: "Running tests on Packages on DevPi",
+            script: """python --version
+                       devpi use https://devpi.library.illinois.edu --clientdir certs
+                       devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs
+                       devpi use ${devpiIndex} --clientdir certs
+                       devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir certs -e ${toxEnv} -v
+                       """
+        )
+    } else {
+        bat(
+            label: "Running tests on Packages on DevPi",
+            script: """python --version
+                       devpi use https://devpi.library.illinois.edu --clientdir certs\\
+                       devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
+                       devpi use ${devpiIndex} --clientdir certs\\
+                       devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir certs\\ -e ${toxEnv} -v
+                       """
+        )
+    }
+}
 
 def test_pkg(glob, timeout_time){
 
@@ -633,13 +656,9 @@ pipeline {
                                equals expected: true, actual: params.TEST_RUN_TOX
                                beforeAgent true
                             }
-                            stages{
-                                stage("Running Tox"){
-                                    steps {
-                                        timeout(15){
-                                            sh "tox -e py -vv"
-                                        }
-                                    }
+                            steps {
+                                timeout(15){
+                                    sh "tox -e py -vv"
                                 }
                             }
                         }
@@ -766,8 +785,6 @@ pipeline {
                 beforeOptions true
             }
             steps{
-                checkout scm
-                sh "git fetch --all"
                 unstash "COVERAGE_REPORT"
                 unstash "PYTEST_REPORT"
 //                 unstash "BANDIT_REPORT"
@@ -865,6 +882,9 @@ pipeline {
                         )
                     }
                 }
+                environment{
+                    TOXENV="py${PYTHON_VERSION}".replaceAll('\\.', '')
+                }
                 stages{
                     stage("Testing sdist package"){
                         agent {
@@ -875,6 +895,16 @@ pipeline {
                              }
                         }
                         steps{
+                            cleanWs(
+                                notFailBuild: true,
+                                deleteDirs: true,
+                                disableDeferredWipeout: true,
+                                patterns: [
+                                        [pattern: '.git/**', type: 'EXCLUDE'],
+                                        [pattern: 'tests/**', type: 'EXCLUDE'],
+                                        [pattern: 'tox.ini', type: 'EXCLUDE'],
+                                    ]
+                            )
                             catchError(stageResult: 'FAILURE') {
                                 unstash "sdist"
                                 test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['sdist']}", 20)
@@ -894,7 +924,10 @@ pipeline {
                                 build_wheel()
                                 script{
                                     if(PLATFORM == "linux"){
-                                        sh "auditwheel repair ./dist/*.whl -w ./dist"
+                                        sh(
+                                            label: "Converting linux wheel to manylinux",
+                                            script:"auditwheel repair ./dist/*.whl -w ./dist"
+                                        )
                                     }
                                 }
                             }
@@ -907,7 +940,6 @@ pipeline {
                                     } else{
                                         stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
                                     }
-
                                     if(!isUnix()){
                                         findFiles(glob: "build/lib/**/*.pyd").each{
                                             bat(
@@ -924,7 +956,11 @@ pipeline {
                             cleanup{
                                 cleanWs(
                                     deleteDirs: true,
-                                    patterns: [[pattern: 'dist/', type: 'INCLUDE']]
+                                    patterns: [
+                                        [pattern: 'dist/', type: 'INCLUDE'],
+                                        [pattern: '.tox/', type: 'INCLUDE'],
+                                        [pattern: '**/__pycache__', type: 'INCLUDE'],
+                                    ]
                                 )
                             }
                         }
@@ -938,6 +974,16 @@ pipeline {
                              }
                         }
                         steps{
+                            cleanWs(
+                                notFailBuild: true,
+                                deleteDirs: true,
+                                disableDeferredWipeout: true,
+                                patterns: [
+                                        [pattern: '.git/**', type: 'EXCLUDE'],
+                                        [pattern: 'tests/**', type: 'EXCLUDE'],
+                                        [pattern: 'tox.ini', type: 'EXCLUDE'],
+                                    ]
+                            )
                             unstash "whl ${PYTHON_VERSION} ${platform}"
                             catchError(stageResult: 'FAILURE') {
                                 test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}", 15)
@@ -950,6 +996,7 @@ pipeline {
                                     notFailBuild: true,
                                     patterns: [
                                         [pattern: 'dist/', type: 'INCLUDE'],
+                                        [pattern: '**/__pycache__', type: 'INCLUDE'],
                                         [pattern: '.tox/', type: 'INCLUDE'],
                                     ]
                                 )
@@ -1042,28 +1089,7 @@ pipeline {
                                     unstash "DIST-INFO"
                                     script{
                                         def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATA"
-
-                                        if(isUnix()){
-                                            sh(
-                                                label: "Running tests on Packages on DevPi",
-                                                script: """python --version
-                                                           devpi use https://devpi.library.illinois.edu --clientdir certs
-                                                           devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir certs
-                                                           devpi use ${env.devpiStagingIndex} --clientdir certs
-                                                           devpi test --index ${env.devpiStagingIndex} ${props.Name}==${props.Version} -s ${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector[FORMAT]} --clientdir certs -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v
-                                                           """
-                                            )
-                                        } else {
-                                            bat(
-                                                label: "Running tests on Packages on DevPi",
-                                                script: """python --version
-                                                           devpi use https://devpi.library.illinois.edu --clientdir certs\\
-                                                           devpi login %DEVPI_USR% --password %DEVPI_PSW% --clientdir certs\\
-                                                           devpi use ${env.devpiStagingIndex} --clientdir certs\\
-                                                           devpi test --index ${env.devpiStagingIndex} ${props.Name}==${props.Version} -s ${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector[FORMAT]} --clientdir certs\\ -e ${CONFIGURATIONS[PYTHON_VERSION].tox_env} -v
-                                                           """
-                                            )
-                                        }
+                                        testDevpiPackage(env.devpiStagingIndex, props.Name, props.Version, CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector[FORMAT],  CONFIGURATIONS[PYTHON_VERSION].tox_env)
                                     }
                                 }
                             }
