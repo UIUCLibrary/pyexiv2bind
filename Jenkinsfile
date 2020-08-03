@@ -929,33 +929,6 @@ pipeline {
                             }
                         }
                     }
-//                     stage("Create manylinux wheel"){
-//                         agent {
-//                           docker {
-//                             image 'quay.io/pypa/manylinux2014_x86_64'
-//                             label 'linux && docker'
-//                           }
-//                         }
-//                         when{
-//                             equals expected: "linux", actual: PLATFORM
-//                             beforeAgent true
-//                         }
-//                         steps{
-//                             unstash "whl ${PYTHON_VERSION} ${PLATFORM}"
-//                             sh "auditwheel repair ./dist/*.whl -w ./dist"
-//                         }
-//                         post{
-//                             always{
-//                                 stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION} manylinux"
-//                             }
-//                             success{
-//                                 archiveArtifacts(
-//                                     artifacts: "dist/*manylinux*.whl",
-//                                     fingerprint: true
-//                                 )
-//                             }
-//                         }
-//                     }
                     stage("Testing Wheel Package"){
                         agent {
                             dockerfile {
