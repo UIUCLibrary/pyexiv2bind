@@ -656,13 +656,9 @@ pipeline {
                                equals expected: true, actual: params.TEST_RUN_TOX
                                beforeAgent true
                             }
-                            stages{
-                                stage("Running Tox"){
-                                    steps {
-                                        timeout(15){
-                                            sh "tox -e py -vv"
-                                        }
-                                    }
+                            steps {
+                                timeout(15){
+                                    sh "tox -e py -vv"
                                 }
                             }
                         }
