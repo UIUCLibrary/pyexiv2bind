@@ -392,6 +392,7 @@ def CONFIGURATIONS = [
             ]
         ],
     ]
+
 def testDevpiPackage(devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVersion, pkgSelector, toxEnv){
     if(isUnix()){
         sh(
@@ -1089,7 +1090,7 @@ pipeline {
                                     unstash "DIST-INFO"
                                     script{
                                         def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATA"
-                                        testDevpiPackage(env.devpiStagingIndex, props.Name, props.Version, CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector[FORMAT],  CONFIGURATIONS[PYTHON_VERSION].tox_env)
+                                        testDevpiPackage(env.devpiStagingIndex, DEVPI_USR, DEVPI_PSW, props.Name, props.Version, CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector[FORMAT],  CONFIGURATIONS[PYTHON_VERSION].tox_env)
                                     }
                                 }
                             }
