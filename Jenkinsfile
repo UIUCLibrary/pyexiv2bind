@@ -392,6 +392,16 @@ def CONFIGURATIONS = [
             ]
         ],
     ]
+def check_dll_deps(path){
+    if(!isUnix()){
+        findFiles(glob: "${path}/**/*.pyd").each{
+            bat(
+                label: "Checking Python extension for dependents",
+                script: "dumpbin /DEPENDENTS ${it.path}"
+            )
+        }
+    }
+}
 
 def testDevpiPackage(devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVersion, pkgSelector, toxEnv){
     if(isUnix()){
@@ -941,15 +951,16 @@ pipeline {
                                     } else{
                                         stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
                                     }
-                                    if(!isUnix()){
-                                        findFiles(glob: "build/lib/**/*.pyd").each{
-                                            bat(
-                                                label: "Checking Python extension for dependents",
-                                                script: "dumpbin /DEPENDENTS ${it.path}"
-                                            )
-                                        }
-                                    }
                                 }
+                                check_dll_deps("build/lib")
+//                                     if(!isUnix()){
+//                                         findFiles(glob: "build/lib/**/*.pyd").each{
+//                                             bat(
+//                                                 label: "Checking Python extension for dependents",
+//                                                 script: "dumpbin /DEPENDENTS ${it.path}"
+//                                             )
+//                                         }
+//                                     }
                             }
                             success{
                                 archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
