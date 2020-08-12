@@ -506,11 +506,13 @@ def deploy_docs(pkgName, prefix){
 def build_wheel(){
     if(isUnix()){
         sh(label: "Building Python Wheel",
-            script: 'python setup.py build -b build/ -j $(grep -c ^processor /proc/cpuinfo) --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist'
+            script: 'python -m pep517.build --binary --out-dir dist/ .'
+//             script: 'python setup.py build -b build/ -j $(grep -c ^processor /proc/cpuinfo) --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist'
         )
     } else{
         bat(label: "Building Python Wheel",
-            script: "python setup.py build -b build/ -j ${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist"
+            script: 'python -m pep517.build --binary --out-dir dist/ .'
+//             script: "python setup.py build -b build/ -j ${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist"
         )
     }
 }
@@ -859,7 +861,7 @@ pipeline {
                 beforeAgent true
             }
             steps {
-               sh "python setup.py sdist -d ./dist --format zip"
+               sh "python -m pep517.build --source --out-dir dist/ ."
             }
             post{
                success{

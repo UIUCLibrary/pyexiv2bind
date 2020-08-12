@@ -26,4 +26,5 @@ RUN declare -A python_versions && \
             ln -sf ${python_versions[$PYTHON_VERSION]}/bin/python /usr/bin/python ; \
             export PATH="${python_versions[$PYTHON_VERSION]}/bin:${PATH}" ; \
         else exit 1; \
-    fi
+    fi && \
+    python -m pip install pep517
