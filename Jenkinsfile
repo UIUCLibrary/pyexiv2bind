@@ -542,9 +542,6 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
 
 pipeline {
     agent none
-    options {
-        buildDiscarder logRotator(artifactDaysToKeepStr: '10', artifactNumToKeepStr: '10', daysToKeepStr: '', numToKeepStr: '')
-    }
     parameters {
         booleanParam(name: "TEST_RUN_TOX", defaultValue: false, description: "Run Tox Tests")
         booleanParam(name: "RUN_CHECKS", defaultValue: true, description: "Run checks on code")
@@ -713,22 +710,20 @@ pipeline {
                                 }
                                 stage("Run Pylint Static Analysis") {
                                     steps{
-//                                         withEnv(['PYLINTHOME=.']) {
-                                            catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
-                                                sh(
-                                                    script: '''mkdir -p logs
-                                                               mkdir -p reports
-                                                               PYLINTHOME=. pylint py3exiv2bind -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
-                                                               ''',
-                                                    label: "Running pylint"
-                                                )
-                                            }
+                                        catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
                                             sh(
-                                                script: 'PYLINTHOME=. pylint  -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt',
-                                                label: "Running pylint for sonarqube",
-                                                returnStatus: true
+                                                script: '''mkdir -p logs
+                                                           mkdir -p reports
+                                                           PYLINTHOME=. pylint py3exiv2bind -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
+                                                           ''',
+                                                label: "Running pylint"
                                             )
-//                                         }
+                                        }
+                                        sh(
+                                            script: 'PYLINTHOME=. pylint  -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt',
+                                            label: "Running pylint for sonarqube",
+                                            returnStatus: true
+                                        )
                                     }
                                     post{
                                         always{
@@ -768,7 +763,7 @@ pipeline {
                     }
                     post{
                         always{
-                            sh "coverage combine && coverage xml -o ./reports/coverage.xml && coverage html -d ./reports/coverage"
+                            sh "coverage combine && coverage xml -o ./reports/coverage.xml"
                             stash includes: "reports/coverage.xml", name: 'COVERAGE_REPORT'
                             publishCoverage(
                                 adapters: [
