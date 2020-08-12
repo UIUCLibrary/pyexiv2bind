@@ -26,7 +26,7 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
 ADD ci/docker/shared/chocolatey/packages.config choco/packages.config
 
 RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
-    C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress choco/packages.config ;`
+    C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress --verbose choco/packages.config ;`
     Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse ; `
     refreshenv ; `
     Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
@@ -54,8 +54,9 @@ RUN certutil -addstore -f root roots.sst ; `
 ARG PYTHON_INSTALLER_URL=https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe
 RUN Invoke-WebRequest $Env:PYTHON_INSTALLER_URL -OutFile c:\python-installer.exe ; `
     Start-Process python-installer.exe -ArgumentList '/quiet InstallAllUsers=1 PrependPath=1' -Wait ; `
-    Remove-Item c:\python-installer.exe -Force
-
+    Remove-Item c:\python-installer.exe -Force ; `
+    $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User') ; `
+    python --version
 
 #ADD ci/docker/windows/build/msvc/Profile.ps1 C:\Windows\System32\WindowsPowerShell\v1.0\Profile.ps1
 ARG PIP_EXTRA_INDEX_URL
@@ -64,7 +65,8 @@ RUN python -m pip install --upgrade pip ; `
     pip install wheel
 
 ADD requirements.txt ci/docker/shared/python/requirements-ci.txt c:/temp/
-RUN pip wheel --wheel-dir=c:\wheels --no-cache `
+ENV PIP_NO_CACHE_DIR=1
+RUN pip wheel --wheel-dir=c:\wheels `
         -r c:/temp/requirements.txt `
         -r c:/temp/requirements-ci.txt ; `
      pip install --no-index --find-links c:\wheels\ `
