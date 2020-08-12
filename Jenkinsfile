@@ -713,22 +713,22 @@ pipeline {
                                 }
                                 stage("Run Pylint Static Analysis") {
                                     steps{
-                                        withEnv(['PYLINTHOME=.']) {
+//                                         withEnv(['PYLINTHOME=.']) {
                                             catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
                                                 sh(
                                                     script: '''mkdir -p logs
                                                                mkdir -p reports
-                                                               pylint py3exiv2bind -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
+                                                               PYLINTHOME=. pylint py3exiv2bind -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
                                                                ''',
                                                     label: "Running pylint"
                                                 )
                                             }
                                             sh(
-                                                script: 'pylint   -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt',
+                                                script: 'PYLINTHOME=. pylint  -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt',
                                                 label: "Running pylint for sonarqube",
                                                 returnStatus: true
                                             )
-                                        }
+//                                         }
                                     }
                                     post{
                                         always{
