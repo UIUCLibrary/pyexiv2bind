@@ -32,12 +32,12 @@ RUN groupadd -g $GROUP_ID user && \
     useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user
 COPY --from=wheel_builder --chown=user:user /wheels /wheels/
 ARG PIP_EXTRA_INDEX_URL
+ENV PIP_NO_CACHE_DIR=1
+ADD requirements.txt ci/docker/shared/python/requirements-ci.txt /requirements/
 RUN python -m pip install pip --upgrade && \
     pip install wheel && \
-    pip install setuptools --upgrade
-
-ADD requirements.txt ci/docker/shared/python/requirements-ci.txt /requirements/
-RUN pip install --no-index --find-links=/wheels/ \
+    pip install setuptools --upgrade && \
+    pip install --no-index --find-links=/wheels/ \
          -r /requirements/requirements.txt \
          -r /requirements/requirements-ci.txt
 
