@@ -785,10 +785,12 @@ pipeline {
                 }
                 stage("Sonarcloud Analysis"){
                     agent {
-                      dockerfile {
-                        filename 'ci/docker/sonarcloud/Dockerfile'
-                        label 'linux && docker'
-                      }
+                        dockerfile {
+                            filename 'ci/docker/linux/test/Dockerfile'
+                            label 'linux && docker'
+                            additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                            args '--mount source=sonar-cache-py3exiv2bind,target=/home/user/.sonar/cache'
+                        }
                     }
                     options{
                         lock("py3exiv2bind-sonarcloud")
