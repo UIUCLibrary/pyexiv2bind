@@ -3,6 +3,7 @@ devpi-client
 flake8
 lxml
 mypy
+pep517
 pytest
 pylint
 pytest-bdd
