@@ -541,6 +541,47 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
          writeJSON file: outputJson, json: outstandingIssues
      }
 }
+def startup(){
+    node('linux && docker') {
+        timeout(2){
+            ws{
+                checkout scm
+                try{
+                    docker.image('python:3.8').inside {
+                        stage("Getting Distribution Info"){
+                            sh(
+                               label: "Running setup.py with dist_info",
+                               script: """python --version
+                                          python setup.py dist_info
+                                       """
+                            )
+                            stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
+                            archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
+                        }
+                    }
+                } finally{
+                    deleteDir()
+                }
+            }
+        }
+    }
+}
+
+def get_props(){
+    stage("Reading Package Metadata"){
+        node() {
+            try{
+                unstash "DIST-INFO"
+                def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATAA"
+                return props
+            } finally {
+                deleteDir()
+            }
+        }
+    }
+}
+startup()
+// def props = get_props()
 
 pipeline {
     agent none
@@ -555,26 +596,26 @@ pipeline {
         booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation")
     }
     stages {
-        stage("Getting Distribution Info"){
-            agent {
-                dockerfile {
-                    filename 'ci/docker/linux/test/Dockerfile'
-                    label 'linux && docker'
-                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
-                }
-            }
-            steps{
-                timeout(3){
-                    sh "python setup.py dist_info"
-                }
-            }
-            post{
-                success{
-                    stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
-                    archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
-                }
-            }
-        }
+//         stage("Getting Distribution Info"){
+//             agent {
+//                 dockerfile {
+//                     filename 'ci/docker/linux/test/Dockerfile'
+//                     label 'linux && docker'
+//                     additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+//                 }
+//             }
+//             steps{
+//                 timeout(3){
+//                     sh "python setup.py dist_info"
+//                 }
+//             }
+//             post{
+//                 success{
+//                     stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
+//                     archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
+//                 }
+//             }
+//         }
         stage("Building") {
             agent {
                 dockerfile {
