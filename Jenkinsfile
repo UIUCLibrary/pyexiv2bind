@@ -552,6 +552,8 @@ def startup(){
                             sh(
                                label: "Running setup.py with dist_info",
                                script: """python --version
+                                          python -m venv
+                                          venv/bin/pip install cmake
                                           python setup.py dist_info
                                        """
                             )
