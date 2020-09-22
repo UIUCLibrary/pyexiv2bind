@@ -650,136 +650,140 @@ pipeline {
                 equals expected: true, actual: params.RUN_CHECKS
             }
             stages{
-                stage("Testing") {
-                    agent {
-                        dockerfile {
-                            filename 'ci/docker/linux/test/Dockerfile'
-                            label 'linux && docker'
-                            additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
-                        }
-                    }
+                stage("Python Testing"){
                     stages{
-                        stage("Setting up Test Env"){
-                            steps{
-                                unstash "built_source"
-                                sh "mkdir -p logs"
-                            }
-                        }
-                        stage("Running Tests"){
-                            parallel {
-                                stage("Run Tox test") {
-                                    when {
-                                       equals expected: true, actual: params.TEST_RUN_TOX
-                                       beforeAgent true
-                                    }
-                                    steps {
-                                        timeout(15){
-                                            sh "tox -e py -vv"
-                                        }
-                                    }
-                                }
-                                stage("Run Doctest Tests"){
-                                    steps {
-                                        sh "sphinx-build docs/source reports/doctest -b doctest -d build/docs/.doctrees --no-color -w logs/doctest_warnings.log"
-                                    }
-                                    post{
-                                        always {
-                                            recordIssues(tools: [sphinxBuild(name: 'Doctest', pattern: 'logs/doctest_warnings.log', id: 'doctest')])
-                                        }
-                                    }
-                                }
-                                stage("MyPy Static Analysis") {
-                                    steps{
-                                        sh(returnStatus: true,
-                                           script: '''stubgen -p py3exiv2bind -o ./mypy_stubs
-                                                      mkdir -p reports/mypy/html
-                                                      MYPYPATH="$WORKSPACE/mypy_stubs" mypy -p py3exiv2bind --html-report reports/mypy/html > logs/mypy.log
-                                                      '''
-                                          )
-                                    }
-                                    post {
-                                        always {
-                                            recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
-                                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
-                                        }
-                                        cleanup{
-                                            cleanWs(
-                                                deleteDirs: true,
-                                                patterns: [[pattern: 'mypy_stubs', type: 'INCLUDE']]
-                                            )
-                                        }
-                                    }
-                                }
-                                stage("Run Pylint Static Analysis") {
-                                    steps{
-                                        catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
-                                            sh(
-                                                script: '''mkdir -p logs
-                                                           mkdir -p reports
-                                                           PYLINTHOME=. pylint py3exiv2bind -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
-                                                           ''',
-                                                label: "Running pylint"
-                                            )
-                                        }
-                                        sh(
-                                            script: 'PYLINTHOME=. pylint  -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt',
-                                            label: "Running pylint for sonarqube",
-                                            returnStatus: true
-                                        )
-                                    }
-                                    post{
-                                        always{
-                                            stash includes: "reports/pylint_issues.txt,reports/pylint.txt", name: 'PYLINT_REPORT'
-                                            recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
-                                        }
-                                    }
-                                }
-                                stage("Flake8") {
-                                  steps{
-                                    timeout(2){
-                                        sh returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ./logs/flake8.log"
-                                    }
-                                  }
-                                  post {
-                                    always {
-                                        stash includes: "logs/flake8.log", name: 'FLAKE8_REPORT'
-                                        recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-                                    }
-                                  }
-                                }
-                                stage("Running Unit Tests"){
-                                    steps{
-                                        timeout(2){
-                                            sh "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=./reports/pytest/junit-pytest.xml"
-                                        }
-                                    }
-                                    post{
-                                        always{
-                                            stash includes: "reports/pytest/junit-pytest.xml", name: 'PYTEST_REPORT'
-                                            junit "reports/pytest/junit-pytest.xml"
-                                        }
-                                    }
+                        stage("Testing") {
+                            agent {
+                                dockerfile {
+                                    filename 'ci/docker/linux/test/Dockerfile'
+                                    label 'linux && docker'
+                                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                 }
                             }
-                        }
-                    }
-                    post{
-                        always{
-                            sh "coverage combine && coverage xml -o ./reports/coverage.xml"
-                            stash includes: "reports/coverage.xml", name: 'COVERAGE_REPORT'
-                            publishCoverage(
-                                adapters: [
-                                    coberturaAdapter('reports/coverage.xml')
-                                ],
-                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
-                            )
-                        }
-                        cleanup{
-                            cleanWs(patterns: [
-                                    [pattern: 'reports/coverage.xml', type: 'INCLUDE'],
-                                    [pattern: 'reports/coverage', type: 'INCLUDE'],
-                                ]
-                            )
+                            stages{
+                                stage("Setting up Test Env"){
+                                    steps{
+                                        unstash "built_source"
+                                        sh "mkdir -p logs"
+                                    }
+                                }
+                                stage("Running Tests"){
+                                    parallel {
+                                        stage("Run Tox test") {
+                                            when {
+                                               equals expected: true, actual: params.TEST_RUN_TOX
+                                               beforeAgent true
+                                            }
+                                            steps {
+                                                timeout(15){
+                                                    sh "tox -e py -vv"
+                                                }
+                                            }
+                                        }
+                                        stage("Run Doctest Tests"){
+                                            steps {
+                                                sh "sphinx-build docs/source reports/doctest -b doctest -d build/docs/.doctrees --no-color -w logs/doctest_warnings.log"
+                                            }
+                                            post{
+                                                always {
+                                                    recordIssues(tools: [sphinxBuild(name: 'Doctest', pattern: 'logs/doctest_warnings.log', id: 'doctest')])
+                                                }
+                                            }
+                                        }
+                                        stage("MyPy Static Analysis") {
+                                            steps{
+                                                sh(returnStatus: true,
+                                                   script: '''stubgen -p py3exiv2bind -o ./mypy_stubs
+                                                              mkdir -p reports/mypy/html
+                                                              MYPYPATH="$WORKSPACE/mypy_stubs" mypy -p py3exiv2bind --html-report reports/mypy/html > logs/mypy.log
+                                                              '''
+                                                  )
+                                            }
+                                            post {
+                                                always {
+                                                    recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
+                                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                                }
+                                                cleanup{
+                                                    cleanWs(
+                                                        deleteDirs: true,
+                                                        patterns: [[pattern: 'mypy_stubs', type: 'INCLUDE']]
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        stage("Run Pylint Static Analysis") {
+                                            steps{
+                                                catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
+                                                    sh(
+                                                        script: '''mkdir -p logs
+                                                                   mkdir -p reports
+                                                                   PYLINTHOME=. pylint py3exiv2bind -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
+                                                                   ''',
+                                                        label: "Running pylint"
+                                                    )
+                                                }
+                                                sh(
+                                                    script: 'PYLINTHOME=. pylint  -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt',
+                                                    label: "Running pylint for sonarqube",
+                                                    returnStatus: true
+                                                )
+                                            }
+                                            post{
+                                                always{
+                                                    stash includes: "reports/pylint_issues.txt,reports/pylint.txt", name: 'PYLINT_REPORT'
+                                                    recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
+                                                }
+                                            }
+                                        }
+                                        stage("Flake8") {
+                                          steps{
+                                            timeout(2){
+                                                sh returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ./logs/flake8.log"
+                                            }
+                                          }
+                                          post {
+                                            always {
+                                                stash includes: "logs/flake8.log", name: 'FLAKE8_REPORT'
+                                                recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+                                            }
+                                          }
+                                        }
+                                        stage("Running Unit Tests"){
+                                            steps{
+                                                timeout(2){
+                                                    sh "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=./reports/pytest/junit-pytest.xml"
+                                                }
+                                            }
+                                            post{
+                                                always{
+                                                    stash includes: "reports/pytest/junit-pytest.xml", name: 'PYTEST_REPORT'
+                                                    junit "reports/pytest/junit-pytest.xml"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            post{
+                                always{
+                                    sh "coverage combine && coverage xml -o ./reports/coverage.xml"
+                                    stash includes: "reports/coverage.xml", name: 'COVERAGE_REPORT'
+                                    publishCoverage(
+                                        adapters: [
+                                            coberturaAdapter('reports/coverage.xml')
+                                        ],
+                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
+                                    )
+                                }
+                                cleanup{
+                                    cleanWs(patterns: [
+                                            [pattern: 'reports/coverage.xml', type: 'INCLUDE'],
+                                            [pattern: 'reports/coverage', type: 'INCLUDE'],
+                                        ]
+                                    )
+                                }
+                            }
                         }
                     }
                 }
