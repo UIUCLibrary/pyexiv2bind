@@ -1,5 +1,5 @@
 FROM ubuntu:20.04
-RUN apt update && apt install -y python3 python3-pip build-essential
+RUN apt update && apt install -y python3 python3-pip build-essential git
 RUN python3 -m pip install conan cmake gcovr
 
 ARG USER_ID=1000
