@@ -14,13 +14,13 @@ option(pyexiv2bind_generate_venv "Generate python virtual environment" ON)
 option(pyexiv2bind_generate_python_bindings "Generate python bindings" ON)
 
 if (pyexiv2bind_build_exiv2)
-    include(cmake/external_exiv22.cmake)
+    include(cmake_scripts/external_exiv22.cmake)
 else ()
     find_package(EXIV2 REQUIRED)
 endif ()
 
 if(pyexiv2bind_generate_venv)
-    include(cmake/build_python_module.cmake)
+    include(cmake_scripts/build_python_module.cmake)
 
     create_venv(
             DESTINATION ${PROJECT_BINARY_DIR}/venv
