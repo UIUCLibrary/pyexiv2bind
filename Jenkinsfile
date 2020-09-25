@@ -571,7 +571,7 @@ def startup(){
 
 
 def test_cpp_code(buildPath){
-    stage("Build CPP"){
+    stage("Build"){
         tee("logs/cmake-build.log"){
             sh(label: "Testing CPP Code",
                script: """conan install . -if ${buildPath}
