@@ -1018,31 +1018,6 @@ pipeline {
                     TOXENV="py${PYTHON_VERSION}".replaceAll('\\.', '')
                 }
                 stages{
-                    stage("Testing sdist package"){
-                        agent {
-                            dockerfile {
-                                filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.filename}"
-                                label "${PLATFORM} && docker"
-                                additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.additionalBuildArgs}"
-                             }
-                        }
-                        steps{
-                            cleanWs(
-                                notFailBuild: true,
-                                deleteDirs: true,
-                                disableDeferredWipeout: true,
-                                patterns: [
-                                        [pattern: '.git/**', type: 'EXCLUDE'],
-                                        [pattern: 'tests/**', type: 'EXCLUDE'],
-                                        [pattern: 'tox.ini', type: 'EXCLUDE'],
-                                    ]
-                            )
-                            catchError(stageResult: 'FAILURE') {
-                                unstash "sdist"
-                                test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['sdist']}", 20)
-                            }
-                        }
-                    }
                     stage("Creating bdist wheel"){
                         agent {
                             dockerfile {
@@ -1098,41 +1073,71 @@ pipeline {
                             }
                         }
                     }
-                    stage("Testing Wheel Package"){
-                        agent {
-                            dockerfile {
-                                filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.filename}"
-                                label "${PLATFORM} && docker"
-                                additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.additionalBuildArgs}"
-                             }
-                        }
-                        steps{
-                            cleanWs(
-                                notFailBuild: true,
-                                deleteDirs: true,
-                                disableDeferredWipeout: true,
-                                patterns: [
-                                        [pattern: '.git/**', type: 'EXCLUDE'],
-                                        [pattern: 'tests/**', type: 'EXCLUDE'],
-                                        [pattern: 'tox.ini', type: 'EXCLUDE'],
-                                    ]
-                            )
-                            unstash "whl ${PYTHON_VERSION} ${platform}"
-                            catchError(stageResult: 'FAILURE') {
-                                test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}", 15)
+                    stage("Testing Python packages"){
+                        stages{
+
+                            stage("Testing Wheel Package"){
+                                agent {
+                                    dockerfile {
+                                        filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.filename}"
+                                        label "${PLATFORM} && docker"
+                                        additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.additionalBuildArgs}"
+                                     }
+                                }
+                                steps{
+                                    cleanWs(
+                                        notFailBuild: true,
+                                        deleteDirs: true,
+                                        disableDeferredWipeout: true,
+                                        patterns: [
+                                                [pattern: '.git/**', type: 'EXCLUDE'],
+                                                [pattern: 'tests/**', type: 'EXCLUDE'],
+                                                [pattern: 'tox.ini', type: 'EXCLUDE'],
+                                            ]
+                                    )
+                                    unstash "whl ${PYTHON_VERSION} ${platform}"
+                                    catchError(stageResult: 'FAILURE') {
+                                        test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}", 15)
+                                    }
+                                }
+                                post{
+                                    cleanup{
+                                        cleanWs(
+                                            deleteDirs: true,
+                                            notFailBuild: true,
+                                            patterns: [
+                                                [pattern: 'dist/', type: 'INCLUDE'],
+                                                [pattern: '**/__pycache__', type: 'INCLUDE'],
+                                                [pattern: '.tox/', type: 'INCLUDE'],
+                                            ]
+                                        )
+                                    }
+                                }
                             }
-                        }
-                        post{
-                            cleanup{
-                                cleanWs(
-                                    deleteDirs: true,
-                                    notFailBuild: true,
-                                    patterns: [
-                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                        [pattern: '**/__pycache__', type: 'INCLUDE'],
-                                        [pattern: '.tox/', type: 'INCLUDE'],
-                                    ]
-                                )
+                            stage("Testing sdist package"){
+                                agent {
+                                    dockerfile {
+                                        filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.filename}"
+                                        label "${PLATFORM} && docker"
+                                        additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.additionalBuildArgs}"
+                                     }
+                                }
+                                steps{
+                                    cleanWs(
+                                        notFailBuild: true,
+                                        deleteDirs: true,
+                                        disableDeferredWipeout: true,
+                                        patterns: [
+                                                [pattern: '.git/**', type: 'EXCLUDE'],
+                                                [pattern: 'tests/**', type: 'EXCLUDE'],
+                                                [pattern: 'tox.ini', type: 'EXCLUDE'],
+                                            ]
+                                    )
+                                    catchError(stageResult: 'FAILURE') {
+                                        unstash "sdist"
+                                        test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['sdist']}", 20)
+                                    }
+                                }
                             }
                         }
                     }
