@@ -1,4 +1,5 @@
 cmake
+conan
 coverage
 devpi-client
 flake8
