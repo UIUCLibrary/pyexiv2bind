@@ -42,7 +42,7 @@ if(pyexiv2bind_generate_venv)
                 ${PROJECT_BINARY_DIR}/venv/bin/
              NO_DEFAULT_PATH
              )
-    add_tox_tests(TOXPATH ${VENV_TOX})
+#    add_tox_tests(TOXPATH ${VENV_TOX})
     add_python_wheel()
 endif(pyexiv2bind_generate_venv)
 
