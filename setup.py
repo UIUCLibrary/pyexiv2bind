@@ -6,7 +6,10 @@ import shutil
 import tarfile
 from typing import List, Optional, Tuple
 from urllib import request
-
+try:
+    import cmake
+except ImportError:
+    print("cmake missing")
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 import platform
@@ -53,11 +56,12 @@ class BuildCMakeExt(build_clib):
         super().finalize_options()
 
         if self.cmake_exec is None:
-
-            raise Exception("CMake path not located on path")
-
-        if not os.path.exists(self.cmake_exec):
-            raise Exception("CMake path not located at {}".format(self.cmake_exec))
+            self.cmake_exec = shutil.which("cmake", path=cmake.CMAKE_BIN_DIR)
+        # if self.cmake_exec is None:
+        #     raise Exception("Unable to locate cmake")
+        #
+        # if not os.path.exists(self.cmake_exec):
+        #     raise Exception("CMake path not located at {}".format(self.cmake_exec))
         self.cmake_api_dir = os.path.join(self.build_temp, "deps", ".cmake", "api", "v1")
 
     @staticmethod

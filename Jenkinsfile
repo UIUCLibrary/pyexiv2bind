@@ -1,5 +1,5 @@
 #!groovy
-@Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
+// @Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
 
 def CONFIGURATIONS = [
         "3.6" : [
@@ -542,30 +542,49 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
      }
 }
 def startup(){
-    node('linux && docker') {
-        timeout(2){
-            ws{
-                checkout scm
-                try{
-                    docker.image('python:3.8').inside {
-                        stage("Getting Distribution Info"){
-                            sh(
-                               label: "Running setup.py with dist_info",
-                               script: """python --version
-                                          python -m venv
-                                          venv/bin/pip install cmake
-                                          python setup.py dist_info
-                                       """
-                            )
-                            stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
-                            archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
-                        }
+    stage("Getting Distribution Info"){
+        node('linux && docker') {
+            docker.image('python:3.8').inside {
+                timeout(2){
+                    try{
+                        checkout scm
+                        sh(
+                           label: "Running setup.py with dist_info",
+                           script: """python --version
+                                      python -m venv venv
+                                      venv/bin/python -m pip install pip --upgrade
+                                      venv/bin/python -m pip install cmake wheel
+                                      venv/bin/python setup.py dist_info
+                                   """
+                        )
+                        stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
+                        archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
+                    } finally{
+                        deleteDir()
                     }
-                } finally{
-                    deleteDir()
                 }
             }
         }
+    }
+}
+
+
+
+def test_cpp_code(buildPath){
+    stage("Build CPP"){
+        tee("logs/cmake-build.log"){
+            sh(label: "Testing CPP Code",
+               script: """conan install . -if ${buildPath}
+                          cmake -B ${buildPath} -Wdev -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
+                          cmake --build ${buildPath} -j \$(grep -c ^processor /proc/cpuinfo)
+                          """
+            )
+        }
+    }
+    stage("CTest"){
+        sh(label: "Running CTest",
+           script: "cd ${buildPath} && ctest --output-on-failure --no-compress-output -T Test"
+        )
     }
 }
 
@@ -574,7 +593,7 @@ def get_props(){
         node() {
             try{
                 unstash "DIST-INFO"
-                def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATAA"
+                def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATA"
                 return props
             } finally {
                 deleteDir()
@@ -583,7 +602,7 @@ def get_props(){
     }
 }
 startup()
-// def props = get_props()
+def props = get_props()
 
 pipeline {
     agent none
@@ -624,6 +643,7 @@ pipeline {
                     filename 'ci/docker/linux/test/Dockerfile'
                     label 'linux && docker'
                     additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+//                     additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                 }
             }
             stages{
@@ -670,8 +690,6 @@ pipeline {
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
                             script{
-                                unstash "DIST-INFO"
-                                def props = readProperties(interpolate: true, file: "py3exiv2bind.dist-info/METADATA")
                                 def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
                                 zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
                                 stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
@@ -693,138 +711,186 @@ pipeline {
                 equals expected: true, actual: params.RUN_CHECKS
             }
             stages{
-                stage("Python Testing"){
+                stage("Testing"){
                     stages{
-                        stage("Testing") {
+                        stage("C++ Testing"){
                             agent {
                                 dockerfile {
-                                    filename 'ci/docker/linux/test/Dockerfile'
+                                    filename 'ci/docker/cpp/Dockerfile'
                                     label 'linux && docker'
-                                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                 }
                             }
+                            steps{
+                                test_cpp_code('build')
+                            }
+//                             post{
+//                                 always{
+//                                     recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
+//                                     sh "mkdir -p reports && gcovr --filter py3exiv2bind --print-summary  --xml -o reports/coverage_cpp.xml"
+//                                     stash(includes: "reports/coverage_cpp.xml", name: "CPP_COVERAGE_REPORT")
+//                                     xunit(
+//                                         testTimeMargin: '3000',
+//                                         thresholdMode: 1,
+//                                         thresholds: [
+//                                             failed(),
+//                                             skipped()
+//                                         ],
+//                                         tools: [
+//                                             CTest(
+//                                                 deleteOutputFiles: true,
+//                                                 failIfNotNew: true,
+//                                                 pattern: "build/Testing/**/*.xml",
+//                                                 skipNoTestFiles: true,
+//                                                 stopProcessingIfError: true
+//                                             )
+//                                         ]
+//                                    )
+//                                 }
+//                                 cleanup{
+//                                     cleanWs(
+//                                         deleteDirs: true,
+//                                         patterns: [
+//                                             [pattern: 'build/', type: 'INCLUDE'],
+//                                         ]
+//                                     )
+//                                 }
+//                             }
+
+                        }
+                        stage("Python Testing"){
                             stages{
-                                stage("Setting up Test Env"){
-                                    steps{
-                                        unstash "built_source"
-                                        sh "mkdir -p logs"
-                                    }
-                                }
-                                stage("Running Tests"){
-                                    parallel {
-                                        stage("Run Tox test") {
-                                            when {
-                                               equals expected: true, actual: params.TEST_RUN_TOX
-                                               beforeAgent true
-                                            }
-                                            steps {
-                                                timeout(15){
-                                                    sh "tox -e py -vv"
-                                                }
-                                            }
-                                        }
-                                        stage("Run Doctest Tests"){
-                                            steps {
-                                                sh "sphinx-build docs/source reports/doctest -b doctest -d build/docs/.doctrees --no-color -w logs/doctest_warnings.log"
-                                            }
-                                            post{
-                                                always {
-                                                    recordIssues(tools: [sphinxBuild(name: 'Doctest', pattern: 'logs/doctest_warnings.log', id: 'doctest')])
-                                                }
-                                            }
-                                        }
-                                        stage("MyPy Static Analysis") {
-                                            steps{
-                                                sh(returnStatus: true,
-                                                   script: '''stubgen -p py3exiv2bind -o ./mypy_stubs
-                                                              mkdir -p reports/mypy/html
-                                                              MYPYPATH="$WORKSPACE/mypy_stubs" mypy -p py3exiv2bind --html-report reports/mypy/html > logs/mypy.log
-                                                              '''
-                                                  )
-                                            }
-                                            post {
-                                                always {
-                                                    recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
-                                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
-                                                }
-                                                cleanup{
-                                                    cleanWs(
-                                                        deleteDirs: true,
-                                                        patterns: [[pattern: 'mypy_stubs', type: 'INCLUDE']]
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        stage("Run Pylint Static Analysis") {
-                                            steps{
-                                                catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
-                                                    sh(
-                                                        script: '''mkdir -p logs
-                                                                   mkdir -p reports
-                                                                   PYLINTHOME=. pylint py3exiv2bind -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
-                                                                   ''',
-                                                        label: "Running pylint"
-                                                    )
-                                                }
-                                                sh(
-                                                    script: 'PYLINTHOME=. pylint  -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt',
-                                                    label: "Running pylint for sonarqube",
-                                                    returnStatus: true
-                                                )
-                                            }
-                                            post{
-                                                always{
-                                                    stash includes: "reports/pylint_issues.txt,reports/pylint.txt", name: 'PYLINT_REPORT'
-                                                    recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
-                                                }
-                                            }
-                                        }
-                                        stage("Flake8") {
-                                          steps{
-                                            timeout(2){
-                                                sh returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ./logs/flake8.log"
-                                            }
-                                          }
-                                          post {
-                                            always {
-                                                stash includes: "logs/flake8.log", name: 'FLAKE8_REPORT'
-                                                recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-                                            }
-                                          }
-                                        }
-                                        stage("Running Unit Tests"){
-                                            steps{
-                                                timeout(2){
-                                                    sh "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=./reports/pytest/junit-pytest.xml"
-                                                }
-                                            }
-                                            post{
-                                                always{
-                                                    stash includes: "reports/pytest/junit-pytest.xml", name: 'PYTEST_REPORT'
-                                                    junit "reports/pytest/junit-pytest.xml"
-                                                }
-                                            }
+                                stage("Testing") {
+                                    agent {
+                                        dockerfile {
+                                            filename 'ci/docker/linux/test/Dockerfile'
+                                            label 'linux && docker'
+                                            additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                         }
                                     }
-                                }
-                            }
-                            post{
-                                always{
-                                    sh "coverage combine && coverage xml -o ./reports/coverage.xml"
-                                    stash includes: "reports/coverage.xml", name: 'COVERAGE_REPORT'
-                                    publishCoverage(
-                                        adapters: [
-                                            coberturaAdapter('reports/coverage.xml')
-                                        ],
-                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
-                                    )
-                                }
-                                cleanup{
-                                    cleanWs(patterns: [
-                                            [pattern: 'reports/coverage.xml', type: 'INCLUDE'],
-                                            [pattern: 'reports/coverage', type: 'INCLUDE'],
-                                        ]
-                                    )
+                                    stages{
+                                        stage("Setting up Test Env"){
+                                            steps{
+                                                unstash "built_source"
+                                                sh "mkdir -p logs"
+                                            }
+                                        }
+                                        stage("Running Tests"){
+                                            parallel {
+                                                stage("Run Tox test") {
+                                                    when {
+                                                       equals expected: true, actual: params.TEST_RUN_TOX
+                                                       beforeAgent true
+                                                    }
+                                                    steps {
+                                                        timeout(15){
+                                                            sh "tox -e py -vv"
+                                                        }
+                                                    }
+                                                }
+                                                stage("Run Doctest Tests"){
+                                                    steps {
+                                                        sh "sphinx-build docs/source reports/doctest -b doctest -d build/docs/.doctrees --no-color -w logs/doctest_warnings.log"
+                                                    }
+                                                    post{
+                                                        always {
+                                                            recordIssues(tools: [sphinxBuild(name: 'Doctest', pattern: 'logs/doctest_warnings.log', id: 'doctest')])
+                                                        }
+                                                    }
+                                                }
+                                                stage("MyPy Static Analysis") {
+                                                    steps{
+                                                        sh(returnStatus: true,
+                                                           script: '''stubgen -p py3exiv2bind -o ./mypy_stubs
+                                                                      mkdir -p reports/mypy/html
+                                                                      MYPYPATH="$WORKSPACE/mypy_stubs" mypy -p py3exiv2bind --html-report reports/mypy/html > logs/mypy.log
+                                                                      '''
+                                                          )
+                                                    }
+                                                    post {
+                                                        always {
+                                                            recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
+                                                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                                        }
+                                                        cleanup{
+                                                            cleanWs(
+                                                                deleteDirs: true,
+                                                                patterns: [[pattern: 'mypy_stubs', type: 'INCLUDE']]
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                                stage("Run Pylint Static Analysis") {
+                                                    steps{
+                                                        catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
+                                                            sh(
+                                                                script: '''mkdir -p logs
+                                                                           mkdir -p reports
+                                                                           PYLINTHOME=. pylint py3exiv2bind -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
+                                                                           ''',
+                                                                label: "Running pylint"
+                                                            )
+                                                        }
+                                                        sh(
+                                                            script: 'PYLINTHOME=. pylint  -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt',
+                                                            label: "Running pylint for sonarqube",
+                                                            returnStatus: true
+                                                        )
+                                                    }
+                                                    post{
+                                                        always{
+                                                            stash includes: "reports/pylint_issues.txt,reports/pylint.txt", name: 'PYLINT_REPORT'
+                                                            recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
+                                                        }
+                                                    }
+                                                }
+                                                stage("Flake8") {
+                                                  steps{
+                                                    timeout(2){
+                                                        sh returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ./logs/flake8.log"
+                                                    }
+                                                  }
+                                                  post {
+                                                    always {
+                                                        stash includes: "logs/flake8.log", name: 'FLAKE8_REPORT'
+                                                        recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+                                                    }
+                                                  }
+                                                }
+                                                stage("Running Unit Tests"){
+                                                    steps{
+                                                        timeout(2){
+                                                            sh "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=./reports/pytest/junit-pytest.xml"
+                                                        }
+                                                    }
+                                                    post{
+                                                        always{
+                                                            stash includes: "reports/pytest/junit-pytest.xml", name: 'PYTEST_REPORT'
+                                                            junit "reports/pytest/junit-pytest.xml"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    post{
+                                        always{
+                                            sh "coverage combine && coverage xml -o ./reports/coverage.xml"
+                                            stash includes: "reports/coverage.xml", name: 'COVERAGE_REPORT'
+                                            publishCoverage(
+                                                adapters: [
+                                                    coberturaAdapter('reports/coverage.xml')
+                                                ],
+                                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
+                                            )
+                                        }
+                                        cleanup{
+                                            cleanWs(patterns: [
+                                                    [pattern: 'reports/coverage.xml', type: 'INCLUDE'],
+                                                    [pattern: 'reports/coverage', type: 'INCLUDE'],
+                                                ]
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1152,9 +1218,7 @@ pipeline {
                                   }
                                 }
                                 steps{
-                                    unstash "DIST-INFO"
                                     script{
-                                        def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATA"
                                         testDevpiPackage(env.devpiStagingIndex, DEVPI_USR, DEVPI_PSW, props.Name, props.Version, CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector[FORMAT],  CONFIGURATIONS[PYTHON_VERSION].tox_env)
                                     }
                                 }
@@ -1189,8 +1253,6 @@ pipeline {
                     }
                     steps {
                         script {
-                            unstash "DIST-INFO"
-                            def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
                             sh(
                                 label: "Pushing to DS_Jenkins/${env.BRANCH_NAME} index",
                                 script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
@@ -1209,8 +1271,6 @@ pipeline {
                         script{
                             docker.build("py3exiv2bind:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
                                 if (!env.TAG_NAME?.trim()){
-                                    unstash "DIST-INFO"
-                                    def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
                                     sh(
                                         label: "Connecting to DevPi Server",
                                         script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
@@ -1228,8 +1288,6 @@ pipeline {
                     node('linux && docker') {
                        script{
                             docker.build("py3exiv2bind:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
-                                unstash "DIST-INFO"
-                                def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
                                 sh(
                                 label: "Connecting to DevPi Server",
                                 script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
