@@ -723,9 +723,9 @@ pipeline {
                             steps{
                                 test_cpp_code('build')
                             }
-//                             post{
-//                                 always{
-//                                     recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
+                            post{
+                                always{
+                                    recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
 //                                     sh "mkdir -p reports && gcovr --filter py3exiv2bind --print-summary  --xml -o reports/coverage_cpp.xml"
 //                                     stash(includes: "reports/coverage_cpp.xml", name: "CPP_COVERAGE_REPORT")
 //                                     xunit(
@@ -745,7 +745,7 @@ pipeline {
 //                                             )
 //                                         ]
 //                                    )
-//                                 }
+                                }
 //                                 cleanup{
 //                                     cleanWs(
 //                                         deleteDirs: true,
@@ -754,7 +754,7 @@ pipeline {
 //                                         ]
 //                                     )
 //                                 }
-//                             }
+                            }
 
                         }
                         stage("Python Testing"){
