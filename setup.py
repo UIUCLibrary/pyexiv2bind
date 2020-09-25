@@ -44,8 +44,7 @@ class BuildCMakeExt(build_clib):
 
     def initialize_options(self):
         super().initialize_options()
-        self.cmake_exec = shutil.which("cmake")
-        pass
+        self.cmake_exec = shutil.which("cmake", path=cmake.CMAKE_BIN_DIR)
 
     def __init__(self, dist):
         super().__init__(dist)
@@ -56,12 +55,11 @@ class BuildCMakeExt(build_clib):
         super().finalize_options()
 
         if self.cmake_exec is None:
-            self.cmake_exec = shutil.which("cmake", path=cmake.CMAKE_BIN_DIR)
-        # if self.cmake_exec is None:
-        #     raise Exception("Unable to locate cmake")
-        #
-        # if not os.path.exists(self.cmake_exec):
-        #     raise Exception("CMake path not located at {}".format(self.cmake_exec))
+
+            raise Exception("CMake path not located on path")
+
+        if not os.path.exists(self.cmake_exec):
+            raise Exception("CMake path not located at {}".format(self.cmake_exec))
         self.cmake_api_dir = os.path.join(self.build_temp, "deps", ".cmake", "api", "v1")
 
     @staticmethod
