@@ -5,7 +5,7 @@ from conans import ConanFile, CMake
 class pyexiv2bind(ConanFile):
     requires = [
         "zlib/1.2.11",
-        "expat/2.2.9"
+        "Expat/2.2.9@pix4d/stable"
     ]
     settings = "os", "arch", "compiler", "build_type"
 
