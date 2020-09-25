@@ -167,7 +167,12 @@ class BuildCMakeExt(build_clib):
         configure_command.append('-DEXIV2_ENABLE_NLS:BOOL=NO')
         configure_command.append('-DEXIV2_ENABLE_VIDEO:BOOL=OFF')
         configure_command.append('-DEXIV2_ENABLE_PNG:BOOL=OFF')
-        configure_command.append('-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=OFF')
+
+        if platform.system() == "Linux":
+            configure_command.append('-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=OFF')
+        else:
+            configure_command.append('-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=ON')
+
         if self.compiler.compiler_type == "unix":
             configure_command.append('-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON')
         configure_command += self.extra_cmake_options
@@ -261,7 +266,8 @@ class BuildCMakeExt(build_clib):
             "--build", dep_build_path,
             # "--target", "exiv2lib"
         ]
-
+        if self.verbose == 1:
+            build_command.append("--verbose")
         self.announce("Building binaries", level=3)
 
         # Add config
@@ -420,9 +426,30 @@ class BuildConan(setuptools.Command):
             options=conan_options,
             # generators=["json"],
             cwd=build_dir,
+            build=['missing'],
             path=os.path.abspath(os.path.dirname(__file__)),
             install_folder=build_dir_full_path
         )
+
+        conanbuildinfotext = os.path.join(build_dir, "conanbuildinfo.txt")
+        assert os.path.exists(conanbuildinfotext)
+
+        text_md = self.get_from_txt(conanbuildinfotext)
+        for path in text_md['include_paths']:
+            if path not in build_ext_cmd.include_dirs:
+                build_ext_cmd.include_dirs.insert(0, path)
+
+        for path in text_md['lib_paths']:
+            if path not in build_ext_cmd.library_dirs:
+                build_ext_cmd.library_dirs.insert(0, path)
+
+        extension_deps = set()
+        for library_deps in [l.libraries for l in  build_ext_cmd.ext_map.values()]:
+            extension_deps = extension_deps.union(library_deps)
+
+        for lib in text_md['libs']:
+            if lib not in build_ext_cmd.libraries and lib not in extension_deps:
+                build_ext_cmd.libraries.insert(0, lib)
 
     def get_import_paths_from_import_manifest(self, manifest_file) -> \
             List[str]:
@@ -486,6 +513,7 @@ class BuildExiv2(BuildCMakeExt):
         super().__init__(dist)
         self.extra_cmake_options += [
             "-Dpyexiv2bind_generate_venv:BOOL=OFF",
+            # "-DBUILD_SHARED_LIBS:BOOL=ON",
             "-DBUILD_SHARED_LIBS:BOOL=OFF",
             # "-DEXIV2_VERSION_TAG:STRING=11e66c6c9eceeddd2263c3591af6317cbd05c1b6",
             # "-DEXIV2_VERSION_TAG:STRING=0.27",
@@ -494,9 +522,14 @@ class BuildExiv2(BuildCMakeExt):
 
     def run(self):
         self.run_command("build_conan")
-        conan_paths = os.path.join(self.build_temp,"conan_paths.cmake")
+        conan_paths = os.path.join(self.build_temp, "conan_paths.cmake")
         self.extra_cmake_options.append('-DCMAKE_TOOLCHAIN_FILE={}'.format(conan_paths))
         super().run()
+
+        ext_command = self.get_finalized_command("build_ext")
+        ext_command.ext_map['py3exiv2bind.core'].libraries.append("xmp")
+        ext_command.ext_map['py3exiv2bind.core'].library_dirs.insert(0, os.path.join(self.build_temp, "lib"))
+
 
 
 # exiv2 = CMakeExtension("exiv2_wrapper")
