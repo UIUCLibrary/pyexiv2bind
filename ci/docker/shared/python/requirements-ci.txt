@@ -1,3 +1,4 @@
+cmake
 coverage
 devpi-client
 flake8
