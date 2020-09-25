@@ -4,12 +4,21 @@ import re
 import sys
 import shutil
 import tarfile
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Iterable, Dict, Any, Union
 from urllib import request
+
+import setuptools
+
 try:
     import cmake
 except ImportError:
     print("cmake missing")
+
+try:
+    from conans.client import conan_api
+except ImportError:
+    print("conan missing")
+
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 import platform
@@ -142,7 +151,7 @@ class BuildCMakeExt(build_clib):
 
         configure_command = [
             self.cmake_exec,
-            f'-H{source_dir}',
+            f'-S{source_dir}',
             f'-B{dep_build_path}'
         ]
 
@@ -150,14 +159,15 @@ class BuildCMakeExt(build_clib):
             f'-DCMAKE_BUILD_TYPE={build_configuration_name}')
         build_ext_cmd = self.get_finalized_command("build_ext")
         configure_command.append(f'-DCMAKE_INSTALL_PREFIX={os.path.abspath(self.build_clib)}')
-        configure_command.append(f'-DPYTHON_EXECUTABLE:FILEPATH={sys.executable}')
-        configure_command.append(f'-DPYTHON_INCLUDE_DIR={sysconfig.get_path("include")}')
-        configure_command.append(f'-DPython_ADDITIONAL_VERSIONS={sys.version_info.major}.{sys.version_info.minor}')
+        # configure_command.append(f'-DPYTHON_EXECUTABLE:FILEPATH={sys.executable}')
+        # configure_command.append(f'-DPYTHON_INCLUDE_DIR={sysconfig.get_path("include")}')
+        # configure_command.append(f'-DPython_ADDITIONAL_VERSIONS={sys.version_info.major}.{sys.version_info.minor}')
 
         configure_command.append('-Dpyexiv2bind_generate_python_bindings:BOOL=NO')
         configure_command.append('-DEXIV2_ENABLE_NLS:BOOL=NO')
         configure_command.append('-DEXIV2_ENABLE_VIDEO:BOOL=OFF')
         configure_command.append('-DEXIV2_ENABLE_PNG:BOOL=OFF')
+        configure_command.append('-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=OFF')
         if self.compiler.compiler_type == "unix":
             configure_command.append('-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON')
         configure_command += self.extra_cmake_options
@@ -313,6 +323,161 @@ class BuildCMakeExt(build_clib):
         else:
             self.compiler.spawn(install_command)
 
+class ConanBuildInfoParser:
+    def __init__(self, fp):
+        self._fp = fp
+
+    def parse(self) -> Dict[str, List[str]]:
+        data = dict()
+        for subject_chunk in self.iter_subject_chunk():
+            subject_title = subject_chunk[0][1:-1]
+
+            data[subject_title] = subject_chunk[1:]
+        return data
+
+    def iter_subject_chunk(self) -> Iterable[Any]:
+        buffer = []
+        for line in self._fp:
+            line = line.strip()
+            if len(line) == 0:
+                continue
+            if line.startswith("[") and line.endswith("]") and len(buffer) > 0:
+                yield buffer
+                buffer.clear()
+            buffer.append(line)
+        yield buffer
+        buffer.clear()
+
+class ConanImportManifestParser:
+    def __init__(self, fp):
+        self._fp = fp
+
+    def parse(self) -> List[str]:
+        libs = set()
+        for line in self._fp:
+            t = line.split()[0].strip(":\n")
+            if os.path.exists(t):
+                libs.add(t)
+        return list(libs)
+
+class BuildConan(setuptools.Command):
+    user_options = [
+        ('conan-exec=', "c", 'conan executable')
+    ]
+
+    description = "Get the required dependencies from a Conan package manager"
+
+    def get_from_txt(self, conanbuildinfo_file):
+        definitions = []
+        include_paths = []
+        lib_paths = []
+        libs = []
+
+        with open(conanbuildinfo_file, "r") as f:
+            parser = ConanBuildInfoParser(f)
+            data = parser.parse()
+            definitions = data['defines']
+            include_paths = data['includedirs']
+            lib_paths = data['libdirs']
+            libs = data['libs']
+
+        return {
+            "definitions": definitions,
+            "include_paths": list(include_paths),
+            "lib_paths": list(lib_paths),
+            "libs": list(libs)
+        }
+
+    def initialize_options(self):
+        pass
+        self.conan_exec = None
+
+    def finalize_options(self):
+        pass
+
+    def getConanBuildInfo(self, root_dir):
+        for root, dirs, files in os.walk(root_dir):
+            for f in files:
+                if f == "conanbuildinfo.json":
+                    return os.path.join(root, f)
+        return None
+
+    def run(self):
+        build_ext_cmd = self.get_finalized_command("build_ext")
+        build_dir = build_ext_cmd.build_temp
+
+        build_dir_full_path = os.path.abspath(build_dir)
+        conan_cache = os.path.join(build_dir, "conan_cache")
+        self.mkpath(conan_cache)
+        self.mkpath(build_dir_full_path)
+        self.mkpath(os.path.join(build_dir_full_path, "lib"))
+
+        conan = conan_api.Conan(cache_folder=os.path.abspath(conan_cache))
+        conan_options = []
+        if platform.system() == "Windows":
+            conan_options.append("*:shared=True")
+        conan.install(
+            options=conan_options,
+            # generators=["json"],
+            cwd=build_dir,
+            path=os.path.abspath(os.path.dirname(__file__)),
+            install_folder=build_dir_full_path
+        )
+
+    def get_import_paths_from_import_manifest(self, manifest_file) -> \
+            List[str]:
+
+        lib_dirs = set()
+        for lib in self.get_libraries_from_import_manifest(manifest_file):
+            lib_dirs.add(os.path.dirname(lib))
+        return list(lib_dirs)
+
+    def get_libraries_from_import_manifest(self, manifest_file) -> List[str]:
+        with open(manifest_file, "r") as f:
+            parser = ConanImportManifestParser(f)
+            return parser.parse()
+
+    def get_from_json(self, conanbuildinfo_file) -> \
+            Dict[str, List[Union[str, Tuple[str, Optional[str]]]]]:
+
+        if conanbuildinfo_file is None:
+            raise FileNotFoundError("Unable to locate conanbuildinfo.json")
+        self.announce(f"Reading from {conanbuildinfo_file}", 5)
+        with open(conanbuildinfo_file) as f:
+            conan_build_info = json.loads(f.read())
+
+        def reduce_dups(a, b, key):
+
+            if isinstance(a, set):
+                collection = a
+            else:
+                collection = set(a[key])
+            collection = collection.union(b[key])
+            return collection
+
+        libs = reduce(lambda a, b: reduce_dups(a, b, key="libs"),
+                      conan_build_info['dependencies'])
+        include_paths = reduce(
+            lambda a, b: reduce_dups(a, b, key="include_paths"),
+            conan_build_info['dependencies'])
+        self.announce(f"Adding [{','.join(include_paths)}] to include path", 4)
+        lib_paths = reduce(lambda a, b: reduce_dups(a, b, key="lib_paths"),
+                           conan_build_info['dependencies'])
+        self.announce(
+            f"Adding [{', '.join(lib_paths)}] to library search path", 4)
+
+        definitions = list()
+        for dep in conan_build_info['dependencies']:
+            definitions += [(d,) for d in dep['defines']]
+
+        return {
+            "definitions": definitions,
+            "include_paths": list(include_paths),
+            "lib_paths": list(lib_paths),
+            "libs": list(libs)
+        }
+
+
 
 class BuildExiv2(BuildCMakeExt):
 
@@ -326,6 +491,12 @@ class BuildExiv2(BuildCMakeExt):
             # "-DEXIV2_VERSION_TAG:STRING=0.27",
             "-DBUILD_TESTING:BOOL=OFF",
         ]
+
+    def run(self):
+        self.run_command("build_conan")
+        conan_paths = os.path.join(self.build_temp,"conan_paths.cmake")
+        self.extra_cmake_options.append('-DCMAKE_TOOLCHAIN_FILE={}'.format(conan_paths))
+        super().run()
 
 
 # exiv2 = CMakeExtension("exiv2_wrapper")
@@ -559,6 +730,7 @@ setup(
     cmdclass={
         "build_ext": BuildPybind11Extension,
         "build_clib": BuildExiv2,
+        "build_conan": BuildConan
     },
 
 )

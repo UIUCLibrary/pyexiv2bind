@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
 project(pyexiv2bind)
 
-find_package(PythonInterp 3)
-find_package(PythonLibs)
+#find_package(PythonInterp 3)
+#find_package(PythonLibs)
+find_package(Python3 COMPONENTS Development)
 
 if (WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_DEBUG_POSTFIX "d")
@@ -13,11 +14,11 @@ option(pyexiv2bind_build_exiv2 "Build Exiv2 from source" ON)
 option(pyexiv2bind_generate_venv "Generate python virtual environment" ON)
 option(pyexiv2bind_generate_python_bindings "Generate python bindings" ON)
 
-if (pyexiv2bind_build_exiv2)
-    include(cmake_scripts/external_exiv22.cmake)
-else ()
-    find_package(EXIV2 REQUIRED)
-endif ()
+include(cmake_scripts/external_exiv22.cmake)
+#if (pyexiv2bind_build_exiv2)
+#else ()
+#    find_package(EXIV2 REQUIRED)
+#endif ()
 
 if(pyexiv2bind_generate_venv)
     include(cmake_scripts/build_python_module.cmake)
