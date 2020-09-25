@@ -1135,7 +1135,7 @@ pipeline {
                                     )
                                     catchError(stageResult: 'FAILURE') {
                                         unstash "sdist"
-                                        test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['sdist']}", 20)
+                                        test_pkg("*.tar.gz", 20)
                                     }
                                 }
                             }
