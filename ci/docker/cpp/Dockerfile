@@ -6,7 +6,8 @@ ARG USER_ID=1000
 ARG GROUP_ID=1000
 RUN groupadd -g $GROUP_ID user && \
     useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user
-
+RUN mkdir -p /home/user/.conan/data && \
+    chown user:user -R /home/user/.conan/
 # FIXME: this should be removed as soon when the CMakeLists.txt no longer creates a python venv
 RUN apt-get install -y python3-venv
 
