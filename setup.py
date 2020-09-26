@@ -794,7 +794,8 @@ class DllHandlerStrategy(AbsSoHandler):
 
     @classmethod
     def is_system_file(cls, filename: str) -> bool:
-        system_libs = [
+        system_libs = ["shell32.dll", "KernelBase.dll", "user32.dll", "ws2_32.dll"]
+        system_libs += [
             i for i in os.listdir(r"c:\Windows\System32") if i.endswith(".dll")
         ]
         system_libs += [i for i in os.listdir(r"c:\Windows\System32") if i.endswith(".dll") and i not in system_libs]
