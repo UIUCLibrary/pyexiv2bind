@@ -1028,6 +1028,9 @@ pipeline {
                                 additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.package.dockerfile.additionalBuildArgs}"
                              }
                         }
+                        options {
+                            warnError('Wheel Building Failed')
+                        }
                         steps{
                             timeout(15){
                                 build_wheel()
@@ -1086,6 +1089,9 @@ pipeline {
                                         additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.additionalBuildArgs}"
                                      }
                                 }
+                                options {
+                                    warnError('Testing Wheel Failed')
+                                }
                                 steps{
                                     cleanWs(
                                         notFailBuild: true,
@@ -1123,6 +1129,9 @@ pipeline {
                                         label "${PLATFORM} && docker"
                                         additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.additionalBuildArgs}"
                                      }
+                                }
+                                options {
+                                    warnError('Testing sdist Failed')
                                 }
                                 steps{
                                     cleanWs(
