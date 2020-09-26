@@ -557,8 +557,6 @@ exiv2 = ("exiv2", {
     "CMAKE_SOURCE_DIR": os.path.dirname(__file__)
 })
 
-DEPS_REGEX = \
-    r'(?<=(Image has the following dependencies:(\n){2}))((?<=\s).*\.dll\n)*'
 
 # def parse_dumpbin_deps(file) -> List[str]:
 #
@@ -831,6 +829,8 @@ class BuildPybind11Extension(build_ext):
         ('pybind11-url=', None,
          "Url to download Pybind11")
     ]
+    DEPS_REGEX = \
+        r'(?<=(Image has the following dependencies:(\n){2}))((?<=\s).*\.dll\n)*'
 
     @classmethod
     def parse_dumpbin_deps(cls, file) -> List[str]:
