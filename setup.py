@@ -643,6 +643,9 @@ class BuildPybind11Extension(build_ext):
     def find_deps(self, lib):
 
         for path in os.environ['path'].split(";"):
+            if not os.path.exists(path):
+                print(f"Skipping {path}, it doesn't exist")
+                continue
             for f in os.scandir(path):
                 if f.name.lower() == lib.lower():
                     return f.path
