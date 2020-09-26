@@ -13,8 +13,8 @@ class pyexiv2bind(ConanFile):
     default_options = {
     }
 
-    # def imports(self):
-    #     self.copy("*.dll", dst="bin", src="bin") # From bin to bin
+    def imports(self):
+        self.copy("*.dll", dst="bin", src="bin") # From bin to bin
     #     self.copy("*.dylib*", dst="bin", src="lib") # From lib to bin
     #
     # def configure(self):
