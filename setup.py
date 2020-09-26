@@ -794,13 +794,13 @@ class DllHandlerStrategy(AbsSoHandler):
 
     @classmethod
     def is_system_file(cls, filename: str) -> bool:
-        system_libs = ["shell32.dll", "KernelBase.dll", "user32.dll", "ws2_32.dll"]
+        system_libs = ["shell32.dll", "kernelbase.dll", "user32.dll", "ws2_32.dll"]
         system_libs += [
-            i for i in os.listdir(r"c:\Windows\System32") if i.endswith(".dll")
+            i.lower() for i in os.listdir(r"c:\Windows\System32") if i.endswith(".dll")
         ]
-        system_libs += [i for i in os.listdir(r"c:\Windows\System32") if i.endswith(".dll") and i not in system_libs]
+        system_libs += [i.lower() for i in os.listdir(r"c:\Windows\System32") if i.endswith(".dll") and i not in system_libs]
 
-        if filename in system_libs:
+        if filename.lower() in system_libs:
             return True
 
         if "api-ms-win-crt" in filename:
