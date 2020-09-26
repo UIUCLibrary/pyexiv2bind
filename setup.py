@@ -420,8 +420,8 @@ class BuildConan(setuptools.Command):
 
         conan = conan_api.Conan(cache_folder=os.path.abspath(conan_cache))
         conan_options = []
-        if platform.system() == "Windows":
-            conan_options.append("*:shared=True")
+        # if platform.system() == "Windows":
+        #     conan_options.append("*:shared=True")
 
         conan.install(
             options=conan_options,
