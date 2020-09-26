@@ -429,7 +429,12 @@ def testDevpiPackage(devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVers
 
 def test_pkg(glob, timeout_time){
 
-    findFiles( glob: glob).each{
+    def pkgFiles = findFiles( glob: glob)
+    if( pkgFiles.size() == 0){
+        error 'No files found'
+    }
+
+    pkgFiles.each{
         timeout(timeout_time){
             if(isUnix()){
                 sh(label: "Testing ${it}",
