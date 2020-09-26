@@ -422,6 +422,7 @@ class BuildConan(setuptools.Command):
         conan_options = []
         if platform.system() == "Windows":
             conan_options.append("*:shared=True")
+
         conan.install(
             options=conan_options,
             # generators=["json"],
@@ -450,6 +451,17 @@ class BuildConan(setuptools.Command):
         for lib in text_md['libs']:
             if lib not in build_ext_cmd.libraries and lib not in extension_deps:
                 build_ext_cmd.libraries.insert(0, lib)
+
+    def find_conan_paths_cmake(self) -> Optional[str]:
+        search_dirs = []
+        build_ext_cmd = self.get_finalized_command("build_ext")
+        search_dirs.append(build_ext_cmd.build_temp)
+        for f in search_dirs:
+            potential = os.path.join(f, "conan_paths.cmake")
+            if os.path.exists(potential):
+                return potential
+        return None
+    # conan_paths = os.path.join(self.build_temp, "conan_paths.cmake")
 
     def get_import_paths_from_import_manifest(self, manifest_file) -> \
             List[str]:
@@ -521,8 +533,12 @@ class BuildExiv2(BuildCMakeExt):
         ]
 
     def run(self):
-        self.run_command("build_conan")
-        conan_paths = os.path.join(self.build_temp, "conan_paths.cmake")
+        conan_cmd = self.get_finalized_command("build_conan")
+        conan_cmd.run()
+        conan_paths = conan_cmd.find_conan_paths_cmake()
+        if conan_paths is None:
+            raise FileNotFoundError("Missing toolchain file conan_paths.cmake")
+        # conan_paths = os.path.join(self.build_temp, "conan_paths.cmake")
         self.extra_cmake_options.append('-DCMAKE_TOOLCHAIN_FILE={}'.format(conan_paths))
         super().run()
 
