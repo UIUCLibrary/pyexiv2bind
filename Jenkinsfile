@@ -431,7 +431,7 @@ def test_pkg(glob, timeout_time){
 
     def pkgFiles = findFiles( glob: glob)
     if( pkgFiles.size() == 0){
-        error 'No files found'
+        error "Unable to check package. No files found with ${glob}"
     }
 
     pkgFiles.each{
