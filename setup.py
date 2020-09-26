@@ -638,9 +638,12 @@ class BuildPybind11Extension(build_ext):
                 dest = os.path.dirname(dll_name)
                 for dep in deps:
                     dll = self.find_deps(dep)
+                    if dll is None:
+                        raise FileNotFoundError(f"Unable to locate required library {dep}")
                     shutil.copy(dll, dest)
 
     def find_deps(self, lib):
+        # TODO replace with one that search directores
 
         for path in os.environ['path'].split(";"):
             if len(path.strip()) == 0:
