@@ -581,19 +581,19 @@ exiv2 = ("exiv2", {
 #     return dlls
 #
 
-def remove_system_dlls(dlls):
-    non_system_dlls = []
-    for dll in dlls:
-        if dll.startswith("api-ms-win-crt"):
-            continue
-
-        if dll.startswith("python"):
-            continue
-
-        if dll == "KERNEL32.dll":
-            continue
-        non_system_dlls.append(dll)
-    return non_system_dlls
+# def remove_system_dlls(dlls):
+#     non_system_dlls = []
+#     for dll in dlls:
+#         if dll.startswith("api-ms-win-crt"):
+#             continue
+#
+#         if dll.startswith("python"):
+#             continue
+#
+#         if dll == "KERNEL32.dll":
+#             continue
+#         non_system_dlls.append(dll)
+#     return non_system_dlls
 
 
 class AbsSoHandler(abc.ABC):
@@ -804,6 +804,9 @@ class DllHandlerStrategy(AbsSoHandler):
         if "api-ms-win-crt" in filename:
             return True
 
+        if "api-ms-win-core" in filename:
+            return True
+
         if filename.startswith("python"):
             return True
         if filename == "KERNEL32.dll":
@@ -839,6 +842,21 @@ class BuildPybind11Extension(build_ext):
     ]
     DEPS_REGEX = \
         r'(?<=(Image has the following dependencies:(\n){2}))((?<=\s).*\.dll\n)*'
+
+    @staticmethod
+    def remove_system_dlls(dlls):
+        non_system_dlls = []
+        for dll in dlls:
+            if dll.startswith("api-ms-win-crt"):
+                continue
+
+            if dll.startswith("python"):
+                continue
+
+            if dll == "KERNEL32.dll":
+                continue
+            non_system_dlls.append(dll)
+        return non_system_dlls
 
     @classmethod
     def parse_dumpbin_deps(cls, file) -> List[str]:
