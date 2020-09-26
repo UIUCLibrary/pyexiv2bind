@@ -1151,7 +1151,7 @@ pipeline {
                                     )
                                     catchError(stageResult: 'FAILURE') {
                                         unstash "sdist"
-                                        test_pkg("*.tar.gz", 20)
+                                        test_pkg("dist/*.zip,dist/*.tar.gz", 20)
                                     }
                                 }
                             }
