@@ -379,6 +379,7 @@ class BuildConan(setuptools.Command):
         definitions = []
         include_paths = []
         lib_paths = []
+        bin_paths = []
         libs = []
 
         with open(conanbuildinfo_file, "r") as f:
@@ -387,13 +388,16 @@ class BuildConan(setuptools.Command):
             definitions = data['defines']
             include_paths = data['includedirs']
             lib_paths = data['libdirs']
+            bin_paths = data['bindirs']
             libs = data['libs']
 
         return {
             "definitions": definitions,
             "include_paths": list(include_paths),
             "lib_paths": list(lib_paths),
-            "libs": list(libs)
+            "bin_paths": list(bin_paths),
+            "libs": list(libs),
+
         }
 
     def initialize_options(self):
@@ -438,9 +442,13 @@ class BuildConan(setuptools.Command):
         assert os.path.exists(conanbuildinfotext)
 
         text_md = self.get_from_txt(conanbuildinfotext)
-        for path in text_md['include_paths']:
-            if path not in build_ext_cmd.include_dirs:
-                build_ext_cmd.include_dirs.insert(0, path)
+        for path in text_md['bin_paths']:
+            if path not in build_ext_cmd.library_dirs:
+                build_ext_cmd.library_dirs.insert(0, path)
+
+        for path in text_md['lib_paths']:
+            if path not in build_ext_cmd.library_dirs:
+                build_ext_cmd.library_dirs.insert(0, path)
 
         for path in text_md['lib_paths']:
             if path not in build_ext_cmd.library_dirs:
