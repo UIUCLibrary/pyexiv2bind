@@ -874,6 +874,7 @@ class BuildPybind11Extension(build_ext):
             dll_name = \
                 os.path.join(self.build_lib, self.get_ext_filename(e.name))
             search_dirs = self.get_library_paths()
+            search_dirs.insert(0, self.build_temp)
             self.resolve_shared_library(dll_name, search_dirs)
             # dll_name = \
             #     os.path.join(self.build_lib, self.get_ext_filename(e.name))
