@@ -511,7 +511,7 @@ def deploy_docs(pkgName, prefix){
 def build_wheel(){
     if(isUnix()){
         sh(label: "Building Python Wheel",
-            script: 'python -m pip wheel -w dist/ -v --no-deps .'
+            script: 'python -m pip wheel -w dist/ --no-deps .'
 //             script: 'python -m pep517.build --binary --out-dir dist/ .'
 //             script: 'python setup.py build -b build/ -j $(grep -c ^processor /proc/cpuinfo) --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist'
         )
