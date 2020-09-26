@@ -808,6 +808,9 @@ class DllHandlerStrategy(AbsSoHandler):
         if "api-ms-win-core" in filename:
             return True
 
+        if "api-ms-win" in filename:
+            return True
+
         if filename.startswith("python"):
             return True
         if filename == "KERNEL32.dll":
