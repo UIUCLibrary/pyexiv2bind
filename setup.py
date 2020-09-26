@@ -560,20 +560,20 @@ exiv2 = ("exiv2", {
 DEPS_REGEX = \
     r'(?<=(Image has the following dependencies:(\n){2}))((?<=\s).*\.dll\n)*'
 
-def parse_dumpbin_deps(file) -> List[str]:
-
-    dlls = []
-    dep_regex = re.compile(DEPS_REGEX)
-
-    with open(file) as f:
-        d = dep_regex.search(f.read())
-        for x in d.group(0).split("\n"):
-            if x.strip() == "":
-                continue
-            dll = x.strip()
-            dlls.append(dll)
-    return dlls
-
+# def parse_dumpbin_deps(file) -> List[str]:
+#
+#     dlls = []
+#     dep_regex = re.compile(DEPS_REGEX)
+#
+#     with open(file) as f:
+#         d = dep_regex.search(f.read())
+#         for x in d.group(0).split("\n"):
+#             if x.strip() == "":
+#                 continue
+#             dll = x.strip()
+#             dlls.append(dll)
+#     return dlls
+#
 
 def remove_system_dlls(dlls):
     non_system_dlls = []
@@ -831,6 +831,21 @@ class BuildPybind11Extension(build_ext):
         ('pybind11-url=', None,
          "Url to download Pybind11")
     ]
+
+    @classmethod
+    def parse_dumpbin_deps(cls, file) -> List[str]:
+
+        dlls = []
+        dep_regex = re.compile(cls.DEPS_REGEX)
+
+        with open(file) as f:
+            d = dep_regex.search(f.read())
+            for x in d.group(0).split("\n"):
+                if x.strip() == "":
+                    continue
+                dll = x.strip()
+                dlls.append(dll)
+        return dlls
 
     def initialize_options(self):
         super().initialize_options()
