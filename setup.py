@@ -795,10 +795,12 @@ class DllHandlerStrategy(AbsSoHandler):
 
     @classmethod
     def is_system_file(cls, filename: str) -> bool:
-        system_libs = [
-            i.lower() for i in os.listdir(r"c:\Windows\System32") if i.endswith(".dll")
+        system_exclusions = [
+            "msvcp140.dll"
         ]
-        system_libs += [i.lower() for i in os.listdir(r"c:\Windows\System32") if i.endswith(".dll") and i not in system_libs]
+        system_libs = [
+            i.lower() for i in os.listdir(r"c:\Windows\System32") if i.endswith(".dll") and i not in system_exclusions
+        ]
 
         if filename.lower() in system_libs:
             return True
