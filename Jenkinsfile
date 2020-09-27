@@ -403,6 +403,14 @@ def check_dll_deps(path){
     }
 }
 
+def test_deps(glob){
+    findFiles(glob: glob).each{
+        if(!isUnix()){
+            bat "tox --installpkg ${it} -e dumpbin"
+        }
+    }
+}
+
 def testDevpiPackage(devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVersion, pkgSelector, toxEnv){
     if(isUnix()){
         sh(
@@ -1059,6 +1067,7 @@ pipeline {
                                     }
                                 }
                                 check_dll_deps("build/lib")
+                                test_deps("dist/*.whl")
 //                                     if(!isUnix()){
 //                                         findFiles(glob: "build/lib/**/*.pyd").each{
 //                                             bat(
