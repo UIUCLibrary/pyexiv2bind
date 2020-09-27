@@ -798,6 +798,7 @@ class DllHandlerStrategy(AbsSoHandler):
         system_exclusions = [
             "msvcp140.dll",
             "vcruntime140.dll",
+            "vcruntime140_1.dll"
         ]
         system_libs = [
             i.lower() for i in os.listdir(r"c:\Windows\System32") if i.endswith(".dll") and i not in system_exclusions
