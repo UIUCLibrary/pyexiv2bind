@@ -766,7 +766,8 @@ class DllHandlerStrategy(AbsSoHandler):
     def resolve(self, search_paths=None) -> None:
         dest = os.path.dirname(self.library_file)
         for dep_name in self.get_deps():
-            if self.is_system_file(os.path.split(dep_name)[-1]):
+            if self.is_system_file(dep_name):
+                self.context.announce(f"Not bundling {dep_name}", 4)
                 continue
             dep = self.find_lib(dep_name, search_paths=search_paths)
             if not dep:
