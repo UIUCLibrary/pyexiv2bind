@@ -796,7 +796,8 @@ class DllHandlerStrategy(AbsSoHandler):
     @classmethod
     def is_system_file(cls, filename: str) -> bool:
         system_exclusions = [
-            "msvcp140.dll"
+            "msvcp140.dll",
+            "vcruntime140.dll",
         ]
         system_libs = [
             i.lower() for i in os.listdir(r"c:\Windows\System32") if i.endswith(".dll") and i not in system_exclusions
