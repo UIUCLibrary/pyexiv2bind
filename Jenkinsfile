@@ -901,7 +901,8 @@ pipeline {
                                             stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
                                             publishCoverage(
                                                 adapters: [
-                                                    coberturaAdapter('reports/coverage*.xml')
+                                                    coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
+
                                                 ],
                                                 sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
                                             )
