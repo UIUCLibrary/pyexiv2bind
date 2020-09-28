@@ -520,14 +520,10 @@ def build_wheel(){
     if(isUnix()){
         sh(label: "Building Python Wheel",
             script: 'python -m pip wheel -w dist/ --no-deps .'
-//             script: 'python -m pep517.build --binary --out-dir dist/ .'
-//             script: 'python setup.py build -b build/ -j $(grep -c ^processor /proc/cpuinfo) --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist'
         )
     } else{
         bat(label: "Building Python Wheel",
             script: 'python -m pip wheel -w dist/ -v --no-deps .'
-//             script: 'python -m pep517.build --binary --out-dir dist/ .'
-//             script: "python setup.py build -b build/ -j ${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist"
         )
     }
 }
@@ -632,33 +628,12 @@ pipeline {
         booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation")
     }
     stages {
-//         stage("Getting Distribution Info"){
-//             agent {
-//                 dockerfile {
-//                     filename 'ci/docker/linux/test/Dockerfile'
-//                     label 'linux && docker'
-//                     additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
-//                 }
-//             }
-//             steps{
-//                 timeout(3){
-//                     sh "python setup.py dist_info"
-//                 }
-//             }
-//             post{
-//                 success{
-//                     stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
-//                     archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
-//                 }
-//             }
-//         }
         stage("Building") {
             agent {
                 dockerfile {
                     filename 'ci/docker/linux/test/Dockerfile'
                     label 'linux && docker'
                     additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
-//                     additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                 }
             }
             stages{
@@ -766,14 +741,14 @@ pipeline {
                                         ]
                                    )
                                 }
-//                                 cleanup{
-//                                     cleanWs(
-//                                         deleteDirs: true,
-//                                         patterns: [
-//                                             [pattern: 'build/', type: 'INCLUDE'],
-//                                         ]
-//                                     )
-//                                 }
+                                cleanup{
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        patterns: [
+                                            [pattern: 'build/', type: 'INCLUDE'],
+                                        ]
+                                    )
+                                }
                             }
 
                         }
@@ -977,31 +952,6 @@ pipeline {
                         unstash "FLAKE8_REPORT"
                         unstash "DIST-INFO"
                         sonarcloudSubmit("py3exiv2bind.dist-info/METADATA", "reports/sonar-report.json", 'sonarcloud-py3exiv2bind')
-        //                 script{
-        //                     withSonarQubeEnv(installationName:"sonarcloud", credentialsId: 'sonarcloud-py3exiv2bind') {
-        //                         unstash "DIST-INFO"
-        //                         def props = readProperties(interpolate: true, file: "py3exiv2bind.dist-info/METADATA")
-        //                         if (env.CHANGE_ID){
-        //                             sh(
-        //                                 label: "Running Sonar Scanner",
-        //                                 script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
-        //                                 )
-        //                         } else {
-        //                             sh(
-        //                                 label: "Running Sonar Scanner",
-        //                                 script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
-        //                                 )
-        //                         }
-        //                     }
-        //                     timeout(time: 1, unit: 'HOURS') {
-        //                         def sonarqube_result = waitForQualityGate(abortPipeline: false)
-        //                         if (sonarqube_result.status != 'OK') {
-        //                             unstable "SonarQube quality gate: ${sonarqube_result.status}"
-        //                         }
-        //                         def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
-        //                         writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
-        //                     }
-        //                 }
                     }
                     post {
                         always{
@@ -1107,15 +1057,6 @@ pipeline {
                                     }
                                 }
                                 check_dll_deps("build/lib")
-//                                 test_deps("dist/*.whl")
-//                                     if(!isUnix()){
-//                                         findFiles(glob: "build/lib/**/*.pyd").each{
-//                                             bat(
-//                                                 label: "Checking Python extension for dependents",
-//                                                 script: "dumpbin /DEPENDENTS ${it.path}"
-//                                             )
-//                                         }
-//                                     }
                             }
                             success{
                                 archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
