@@ -14,7 +14,7 @@ RUN pip wheel --wheel-dir=/wheels \
 
 FROM python:${PYTHON_VERSION}
 
-RUN apt update && apt install -y ninja-build gcovr
+RUN apt update && apt install -y ninja-build
 ARG USER_ID=1000
 ARG GROUP_ID=1000
 
