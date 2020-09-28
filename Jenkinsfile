@@ -935,7 +935,7 @@ pipeline {
                                 sh "ls -la reports/"
                                 publishCoverage(
                                     adapters: [
-                                            coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
+                                            coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
                                         ],
                                     sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
                                )
