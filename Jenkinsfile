@@ -742,7 +742,7 @@ pipeline {
                             post{
                                 always{
                                     recordIssues(
-                                        filters: [excludeFile('build/_deps/**')],
+                                        filters: [excludeFile('build/_deps/*')],
                                         tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']]
                                         )
 
