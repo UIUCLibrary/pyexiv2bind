@@ -674,7 +674,7 @@ pipeline {
                     }
                     post{
                         success{
-                          stash includes: 'py3exiv2bind/**/*.dll,py3exiv2bind/**/*.pyd,py3exiv2bind/**/*.exe,py3exiv2bind/**/*.so,', name: "built_source"
+                          stash includes: 'build/**,py3exiv2bind/**/*.dll,py3exiv2bind/**/*.pyd,py3exiv2bind/**/*.exe,py3exiv2bind/**/*.so,', name: "built_source"
                         }
                         failure{
                             cleanWs(
