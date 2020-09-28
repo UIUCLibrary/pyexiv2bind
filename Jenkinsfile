@@ -899,7 +899,7 @@ pipeline {
                                         checkout scm
                                         unstash "PYTHON_COVERAGE_REPORT"
                                         unstash "CPP_COVERAGE_TRACEFILE"
-                                        sh "gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --html-details coverage.html --xml -o reports/coverage/coverage_cpp.xml"
+                                        sh "gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --print-summary --xml -o reports/coverage/coverage_cpp.xml"
                                         publishCoverage(
                                             adapters: [
                                                     coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
