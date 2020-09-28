@@ -642,14 +642,14 @@ pipeline {
                         timeout(10){
                             sh(label: "Building python package",
                                script: '''mkdir -p logs
-                                          CFLAGS="--coverage" python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
+                                          CXXFLAGS="--coverage" python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
                                           '''
                             )
                         }
                     }
                     post{
                         success{
-                          stash includes: 'build/**,py3exiv2bind/**/*.dll,py3exiv2bind/**/*.pyd,py3exiv2bind/**/*.exe,py3exiv2bind/**/*.so,', name: "built_source"
+                          stash includes: 'build/**/*.gcda,py3exiv2bind/**/*.dll,py3exiv2bind/**/*.pyd,py3exiv2bind/**/*.exe,py3exiv2bind/**/*.so,', name: "built_source"
                         }
                         failure{
                             cleanWs(
