@@ -11,7 +11,7 @@ endif ()
 
 option(pyexiv2bind_build_exiv2 "Build Exiv2 from source" ON)
 #option(pyexiv2bind_png "Build support for the png format" OFF)
-option(pyexiv2bind_generate_venv "Generate python virtual environment" ON)
+#option(pyexiv2bind_generate_venv "Generate python virtual environment" ON)
 option(pyexiv2bind_generate_python_bindings "Generate python bindings" ON)
 
 include(cmake_scripts/external_exiv22.cmake)
@@ -20,32 +20,32 @@ include(cmake_scripts/external_exiv22.cmake)
 #    find_package(EXIV2 REQUIRED)
 #endif ()
 
-if(pyexiv2bind_generate_venv)
-    include(cmake_scripts/build_python_module.cmake)
-
-    create_venv(
-            DESTINATION ${PROJECT_BINARY_DIR}/venv
-            REQUIREMENTS
-                ${PROJECT_SOURCE_DIR}/requirements.txt
-                ${PROJECT_SOURCE_DIR}/requirements-dev.txt
-    )
-
-    add_custom_target(py3exiv2bind
-            DEPENDS ${PYTHON_PACKAGE_SOURCE} core
-            )
-
-#    update_python_binary_dir(${CMAKE_SOURCE_DIR}/py3exiv2bind)
-
-     find_program(VENV_TOX
-             NAMES tox
-             PATHS
-                ${PROJECT_BINARY_DIR}/venv/Scripts/
-                ${PROJECT_BINARY_DIR}/venv/bin/
-             NO_DEFAULT_PATH
-             )
-#    add_tox_tests(TOXPATH ${VENV_TOX})
-    add_python_wheel()
-endif(pyexiv2bind_generate_venv)
+#if(pyexiv2bind_generate_venv)
+#    include(cmake_scripts/build_python_module.cmake)
+#
+#    create_venv(
+#            DESTINATION ${PROJECT_BINARY_DIR}/venv
+#            REQUIREMENTS
+#                ${PROJECT_SOURCE_DIR}/requirements.txt
+#                ${PROJECT_SOURCE_DIR}/requirements-dev.txt
+#    )
+#
+#    add_custom_target(py3exiv2bind
+#            DEPENDS ${PYTHON_PACKAGE_SOURCE} core
+#            )
+#
+##    update_python_binary_dir(${CMAKE_SOURCE_DIR}/py3exiv2bind)
+#
+#     find_program(VENV_TOX
+#             NAMES tox
+#             PATHS
+#                ${PROJECT_BINARY_DIR}/venv/Scripts/
+#                ${PROJECT_BINARY_DIR}/venv/bin/
+#             NO_DEFAULT_PATH
+#             )
+##    add_tox_tests(TOXPATH ${VENV_TOX})
+#    add_python_wheel()
+#endif(pyexiv2bind_generate_venv)
 
 option(pyexiv2bind_build_tests "build test suite" ON)
 include_directories(${CMAKE_BINARY_DIR})
