@@ -667,14 +667,14 @@ pipeline {
                         timeout(10){
                             sh(label: "Building python package",
                                script: '''mkdir -p logs
-                                          python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
+                                          CFLAGS="--coverage" python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
                                           '''
                             )
                         }
                     }
                     post{
                         success{
-                          stash includes: 'py3exiv2bind/**/*.dll,py3exiv2bind/**/*.pyd,py3exiv2bind/**/*.exe,py3exiv2bind/**/*.so,', name: "built_source"
+                          stash includes: 'build/**,py3exiv2bind/**/*.dll,py3exiv2bind/**/*.pyd,py3exiv2bind/**/*.exe,py3exiv2bind/**/*.so,', name: "built_source"
                         }
                         failure{
                             cleanWs(
@@ -896,11 +896,19 @@ pipeline {
                                     }
                                     post{
                                         always{
-                                            sh "coverage combine && coverage xml -o ./reports/coverage.xml"
-                                            stash includes: "reports/coverage.xml", name: 'COVERAGE_REPORT'
+                                            sh(label: 'combining coverage data',
+                                               script: '''coverage combine
+                                                          coverage xml -o ./reports/coverage-python.xml
+                                                          gcovr --filter py3exiv2bind --print-summary --xml -o reports/coverage-c-extension.xml
+                                                          '''
+                                            )
+//                                             sh "coverage combine && coverage xml -o ./reports/coverage.xml"
+//                                             stash includes: "reports/coverage.xml", name: 'COVERAGE_REPORT'
+                                            stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
                                             publishCoverage(
                                                 adapters: [
-                                                    coberturaAdapter('reports/coverage.xml')
+                                                    coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
+
                                                 ],
                                                 sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
                                             )
@@ -936,7 +944,7 @@ pipeline {
                         beforeOptions true
                     }
                     steps{
-                        unstash "COVERAGE_REPORT"
+                        unstash "PYTHON_COVERAGE_REPORT"
                         unstash "PYTEST_REPORT"
         //                 unstash "BANDIT_REPORT"
                         unstash "PYLINT_REPORT"
@@ -1073,7 +1081,7 @@ pipeline {
                                     }
                                 }
                                 check_dll_deps("build/lib")
-                                test_deps("dist/*.whl")
+//                                 test_deps("dist/*.whl")
 //                                     if(!isUnix()){
 //                                         findFiles(glob: "build/lib/**/*.pyd").each{
 //                                             bat(
