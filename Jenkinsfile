@@ -628,7 +628,7 @@ pipeline {
         booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation")
     }
     stages {
-        stage("Building") {
+        stage("Building Documentation"){
             agent {
                 dockerfile {
                     filename 'ci/docker/linux/test/Dockerfile'
@@ -636,63 +636,33 @@ pipeline {
                     additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                 }
             }
-            stages{
-                stage("Building Python Package"){
-                    steps {
-                        timeout(10){
-                            sh(label: "Building python package",
-                               script: '''mkdir -p logs
-                                          python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
-                                          '''
-                            )
-                        }
-                    }
-                    post{
-                        success{
-                          stash includes: 'build/**/*.gcda,py3exiv2bind/**/*.dll,py3exiv2bind/**/*.pyd,py3exiv2bind/**/*.exe,py3exiv2bind/**/*.so,', name: "built_source"
-                        }
-                        failure{
-                            cleanWs(
-                                deleteDirs: true,
-                                patterns: [
-                                    [pattern: 'dist/', type: 'INCLUDE'],
-                                    [pattern: 'build/', type: 'INCLUDE'],
-                                    [pattern: '.eggs/', type: 'INCLUDE'],
-                                    [pattern: 'logs/', type: 'INCLUDE'],
-                                    ]
-                            )
-                        }
-                    }
+            steps {
+                sh(label: "Running Sphinx",
+                   script: '''mkdir -p logs
+                              mkdir -p build/docs/html
+                              python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
+                              python -m sphinx docs/source build/docs/html -b html -d build/docs/.doctrees --no-color -w logs/build_sphinx.log
+                              '''
+                  )
+            }
+            post{
+                always {
+                    recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', id: 'sphinx_build')])
                 }
-                stage("Building Sphinx Documentation"){
-                    steps {
-                        sh(label: "Running Sphinx",
-                           script: '''mkdir -p logs
-                                      mkdir -p build/docs/html
-                                      python -m sphinx docs/source build/docs/html -b html -d build/docs/.doctrees --no-color -w logs/build_sphinx.log
-                                      '''
-                          )
+                success{
+                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+                    script{
+                        def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
+                        zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
                     }
-                    post{
-                        always {
-                            recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', id: 'sphinx_build')])
-                        }
-                        success{
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            script{
-                                def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
-                                zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
-                                stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
-                            }
-                        }
-                        cleanup{
-                            cleanWs(patterns: [
-                                    [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
-                                    [pattern: "dist/*doc.zip,", type: 'INCLUDE']
-                                ]
-                            )
-                        }
-                    }
+                    stash includes: "dist/*.doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
+                }
+                cleanup{
+                    cleanWs(patterns: [
+                            [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
+                            [pattern: "dist/*doc.zip,", type: 'INCLUDE']
+                        ]
+                    )
                 }
             }
         }
