@@ -742,8 +742,14 @@ pipeline {
                             post{
                                 always{
                                     recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
-//                                     sh "mkdir -p reports && gcovr --filter py3exiv2bind --print-summary  --xml -o reports/coverage_cpp.xml"
-//                                     stash(includes: "reports/coverage_cpp.xml", name: "CPP_COVERAGE_REPORT")
+                                    sh "mkdir -p reports && gcovr --filter py3exiv2bind --print-summary  --xml -o reports/coverage_cpp.xml"
+                                    stash(includes: "reports/coverage_cpp.xml", name: "CPP_COVERAGE_REPORT")
+                                    publishCoverage(
+                                        adapters: [
+                                                coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
+                                            ],
+                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+                                   )
 //                                     xunit(
 //                                         testTimeMargin: '3000',
 //                                         thresholdMode: 1,
