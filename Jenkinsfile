@@ -876,16 +876,7 @@ pipeline {
                                                           gcovr --root . --filter py3exiv2bind --print-summary --json -o reports/coverage/coverage-c-extension.json
                                                           '''
                                             )
-//                                             sh "coverage combine && coverage xml -o ./reports/coverage.xml"
-//                                             stash includes: "reports/coverage.xml", name: 'COVERAGE_REPORT'
                                             stash(includes: 'reports/coverage/*.xml,reports/coverage/*.json', name: 'PYTHON_COVERAGE_REPORT')
-//                                             publishCoverage(
-//                                                 adapters: [
-//                                                     coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
-//
-//                                                 ],
-//                                                 sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
-//                                             )
                                         }
                                         cleanup{
                                             cleanWs(
@@ -916,13 +907,6 @@ pipeline {
                                         )
                                     }
                                 }
-//                                 publishCoverage(
-//                                     adapters: [
-//                                             coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
-//                                         ],
-//                                     sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-//                                )
-
                             }
                         }
                     }
