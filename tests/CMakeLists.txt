@@ -26,10 +26,11 @@ if (BUILD_TESTING)
 #            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_common.py ${CMAKE_CURRENT_BINARY_DIR}
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_image.py ${CMAKE_CURRENT_BINARY_DIR}
             )
-
-
-    add_library(Catch INTERFACE)
-    target_include_directories(Catch INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/catch/include)
+    FetchContent_MakeAvailable(libcatch2)
+    FetchContent_GetProperties(libcatch2)
+    list(APPEND CMAKE_MODULE_PATH ${libcatch2_SOURCE_DIR}/contrib/)
+    include(${libcatch2_SOURCE_DIR}/contrib/Catch.cmake)
+    target_include_directories(Catch2 INTERFACE ${libcatch2_SOURCE_DIR}/single_include/catch2)
     add_executable(cpp_tests
             test_basic.cpp
             tests-main.cpp
@@ -45,12 +46,8 @@ if (BUILD_TESTING)
             )
     target_include_directories(cpp_tests PRIVATE ${PROJECT_SOURCE_DIR}/py3exiv2bind/core)
     target_link_libraries(cpp_tests PRIVATE Catch2::Catch2 exiv2lib)
-#    target_link_libraries(cpp_tests PRIVATE Catch glue)
 
-    add_test(NAME cpp_tests
-            COMMAND $<TARGET_FILE:cpp_tests>
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            )
+    catch_discover_tests(cpp_tests TEST_PREFIX ${PROJECT_NAME}::test-pyexiv2::)
     add_executable(test_editing
             test_editing.cpp
 #            test_simple_edit.cpp
