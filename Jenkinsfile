@@ -667,7 +667,7 @@ pipeline {
                         timeout(10){
                             sh(label: "Building python package",
                                script: '''mkdir -p logs
-                                          CFLAGS="--coverage python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
+                                          CFLAGS="--coverage" python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
                                           '''
                             )
                         }
@@ -890,12 +890,12 @@ pipeline {
                                     }
                                     post{
                                         always{
-                                        sh(label: 'combining coverage data',
-                                           script: '''coverage combine
-                                                      coverage xml -o ./reports/coverage-python.xml
-                                                      gcovr --filter py3exiv2bind --print-summary --xml -o reports/coverage-c-extension.xml
-                                                      '''
-                                        )
+                                            sh(label: 'combining coverage data',
+                                               script: '''coverage combine
+                                                          coverage xml -o ./reports/coverage-python.xml
+                                                          gcovr --filter py3exiv2bind --print-summary --xml -o reports/coverage-c-extension.xml
+                                                          '''
+                                            )
 //                                             sh "coverage combine && coverage xml -o ./reports/coverage.xml"
 //                                             stash includes: "reports/coverage.xml", name: 'COVERAGE_REPORT'
                                             stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
