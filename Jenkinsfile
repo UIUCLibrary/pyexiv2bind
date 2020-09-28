@@ -869,11 +869,12 @@ pipeline {
                                     }
                                     post{
                                         always{
+                                            checkout scm
                                             sh(label: 'combining coverage data',
                                                script: '''mkdir -p reports/coverage
                                                           coverage combine
                                                           coverage xml -o ./reports/coverage/coverage-python.xml
-                                                          gcovr --root . --filter py3exiv2bind --print-summary --json -o reports/coverage/coverage-c-extension.json
+                                                          gcovr --root . --filter py3exiv2bind --exclude-directories build/temp/conan_cache --print-summary --json -o reports/coverage/coverage-c-extension.json
                                                           '''
                                             )
                                             stash(includes: 'reports/coverage/*.xml,reports/coverage/*.json', name: 'PYTHON_COVERAGE_REPORT')
