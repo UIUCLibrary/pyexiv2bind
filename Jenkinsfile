@@ -642,7 +642,7 @@ pipeline {
                         timeout(10){
                             sh(label: "Building python package",
                                script: '''mkdir -p logs
-                                          CXXFLAGS="--coverage" python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
+                                          CFLAGS="--coverage" python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
                                           '''
                             )
                         }
