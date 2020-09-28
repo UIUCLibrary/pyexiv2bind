@@ -742,7 +742,7 @@ pipeline {
                             post{
                                 always{
                                     recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
-                                    sh "mkdir -p reports/coverage && gcovr --root . --filter py3exiv2bind --print-summary  --json reports/coverage/coverage_cpp.json"
+                                    sh "mkdir -p reports/coverage && gcovr --root . --filter py3exiv2bind --print-summary  --json -o reports/coverage/coverage_cpp.json"
                                     stash(includes: "reports/coverage/*.json", name: "CPP_COVERAGE_TRACEFILE")
 //                                     publishCoverage(
 //                                         adapters: [
@@ -900,7 +900,7 @@ pipeline {
                                                script: '''mkdir -p reports/coverage
                                                           coverage combine
                                                           coverage xml -o ./reports/coverage/coverage-python.xml
-                                                          gcovr --root . --filter py3exiv2bind --print-summary --json reports/coverage/coverage-c-extension.json
+                                                          gcovr --root . --filter py3exiv2bind --print-summary --json -o reports/coverage/coverage-c-extension.json
                                                           '''
                                             )
 //                                             sh "coverage combine && coverage xml -o ./reports/coverage.xml"
