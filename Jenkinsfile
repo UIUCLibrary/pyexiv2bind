@@ -586,7 +586,7 @@ def test_cpp_code(buildPath){
         tee("logs/cmake-build.log"){
             sh(label: "Building C++ Code",
                script: """conan install . -if ${buildPath}
-                          cmake -B ${buildPath} -Wdev -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -Dpyexiv2bind_generate_venv:BOOL=false -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
+                          cmake -B ${buildPath} -Wdev -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
                           cmake --build ${buildPath} -j \$(grep -c ^processor /proc/cpuinfo)
                           """
             )
