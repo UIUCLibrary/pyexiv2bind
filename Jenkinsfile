@@ -748,29 +748,23 @@ pipeline {
 
                                     sh "mkdir -p reports/coverage && gcovr --root . --filter py3exiv2bind --print-summary  --json -o reports/coverage/coverage_cpp.json"
                                     stash(includes: "reports/coverage/*.json", name: "CPP_COVERAGE_TRACEFILE")
-//                                     publishCoverage(
-//                                         adapters: [
-//                                                 coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
-//                                             ],
-//                                         sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-// \                                   )
-//                                     xunit(
-//                                         testTimeMargin: '3000',
-//                                         thresholdMode: 1,
-//                                         thresholds: [
-//                                             failed(),
-//                                             skipped()
-//                                         ],
-//                                         tools: [
-//                                             CTest(
-//                                                 deleteOutputFiles: true,
-//                                                 failIfNotNew: true,
-//                                                 pattern: "build/Testing/**/*.xml",
-//                                                 skipNoTestFiles: true,
-//                                                 stopProcessingIfError: true
-//                                             )
-//                                         ]
-//                                    )
+                                    xunit(
+                                        testTimeMargin: '3000',
+                                        thresholdMode: 1,
+                                        thresholds: [
+                                            failed(),
+                                            skipped()
+                                        ],
+                                        tools: [
+                                            CTest(
+                                                deleteOutputFiles: true,
+                                                failIfNotNew: true,
+                                                pattern: "build/Testing/**/*.xml",
+                                                skipNoTestFiles: true,
+                                                stopProcessingIfError: true
+                                            )
+                                        ]
+                                   )
                                 }
 //                                 cleanup{
 //                                     cleanWs(
