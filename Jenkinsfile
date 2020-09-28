@@ -742,8 +742,8 @@ pipeline {
                             post{
                                 always{
                                     recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
-                                    sh "mkdir -p reports/coverage && gcovr --root . --filter py3exiv2bind --print-summary  --xml -o reports/coverage/coverage_cpp.xml"
-                                    stash(includes: "reports/coverage/coverage_cpp.xml", name: "CPP_COVERAGE_REPORT")
+                                    sh "mkdir -p reports/coverage && gcovr --root . --filter py3exiv2bind --print-summary  --json reports/coverage/coverage_cpp.json"
+                                    stash(includes: "reports/coverage/*.json", name: "CPP_COVERAGE_TRACEFILE")
 //                                     publishCoverage(
 //                                         adapters: [
 //                                                 coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
@@ -900,12 +900,12 @@ pipeline {
                                                script: '''mkdir -p reports/coverage
                                                           coverage combine
                                                           coverage xml -o ./reports/coverage/coverage-python.xml
-                                                          gcovr --root . --filter py3exiv2bind --print-summary --xml -o reports/coverage/coverage-c-extension.xml
+                                                          gcovr --root . --filter py3exiv2bind --print-summary --json reports/coverage/coverage-c-extension.json
                                                           '''
                                             )
 //                                             sh "coverage combine && coverage xml -o ./reports/coverage.xml"
 //                                             stash includes: "reports/coverage.xml", name: 'COVERAGE_REPORT'
-                                            stash(includes: 'reports/coverage/*.xml', name: 'PYTHON_COVERAGE_REPORT')
+                                            stash(includes: 'reports/coverage/*.xml,reports/coverage/*.json', name: 'PYTHON_COVERAGE_REPORT')
 //                                             publishCoverage(
 //                                                 adapters: [
 //                                                     coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
@@ -931,11 +931,11 @@ pipeline {
                         always{
                             node(""){
                                 unstash "PYTHON_COVERAGE_REPORT"
-                                unstash "CPP_COVERAGE_REPORT"
-                                sh "ls -la reports/coverage/*.xml"
+                                unstash "CPP_COVERAGE_TRACEFILE"
+                                sh "gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --html-details coverage.html --xml -o reports/coverage/coverage_cpp.xml && ls -la reports/coverage/*.xml"
                                 publishCoverage(
                                     adapters: [
-                                            coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/coverage_cpp.xml,reports/coverage/coverage-c-extension.xml'),
+                                            coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/coverage_cpp.xml'),
 //                                             coberturaAdapter(mergeToOneReport: true, path: ''),
                                             coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/coverage-python.xml')
                                         ],
