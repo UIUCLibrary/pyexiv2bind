@@ -749,7 +749,7 @@ pipeline {
 //                                                 coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
 //                                             ],
 //                                         sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-                                   )
+// \                                   )
 //                                     xunit(
 //                                         testTimeMargin: '3000',
 //                                         thresholdMode: 1,
