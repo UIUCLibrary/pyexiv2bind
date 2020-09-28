@@ -642,7 +642,7 @@ pipeline {
                         timeout(10){
                             sh(label: "Building python package",
                                script: '''mkdir -p logs
-                                          CFLAGS="--coverage" python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
+                                          python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
                                           '''
                             )
                         }
@@ -765,8 +765,11 @@ pipeline {
                                     stages{
                                         stage("Setting up Test Env"){
                                             steps{
-                                                unstash "built_source"
-                                                sh "mkdir -p logs"
+                                                sh(label: "Building debug build with coverage data",
+                                                   script: '''CFLAGS="--coverage" python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
+                                                              mkdir -p logs
+                                                              '''
+                                               )
                                             }
                                         }
                                         stage("Running Tests"){
