@@ -1037,7 +1037,7 @@ pipeline {
                     axis {
                         name "PYTHON_VERSION"
                         values(
-                            "3.6",
+//                             "3.6",
                             "3.7",
                             "3.8"
                         )
@@ -1214,8 +1214,8 @@ pipeline {
                     }
                     steps {
                         timeout(5){
-                            unstash "whl 3.6 windows"
-                            unstash "whl 3.6 linux"
+//                             unstash "whl 3.6 windows"
+//                             unstash "whl 3.6 linux"
                             unstash "whl 3.7 windows"
                             unstash "whl 3.7 linux"
                             unstash "whl 3.8 windows"
@@ -1238,7 +1238,7 @@ pipeline {
                         axes {
                             axis {
                                 name 'PYTHON_VERSION'
-                                values '3.6', '3.7', '3.8'
+                                values  '3.7', '3.8'
                             }
                             axis {
                                 name 'FORMAT'
