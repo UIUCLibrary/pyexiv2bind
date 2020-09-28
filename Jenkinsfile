@@ -1067,7 +1067,7 @@ pipeline {
                                     }
                                 }
                                 check_dll_deps("build/lib")
-                                test_deps("dist/*.whl")
+//                                 test_deps("dist/*.whl")
 //                                     if(!isUnix()){
 //                                         findFiles(glob: "build/lib/**/*.pyd").each{
 //                                             bat(
