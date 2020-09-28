@@ -900,7 +900,7 @@ pipeline {
                                                script: '''mkdir -p reports/coverage
                                                           coverage combine
                                                           coverage xml -o ./reports/coverage/coverage-python.xml
-                                                          gcovr --filter py3exiv2bind --print-summary --xml -o reports/coverage//coverage-c-extension.xml
+                                                          gcovr --filter py3exiv2bind --print-summary --xml -o reports/coverage/coverage-c-extension.xml
                                                           '''
                                             )
 //                                             sh "coverage combine && coverage xml -o ./reports/coverage.xml"
@@ -930,15 +930,23 @@ pipeline {
                     post{
                         always{
                             node(""){
-//                                 unstash "PYTHON_COVERAGE_REPORT"
+                                unstash "PYTHON_COVERAGE_REPORT"
                                 unstash "CPP_COVERAGE_REPORT"
                                 sh "ls -la reports/coverage/*.xml"
                                 publishCoverage(
                                     adapters: [
-                                            coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
+                                            coberturaAdapter('reports/coverage/coverage_cpp.xml'),
+                                            coberturaAdapter('reports/coverage/coverage-c-extension.xml'),
+                                            coberturaAdapter('reports/coverage/coverage-python.xml')
                                         ],
-                                    sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-                               )
+                                    sourceFileResolver: sourceFiles('NEVER_STORE')
+                                )
+//                                 publishCoverage(
+//                                     adapters: [
+//                                             coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
+//                                         ],
+//                                     sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+//                                )
 
                             }
                         }
