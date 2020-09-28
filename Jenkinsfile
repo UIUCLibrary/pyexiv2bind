@@ -744,11 +744,11 @@ pipeline {
                                     recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
                                     sh "mkdir -p reports && gcovr --filter py3exiv2bind --print-summary  --xml -o reports/coverage_cpp.xml"
                                     stash(includes: "reports/coverage_cpp.xml", name: "CPP_COVERAGE_REPORT")
-                                    publishCoverage(
-                                        adapters: [
-                                                coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
-                                            ],
-                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+//                                     publishCoverage(
+//                                         adapters: [
+//                                                 coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
+//                                             ],
+//                                         sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
                                    )
 //                                     xunit(
 //                                         testTimeMargin: '3000',
@@ -905,13 +905,13 @@ pipeline {
 //                                             sh "coverage combine && coverage xml -o ./reports/coverage.xml"
 //                                             stash includes: "reports/coverage.xml", name: 'COVERAGE_REPORT'
                                             stash(includes: 'reports/coverage*.xml', name: 'PYTHON_COVERAGE_REPORT')
-                                            publishCoverage(
-                                                adapters: [
-                                                    coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
-
-                                                ],
-                                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
-                                            )
+//                                             publishCoverage(
+//                                                 adapters: [
+//                                                     coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
+//
+//                                                 ],
+//                                                 sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
+//                                             )
                                         }
                                         cleanup{
                                             cleanWs(patterns: [
@@ -922,6 +922,21 @@ pipeline {
                                         }
                                     }
                                 }
+                            }
+                        }
+                    }
+                    post{
+                        always{
+                            node(""){
+                                unstash "PYTHON_COVERAGE_REPORT"
+                                unstash "CPP_COVERAGE_REPORT"
+                                publishCoverage(
+                                    adapters: [
+                                            coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
+                                        ],
+                                    sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+                               )
+
                             }
                         }
                     }
