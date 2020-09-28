@@ -890,28 +890,42 @@ pipeline {
                                 }
                             }
                         }
-                    }
-                    post{
-                        always{
-                            node("linux && docker"){
-                                script{
-                                    docker.build("py3exiv2bind:util",'-f ci/docker/linux/test/Dockerfile --build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
-                                        checkout scm
-                                        unstash "PYTHON_COVERAGE_REPORT"
-                                        unstash "CPP_COVERAGE_TRACEFILE"
-                                        sh "gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --print-summary --xml -o reports/coverage/coverage_cpp.xml"
-                                        publishCoverage(
-                                            adapters: [
-                                                    coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
-                                                ],
-                                            sourceFileResolver: sourceFiles('NEVER_STORE')
-                                        )
-                                    }
-                                }
+                        stage("Report Coverage"){
+                            steps{
+                                unstash "PYTHON_COVERAGE_REPORT"
+                                unstash "CPP_COVERAGE_TRACEFILE"
+                                sh "gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --print-summary --xml -o reports/coverage/coverage_cpp.xml"
+                                publishCoverage(
+                                    adapters: [
+                                            coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
+                                        ],
+                                    sourceFileResolver: sourceFiles('NEVER_STORE')
+                                )
                             }
                         }
                     }
+//                     post{
+//                         always{
+//                             node("linux && docker"){
+//                                 script{
+//                                     docker.build("py3exiv2bind:util",'-f ci/docker/linux/test/Dockerfile --build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+//                                         checkout scm
+//                                         unstash "PYTHON_COVERAGE_REPORT"
+//                                         unstash "CPP_COVERAGE_TRACEFILE"
+//                                         sh "gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --print-summary --xml -o reports/coverage/coverage_cpp.xml"
+//                                         publishCoverage(
+//                                             adapters: [
+//                                                     coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
+//                                                 ],
+//                                             sourceFileResolver: sourceFiles('NEVER_STORE')
+//                                         )
+//                                     }
+//                                 }
+//                             }
+//                         }
+//                     }
                 }
+
                 stage("Sonarcloud Analysis"){
                     agent {
                         dockerfile {
