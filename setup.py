@@ -534,11 +534,7 @@ class BuildExiv2(BuildCMakeExt):
 
         super().__init__(dist)
         self.extra_cmake_options += [
-            "-Dpyexiv2bind_generate_venv:BOOL=OFF",
-            # "-DBUILD_SHARED_LIBS:BOOL=ON",
             "-DBUILD_SHARED_LIBS:BOOL=OFF",
-            # "-DEXIV2_VERSION_TAG:STRING=11e66c6c9eceeddd2263c3591af6317cbd05c1b6",
-            # "-DEXIV2_VERSION_TAG:STRING=0.27",
             "-DBUILD_TESTING:BOOL=OFF",
         ]
 
@@ -548,7 +544,6 @@ class BuildExiv2(BuildCMakeExt):
         conan_paths = conan_cmd.find_conan_paths_cmake()
         if conan_paths is None:
             raise FileNotFoundError("Missing toolchain file conan_paths.cmake")
-        # conan_paths = os.path.join(self.build_temp, "conan_paths.cmake")
         self.extra_cmake_options.append('-DCMAKE_TOOLCHAIN_FILE={}'.format(conan_paths))
         super().run()
 
@@ -557,43 +552,10 @@ class BuildExiv2(BuildCMakeExt):
         ext_command.ext_map['py3exiv2bind.core'].library_dirs.insert(0, os.path.join(self.build_temp, "lib"))
 
 
-
-# exiv2 = CMakeExtension("exiv2_wrapper")
-
 exiv2 = ("exiv2", {
     "sources": [],
     "CMAKE_SOURCE_DIR": os.path.dirname(__file__)
 })
-
-
-# def parse_dumpbin_deps(file) -> List[str]:
-#
-#     dlls = []
-#     dep_regex = re.compile(DEPS_REGEX)
-#
-#     with open(file) as f:
-#         d = dep_regex.search(f.read())
-#         for x in d.group(0).split("\n"):
-#             if x.strip() == "":
-#                 continue
-#             dll = x.strip()
-#             dlls.append(dll)
-#     return dlls
-#
-
-# def remove_system_dlls(dlls):
-#     non_system_dlls = []
-#     for dll in dlls:
-#         if dll.startswith("api-ms-win-crt"):
-#             continue
-#
-#         if dll.startswith("python"):
-#             continue
-#
-#         if dll == "KERNEL32.dll":
-#             continue
-#         non_system_dlls.append(dll)
-#     return non_system_dlls
 
 
 class AbsSoHandler(abc.ABC):
@@ -697,11 +659,11 @@ class MacholibStrategy(AbsSoHandler):
         d.run(platfiles=libraries, contents="@rpath/..")
 
 
-
 class AudidWheelsHandlerStrategy(AbsSoHandler):
 
     def get_deps(self) -> List[str]:
         return []
+
 
 def get_so_handler(shared_library: str, context,
                    system_name: str = None) -> AbsSoHandler:
@@ -911,31 +873,7 @@ class BuildPybind11Extension(build_ext):
             search_dirs = self.get_library_paths()
             search_dirs.insert(0, self.build_temp)
             self.resolve_shared_library(dll_name, search_dirs)
-            # dll_name = \
-            #     os.path.join(self.build_lib, self.get_ext_filename(e.name))
 
-            #
-            # output_file = os.path.join(self.build_temp, f'{e.name}.dependents')
-            # if self.compiler.compiler_type != "unix":
-            #     if not self.compiler.initialized:
-            #         self.compiler.initialize()
-            #     self.compiler.spawn(
-            #         [
-            #             'dumpbin',
-            #             '/dependents',
-            #             dll_name,
-            #             f'/out:{output_file}'
-            #         ]
-            #     )
-            #     deps = parse_dumpbin_deps(file=output_file)
-            #     deps = remove_system_dlls(deps)
-            #     dest = os.path.dirname(dll_name)
-            #     for dep in deps:
-            #
-            #         dll = self.find_deps(dep)
-            #         if dll is None:
-            #             raise FileNotFoundError(f"Unable to locate required library {dep}")
-            #         shutil.copy(dll, dest)
     def get_library_paths(self):
         search_paths = []
         library_search_paths = \
@@ -986,11 +924,6 @@ class BuildPybind11Extension(build_ext):
         else:
             ext.extra_compile_args.append("/std:c++14")
 
-            # self.compiler.add_library("shell32")
-            # build_ext_cmd.libraries += extension[1]['libraries']
-            # ext.libraries.append("shell32")
-
-
         if len(missing) > 0:
             self.announce(f"missing required deps [{', '.join(missing)}]. "
                           f"Trying to build them", 5)
@@ -1027,11 +960,7 @@ class BuildPybind11Extension(build_ext):
                     if lib in deps:
                         deps.remove(lib)
                     new_libs += deps
-                # ext.extra_compile_args += flags
         ext.libraries += new_libs
-
-        # remove the duplicated
-        # ext.libraries = list(set(ext.libraries))
 
         super().build_extension(ext)
 
@@ -1080,16 +1009,11 @@ exiv2_extension = Extension(
     ],
     libraries=[
         "exiv2",
-        # "xmp",
-        # "expat",
-        # "iconv"
-        # "z",
     ],
     include_dirs=[
         "py3exiv2bind/core/glue"
     ],
     language='c++',
-    # extra_compile_args=['-std=c++14'],
 
 )
 
