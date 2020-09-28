@@ -941,9 +941,7 @@ pipeline {
                                         sh "gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --html-details coverage.html --xml -o reports/coverage/coverage_cpp.xml && ls -la reports/coverage/*.xml"
                                         publishCoverage(
                                             adapters: [
-                                                    coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/coverage_cpp.xml'),
-        //                                             coberturaAdapter(mergeToOneReport: true, path: ''),
-                                                    coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/coverage-python.xml')
+                                                    coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
                                                 ],
                                             sourceFileResolver: sourceFiles('NEVER_STORE')
                                         )
