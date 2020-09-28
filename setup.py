@@ -1,6 +1,7 @@
 import abc
 import json
 import os
+import re
 import sys
 import shutil
 import tarfile
@@ -782,20 +783,20 @@ class DllHandlerStrategy(AbsSoHandler):
             )
             return DllHandlerStrategy.parse_dumpbin_deps(file=output_file)
 
-    # @classmethod
-    # def parse_dumpbin_deps(cls, file) -> List[str]:
-    #
-    #     dlls = []
-    #     dep_regex = re.compile(cls.DEPS_REGEX)
-    #
-    #     with open(file) as f:
-    #         d = dep_regex.search(f.read())
-    #         for x in d.group(0).split("\n"):
-    #             if x.strip() == "":
-    #                 continue
-    #             dll = x.strip()
-    #             dlls.append(dll)
-    #     return dlls
+    @classmethod
+    def parse_dumpbin_deps(cls, file) -> List[str]:
+
+        dlls = []
+        dep_regex = re.compile(cls.DEPS_REGEX)
+
+        with open(file) as f:
+            d = dep_regex.search(f.read())
+            for x in d.group(0).split("\n"):
+                if x.strip() == "":
+                    continue
+                dll = x.strip()
+                dlls.append(dll)
+        return dlls
 
 
 class BuildPybind11Extension(build_ext):
