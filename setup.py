@@ -1,7 +1,6 @@
 import abc
 import json
 import os
-import re
 import sys
 import shutil
 import tarfile
@@ -25,15 +24,13 @@ from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 import platform
 import subprocess
-import sysconfig
 from setuptools.command.build_clib import build_clib
 from distutils.sysconfig import customize_compiler
-from ctypes.util import find_library
 from functools import reduce
-# CMAKE = shutil.which("cmake")
 PACKAGE_NAME = "py3exiv2bind"
 PYBIND11_DEFAULT_URL = \
     "https://github.com/pybind/pybind11/archive/v2.5.0.tar.gz"
+
 
 class CMakeExtension(Extension):
     def __init__(self, name, sources=None, language=None):
@@ -43,9 +40,13 @@ class CMakeExtension(Extension):
                          language=language)
 
 
-class BuildCMakeExt(build_clib):
+class BuildCMakeLib(build_clib):
     user_options = [
-        ('cmake-exec=', None, "Location of CMake. Defaults of CMake located on path")
+        (
+            'cmake-exec=',
+            None,
+            "Location of CMake. Defaults of CMake located on path"
+        )
     ]
 
     @property
@@ -67,11 +68,15 @@ class BuildCMakeExt(build_clib):
 
         if self.cmake_exec is None:
 
-            raise Exception("CMake path not located on path")
+            raise FileNotFoundError("CMake path not located on path")
 
         if not os.path.exists(self.cmake_exec):
-            raise Exception("CMake path not located at {}".format(self.cmake_exec))
-        self.cmake_api_dir = os.path.join(self.build_temp, "deps", ".cmake", "api", "v1")
+            raise FileNotFoundError(
+                "CMake path not located at {}".format(self.cmake_exec)
+            )
+
+        self.cmake_api_dir = \
+            os.path.join(self.build_temp, "deps", ".cmake", "api", "v1")
 
     @staticmethod
     def get_build_generator_name():
@@ -116,7 +121,7 @@ class BuildCMakeExt(build_clib):
             self.compiler.set_include_dirs(self.include_dirs)
         if self.define is not None:
             # 'define' option is a list of (name,value) tuples
-            for (name,value) in self.define:
+            for (name, value) in self.define:
                 self.compiler.define_macro(name, value)
         if self.undef is not None:
             for macro in self.undef:
@@ -124,7 +129,6 @@ class BuildCMakeExt(build_clib):
 
         for library in self.libraries:
             self.build_extension(library)
-
 
     def build_extension(self, ext):
         if self.compiler.compiler_type != "unix":
@@ -148,7 +152,11 @@ class BuildCMakeExt(build_clib):
             build_configuration_name = 'Release'
 
         self.mkpath(os.path.join(self.cmake_api_dir, "query"))
-        with open(os.path.join(self.cmake_api_dir, "query", "codemodel-v2"), "w"):
+
+        codemodel_file = \
+            os.path.join(self.cmake_api_dir, "query", "codemodel-v2")
+
+        with open(codemodel_file, "w"):
             pass
 
         configure_command = [
@@ -159,13 +167,16 @@ class BuildCMakeExt(build_clib):
 
         configure_command.append(
             f'-DCMAKE_BUILD_TYPE={build_configuration_name}')
-        build_ext_cmd = self.get_finalized_command("build_ext")
-        configure_command.append(f'-DCMAKE_INSTALL_PREFIX={os.path.abspath(self.build_clib)}')
-        # configure_command.append(f'-DPYTHON_EXECUTABLE:FILEPATH={sys.executable}')
-        # configure_command.append(f'-DPYTHON_INCLUDE_DIR={sysconfig.get_path("include")}')
-        # configure_command.append(f'-DPython_ADDITIONAL_VERSIONS={sys.version_info.major}.{sys.version_info.minor}')
+        # build_ext_cmd = self.get_finalized_command("build_ext")
 
-        configure_command.append('-Dpyexiv2bind_generate_python_bindings:BOOL=NO')
+        configure_command.append(
+            f'-DCMAKE_INSTALL_PREFIX={os.path.abspath(self.build_clib)}'
+        )
+
+        configure_command.append(
+            '-Dpyexiv2bind_generate_python_bindings:BOOL=NO'
+        )
+
         configure_command.append('-DEXIV2_ENABLE_NLS:BOOL=NO')
         configure_command.append('-DEXIV2_ENABLE_VIDEO:BOOL=OFF')
         configure_command.append('-DEXIV2_ENABLE_PNG:BOOL=OFF')
@@ -176,7 +187,10 @@ class BuildCMakeExt(build_clib):
             configure_command.append('-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=ON')
 
         if self.compiler.compiler_type == "unix":
-            configure_command.append('-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON')
+            configure_command.append(
+                '-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON'
+            )
+
         configure_command += self.extra_cmake_options
 
         if sys.gettrace():
@@ -185,24 +199,6 @@ class BuildCMakeExt(build_clib):
         else:
             self.compiler.spawn(configure_command)
 
-        # if target_json is not None:
-        #     with open(target_json) as f:
-        #         t = json.load(f)
-        #         cf = t['link']['commandFragments']
-        #         x = list(
-        #             map(lambda i: os.path.splitext(i)[0],
-        #                 map(lambda i: os.path.split(i)[-1],
-        #                     map(lambda z: z['fragment'],
-        #                         filter(lambda fragment: fragment['role'] == "libraries", cf)
-        #                         )
-        #                     )
-        #                 )
-        #         )
-        #         if self.compiler.compiler_type == "unix":
-        #             o = list(map(lambda i: i.replace("lib","") if i.startswith("lib") else i, x))
-        #             print(o)
-                # print(x)
-        #         pass
     def find_target(self, target_name: str, build_type=None) -> Optional[str]:
         for f in os.scandir(os.path.join(self.cmake_api_dir, "reply")):
             if f"target-{target_name}-" not in f.name:
@@ -214,7 +210,9 @@ class BuildCMakeExt(build_clib):
 
         return None
 
-    def find_dep_libs_from_cmake(self, ext, target_json, remove_prefix) -> Optional[Tuple[list, list]]:
+    def find_dep_libs_from_cmake(self, ext, target_json,
+                                 remove_prefix) -> Optional[Tuple[list, list]]:
+
         if target_json is not None:
             with open(target_json) as f:
                 t = json.load(f)
@@ -227,10 +225,10 @@ class BuildCMakeExt(build_clib):
                     )['fragment'].split()
 
                     deps = map(lambda i: os.path.split(i)[-1],
-                                map(lambda z: z['fragment'],
-                                    filter(lambda fragment: fragment['role'] == "libraries", cf)
-                                    )
-                                )
+                               map(lambda z: z['fragment'],
+                                   filter(lambda fragment: fragment['role'] == "libraries", cf)
+                                   )
+                               )
 
                     splitted = []
                     for d in deps:
@@ -256,7 +254,7 @@ class BuildCMakeExt(build_clib):
                             prefix_removed.append(d)
                     deps = map(lambda i: os.path.splitext(i)[0], prefix_removed)
                     if remove_prefix:
-                        return list(map(lambda i: i.replace("lib","") if i.startswith("lib") else i, deps)), flags
+                        return list(map(lambda i: i.replace("lib", "") if i.startswith("lib") else i, deps)), flags
                     return list(deps), flags
             return [], []
         return None
@@ -290,12 +288,6 @@ class BuildCMakeExt(build_clib):
             subprocess.check_call(build_command)
         else:
             self.compiler.spawn(build_command)
-        # target_json = self.find_target(extension[0])
-        # deps = self.find_dep_libs_from_cmake(target_json)
-        # if deps is not None:
-        #     deps.remove(extension[0])
-        #     extension[1]['libraries'] = deps
-
 
     def build_install_cmake(self, extension: Extension):
         dep_build_path = os.path.join(self.build_temp, "deps")
@@ -321,8 +313,16 @@ class BuildCMakeExt(build_clib):
         if "Visual Studio" in self.get_build_generator_name():
             install_command += ["--", "/NOLOGO", "/verbosity:quiet"]
 
-        build_ext_cmd.include_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "include")))
-        build_ext_cmd.library_dirs.insert(0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "lib")))
+        build_ext_cmd.include_dirs.insert(
+            0,
+            os.path.abspath(
+                os.path.join(build_ext_cmd.build_temp, "include")
+            )
+        )
+
+        build_ext_cmd.library_dirs.insert(
+            0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "lib"))
+        )
 
         self.mkpath(os.path.join(self.build_clib, "bin"))
         if sys.gettrace():
@@ -330,6 +330,7 @@ class BuildCMakeExt(build_clib):
             subprocess.check_call(install_command)
         else:
             self.compiler.spawn(install_command)
+
 
 class ConanBuildInfoParser:
     def __init__(self, fp):
@@ -356,6 +357,7 @@ class ConanBuildInfoParser:
         yield buffer
         buffer.clear()
 
+
 class ConanImportManifestParser:
     def __init__(self, fp):
         self._fp = fp
@@ -367,6 +369,7 @@ class ConanImportManifestParser:
             if os.path.exists(t):
                 libs.add(t)
         return list(libs)
+
 
 class BuildConan(setuptools.Command):
     user_options = [
@@ -455,12 +458,18 @@ class BuildConan(setuptools.Command):
                 build_ext_cmd.library_dirs.insert(0, path)
 
         extension_deps = set()
-        for library_deps in [l.libraries for l in  build_ext_cmd.ext_map.values()]:
+        all_libs = [lib.libraries for lib in build_ext_cmd.ext_map.values()]
+        for library_deps in all_libs:
             extension_deps = extension_deps.union(library_deps)
 
         for lib in text_md['libs']:
-            if lib not in build_ext_cmd.libraries and lib not in extension_deps:
-                build_ext_cmd.libraries.insert(0, lib)
+            if lib in build_ext_cmd.libraries:
+                continue
+
+            if lib in extension_deps:
+                continue
+
+            build_ext_cmd.libraries.insert(0, lib)
 
     def find_conan_paths_cmake(self) -> Optional[str]:
         search_dirs = []
@@ -527,8 +536,7 @@ class BuildConan(setuptools.Command):
         }
 
 
-
-class BuildExiv2(BuildCMakeExt):
+class BuildExiv2(BuildCMakeLib):
 
     def __init__(self, dist):
 
@@ -544,12 +552,17 @@ class BuildExiv2(BuildCMakeExt):
         conan_paths = conan_cmd.find_conan_paths_cmake()
         if conan_paths is None:
             raise FileNotFoundError("Missing toolchain file conan_paths.cmake")
-        self.extra_cmake_options.append('-DCMAKE_TOOLCHAIN_FILE={}'.format(conan_paths))
+
+        self.extra_cmake_options.append(
+            f'-DCMAKE_TOOLCHAIN_FILE={conan_paths}'
+        )
         super().run()
 
         ext_command = self.get_finalized_command("build_ext")
         ext_command.ext_map['py3exiv2bind.core'].libraries.append("xmp")
-        ext_command.ext_map['py3exiv2bind.core'].library_dirs.insert(0, os.path.join(self.build_temp, "lib"))
+        ext_command.ext_map['py3exiv2bind.core'].library_dirs.insert(
+            0, os.path.join(self.build_temp, "lib")
+        )
 
 
 exiv2 = ("exiv2", {
@@ -596,6 +609,7 @@ class AbsSoHandler(abc.ABC):
                                         f"{self.library_file}")
             if not self.is_system_file(dll):
                 type(self)(dll, self.context).resolve(search_paths)
+
 
 class NullHandlerStrategy(AbsSoHandler):
 
@@ -680,47 +694,10 @@ def get_so_handler(shared_library: str, context,
     return strat(shared_library, context)
 
 
-class AbsSoHandler(abc.ABC):
-    def __init__(self, library_file, context):
-        self.library_file = library_file
-        self._compiler = None
-        self.context = context
-
-    def set_compiler(self, compiler):
-        self._compiler = compiler
-
-    @classmethod
-    def is_system_file(cls, filename) -> bool:
-        return False
-
-    @abc.abstractmethod
-    def get_deps(self) -> List[str]:
-        pass
-
-    def resolve(self, search_paths=None) -> None:
-        dest = os.path.dirname(self.library_file)
-        for dep in filter(lambda x: not self.is_system_file(x),
-                          self.get_deps()):
-
-            if os.path.exists(os.path.join(dest, dep)):
-                continue
-            if search_paths is None:
-                if platform.system() == "Windows":
-                    search_paths = self.context.compiler.library_dirs + \
-                                   os.environ['path'].split(";")
-                else:
-                    search_paths = self.context.compiler.library_dirs + \
-                                   os.environ['PATH'].split(":")
-
-            dll = self.context.find_deps(dep, search_paths)
-            if dll is None:
-                raise FileNotFoundError(f"Unable to locate {dep} for "
-                                        f"{self.library_file}")
-            if not self.is_system_file(dll):
-                type(self)(dll, self.context).resolve(search_paths)
-
-
 class DllHandlerStrategy(AbsSoHandler):
+    DEPS_REGEX = \
+        r'(?<=(Image has the following dependencies:(\n){2}))((?<=\s).*\.dll\n)*'
+
     def __init__(self, library_file, context):
         super().__init__(library_file, context)
         self._compiler = None
@@ -762,9 +739,10 @@ class DllHandlerStrategy(AbsSoHandler):
             "vcruntime140.dll",
             "vcruntime140_1.dll"
         ]
-        system_libs = [
-            i.lower() for i in os.listdir(r"c:\Windows\System32") if i.endswith(".dll") and i not in system_exclusions
-        ]
+        system_libs = []
+        for i in os.listdir(r"c:\Windows\System32"):
+            if i.endswith(".dll") and i not in system_exclusions:
+                system_libs.append(i.lower())
 
         if filename.lower() in system_libs:
             return True
@@ -802,8 +780,22 @@ class DllHandlerStrategy(AbsSoHandler):
                     f'/out:{output_file}'
                 ]
             )
-            return BuildPybind11Extension.parse_dumpbin_deps(file=output_file)
+            return DllHandlerStrategy.parse_dumpbin_deps(file=output_file)
 
+    # @classmethod
+    # def parse_dumpbin_deps(cls, file) -> List[str]:
+    #
+    #     dlls = []
+    #     dep_regex = re.compile(cls.DEPS_REGEX)
+    #
+    #     with open(file) as f:
+    #         d = dep_regex.search(f.read())
+    #         for x in d.group(0).split("\n"):
+    #             if x.strip() == "":
+    #                 continue
+    #             dll = x.strip()
+    #             dlls.append(dll)
+    #     return dlls
 
 
 class BuildPybind11Extension(build_ext):
@@ -811,38 +803,6 @@ class BuildPybind11Extension(build_ext):
         ('pybind11-url=', None,
          "Url to download Pybind11")
     ]
-    DEPS_REGEX = \
-        r'(?<=(Image has the following dependencies:(\n){2}))((?<=\s).*\.dll\n)*'
-
-    @staticmethod
-    def remove_system_dlls(dlls):
-        non_system_dlls = []
-        for dll in dlls:
-            if dll.startswith("api-ms-win-crt"):
-                continue
-
-            if dll.startswith("python"):
-                continue
-
-            if dll == "KERNEL32.dll":
-                continue
-            non_system_dlls.append(dll)
-        return non_system_dlls
-
-    @classmethod
-    def parse_dumpbin_deps(cls, file) -> List[str]:
-
-        dlls = []
-        dep_regex = re.compile(cls.DEPS_REGEX)
-
-        with open(file) as f:
-            d = dep_regex.search(f.read())
-            for x in d.group(0).split("\n"):
-                if x.strip() == "":
-                    continue
-                dll = x.strip()
-                dlls.append(dll)
-        return dlls
 
     def initialize_options(self):
         super().initialize_options()
@@ -853,7 +813,10 @@ class BuildPybind11Extension(build_ext):
         super().finalize_options()
 
     def run(self):
-        self.include_dirs.insert(0, os.path.abspath(os.path.join(self.build_temp, "include")))
+        self.include_dirs.insert(
+            0, os.path.abspath(os.path.join(self.build_temp, "include"))
+        )
+
         lib_dir = os.path.abspath(os.path.join(self.build_temp, "lib"))
         if os.path.exists(lib_dir):
             self.library_dirs.insert(0, lib_dir)
@@ -890,6 +853,7 @@ class BuildPybind11Extension(build_ext):
             search_paths.append(lib_path)
 
         return search_paths
+
     def _get_path_dirs(self):
         if platform.system() == "Windows":
             paths = os.environ['path'].split(";")
@@ -930,7 +894,10 @@ class BuildPybind11Extension(build_ext):
             self.run_command("build_clib")
             build_clib_cmd = self.get_finalized_command("build_clib")
 
-            ext.include_dirs.append(os.path.abspath(os.path.join(build_clib_cmd.build_clib, "include")))
+            ext.include_dirs.append(os.path.abspath(
+                os.path.join(build_clib_cmd.build_clib, "include"))
+            )
+
         build_clib_cmd = self.get_finalized_command("build_clib")
 
         new_libs = []
@@ -943,7 +910,9 @@ class BuildPybind11Extension(build_ext):
                 lib_path = self.compiler.find_library_file(
                     [
                         os.path.abspath(build_clib_cmd.build_clib),
-                        os.path.abspath(os.path.join(build_clib_cmd.build_clib, "lib")),
+                        os.path.abspath(
+                            os.path.join(build_clib_cmd.build_clib, "lib")
+                        ),
                     ],
                     lib
                 )
@@ -953,7 +922,10 @@ class BuildPybind11Extension(build_ext):
             else:
                 build_configuration = None
             t = build_clib_cmd.find_target(lib, build_configuration)
-            res = build_clib_cmd.find_dep_libs_from_cmake(ext, t, remove_prefix=self.compiler.compiler_type == "unix")
+
+            res = build_clib_cmd.find_dep_libs_from_cmake(
+                ext, t, remove_prefix=self.compiler.compiler_type == "unix")
+
             if res is not None:
                 deps, flags = res
                 if deps is not None:
@@ -993,7 +965,6 @@ class BuildPybind11Extension(build_ext):
                         os.path.join(root, ".."),
                         os.path.dirname(__file__)
                     ))
-
 
 
 exiv2_extension = Extension(
