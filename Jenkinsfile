@@ -673,55 +673,6 @@ pipeline {
             stages{
                 stage("Testing"){
                     stages{
-                        stage("C++ Testing"){
-                            agent {
-                                dockerfile {
-                                    filename 'ci/docker/cpp/Dockerfile'
-                                    label 'linux && docker'
-                                    additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
-                                }
-                            }
-                            steps{
-                                test_cpp_code('build')
-                            }
-                            post{
-                                always{
-                                    recordIssues(
-                                        filters: [excludeFile('build/_deps/*')],
-                                        tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']]
-                                        )
-
-                                    sh "mkdir -p reports/coverage && gcovr --root . --filter py3exiv2bind --print-summary  --json -o reports/coverage/coverage_cpp.json"
-                                    stash(includes: "reports/coverage/*.json", name: "CPP_COVERAGE_TRACEFILE")
-                                    xunit(
-                                        testTimeMargin: '3000',
-                                        thresholdMode: 1,
-                                        thresholds: [
-                                            failed(),
-                                            skipped()
-                                        ],
-                                        tools: [
-                                            CTest(
-                                                deleteOutputFiles: true,
-                                                failIfNotNew: true,
-                                                pattern: "build/Testing/**/*.xml",
-                                                skipNoTestFiles: true,
-                                                stopProcessingIfError: true
-                                            )
-                                        ]
-                                   )
-                                }
-                                cleanup{
-                                    cleanWs(
-                                        deleteDirs: true,
-                                        patterns: [
-                                            [pattern: 'build/', type: 'INCLUDE'],
-                                        ]
-                                    )
-                                }
-                            }
-
-                        }
                         stage("Python Testing"){
                             stages{
                                 stage("Testing") {
@@ -860,6 +811,54 @@ pipeline {
                                             )
                                         }
                                     }
+                                }
+                            }
+                        }
+                        stage("C++ Testing"){
+                            agent {
+                                dockerfile {
+                                    filename 'ci/docker/cpp/Dockerfile'
+                                    label 'linux && docker'
+                                    additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                }
+                            }
+                            steps{
+                                test_cpp_code('build')
+                            }
+                            post{
+                                always{
+                                    recordIssues(
+                                        filters: [excludeFile('build/_deps/*')],
+                                        tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']]
+                                        )
+
+                                    sh "mkdir -p reports/coverage && gcovr --root . --filter py3exiv2bind --print-summary  --json -o reports/coverage/coverage_cpp.json"
+                                    stash(includes: "reports/coverage/*.json", name: "CPP_COVERAGE_TRACEFILE")
+                                    xunit(
+                                        testTimeMargin: '3000',
+                                        thresholdMode: 1,
+                                        thresholds: [
+                                            failed(),
+                                            skipped()
+                                        ],
+                                        tools: [
+                                            CTest(
+                                                deleteOutputFiles: true,
+                                                failIfNotNew: true,
+                                                pattern: "build/Testing/**/*.xml",
+                                                skipNoTestFiles: true,
+                                                stopProcessingIfError: true
+                                            )
+                                        ]
+                                   )
+                                }
+                                cleanup{
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        patterns: [
+                                            [pattern: 'build/', type: 'INCLUDE'],
+                                        ]
+                                    )
                                 }
                             }
                         }
