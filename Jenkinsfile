@@ -930,6 +930,7 @@ pipeline {
                             node(""){
                                 unstash "PYTHON_COVERAGE_REPORT"
                                 unstash "CPP_COVERAGE_REPORT"
+                                sh "ls -la reports/"
                                 publishCoverage(
                                     adapters: [
                                             coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage*.xml')
