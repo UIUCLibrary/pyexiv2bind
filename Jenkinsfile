@@ -935,9 +935,9 @@ pipeline {
                                 sh "ls -la reports/coverage/*.xml"
                                 publishCoverage(
                                     adapters: [
-                                            coberturaAdapter('reports/coverage/coverage_cpp.xml'),
-                                            coberturaAdapter('reports/coverage/coverage-c-extension.xml'),
-                                            coberturaAdapter('reports/coverage/coverage-python.xml')
+                                            coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/coverage_cpp.xml'),
+                                            coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/coverage-c-extension.xml'),
+                                            coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/coverage-python.xml')
                                         ],
                                     sourceFileResolver: sourceFiles('NEVER_STORE')
                                 )
