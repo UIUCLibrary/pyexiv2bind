@@ -929,18 +929,22 @@ pipeline {
                     }
                     post{
                         always{
-                            node(""){
-                                unstash "PYTHON_COVERAGE_REPORT"
-                                unstash "CPP_COVERAGE_TRACEFILE"
-                                sh "gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --html-details coverage.html --xml -o reports/coverage/coverage_cpp.xml && ls -la reports/coverage/*.xml"
-                                publishCoverage(
-                                    adapters: [
-                                            coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/coverage_cpp.xml'),
-//                                             coberturaAdapter(mergeToOneReport: true, path: ''),
-                                            coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/coverage-python.xml')
-                                        ],
-                                    sourceFileResolver: sourceFiles('NEVER_STORE')
-                                )
+                            node("linux && docker"){
+                                script{
+                                    docker.build("py3exiv2bind:util",'-f ci/docker/linux/test/ --build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+                                        unstash "PYTHON_COVERAGE_REPORT"
+                                        unstash "CPP_COVERAGE_TRACEFILE"
+                                        sh "gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --html-details coverage.html --xml -o reports/coverage/coverage_cpp.xml && ls -la reports/coverage/*.xml"
+                                        publishCoverage(
+                                            adapters: [
+                                                    coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/coverage_cpp.xml'),
+        //                                             coberturaAdapter(mergeToOneReport: true, path: ''),
+                                                    coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/coverage-python.xml')
+                                                ],
+                                            sourceFileResolver: sourceFiles('NEVER_STORE')
+                                        )
+                                    }
+                                }
 //                                 publishCoverage(
 //                                     adapters: [
 //                                             coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
