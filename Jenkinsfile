@@ -741,7 +741,11 @@ pipeline {
                             }
                             post{
                                 always{
-                                    recordIssues(tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']])
+                                    recordIssues(
+                                        filters: [excludeFile('build/_deps/**')],
+                                        tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']]
+                                        )
+
                                     sh "mkdir -p reports/coverage && gcovr --root . --filter py3exiv2bind --print-summary  --json -o reports/coverage/coverage_cpp.json"
                                     stash(includes: "reports/coverage/*.json", name: "CPP_COVERAGE_TRACEFILE")
 //                                     publishCoverage(
