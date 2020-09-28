@@ -1,11 +1,25 @@
+import abc
 import json
 import os
 import re
 import sys
 import shutil
 import tarfile
-from typing import List, Optional, Tuple
+import tempfile
+from typing import List, Optional, Tuple, Iterable, Dict, Any, Union
 from urllib import request
+
+import setuptools
+
+try:
+    import cmake
+except ImportError:
+    print("cmake missing")
+
+try:
+    from conans.client import conan_api
+except ImportError:
+    print("conan missing")
 
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
@@ -41,8 +55,7 @@ class BuildCMakeExt(build_clib):
 
     def initialize_options(self):
         super().initialize_options()
-        self.cmake_exec = shutil.which("cmake")
-        pass
+        self.cmake_exec = shutil.which("cmake", path=cmake.CMAKE_BIN_DIR)
 
     def __init__(self, dist):
         super().__init__(dist)
@@ -140,7 +153,7 @@ class BuildCMakeExt(build_clib):
 
         configure_command = [
             self.cmake_exec,
-            f'-H{source_dir}',
+            f'-S{source_dir}',
             f'-B{dep_build_path}'
         ]
 
@@ -148,14 +161,20 @@ class BuildCMakeExt(build_clib):
             f'-DCMAKE_BUILD_TYPE={build_configuration_name}')
         build_ext_cmd = self.get_finalized_command("build_ext")
         configure_command.append(f'-DCMAKE_INSTALL_PREFIX={os.path.abspath(self.build_clib)}')
-        configure_command.append(f'-DPYTHON_EXECUTABLE:FILEPATH={sys.executable}')
-        configure_command.append(f'-DPYTHON_INCLUDE_DIR={sysconfig.get_path("include")}')
-        configure_command.append(f'-DPython_ADDITIONAL_VERSIONS={sys.version_info.major}.{sys.version_info.minor}')
+        # configure_command.append(f'-DPYTHON_EXECUTABLE:FILEPATH={sys.executable}')
+        # configure_command.append(f'-DPYTHON_INCLUDE_DIR={sysconfig.get_path("include")}')
+        # configure_command.append(f'-DPython_ADDITIONAL_VERSIONS={sys.version_info.major}.{sys.version_info.minor}')
 
         configure_command.append('-Dpyexiv2bind_generate_python_bindings:BOOL=NO')
         configure_command.append('-DEXIV2_ENABLE_NLS:BOOL=NO')
         configure_command.append('-DEXIV2_ENABLE_VIDEO:BOOL=OFF')
         configure_command.append('-DEXIV2_ENABLE_PNG:BOOL=OFF')
+
+        if platform.system() == "Linux":
+            configure_command.append('-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=OFF')
+        else:
+            configure_command.append('-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=ON')
+
         if self.compiler.compiler_type == "unix":
             configure_command.append('-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON')
         configure_command += self.extra_cmake_options
@@ -249,7 +268,8 @@ class BuildCMakeExt(build_clib):
             "--build", dep_build_path,
             # "--target", "exiv2lib"
         ]
-
+        if self.verbose == 1:
+            build_command.append("--verbose")
         self.announce("Building binaries", level=3)
 
         # Add config
@@ -311,6 +331,202 @@ class BuildCMakeExt(build_clib):
         else:
             self.compiler.spawn(install_command)
 
+class ConanBuildInfoParser:
+    def __init__(self, fp):
+        self._fp = fp
+
+    def parse(self) -> Dict[str, List[str]]:
+        data = dict()
+        for subject_chunk in self.iter_subject_chunk():
+            subject_title = subject_chunk[0][1:-1]
+
+            data[subject_title] = subject_chunk[1:]
+        return data
+
+    def iter_subject_chunk(self) -> Iterable[Any]:
+        buffer = []
+        for line in self._fp:
+            line = line.strip()
+            if len(line) == 0:
+                continue
+            if line.startswith("[") and line.endswith("]") and len(buffer) > 0:
+                yield buffer
+                buffer.clear()
+            buffer.append(line)
+        yield buffer
+        buffer.clear()
+
+class ConanImportManifestParser:
+    def __init__(self, fp):
+        self._fp = fp
+
+    def parse(self) -> List[str]:
+        libs = set()
+        for line in self._fp:
+            t = line.split()[0].strip(":\n")
+            if os.path.exists(t):
+                libs.add(t)
+        return list(libs)
+
+class BuildConan(setuptools.Command):
+    user_options = [
+        ('conan-exec=', "c", 'conan executable')
+    ]
+
+    description = "Get the required dependencies from a Conan package manager"
+
+    def get_from_txt(self, conanbuildinfo_file):
+        definitions = []
+        include_paths = []
+        lib_paths = []
+        bin_paths = []
+        libs = []
+
+        with open(conanbuildinfo_file, "r") as f:
+            parser = ConanBuildInfoParser(f)
+            data = parser.parse()
+            definitions = data['defines']
+            include_paths = data['includedirs']
+            lib_paths = data['libdirs']
+            bin_paths = data['bindirs']
+            libs = data['libs']
+
+        return {
+            "definitions": definitions,
+            "include_paths": list(include_paths),
+            "lib_paths": list(lib_paths),
+            "bin_paths": list(bin_paths),
+            "libs": list(libs),
+
+        }
+
+    def initialize_options(self):
+        pass
+        self.conan_exec = None
+
+    def finalize_options(self):
+        pass
+
+    def getConanBuildInfo(self, root_dir):
+        for root, dirs, files in os.walk(root_dir):
+            for f in files:
+                if f == "conanbuildinfo.json":
+                    return os.path.join(root, f)
+        return None
+
+    def run(self):
+        build_ext_cmd = self.get_finalized_command("build_ext")
+        build_dir = build_ext_cmd.build_temp
+
+        build_dir_full_path = os.path.abspath(build_dir)
+        conan_cache = os.path.join(build_dir, "conan_cache")
+        self.mkpath(conan_cache)
+        self.mkpath(build_dir_full_path)
+        self.mkpath(os.path.join(build_dir_full_path, "lib"))
+
+        conan = conan_api.Conan(cache_folder=os.path.abspath(conan_cache))
+        conan_options = []
+        # if platform.system() == "Windows":
+        #     conan_options.append("*:shared=True")
+
+        conan.install(
+            options=conan_options,
+            # generators=["json"],
+            cwd=build_dir,
+            build=['missing'],
+            path=os.path.abspath(os.path.dirname(__file__)),
+            install_folder=build_dir_full_path
+        )
+
+        conanbuildinfotext = os.path.join(build_dir, "conanbuildinfo.txt")
+        assert os.path.exists(conanbuildinfotext)
+
+        text_md = self.get_from_txt(conanbuildinfotext)
+        for path in text_md['bin_paths']:
+            if path not in build_ext_cmd.library_dirs:
+                build_ext_cmd.library_dirs.insert(0, path)
+
+        for path in text_md['lib_paths']:
+            if path not in build_ext_cmd.library_dirs:
+                build_ext_cmd.library_dirs.insert(0, path)
+
+        for path in text_md['lib_paths']:
+            if path not in build_ext_cmd.library_dirs:
+                build_ext_cmd.library_dirs.insert(0, path)
+
+        extension_deps = set()
+        for library_deps in [l.libraries for l in  build_ext_cmd.ext_map.values()]:
+            extension_deps = extension_deps.union(library_deps)
+
+        for lib in text_md['libs']:
+            if lib not in build_ext_cmd.libraries and lib not in extension_deps:
+                build_ext_cmd.libraries.insert(0, lib)
+
+    def find_conan_paths_cmake(self) -> Optional[str]:
+        search_dirs = []
+        build_ext_cmd = self.get_finalized_command("build_ext")
+        search_dirs.append(build_ext_cmd.build_temp)
+        for f in search_dirs:
+            potential = os.path.join(f, "conan_paths.cmake")
+            if os.path.exists(potential):
+                return potential
+        return None
+    # conan_paths = os.path.join(self.build_temp, "conan_paths.cmake")
+
+    def get_import_paths_from_import_manifest(self, manifest_file) -> \
+            List[str]:
+
+        lib_dirs = set()
+        for lib in self.get_libraries_from_import_manifest(manifest_file):
+            lib_dirs.add(os.path.dirname(lib))
+        return list(lib_dirs)
+
+    def get_libraries_from_import_manifest(self, manifest_file) -> List[str]:
+        with open(manifest_file, "r") as f:
+            parser = ConanImportManifestParser(f)
+            return parser.parse()
+
+    def get_from_json(self, conanbuildinfo_file) -> \
+            Dict[str, List[Union[str, Tuple[str, Optional[str]]]]]:
+
+        if conanbuildinfo_file is None:
+            raise FileNotFoundError("Unable to locate conanbuildinfo.json")
+        self.announce(f"Reading from {conanbuildinfo_file}", 5)
+        with open(conanbuildinfo_file) as f:
+            conan_build_info = json.loads(f.read())
+
+        def reduce_dups(a, b, key):
+
+            if isinstance(a, set):
+                collection = a
+            else:
+                collection = set(a[key])
+            collection = collection.union(b[key])
+            return collection
+
+        libs = reduce(lambda a, b: reduce_dups(a, b, key="libs"),
+                      conan_build_info['dependencies'])
+        include_paths = reduce(
+            lambda a, b: reduce_dups(a, b, key="include_paths"),
+            conan_build_info['dependencies'])
+        self.announce(f"Adding [{','.join(include_paths)}] to include path", 4)
+        lib_paths = reduce(lambda a, b: reduce_dups(a, b, key="lib_paths"),
+                           conan_build_info['dependencies'])
+        self.announce(
+            f"Adding [{', '.join(lib_paths)}] to library search path", 4)
+
+        definitions = list()
+        for dep in conan_build_info['dependencies']:
+            definitions += [(d,) for d in dep['defines']]
+
+        return {
+            "definitions": definitions,
+            "include_paths": list(include_paths),
+            "lib_paths": list(lib_paths),
+            "libs": list(libs)
+        }
+
+
 
 class BuildExiv2(BuildCMakeExt):
 
@@ -319,11 +535,27 @@ class BuildExiv2(BuildCMakeExt):
         super().__init__(dist)
         self.extra_cmake_options += [
             "-Dpyexiv2bind_generate_venv:BOOL=OFF",
+            # "-DBUILD_SHARED_LIBS:BOOL=ON",
             "-DBUILD_SHARED_LIBS:BOOL=OFF",
             # "-DEXIV2_VERSION_TAG:STRING=11e66c6c9eceeddd2263c3591af6317cbd05c1b6",
             # "-DEXIV2_VERSION_TAG:STRING=0.27",
             "-DBUILD_TESTING:BOOL=OFF",
         ]
+
+    def run(self):
+        conan_cmd = self.get_finalized_command("build_conan")
+        conan_cmd.run()
+        conan_paths = conan_cmd.find_conan_paths_cmake()
+        if conan_paths is None:
+            raise FileNotFoundError("Missing toolchain file conan_paths.cmake")
+        # conan_paths = os.path.join(self.build_temp, "conan_paths.cmake")
+        self.extra_cmake_options.append('-DCMAKE_TOOLCHAIN_FILE={}'.format(conan_paths))
+        super().run()
+
+        ext_command = self.get_finalized_command("build_ext")
+        ext_command.ext_map['py3exiv2bind.core'].libraries.append("xmp")
+        ext_command.ext_map['py3exiv2bind.core'].library_dirs.insert(0, os.path.join(self.build_temp, "lib"))
+
 
 
 # exiv2 = CMakeExtension("exiv2_wrapper")
@@ -333,37 +565,283 @@ exiv2 = ("exiv2", {
     "CMAKE_SOURCE_DIR": os.path.dirname(__file__)
 })
 
-DEPS_REGEX = \
-    r'(?<=(Image has the following dependencies:(\n){2}))((?<=\s).*\.dll\n)*'
 
-def parse_dumpbin_deps(file) -> List[str]:
+# def parse_dumpbin_deps(file) -> List[str]:
+#
+#     dlls = []
+#     dep_regex = re.compile(DEPS_REGEX)
+#
+#     with open(file) as f:
+#         d = dep_regex.search(f.read())
+#         for x in d.group(0).split("\n"):
+#             if x.strip() == "":
+#                 continue
+#             dll = x.strip()
+#             dlls.append(dll)
+#     return dlls
+#
 
-    dlls = []
-    dep_regex = re.compile(DEPS_REGEX)
+# def remove_system_dlls(dlls):
+#     non_system_dlls = []
+#     for dll in dlls:
+#         if dll.startswith("api-ms-win-crt"):
+#             continue
+#
+#         if dll.startswith("python"):
+#             continue
+#
+#         if dll == "KERNEL32.dll":
+#             continue
+#         non_system_dlls.append(dll)
+#     return non_system_dlls
 
-    with open(file) as f:
-        d = dep_regex.search(f.read())
-        for x in d.group(0).split("\n"):
-            if x.strip() == "":
+
+class AbsSoHandler(abc.ABC):
+    def __init__(self, library_file, context):
+        self.library_file = library_file
+        self._compiler = None
+        self.context = context
+
+    def set_compiler(self, compiler):
+        self._compiler = compiler
+
+    @classmethod
+    def is_system_file(cls, filename) -> bool:
+        return False
+
+    @abc.abstractmethod
+    def get_deps(self) -> List[str]:
+        pass
+
+    def resolve(self, search_paths=None) -> None:
+        dest = os.path.dirname(self.library_file)
+        for dep in filter(lambda x: not self.is_system_file(x),
+                          self.get_deps()):
+
+            if os.path.exists(os.path.join(dest, dep)):
                 continue
-            dll = x.strip()
-            dlls.append(dll)
-    return dlls
+            if search_paths is None:
+                if platform.system() == "Windows":
+                    search_paths = self.context.compiler.library_dirs + \
+                                   os.environ['path'].split(";")
+                else:
+                    search_paths = self.context.compiler.library_dirs + \
+                                   os.environ['PATH'].split(":")
+
+            dll = self.context.find_deps(dep, search_paths)
+            if dll is None:
+                raise FileNotFoundError(f"Unable to locate {dep} for "
+                                        f"{self.library_file}")
+            if not self.is_system_file(dll):
+                type(self)(dll, self.context).resolve(search_paths)
+
+class NullHandlerStrategy(AbsSoHandler):
+
+    def get_deps(self) -> List[str]:
+        return []
 
 
-def remove_system_dlls(dlls):
-    non_system_dlls = []
-    for dll in dlls:
-        if dll.startswith("api-ms-win-crt"):
-            continue
+class MacholibStrategy(AbsSoHandler):
+    _system_files = []
 
-        if dll.startswith("python"):
-            continue
+    @classmethod
+    def get_system_files(cls):
+        if len(cls._system_files) == 0:
+            cls._system_files = os.listdir("/usr/lib")
+        return cls._system_files
 
-        if dll == "KERNEL32.dll":
-            continue
-        non_system_dlls.append(dll)
-    return non_system_dlls
+    def get_deps(self) -> List[str]:
+        from macholib import MachO
+        libs = set()
+        for header in MachO.MachO(self.library_file).headers:
+            for _idx, _name, other in header.walkRelocatables():
+                libs.add(os.path.split(other)[-1])
+        return list(libs)
+
+    @classmethod
+    def is_system_file(cls, filename) -> bool:
+        if filename in [
+            "libsystem_malloc.dylib"
+        ]:
+            return True
+
+        if filename in cls.get_system_files():
+            return True
+        return False
+
+    def resolve(self, search_path=None) -> None:
+        from macholib import MachOStandalone
+        if self.is_system_file(os.path.split(self.library_file)[1]):
+            return
+
+        d = MachOStandalone.MachOStandalone(
+            os.path.abspath(os.path.dirname(self.library_file)))
+
+        d.dest = os.path.abspath(os.path.dirname(self.library_file))
+        libraries = []
+        for dep in self.get_deps():
+            if self.is_system_file(dep):
+                continue
+            found_dep = self.context.find_deps(dep, search_path)
+            c_dep = d.copy_dylib(found_dep)
+            dep_file = d.mm.locate(c_dep)
+            if dep_file is None:
+                raise FileNotFoundError(f"Unable to locate {dep}, "
+                                        f"required by {self.library_file}")
+
+            self.context.announce(f"Fixing up {dep}")
+
+            libraries.append(dep_file)
+            type(self)(dep_file, self.context).resolve(search_path)
+        libraries.append(self.library_file)
+        d.run(platfiles=libraries, contents="@rpath/..")
+
+
+
+class AudidWheelsHandlerStrategy(AbsSoHandler):
+
+    def get_deps(self) -> List[str]:
+        return []
+
+def get_so_handler(shared_library: str, context,
+                   system_name: str = None) -> AbsSoHandler:
+
+    system_name = system_name or platform.system()
+    strategies = {
+        # "Darwin": NullHandlerStrategy,
+        "Darwin": MacholibStrategy,
+        "Linux": AudidWheelsHandlerStrategy,
+        "Windows": DllHandlerStrategy,
+    }
+    strat = strategies.get(
+        system_name, NullHandlerStrategy)
+    return strat(shared_library, context)
+
+
+class AbsSoHandler(abc.ABC):
+    def __init__(self, library_file, context):
+        self.library_file = library_file
+        self._compiler = None
+        self.context = context
+
+    def set_compiler(self, compiler):
+        self._compiler = compiler
+
+    @classmethod
+    def is_system_file(cls, filename) -> bool:
+        return False
+
+    @abc.abstractmethod
+    def get_deps(self) -> List[str]:
+        pass
+
+    def resolve(self, search_paths=None) -> None:
+        dest = os.path.dirname(self.library_file)
+        for dep in filter(lambda x: not self.is_system_file(x),
+                          self.get_deps()):
+
+            if os.path.exists(os.path.join(dest, dep)):
+                continue
+            if search_paths is None:
+                if platform.system() == "Windows":
+                    search_paths = self.context.compiler.library_dirs + \
+                                   os.environ['path'].split(";")
+                else:
+                    search_paths = self.context.compiler.library_dirs + \
+                                   os.environ['PATH'].split(":")
+
+            dll = self.context.find_deps(dep, search_paths)
+            if dll is None:
+                raise FileNotFoundError(f"Unable to locate {dep} for "
+                                        f"{self.library_file}")
+            if not self.is_system_file(dll):
+                type(self)(dll, self.context).resolve(search_paths)
+
+
+class DllHandlerStrategy(AbsSoHandler):
+    def __init__(self, library_file, context):
+        super().__init__(library_file, context)
+        self._compiler = None
+
+    def resolve(self, search_paths=None) -> None:
+        dest = os.path.dirname(self.library_file)
+        for dep_name in self.get_deps():
+            if self.is_system_file(dep_name):
+                self.context.announce(f"Not bundling {dep_name}", 4)
+                continue
+            dep = self.find_lib(dep_name, search_paths=search_paths)
+            if not dep:
+                raise FileNotFoundError(
+                    f"Unable to locate {dep_name} required by "
+                    f"{self.library_file}")
+
+            new_dll = os.path.join(dest, os.path.split(dep)[-1])
+            if os.path.exists(new_dll):
+                continue
+            self.context.copy_file(dep, new_dll)
+            DllHandlerStrategy(new_dll, self.context).resolve(search_paths)
+
+    def find_lib(self, lib, search_paths=None):
+        if search_paths is None:
+            search_paths = os.environ['path'].split(";")
+
+        for path in search_paths:
+            if not os.path.exists(path):
+                self.context.announce(f"Skipping invalid path: {path}", 5)
+                continue
+            for f in os.scandir(path):
+                if f.name.lower() == lib.lower():
+                    return f.path
+
+    @classmethod
+    def is_system_file(cls, filename: str) -> bool:
+        system_exclusions = [
+            "msvcp140.dll",
+            "vcruntime140.dll",
+            "vcruntime140_1.dll"
+        ]
+        system_libs = [
+            i.lower() for i in os.listdir(r"c:\Windows\System32") if i.endswith(".dll") and i not in system_exclusions
+        ]
+
+        if filename.lower() in system_libs:
+            return True
+
+        if "api-ms-win-crt" in filename:
+            return True
+
+        if "api-ms-win-core" in filename:
+            return True
+
+        if "api-ms-win" in filename:
+            return True
+
+        if filename.startswith("python"):
+            return True
+        if filename == "KERNEL32.dll":
+            return True
+        return False
+
+    def get_deps(self) -> List[str]:
+        if not self.context.compiler.initialized:
+            self.context.compiler.initialize()
+        so_name = os.path.split(self.library_file)[-1]
+        with tempfile.TemporaryDirectory() as td:
+            output_file = os.path.join(td, f'{so_name}.dependents')
+            dumpbin = \
+                shutil.which("dumpbin",
+                             path=os.path.dirname(self.context.compiler.cc))
+
+            self.context.compiler.spawn(
+                [
+                    dumpbin,
+                    '/dependents',
+                    os.path.abspath(self.library_file),
+                    f'/out:{output_file}'
+                ]
+            )
+            return BuildPybind11Extension.parse_dumpbin_deps(file=output_file)
+
 
 
 class BuildPybind11Extension(build_ext):
@@ -371,6 +849,38 @@ class BuildPybind11Extension(build_ext):
         ('pybind11-url=', None,
          "Url to download Pybind11")
     ]
+    DEPS_REGEX = \
+        r'(?<=(Image has the following dependencies:(\n){2}))((?<=\s).*\.dll\n)*'
+
+    @staticmethod
+    def remove_system_dlls(dlls):
+        non_system_dlls = []
+        for dll in dlls:
+            if dll.startswith("api-ms-win-crt"):
+                continue
+
+            if dll.startswith("python"):
+                continue
+
+            if dll == "KERNEL32.dll":
+                continue
+            non_system_dlls.append(dll)
+        return non_system_dlls
+
+    @classmethod
+    def parse_dumpbin_deps(cls, file) -> List[str]:
+
+        dlls = []
+        dep_regex = re.compile(cls.DEPS_REGEX)
+
+        with open(file) as f:
+            d = dep_regex.search(f.read())
+            for x in d.group(0).split("\n"):
+                if x.strip() == "":
+                    continue
+                dll = x.strip()
+                dlls.append(dll)
+        return dlls
 
     def initialize_options(self):
         super().initialize_options()
@@ -398,32 +908,69 @@ class BuildPybind11Extension(build_ext):
         for e in self.extensions:
             dll_name = \
                 os.path.join(self.build_lib, self.get_ext_filename(e.name))
+            search_dirs = self.get_library_paths()
+            search_dirs.insert(0, self.build_temp)
+            self.resolve_shared_library(dll_name, search_dirs)
+            # dll_name = \
+            #     os.path.join(self.build_lib, self.get_ext_filename(e.name))
 
-            output_file = os.path.join(self.build_temp, f'{e.name}.dependents')
-            if self.compiler.compiler_type != "unix":
-                if not self.compiler.initialized:
-                    self.compiler.initialize()
-                self.compiler.spawn(
-                    [
-                        'dumpbin',
-                        '/dependents',
-                        dll_name,
-                        f'/out:{output_file}'
-                    ]
+            #
+            # output_file = os.path.join(self.build_temp, f'{e.name}.dependents')
+            # if self.compiler.compiler_type != "unix":
+            #     if not self.compiler.initialized:
+            #         self.compiler.initialize()
+            #     self.compiler.spawn(
+            #         [
+            #             'dumpbin',
+            #             '/dependents',
+            #             dll_name,
+            #             f'/out:{output_file}'
+            #         ]
+            #     )
+            #     deps = parse_dumpbin_deps(file=output_file)
+            #     deps = remove_system_dlls(deps)
+            #     dest = os.path.dirname(dll_name)
+            #     for dep in deps:
+            #
+            #         dll = self.find_deps(dep)
+            #         if dll is None:
+            #             raise FileNotFoundError(f"Unable to locate required library {dep}")
+            #         shutil.copy(dll, dest)
+    def get_library_paths(self):
+        search_paths = []
+        library_search_paths = \
+            self.compiler.library_dirs + \
+            self.compiler.runtime_library_dirs + \
+            self.library_dirs + \
+            self._get_path_dirs()
+
+        for lib_path in library_search_paths:
+            if not os.path.exists(lib_path):
+                continue
+            if lib_path in search_paths:
+                continue
+            search_paths.append(lib_path)
+
+        return search_paths
+    def _get_path_dirs(self):
+        if platform.system() == "Windows":
+            paths = os.environ['path'].split(";")
+        else:
+            paths = os.environ['PATH'].split(":")
+        return [path for path in paths if os.path.exists(path)]
+
+    def resolve_shared_library(self, dll_name, search_paths=None):
+        dll_dumper = get_so_handler(dll_name, self)
+        dll_dumper.set_compiler(self.compiler)
+        try:
+            dll_dumper.resolve(search_paths)
+        except FileNotFoundError:
+            if search_paths is not None:
+                self.announce(
+                    "Error: Not all required shared libraries were resolved. "
+                    "Searched:\n{}".format('\n'.join(search_paths)), 5
                 )
-                deps = parse_dumpbin_deps(file=output_file)
-                deps = remove_system_dlls(deps)
-                dest = os.path.dirname(dll_name)
-                for dep in deps:
-                    dll = self.find_deps(dep)
-                    shutil.copy(dll, dest)
-
-    def find_deps(self, lib):
-
-        for path in os.environ['path'].split(";"):
-            for f in os.scandir(path):
-                if f.name.lower() == lib.lower():
-                    return f.path
+            raise
 
     def find_missing_libraries(self, ext):
         missing_libs = []
@@ -557,6 +1104,7 @@ setup(
     cmdclass={
         "build_ext": BuildPybind11Extension,
         "build_clib": BuildExiv2,
+        "build_conan": BuildConan
     },
 
 )
