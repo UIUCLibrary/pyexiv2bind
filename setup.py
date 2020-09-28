@@ -972,19 +972,6 @@ class BuildPybind11Extension(build_ext):
                 )
             raise
 
-    def find_deps(self, lib):
-        # TODO replace with one that search directores
-
-        for path in os.environ['path'].split(";"):
-            if len(path.strip()) == 0:
-                continue
-            if not os.path.exists(path):
-                print(f"Skipping {path}, it does not exist")
-                continue
-            for f in os.scandir(path):
-                if f.name.lower() == lib.lower():
-                    return f.path
-
     def find_missing_libraries(self, ext):
         missing_libs = []
         for lib in ext.libraries:
