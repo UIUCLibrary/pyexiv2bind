@@ -1142,7 +1142,7 @@ pipeline {
                                     }
                                 }
                             }
-                            stage("Testing Python packages"){
+                        stage("Testing Python Packages"){
                                 when{
                                     equals expected: true, actual: params.TEST_PACKAGES
                                 }
@@ -1188,7 +1188,7 @@ pipeline {
                                             }
                                         }
                                     }
-                                    stage("Testing sdist package"){
+                                    stage("Testing sdist Package"){
                                         agent {
                                             dockerfile {
                                                 filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.filename}"
