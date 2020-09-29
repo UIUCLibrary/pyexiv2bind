@@ -1547,7 +1547,7 @@ pipeline {
                             docker.build("py3exiv2bind:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
                                 if (!env.TAG_NAME?.trim()){
                                     sh(
-                                        label: "Connecting to DevPi Server",
+                                        label: "Pushing ${props.Name} ${props.Version} to DS_Jenkins/${env.BRANCH_NAME} index on DevPi Server",
                                         script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
                                                    devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
                                                    devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
@@ -1564,7 +1564,7 @@ pipeline {
                        script{
                             docker.build("py3exiv2bind:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
                                 sh(
-                                label: "Connecting to DevPi Server",
+                                label: "Removing ${props.Name} ${props.Version} from staging index on DevPi Server",
                                 script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
                                            devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
                                            devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
