@@ -1108,7 +1108,7 @@ pipeline {
                                         label 'mac && 10.14 && python3.8'
                                     }
                                     steps{
-                                        checkout scm
+//                                         checkout scm
                                         cleanWs(
                                             notFailBuild: true,
                                             deleteDirs: true,
@@ -1434,16 +1434,6 @@ pipeline {
                                                 "tar.gz",
                                                 "py38"
                                             )
-//                                             unstash "DIST-INFO"
-//                                             devpiRunTest2(
-//                                                 "venv/bin/devpi",
-//                                                 "py3exiv2bind.dist-info/METADATA",
-//                                                 env.devpiStagingIndex,
-//                                                 "tar.gz",
-//                                                 DEVPI_USR,
-//                                                 DEVPI_PSW,
-//                                                 "py38"
-//                                             )
                                         }
                                     }
                                     post{
