@@ -947,32 +947,6 @@ pipeline {
                 }
             }
         }
-        stage("Python sdist"){
-            agent{
-                dockerfile {
-                    filename 'ci/docker/linux/test/Dockerfile'
-                    label 'linux && docker'
-                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
-                }
-            }
-            when{
-                anyOf{
-                    equals expected: true, actual: params.BUILD_PACKAGES
-                    equals expected: true, actual: params.DEPLOY_DEVPI
-                    equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
-                }
-                beforeAgent true
-            }
-            steps {
-               sh "python -m pep517.build --source --out-dir dist/ ."
-            }
-            post{
-               success{
-                   stash includes: 'dist/*.zip,dist/*.tar.gz', name: "sdist"
-                   archiveArtifacts artifacts: "dist/*.tar.gz,dist/*.zip", fingerprint: true
-               }
-           }
-       }
         stage('Distribution Packages') {
             when{
                 anyOf{
@@ -983,6 +957,24 @@ pipeline {
                 beforeAgent true
             }
             stages{
+                stage("Python sdist"){
+                    agent{
+                        dockerfile {
+                            filename 'ci/docker/linux/test/Dockerfile'
+                            label 'linux && docker'
+                            additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                        }
+                    }
+                    steps {
+                       sh "python -m pep517.build --source --out-dir dist/ ."
+                    }
+                    post{
+                       success{
+                           stash includes: 'dist/*.zip,dist/*.tar.gz', name: "sdist"
+                           archiveArtifacts artifacts: "dist/*.tar.gz,dist/*.zip", fingerprint: true
+                       }
+                   }
+                }
                 stage("Mac Versions"){
                     when{
                         equals expected: true, actual: params.BUILD_MAC_PACKAGES
@@ -1016,48 +1008,48 @@ pipeline {
                                 }
                             }
                         }
-    //                     stage("Testing"){
-    //                         when{
-    //                             equals expected: true, actual: params.TEST_PACKAGES
-    //                         }
-    //                         parallel{
-    //                             stage('Testing Wheel Package on a Mac') {
-    //                                 agent {
-    //                                     label 'mac'
-    //                                 }
-    //                                 steps{
-    //                                     unstash "MacOS 10.14 py38 wheel"
-    //                                     test_package_on_mac("dist/*.whl")
-    //
-    //                                 }
-    //                                 post{
-    //                                     cleanup{
-    //                                         deleteDir()
-    //                                     }
-    //                                 }
-    //                             }
-    //                             stage('Testing sdist Package on a Mac') {
-    //                                 when{
-    //                                     anyOf{
-    //                                         equals expected: true, actual: params.TEST_PACKAGES
-    //                                     }
-    //                                     beforeAgent true
-    //                                 }
-    //                                 agent {
-    //                                     label 'mac'
-    //                                 }
-    //                                 steps{
-    //                                     unstash "sdist"
-    //                                     test_package_on_mac("dist/*.tar.gz,dist/*.zip")
-    //                                 }
-    //                                 post{
-    //                                     cleanup{
-    //                                         deleteDir()
-    //                                     }
-    //                                 }
-    //                             }
-    //                         }
-    //                     }
+                        stage("Testing"){
+                            when{
+                                equals expected: true, actual: params.TEST_PACKAGES
+                            }
+                            parallel{
+                                stage('Testing Wheel Package on a Mac') {
+                                    agent {
+                                        label 'mac'
+                                    }
+                                    steps{
+                                        unstash "MacOS 10.14 py38 wheel"
+                                        test_package_on_mac("dist/*.whl")
+
+                                    }
+                                    post{
+                                        cleanup{
+                                            deleteDir()
+                                        }
+                                    }
+                                }
+                                stage('Testing sdist Package on a Mac') {
+                                    when{
+                                        anyOf{
+                                            equals expected: true, actual: params.TEST_PACKAGES
+                                        }
+                                        beforeAgent true
+                                    }
+                                    agent {
+                                        label 'mac'
+                                    }
+                                    steps{
+                                        unstash "sdist"
+                                        test_package_on_mac("dist/*.tar.gz,dist/*.zip")
+                                    }
+                                    post{
+                                        cleanup{
+                                            deleteDir()
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 stage("Windows and linux"){
