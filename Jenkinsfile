@@ -1004,7 +1004,7 @@ pipeline {
                             steps{
                                 sh(
                                     label: "Building wheel for macOS 10.14",
-                                    script: 'python3 -m pip wheel . -w dist'
+                                    script: 'python3 -m pip wheel --no-deps -w dist .'
                                 )
                             }
                             post{
