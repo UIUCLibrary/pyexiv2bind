@@ -1068,7 +1068,6 @@ pipeline {
                                         label 'mac && 10.14 && python3.8'
                                     }
                                     steps{
-                                        checkout scm
                                         cleanWs(
                                                 notFailBuild: true,
                                                 deleteDirs: true,
@@ -1378,7 +1377,6 @@ pipeline {
             post{
                 success{
                     node('linux && docker') {
-                        checkout scm
                         script{
                             docker.build("py3exiv2bind:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
                                 if (!env.TAG_NAME?.trim()){

@@ -4,15 +4,13 @@ import os
 import re
 import sys
 import shutil
-import tarfile
 import tempfile
 from typing import List, Optional, Tuple, Iterable, Dict, Any, Union
-from urllib import request
 
 import setuptools
 
 try:
-    import cmake
+    import cmakecmake
 except ImportError:
     print("cmake missing")
 
@@ -926,37 +924,6 @@ class BuildPybind11Extension(build_ext):
         ext.libraries += new_libs
 
         super().build_extension(ext)
-
-    # def get_pybind11_include_path(self):
-    #     pybind11_archive_filename = os.path.split(self.pybind11_url)[1]
-    #
-    #     pybind11_archive_downloaded = os.path.join(self.build_temp,
-    #                                                pybind11_archive_filename)
-    #
-    #     pybind11_source = os.path.join(self.build_temp, "pybind11")
-    #     if not os.path.exists(self.build_temp):
-    #         os.makedirs(self.build_temp)
-    #
-    #     if not os.path.exists(pybind11_source):
-    #         if not os.path.exists(pybind11_archive_downloaded):
-    #             self.announce("Downloading pybind11", level=5)
-    #             request.urlretrieve(
-    #                 self.pybind11_url, filename=pybind11_archive_downloaded)
-    #             self.announce("pybind11 Downloaded", level=5)
-    #         with tarfile.open(pybind11_archive_downloaded, "r") as tf:
-    #             for f in tf:
-    #                 if "pybind11.h" in f.name:
-    #                     self.announce("Extract pybind11.h to include path")
-    #
-    #                 tf.extract(f, pybind11_source)
-    #     for root, dirs, files in os.walk(pybind11_source):
-    #         for f in files:
-    #             if f == "pybind11.h":
-    #                 return os.path.abspath(os.path.relpath(
-    #                     os.path.join(root, ".."),
-    #                     os.path.dirname(__file__)
-    #                 ))
-
 
 exiv2_extension = Extension(
     "py3exiv2bind.core",
