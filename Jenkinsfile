@@ -1204,21 +1204,21 @@ pipeline {
                                 }
                                 steps{
                                     timeout(15){
-
                                         build_wheel(PYTHON_VERSION)
-                                        script{
-                                            if(PLATFORM == "linux"){
-                                                sh(
-                                                    label: "Converting linux wheel to manylinux",
-                                                    script:"auditwheel repair ./dist/*.whl -w ./dist"
-                                                )
-                                            }
-                                        }
+                                        echo "Fixing up"
+//                                         script{
+//                                             if(PLATFORM == "linux"){
+//                                                 sh(
+//                                                     label: "Converting linux wheel to manylinux",
+//                                                     script:"auditwheel repair ./dist/*.whl -w ./dist"
+//                                                 )
+//                                             }
+//                                         }
                                     }
                                 }
                                 post{
                                     always{
-                                        echo "Fixing up"
+
                                         script{
                                             if(PLATFORM == "linux"){
                                                 stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
