@@ -980,13 +980,13 @@ pipeline {
                         equals expected: true, actual: params.BUILD_MAC_PACKAGES
                     }
                     stages{
-                        stage('Build wheel for Mac') {
+                        stage('Building Wheel') {
                             agent {
-                                label 'mac'
+                                label 'mac && 10.14 && python3.8'
                             }
                             steps{
                                 sh(
-                                    label: "Building wheel",
+                                    label: "Building wheel for macOS 10.14",
                                     script: 'python3 -m pip wheel . -w dist'
                                 )
                             }
@@ -1013,9 +1013,9 @@ pipeline {
                                 equals expected: true, actual: params.TEST_PACKAGES
                             }
                             parallel{
-                                stage('Testing Wheel Package on a Mac') {
+                                stage('Testing Wheel Package on macOS 10.14') {
                                     agent {
-                                        label 'mac'
+                                        label 'mac && 10.14 && python3.8'
                                     }
                                     steps{
                                         unstash "MacOS 10.14 py38 wheel"
@@ -1028,7 +1028,7 @@ pipeline {
                                         }
                                     }
                                 }
-                                stage('Testing sdist Package on a Mac') {
+                                stage('Testing sdist Package on macOS 10.14') {
                                     when{
                                         anyOf{
                                             equals expected: true, actual: params.TEST_PACKAGES
@@ -1036,7 +1036,7 @@ pipeline {
                                         beforeAgent true
                                     }
                                     agent {
-                                        label 'mac'
+                                        label 'mac && 10.14 && python3.8'
                                     }
                                     steps{
                                         unstash "sdist"
