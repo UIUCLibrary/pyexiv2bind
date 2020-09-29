@@ -1223,7 +1223,7 @@ pipeline {
                                                 stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
                                             }
                                         }
-                                        check_dll_deps("build/lib")
+//                                         check_dll_deps("build/lib")
                                     }
                                     success{
                                         archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
