@@ -1035,6 +1035,19 @@ pipeline {
                                         label 'mac && 10.14 && python3.8'
                                     }
                                     steps{
+                                        checkout scm
+                                        cleanWs(
+                                            notFailBuild: true,
+                                            deleteDirs: true,
+                                            disableDeferredWipeout: true,
+                                            patterns: [
+                                                    [pattern: '.git/**', type: 'EXCLUDE'],
+                                                    [pattern: 'tests/**', type: 'EXCLUDE'],
+                                                    [pattern: 'tox.ini', type: 'EXCLUDE'],
+                                                    [pattern: 'pyproject.toml', type: 'EXCLUDE'],
+                                                    [pattern: 'setup.cfg', type: 'EXCLUDE'],
+                                                ]
+                                        )
                                         unstash "MacOS 10.14 py38 wheel"
                                         test_package_on_mac("dist/*.whl")
                                     }
@@ -1055,6 +1068,19 @@ pipeline {
                                         label 'mac && 10.14 && python3.8'
                                     }
                                     steps{
+                                        checkout scm
+                                        cleanWs(
+                                                notFailBuild: true,
+                                                deleteDirs: true,
+                                                disableDeferredWipeout: true,
+                                                patterns: [
+                                                        [pattern: '.git/**', type: 'EXCLUDE'],
+                                                        [pattern: 'tests/**', type: 'EXCLUDE'],
+                                                        [pattern: 'tox.ini', type: 'EXCLUDE'],
+                                                        [pattern: 'pyproject.toml', type: 'EXCLUDE'],
+                                                        [pattern: 'setup.cfg', type: 'EXCLUDE'],
+                                                    ]
+                                            )
                                         unstash "sdist"
                                         test_package_on_mac("dist/*.tar.gz,dist/*.zip")
                                     }
