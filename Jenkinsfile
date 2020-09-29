@@ -1182,7 +1182,7 @@ pipeline {
                                 }
                                 steps{
                                     timeout(15){
-                                        build_wheel(PYTHON_VERSION)
+                                        build_wheel()
                                         script{
                                             if(PLATFORM == "linux"){
                                                 sh(
