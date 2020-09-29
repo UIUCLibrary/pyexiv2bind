@@ -1216,13 +1216,14 @@ pipeline {
                                 }
                                 post{
                                     always{
-                                        script{
-                                            if(PLATFORM == "linux"){
-                                                stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
-                                            } else{
-                                                stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
-                                            }
-                                        }
+                                        echo "Fixing up"
+//                                         script{
+//                                             if(PLATFORM == "linux"){
+//                                                 stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
+//                                             } else{
+//                                                 stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
+//                                             }
+//                                         }
 //                                         check_dll_deps("build/lib")
                                     }
                                     success{
