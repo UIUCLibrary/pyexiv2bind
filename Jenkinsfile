@@ -412,6 +412,19 @@ def test_deps(glob){
 }
 
 def test_package_on_mac(glob){
+    cleanWs(
+        notFailBuild: true,
+        deleteDirs: true,
+        disableDeferredWipeout: true,
+        patterns: [
+                [pattern: '.git/**', type: 'EXCLUDE'],
+                [pattern: 'tests/**', type: 'EXCLUDE'],
+                [pattern: 'tox.ini', type: 'EXCLUDE'],
+                [pattern: 'pyproject.toml', type: 'EXCLUDE'],
+                [pattern: 'setup.cfg', type: 'EXCLUDE'],
+                [pattern: glob, type: 'EXCLUDE'],
+            ]
+    )
     script{
         findFiles(glob: glob).each{
             sh(
@@ -1112,19 +1125,6 @@ pipeline {
                                         label 'mac && 10.14 && python3.8'
                                     }
                                     steps{
-//                                         checkout scm
-                                        cleanWs(
-                                            notFailBuild: true,
-                                            deleteDirs: true,
-                                            disableDeferredWipeout: true,
-                                            patterns: [
-                                                    [pattern: '.git/**', type: 'EXCLUDE'],
-                                                    [pattern: 'tests/**', type: 'EXCLUDE'],
-                                                    [pattern: 'tox.ini', type: 'EXCLUDE'],
-                                                    [pattern: 'pyproject.toml', type: 'EXCLUDE'],
-                                                    [pattern: 'setup.cfg', type: 'EXCLUDE'],
-                                                ]
-                                        )
                                         unstash "MacOS 10.14 py38 wheel"
                                         test_package_on_mac("dist/*.whl")
                                     }
@@ -1145,18 +1145,6 @@ pipeline {
                                         label 'mac && 10.14 && python3.8'
                                     }
                                     steps{
-                                        cleanWs(
-                                                notFailBuild: true,
-                                                deleteDirs: true,
-                                                disableDeferredWipeout: true,
-                                                patterns: [
-                                                        [pattern: '.git/**', type: 'EXCLUDE'],
-                                                        [pattern: 'tests/**', type: 'EXCLUDE'],
-                                                        [pattern: 'tox.ini', type: 'EXCLUDE'],
-                                                        [pattern: 'pyproject.toml', type: 'EXCLUDE'],
-                                                        [pattern: 'setup.cfg', type: 'EXCLUDE'],
-                                                    ]
-                                            )
                                         unstash "sdist"
                                         test_package_on_mac("dist/*.tar.gz,dist/*.zip")
                                     }
@@ -1205,20 +1193,19 @@ pipeline {
                                 steps{
                                     timeout(15){
                                         build_wheel(PYTHON_VERSION)
-                                        echo "Fixing up"
-//                                         script{
-//                                             if(PLATFORM == "linux"){
-//                                                 sh(
-//                                                     label: "Converting linux wheel to manylinux",
-//                                                     script:"auditwheel repair ./dist/*.whl -w ./dist"
-//                                                 )
-//                                             }
-//                                         }
+//                                         echo "Fixing up"
+                                        script{
+                                            if(PLATFORM == "linux"){
+                                                sh(
+                                                    label: "Converting linux wheel to manylinux",
+                                                    script:"auditwheel repair ./dist/*.whl -w ./dist"
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                                 post{
                                     always{
-
                                         script{
                                             if(PLATFORM == "linux"){
                                                 stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
