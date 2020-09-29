@@ -1,10 +1,11 @@
 import os
 
-from . import core
-from . import icc
 import collections
 import typing
 import warnings
+
+from . import core
+from . import icc
 
 
 class Image(core.Image):
