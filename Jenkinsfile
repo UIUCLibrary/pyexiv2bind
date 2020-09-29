@@ -992,7 +992,7 @@ pipeline {
                        }
                    }
                 }
-                stage("Mac Versions"){
+                stage("macOS 10.14"){
                     when{
                         equals expected: true, actual: params.BUILD_MAC_PACKAGES
                     }
@@ -1030,7 +1030,7 @@ pipeline {
                                 equals expected: true, actual: params.TEST_PACKAGES
                             }
                             parallel{
-                                stage('Testing Wheel Package on macOS 10.14') {
+                                stage('Testing Wheel Package') {
                                     agent {
                                         label 'mac && 10.14 && python3.8'
                                     }
@@ -1044,7 +1044,7 @@ pipeline {
                                         }
                                     }
                                 }
-                                stage('Testing sdist Package on macOS 10.14') {
+                                stage('Testing sdist Package') {
                                     when{
                                         anyOf{
                                             equals expected: true, actual: params.TEST_PACKAGES
@@ -1068,7 +1068,7 @@ pipeline {
                         }
                     }
                 }
-                stage("Windows and linux"){
+                stage("Windows and Linux"){
                     matrix{
                         agent none
                         axes{
