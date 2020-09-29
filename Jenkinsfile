@@ -606,14 +606,18 @@ def deploy_docs(pkgName, prefix){
     )
 }
 
-def build_wheel(){
+def build_wheel(pythonVersion){
+
+    def TOXENV = "py${pythonVersion}".replaceAll('\\.', '')
     if(isUnix()){
         sh(label: "Building Python Wheel",
-            script: 'python -m pip wheel -w dist/ --no-deps .'
+            script: "TOXENV=${TOXENV} python -m pip wheel -w dist/ --no-deps ."
         )
     } else{
         bat(label: "Building Python Wheel",
-            script: 'python -m pip wheel -w dist/ -v --no-deps .'
+            script: """set TOXENV=${TOXENV}
+                       python -m pip wheel -w dist/ -v --no-deps .
+                       """
         )
     }
 }
@@ -1186,9 +1190,6 @@ pipeline {
                                 )
                             }
                         }
-                        environment{
-                            TOXENV="py${PYTHON_VERSION}".replaceAll('\\.', '')
-                        }
                         stages{
                             stage("Creating bdist wheel"){
                                 agent {
@@ -1203,7 +1204,8 @@ pipeline {
                                 }
                                 steps{
                                     timeout(15){
-                                        build_wheel()
+
+                                        build_wheel(PYTHON_VERSION)
                                         script{
                                             if(PLATFORM == "linux"){
                                                 sh(
@@ -1217,13 +1219,13 @@ pipeline {
                                 post{
                                     always{
                                         echo "Fixing up"
-//                                         script{
-//                                             if(PLATFORM == "linux"){
-//                                                 stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
-//                                             } else{
-//                                                 stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
-//                                             }
-//                                         }
+                                        script{
+                                            if(PLATFORM == "linux"){
+                                                stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
+                                            } else{
+                                                stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
+                                            }
+                                        }
 //                                         check_dll_deps("build/lib")
                                     }
                                     success{
