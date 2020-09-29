@@ -1364,9 +1364,9 @@ pipeline {
                         }
                     }
                 }
-                stage("Test DevPi packages") {
+                stage("Test DevPi Packages") {
                     stages{
-                        stage("Test DevPi packages macOS 10.14") {
+                        stage("Test DevPi Packages macOS 10.14") {
                             when{
                                 equals expected: true, actual: params.BUILD_MAC_PACKAGES
                             }
