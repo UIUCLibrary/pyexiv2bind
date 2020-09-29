@@ -10,7 +10,7 @@ from typing import List, Optional, Tuple, Iterable, Dict, Any, Union
 import setuptools
 
 try:
-    import cmakecmake
+    import cmake
 except ImportError:
     print("cmake missing")
 
