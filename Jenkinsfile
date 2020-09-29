@@ -411,6 +411,23 @@ def test_deps(glob){
     }
 }
 
+def test_package_on_mac(glob){
+    script{
+        findFiles(glob: glob).each{
+            sh(
+                label: "Testing ${it}",
+                script: """python3 -m venv venv
+                           venv/bin/python -m pip install pip --upgrade
+                           venv/bin/python -m pip install wheel
+                           venv/bin/python -m pip install --upgrade setuptools
+                           venv/bin/python -m pip install tox
+                           venv/bin/tox --installpkg=${it.path} -e py -vv --recreate
+                           """
+            )
+        }
+    }
+}
+
 def testDevpiPackage(devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVersion, pkgSelector, toxEnv){
     if(isUnix()){
         sh(
@@ -1020,7 +1037,6 @@ pipeline {
                                     steps{
                                         unstash "MacOS 10.14 py38 wheel"
                                         test_package_on_mac("dist/*.whl")
-
                                     }
                                     post{
                                         cleanup{
