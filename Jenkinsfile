@@ -427,35 +427,81 @@ def test_package_on_mac(glob){
         }
     }
 }
-def devpiRunTest2(devpiClient, pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
-    script{
-        if(!fileExists(pkgPropertiesFile)){
-            error "${pkgPropertiesFile} does not exist"
-        }
-        def props = readProperties interpolate: false, file: pkgPropertiesFile
-        if (isUnix()){
-            sh(
-                label: "Running test",
-                script: """${devpiClient} use https://devpi.library.illinois.edu --clientdir certs/
-                           ${devpiClient} login ${devpiUsername} --password ${devpiPassword} --clientdir certs/
-                           ${devpiClient} use ${devpiIndex} --clientdir certs/
-                           ${devpiClient} test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs/ -e ${toxEnv} --tox-args=\"-vv\"
-                """
-            )
-        } else {
-            bat(
-                label: "Running tests on Devpi",
-                script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
-                           devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
-                           devpi use ${devpiIndex} --clientdir certs\\
-                           devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} --tox-args=\"-vv\"
-                           """
-            )
-        }
+// def devpiRunTest3(devpiClient, pkgName, pkgVersion, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
+//         if (isUnix()){
+//             sh(
+//                 label: "Running test",
+//                 script: """${devpiClient} use https://devpi.library.illinois.edu --clientdir certs/
+//                            ${devpiClient} login ${devpiUsername} --password ${devpiPassword} --clientdir certs/
+//                            ${devpiClient} use ${devpiIndex} --clientdir certs/
+//                            ${devpiClient} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${devpiSelector} --clientdir certs/ -e ${toxEnv} --tox-args=\"-vv\"
+//                 """
+//             )
+//         } else {
+//             bat(
+//                 label: "Running tests on Devpi",
+//                 script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
+//                            devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
+//                            devpi use ${devpiIndex} --clientdir certs\\
+//                            devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} --tox-args=\"-vv\"
+//                            """
+//             )
+//         }
+//     }
+// }
+// def devpiRunTest2(devpiClient, pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
+//     script{
+//         if(!fileExists(pkgPropertiesFile)){
+//             error "${pkgPropertiesFile} does not exist"
+//         }
+//         def props = readProperties interpolate: false, file: pkgPropertiesFile
+//         if (isUnix()){
+//             sh(
+//                 label: "Running test",
+//                 script: """${devpiClient} use https://devpi.library.illinois.edu --clientdir certs/
+//                            ${devpiClient} login ${devpiUsername} --password ${devpiPassword} --clientdir certs/
+//                            ${devpiClient} use ${devpiIndex} --clientdir certs/
+//                            ${devpiClient} test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs/ -e ${toxEnv} --tox-args=\"-vv\"
+//                 """
+//             )
+//         } else {
+//             bat(
+//                 label: "Running tests on Devpi",
+//                 script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
+//                            devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
+//                            devpi use ${devpiIndex} --clientdir certs\\
+//                            devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} --tox-args=\"-vv\"
+//                            """
+//             )
+//         }
+//     }
+// }
+
+def testDevpiPackage(devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVersion, pkgSelector, toxEnv){
+    if(isUnix()){
+        sh(
+            label: "Running tests on Packages on DevPi",
+            script: """python --version
+                       devpi use https://devpi.library.illinois.edu --clientdir certs
+                       devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs
+                       devpi use ${devpiIndex} --clientdir certs
+                       devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir certs -e ${toxEnv} -v
+                       """
+        )
+    } else {
+        bat(
+            label: "Running tests on Packages on DevPi",
+            script: """python --version
+                       devpi use https://devpi.library.illinois.edu --clientdir certs\\
+                       devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
+                       devpi use ${devpiIndex} --clientdir certs\\
+                       devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir certs\\ -e ${toxEnv} -v
+                       """
+        )
     }
 }
 
-def testDevpiPackage(devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVersion, pkgSelector, toxEnv){
+def testDevpiPackage2(devpiExec, devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVersion, pkgSelector, toxEnv){
     if(isUnix()){
         sh(
             label: "Running tests on Packages on DevPi",
@@ -1351,16 +1397,7 @@ pipeline {
                                                            venv/bin/devpi --version
                                                 '''
                                             )
-                                            unstash "DIST-INFO"
-                                            devpiRunTest2(
-                                                "venv/bin/devpi",
-                                                "py3exiv2bind.dist-info/METADATA",
-                                                env.devpiStagingIndex,
-                                                "38-macosx_10_14_x86_64*.*whl",
-                                                DEVPI_USR,
-                                                DEVPI_PSW,
-                                                "py38"
-                                            )
+                                            testDevpiPackage2("venv/bin/devpi", env.devpiStagingIndex, DEVPI_USR, DEVPI_PSW, props.Name, props.Version, "38-macosx_10_14_x86_64*.*whl",  "py38")
                                         }
                                     }
                                     post{
@@ -1389,16 +1426,24 @@ pipeline {
                                                            venv/bin/devpi --version
                                                 '''
                                             )
-                                            unstash "DIST-INFO"
-                                            devpiRunTest2(
+                                            testDevpiPackage2(
                                                 "venv/bin/devpi",
-                                                "py3exiv2bind.dist-info/METADATA",
                                                 env.devpiStagingIndex,
+                                                DEVPI_USR, DEVPI_PSW,
+                                                props.Name, props.Version,
                                                 "tar.gz",
-                                                DEVPI_USR,
-                                                DEVPI_PSW,
                                                 "py38"
                                             )
+//                                             unstash "DIST-INFO"
+//                                             devpiRunTest2(
+//                                                 "venv/bin/devpi",
+//                                                 "py3exiv2bind.dist-info/METADATA",
+//                                                 env.devpiStagingIndex,
+//                                                 "tar.gz",
+//                                                 DEVPI_USR,
+//                                                 DEVPI_PSW,
+//                                                 "py38"
+//                                             )
                                         }
                                     }
                                     post{
