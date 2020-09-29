@@ -617,18 +617,15 @@ def deploy_docs(pkgName, prefix){
     )
 }
 
-def build_wheel(pythonVersion){
+def build_wheel(){
 
-    def TOXENV = "py${pythonVersion}".replaceAll('\\.', '')
     if(isUnix()){
         sh(label: "Building Python Wheel",
-            script: "TOXENV=${TOXENV} python -m pip wheel -w dist/ --no-deps ."
+            script: "python -m pip wheel -w dist/ --no-deps ."
         )
     } else{
         bat(label: "Building Python Wheel",
-            script: """set TOXENV=${TOXENV}
-                       python -m pip wheel -w dist/ -v --no-deps .
-                       """
+            script: "python -m pip wheel -w dist/ -v --no-deps ."
         )
     }
 }
@@ -1189,7 +1186,6 @@ pipeline {
                                 steps{
                                     timeout(15){
                                         build_wheel(PYTHON_VERSION)
-//                                         echo "Fixing up"
                                         script{
                                             if(PLATFORM == "linux"){
                                                 sh(
