@@ -518,21 +518,19 @@ def testDevpiPackage2(devpiExec, devpiIndex, devpiUsername, devpiPassword,  pkgN
     if(isUnix()){
         sh(
             label: "Running tests on Packages on DevPi",
-            script: """python --version
-                       devpi use https://devpi.library.illinois.edu --clientdir certs
-                       devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs
-                       devpi use ${devpiIndex} --clientdir certs
-                       devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir certs -e ${toxEnv} -v
+            script: """${devpiExec} use https://devpi.library.illinois.edu --clientdir certs
+                       ${devpiExec} login ${devpiUsername} --password ${devpiPassword} --clientdir certs
+                       ${devpiExec} use ${devpiIndex} --clientdir certs
+                       ${devpiExec} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir certs -e ${toxEnv} -v
                        """
         )
     } else {
         bat(
             label: "Running tests on Packages on DevPi",
-            script: """python --version
-                       devpi use https://devpi.library.illinois.edu --clientdir certs\\
-                       devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
-                       devpi use ${devpiIndex} --clientdir certs\\
-                       devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir certs\\ -e ${toxEnv} -v
+            script: """${devpiExec} use https://devpi.library.illinois.edu --clientdir certs\\
+                       ${devpiExec} login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
+                       ${devpiExec} use ${devpiIndex} --clientdir certs\\
+                       ${devpiExec} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir certs\\ -e ${toxEnv} -v
                        """
         )
     }
