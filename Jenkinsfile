@@ -1447,10 +1447,13 @@ pipeline {
                                         name 'PYTHON_VERSION'
                                         values  '3.7', '3.8'
                                     }
-                                    axis {
-                                        name 'FORMAT'
-                                        values "wheel", 'sdist'
-                                    }
+//                                     axis {
+//                                         name 'FORMAT'
+//                                         values(
+//                                             "wheel",
+//                                             'sdist')
+
+//                                     }
                                     axis {
                                         name 'PLATFORM'
                                         values(
@@ -1461,17 +1464,17 @@ pipeline {
                                 }
                                 agent none
                                 stages{
-                                    stage("Testing DevPi Package"){
+                                    stage("Testing DevPi Wheel Package"){
                                         agent {
                                           dockerfile {
-                                            filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.filename}"
-                                            additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.additionalBuildArgs}"
-                                            label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.label}"
+                                            filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi['wheel'].dockerfile.filename}"
+                                            additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi['wheel'].dockerfile.additionalBuildArgs}"
+                                            label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi['wheel'].dockerfile.label}"
                                           }
                                         }
                                         steps{
                                             script{
-                                                testDevpiPackage(env.devpiStagingIndex, DEVPI_USR, DEVPI_PSW, props.Name, props.Version, CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector[FORMAT],  CONFIGURATIONS[PYTHON_VERSION].tox_env)
+                                                testDevpiPackage(env.devpiStagingIndex, DEVPI_USR, DEVPI_PSW, props.Name, props.Version, CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector['wheel'],  CONFIGURATIONS[PYTHON_VERSION].tox_env)
                                             }
                                         }
                                     }
