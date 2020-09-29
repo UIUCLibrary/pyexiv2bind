@@ -9,11 +9,6 @@ from typing import List, Optional, Tuple, Iterable, Dict, Any, Union
 
 import setuptools
 
-try:
-    from conans.client import conan_api
-except ImportError:
-    print("conan missing")
-
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 import platform
@@ -401,15 +396,12 @@ class BuildConan(setuptools.Command):
         self.mkpath(conan_cache)
         self.mkpath(build_dir_full_path)
         self.mkpath(os.path.join(build_dir_full_path, "lib"))
-
+        from conans.client import conan_api
         conan = conan_api.Conan(cache_folder=os.path.abspath(conan_cache))
         conan_options = []
-        # if platform.system() == "Windows":
-        #     conan_options.append("*:shared=True")
 
         conan.install(
             options=conan_options,
-            # generators=["json"],
             cwd=build_dir,
             build=['missing'],
             path=os.path.abspath(os.path.dirname(__file__)),
