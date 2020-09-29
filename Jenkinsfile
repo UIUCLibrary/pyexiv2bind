@@ -664,10 +664,7 @@ def startup(){
                         sh(
                            label: "Running setup.py with dist_info",
                            script: """python --version
-                                      python -m venv venv
-                                      venv/bin/python -m pip install pip --upgrade
-                                      venv/bin/python -m pip install cmake wheel
-                                      venv/bin/python setup.py dist_info
+                                      python setup.py dist_info
                                    """
                         )
                         stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'

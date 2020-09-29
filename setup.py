@@ -10,11 +10,6 @@ from typing import List, Optional, Tuple, Iterable, Dict, Any, Union
 import setuptools
 
 try:
-    import cmake
-except ImportError:
-    print("cmake missing")
-
-try:
     from conans.client import conan_api
 except ImportError:
     print("conan missing")
@@ -53,7 +48,7 @@ class BuildCMakeLib(build_clib):
 
     def initialize_options(self):
         super().initialize_options()
-        self.cmake_exec = shutil.which("cmake", path=cmake.CMAKE_BIN_DIR)
+        self.cmake_exec = None
 
     def __init__(self, dist):
         super().__init__(dist)
@@ -62,15 +57,8 @@ class BuildCMakeLib(build_clib):
 
     def finalize_options(self):
         super().finalize_options()
-
-        if self.cmake_exec is None:
-
-            raise FileNotFoundError("CMake path not located on path")
-
-        if not os.path.exists(self.cmake_exec):
-            raise FileNotFoundError(
-                "CMake path not located at {}".format(self.cmake_exec)
-            )
+        import cmake
+        self.cmake_exec = shutil.which("cmake", path=cmake.CMAKE_BIN_DIR)
 
         self.cmake_api_dir = \
             os.path.join(self.build_temp, "deps", ".cmake", "api", "v1")
@@ -131,7 +119,8 @@ class BuildCMakeLib(build_clib):
         if self.compiler.compiler_type != "unix":
             if not self.compiler.initialized:
                 self.compiler.initialize()
-
+        if self.cmake_exec is None:
+            raise FileNotFoundError("CMake path not located on path")
         self.configure_cmake(ext)
         self.build_cmake(ext)
         self.build_install_cmake(ext)
@@ -157,26 +146,15 @@ class BuildCMakeLib(build_clib):
             pass
 
         configure_command = [
-            self.cmake_exec,
-            f'-S{source_dir}',
-            f'-B{dep_build_path}'
+            self.cmake_exec, f'-S{source_dir}',
+            f'-B{dep_build_path}',
+            f'-DCMAKE_BUILD_TYPE={build_configuration_name}',
+            f'-DCMAKE_INSTALL_PREFIX={os.path.abspath(self.build_clib)}',
+            '-Dpyexiv2bind_generate_python_bindings:BOOL=NO',
+            '-DEXIV2_ENABLE_NLS:BOOL=NO',
+            '-DEXIV2_ENABLE_VIDEO:BOOL=OFF',
+            '-DEXIV2_ENABLE_PNG:BOOL=OFF'
         ]
-
-        configure_command.append(
-            f'-DCMAKE_BUILD_TYPE={build_configuration_name}')
-        # build_ext_cmd = self.get_finalized_command("build_ext")
-
-        configure_command.append(
-            f'-DCMAKE_INSTALL_PREFIX={os.path.abspath(self.build_clib)}'
-        )
-
-        configure_command.append(
-            '-Dpyexiv2bind_generate_python_bindings:BOOL=NO'
-        )
-
-        configure_command.append('-DEXIV2_ENABLE_NLS:BOOL=NO')
-        configure_command.append('-DEXIV2_ENABLE_VIDEO:BOOL=OFF')
-        configure_command.append('-DEXIV2_ENABLE_PNG:BOOL=OFF')
 
         if platform.system() == "Linux":
             configure_command.append('-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=OFF')
