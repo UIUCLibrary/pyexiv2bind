@@ -13,10 +13,9 @@ class ICC_data:
     def __str__(self):
         if self.friendly_name:
             return self.friendly_name
-        elif self.value:
+        if self.value:
             return str(self.value, encoding="ascii")
-        else:
-            return str(self.raw_data)
+        return str(self.raw_data)
 
 
 def build_ICC_data(value: bytes, lookup_table: dict = None,
