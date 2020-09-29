@@ -1,5 +1,5 @@
 #!groovy
-@Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
+// @Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
 
 def CONFIGURATIONS = [
         "3.6" : [
@@ -403,6 +403,93 @@ def check_dll_deps(path){
     }
 }
 
+def test_deps(glob){
+    findFiles(glob: glob).each{
+        if(!isUnix()){
+            bat "tox --installpkg ${it} -e dumpbin"
+        }
+    }
+}
+
+def test_package_on_mac(glob){
+    cleanWs(
+        notFailBuild: true,
+        deleteDirs: true,
+        disableDeferredWipeout: true,
+        patterns: [
+                [pattern: '.git/**', type: 'EXCLUDE'],
+                [pattern: 'tests/**', type: 'EXCLUDE'],
+                [pattern: 'tox.ini', type: 'EXCLUDE'],
+                [pattern: 'pyproject.toml', type: 'EXCLUDE'],
+                [pattern: 'setup.cfg', type: 'EXCLUDE'],
+                [pattern: glob, type: 'EXCLUDE'],
+            ]
+    )
+    script{
+        findFiles(glob: glob).each{
+            sh(
+                label: "Testing ${it}",
+                script: """python3 -m venv venv
+                           venv/bin/python -m pip install pip --upgrade
+                           venv/bin/python -m pip install wheel
+                           venv/bin/python -m pip install --upgrade setuptools
+                           venv/bin/python -m pip install tox
+                           venv/bin/tox --installpkg=${it.path} -e py -vv --recreate
+                           """
+            )
+        }
+    }
+}
+// def devpiRunTest3(devpiClient, pkgName, pkgVersion, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
+//         if (isUnix()){
+//             sh(
+//                 label: "Running test",
+//                 script: """${devpiClient} use https://devpi.library.illinois.edu --clientdir certs/
+//                            ${devpiClient} login ${devpiUsername} --password ${devpiPassword} --clientdir certs/
+//                            ${devpiClient} use ${devpiIndex} --clientdir certs/
+//                            ${devpiClient} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${devpiSelector} --clientdir certs/ -e ${toxEnv} --tox-args=\"-vv\"
+//                 """
+//             )
+//         } else {
+//             bat(
+//                 label: "Running tests on Devpi",
+//                 script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
+//                            devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
+//                            devpi use ${devpiIndex} --clientdir certs\\
+//                            devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} --tox-args=\"-vv\"
+//                            """
+//             )
+//         }
+//     }
+// }
+// def devpiRunTest2(devpiClient, pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
+//     script{
+//         if(!fileExists(pkgPropertiesFile)){
+//             error "${pkgPropertiesFile} does not exist"
+//         }
+//         def props = readProperties interpolate: false, file: pkgPropertiesFile
+//         if (isUnix()){
+//             sh(
+//                 label: "Running test",
+//                 script: """${devpiClient} use https://devpi.library.illinois.edu --clientdir certs/
+//                            ${devpiClient} login ${devpiUsername} --password ${devpiPassword} --clientdir certs/
+//                            ${devpiClient} use ${devpiIndex} --clientdir certs/
+//                            ${devpiClient} test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs/ -e ${toxEnv} --tox-args=\"-vv\"
+//                 """
+//             )
+//         } else {
+//             bat(
+//                 label: "Running tests on Devpi",
+//                 script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
+//                            devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
+//                            devpi use ${devpiIndex} --clientdir certs\\
+//                            devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} --tox-args=\"-vv\"
+//                            """
+//             )
+//         }
+//     }
+// }
+
 def testDevpiPackage(devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVersion, pkgSelector, toxEnv){
     if(isUnix()){
         sh(
@@ -427,9 +514,36 @@ def testDevpiPackage(devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVers
     }
 }
 
+def testDevpiPackage2(devpiExec, devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVersion, pkgSelector, toxEnv){
+    if(isUnix()){
+        sh(
+            label: "Running tests on Packages on DevPi",
+            script: """${devpiExec} use https://devpi.library.illinois.edu --clientdir certs
+                       ${devpiExec} login ${devpiUsername} --password ${devpiPassword} --clientdir certs
+                       ${devpiExec} use ${devpiIndex} --clientdir certs
+                       ${devpiExec} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir certs -e ${toxEnv} -v
+                       """
+        )
+    } else {
+        bat(
+            label: "Running tests on Packages on DevPi",
+            script: """${devpiExec} use https://devpi.library.illinois.edu --clientdir certs\\
+                       ${devpiExec} login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
+                       ${devpiExec} use ${devpiIndex} --clientdir certs\\
+                       ${devpiExec} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir certs\\ -e ${toxEnv} -v
+                       """
+        )
+    }
+}
+
 def test_pkg(glob, timeout_time){
 
-    findFiles( glob: glob).each{
+    def pkgFiles = findFiles( glob: glob)
+    if( pkgFiles.size() == 0){
+        error "Unable to check package. No files found with ${glob}"
+    }
+
+    pkgFiles.each{
         timeout(timeout_time){
             if(isUnix()){
                 sh(label: "Testing ${it}",
@@ -503,16 +617,18 @@ def deploy_docs(pkgName, prefix){
     )
 }
 
-def build_wheel(){
+def build_wheel(pythonVersion){
+
+    def TOXENV = "py${pythonVersion}".replaceAll('\\.', '')
     if(isUnix()){
         sh(label: "Building Python Wheel",
-            script: 'python -m pep517.build --binary --out-dir dist/ .'
-//             script: 'python setup.py build -b build/ -j $(grep -c ^processor /proc/cpuinfo) --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist'
+            script: "TOXENV=${TOXENV} python -m pip wheel -w dist/ --no-deps ."
         )
     } else{
         bat(label: "Building Python Wheel",
-            script: 'python -m pep517.build --binary --out-dir dist/ .'
-//             script: "python setup.py build -b build/ -j ${env.NUMBER_OF_PROCESSORS} --build-lib build/lib --build-temp build/temp bdist_wheel -d ./dist"
+            script: """set TOXENV=${TOXENV}
+                       python -m pip wheel -w dist/ -v --no-deps .
+                       """
         )
     }
 }
@@ -541,6 +657,68 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
          writeJSON file: outputJson, json: outstandingIssues
      }
 }
+def startup(){
+    stage("Getting Distribution Info"){
+        node('linux && docker') {
+            docker.image('python:3.8').inside {
+                timeout(2){
+                    try{
+                        checkout scm
+                        sh(
+                           label: "Running setup.py with dist_info",
+                           script: """python --version
+                                      python -m venv venv
+                                      venv/bin/python -m pip install pip --upgrade
+                                      venv/bin/python -m pip install cmake wheel
+                                      venv/bin/python setup.py dist_info
+                                   """
+                        )
+                        stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
+                        archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
+                    } finally{
+                        deleteDir()
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+def test_cpp_code(buildPath){
+    stage("Build"){
+        tee("logs/cmake-build.log"){
+            sh(label: "Building C++ Code",
+               script: """conan install . -if ${buildPath}
+                          cmake -B ${buildPath} -Wdev -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
+                          cmake --build ${buildPath} -j \$(grep -c ^processor /proc/cpuinfo)
+                          """
+            )
+        }
+    }
+    stage("CTest"){
+        sh(label: "Running CTest",
+           script: "cd ${buildPath} && ctest --output-on-failure --no-compress-output -T Test"
+        )
+    }
+}
+
+def get_props(){
+    stage("Reading Package Metadata"){
+        node() {
+            try{
+                unstash "DIST-INFO"
+                def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATA"
+                return props
+            } finally {
+                deleteDir()
+            }
+        }
+    }
+}
+startup()
+def props = get_props()
 
 pipeline {
     agent none
@@ -549,13 +727,15 @@ pipeline {
         booleanParam(name: "RUN_CHECKS", defaultValue: true, description: "Run checks on code")
         booleanParam(name: "USE_SONARQUBE", defaultValue: true, description: "Send data test data to SonarQube")
         booleanParam(name: "BUILD_PACKAGES", defaultValue: false, description: "Build Python packages")
+        booleanParam(name: "BUILD_MAC_PACKAGES", defaultValue: false, description: "Test Python packages on Mac")
+        booleanParam(name: "TEST_PACKAGES", defaultValue: true, description: "Test Python packages by installing them and running tests on the installed package")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to https://devpi.library.illinois.edu/production/release")
         string(name: 'URL_SUBFOLDER', defaultValue: "py3exiv2bind", description: 'The directory that the docs should be saved under')
         booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation")
     }
     stages {
-        stage("Getting Distribution Info"){
+        stage("Building Documentation"){
             agent {
                 dockerfile {
                     filename 'ci/docker/linux/test/Dockerfile'
@@ -563,85 +743,33 @@ pipeline {
                     additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                 }
             }
-            steps{
-                timeout(3){
-                    sh "python setup.py dist_info"
-                }
+            steps {
+                sh(label: "Running Sphinx",
+                   script: '''mkdir -p logs
+                              mkdir -p build/docs/html
+                              python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
+                              python -m sphinx docs/source build/docs/html -b html -d build/docs/.doctrees --no-color -w logs/build_sphinx.log
+                              '''
+                  )
             }
             post{
+                always {
+                    recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', id: 'sphinx_build')])
+                }
                 success{
-                    stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
-                    archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
+                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+                    script{
+                        def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
+                        zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                    }
+                    stash includes: "dist/*.doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
                 }
-            }
-        }
-        stage("Building") {
-            agent {
-                dockerfile {
-                    filename 'ci/docker/linux/test/Dockerfile'
-                    label 'linux && docker'
-                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
-                }
-            }
-            stages{
-                stage("Building Python Package"){
-                    steps {
-                        timeout(10){
-                            sh(label: "Building python package",
-                               script: '''mkdir -p logs
-                                          python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
-                                          '''
-                            )
-                        }
-                    }
-                    post{
-                        success{
-                          stash includes: 'py3exiv2bind/**/*.dll,py3exiv2bind/**/*.pyd,py3exiv2bind/**/*.exe,py3exiv2bind/**/*.so,', name: "built_source"
-                        }
-                        failure{
-                            cleanWs(
-                                deleteDirs: true,
-                                patterns: [
-                                    [pattern: 'dist/', type: 'INCLUDE'],
-                                    [pattern: 'build/', type: 'INCLUDE'],
-                                    [pattern: '.eggs/', type: 'INCLUDE'],
-                                    [pattern: 'logs/', type: 'INCLUDE'],
-                                    ]
-                            )
-                        }
-                    }
-                }
-                stage("Building Sphinx Documentation"){
-                    steps {
-                        sh(label: "Running Sphinx",
-                           script: '''mkdir -p logs
-                                      mkdir -p build/docs/html
-                                      python -m sphinx docs/source build/docs/html -b html -d build/docs/.doctrees --no-color -w logs/build_sphinx.log
-                                      '''
-                          )
-                    }
-                    post{
-                        always {
-                            recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', id: 'sphinx_build')])
-                        }
-                        success{
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            script{
-                                unstash "DIST-INFO"
-                                def props = readProperties(interpolate: true, file: "py3exiv2bind.dist-info/METADATA")
-                                def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
-                                zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
-                                stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
-                            }
-                        }
-                        cleanup{
-                            cleanWs(patterns: [
-                                    [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
-                                    [pattern: "dist/*doc.zip,", type: 'INCLUDE']
-                                ]
-                            )
-                        }
-                    }
+                cleanup{
+                    cleanWs(patterns: [
+                            [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
+                            [pattern: "dist/*doc.zip,", type: 'INCLUDE']
+                        ]
+                    )
                 }
             }
         }
@@ -650,139 +778,240 @@ pipeline {
                 equals expected: true, actual: params.RUN_CHECKS
             }
             stages{
-                stage("Testing") {
-                    agent {
-                        dockerfile {
-                            filename 'ci/docker/linux/test/Dockerfile'
-                            label 'linux && docker'
-                            additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
-                        }
-                    }
+                stage("Testing"){
                     stages{
-                        stage("Setting up Test Env"){
-                            steps{
-                                unstash "built_source"
-                                sh "mkdir -p logs"
-                            }
-                        }
-                        stage("Running Tests"){
-                            parallel {
-                                stage("Run Tox test") {
-                                    when {
-                                       equals expected: true, actual: params.TEST_RUN_TOX
-                                       beforeAgent true
-                                    }
-                                    steps {
-                                        timeout(15){
-                                            sh "tox -e py -vv"
+                        stage("Python Testing"){
+                            stages{
+                                stage("Testing") {
+                                    agent {
+                                        dockerfile {
+                                            filename 'ci/docker/linux/test/Dockerfile'
+                                            label 'linux && docker'
+                                            additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                                         }
                                     }
-                                }
-                                stage("Run Doctest Tests"){
-                                    steps {
-                                        sh "sphinx-build docs/source reports/doctest -b doctest -d build/docs/.doctrees --no-color -w logs/doctest_warnings.log"
+                                    stages{
+                                        stage("Setting up Test Env"){
+                                            steps{
+                                                sh(label: "Building debug build with coverage data",
+                                                   script: '''CFLAGS="--coverage" python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
+                                                              mkdir -p logs
+                                                              '''
+                                               )
+                                            }
+                                        }
+                                        stage("Running Tests"){
+                                            parallel {
+                                                stage("Run Tox test") {
+                                                    when {
+                                                       equals expected: true, actual: params.TEST_RUN_TOX
+                                                       beforeAgent true
+                                                    }
+                                                    steps {
+                                                        timeout(15){
+                                                            sh "tox -e py -vv"
+                                                        }
+                                                    }
+                                                }
+                                                stage("Run Doctest Tests"){
+                                                    steps {
+                                                        sh "sphinx-build docs/source reports/doctest -b doctest -d build/docs/.doctrees --no-color -w logs/doctest_warnings.log"
+                                                    }
+                                                    post{
+                                                        always {
+                                                            recordIssues(tools: [sphinxBuild(name: 'Doctest', pattern: 'logs/doctest_warnings.log', id: 'doctest')])
+                                                        }
+                                                    }
+                                                }
+                                                stage("MyPy Static Analysis") {
+                                                    steps{
+                                                        sh(returnStatus: true,
+                                                           script: '''stubgen -p py3exiv2bind -o ./mypy_stubs
+                                                                      mkdir -p reports/mypy/html
+                                                                      MYPYPATH="$WORKSPACE/mypy_stubs" mypy -p py3exiv2bind --html-report reports/mypy/html > logs/mypy.log
+                                                                      '''
+                                                          )
+                                                    }
+                                                    post {
+                                                        always {
+                                                            recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
+                                                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                                        }
+                                                        cleanup{
+                                                            cleanWs(
+                                                                deleteDirs: true,
+                                                                patterns: [[pattern: 'mypy_stubs', type: 'INCLUDE']]
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                                stage("Run Pylint Static Analysis") {
+                                                    steps{
+                                                        catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
+                                                            sh(
+                                                                script: '''mkdir -p logs
+                                                                           mkdir -p reports
+                                                                           PYLINTHOME=. pylint py3exiv2bind -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
+                                                                           ''',
+                                                                label: "Running pylint"
+                                                            )
+                                                        }
+                                                        sh(
+                                                            script: 'PYLINTHOME=. pylint  -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt',
+                                                            label: "Running pylint for sonarqube",
+                                                            returnStatus: true
+                                                        )
+                                                    }
+                                                    post{
+                                                        always{
+                                                            stash includes: "reports/pylint_issues.txt,reports/pylint.txt", name: 'PYLINT_REPORT'
+                                                            recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
+                                                        }
+                                                    }
+                                                }
+                                                stage("Flake8") {
+                                                  steps{
+                                                    timeout(2){
+                                                        sh returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ./logs/flake8.log"
+                                                    }
+                                                  }
+                                                  post {
+                                                    always {
+                                                        stash includes: "logs/flake8.log", name: 'FLAKE8_REPORT'
+                                                        recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+                                                    }
+                                                  }
+                                                }
+                                                stage("Running Unit Tests"){
+                                                    steps{
+                                                        timeout(2){
+                                                            sh "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=./reports/pytest/junit-pytest.xml"
+                                                        }
+                                                    }
+                                                    post{
+                                                        always{
+                                                            stash includes: "reports/pytest/junit-pytest.xml", name: 'PYTEST_REPORT'
+                                                            junit "reports/pytest/junit-pytest.xml"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                     post{
-                                        always {
-                                            recordIssues(tools: [sphinxBuild(name: 'Doctest', pattern: 'logs/doctest_warnings.log', id: 'doctest')])
-                                        }
-                                    }
-                                }
-                                stage("MyPy Static Analysis") {
-                                    steps{
-                                        sh(returnStatus: true,
-                                           script: '''stubgen -p py3exiv2bind -o ./mypy_stubs
-                                                      mkdir -p reports/mypy/html
-                                                      MYPYPATH="$WORKSPACE/mypy_stubs" mypy -p py3exiv2bind --html-report reports/mypy/html > logs/mypy.log
-                                                      '''
-                                          )
-                                    }
-                                    post {
-                                        always {
-                                            recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
-                                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                        always{
+                                            sh(label: 'combining coverage data',
+                                               script: '''mkdir -p reports/coverage
+                                                          coverage combine
+                                                          coverage xml -o ./reports/coverage/coverage-python.xml
+                                                          gcovr --root . --filter py3exiv2bind --exclude-directories build/temp/conan_cache --print-summary --json -o reports/coverage/coverage-c-extension.json
+                                                          '''
+                                            )
+                                            stash(includes: 'reports/coverage/*.xml,reports/coverage/*.json', name: 'PYTHON_COVERAGE_REPORT')
                                         }
                                         cleanup{
                                             cleanWs(
                                                 deleteDirs: true,
-                                                patterns: [[pattern: 'mypy_stubs', type: 'INCLUDE']]
+                                                patterns: [
+                                                    [pattern: 'reports/coverage/', type: 'INCLUDE'],
+                                                ]
                                             )
-                                        }
-                                    }
-                                }
-                                stage("Run Pylint Static Analysis") {
-                                    steps{
-                                        catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
-                                            sh(
-                                                script: '''mkdir -p logs
-                                                           mkdir -p reports
-                                                           PYLINTHOME=. pylint py3exiv2bind -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
-                                                           ''',
-                                                label: "Running pylint"
-                                            )
-                                        }
-                                        sh(
-                                            script: 'PYLINTHOME=. pylint  -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt',
-                                            label: "Running pylint for sonarqube",
-                                            returnStatus: true
-                                        )
-                                    }
-                                    post{
-                                        always{
-                                            stash includes: "reports/pylint_issues.txt,reports/pylint.txt", name: 'PYLINT_REPORT'
-                                            recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
-                                        }
-                                    }
-                                }
-                                stage("Flake8") {
-                                  steps{
-                                    timeout(2){
-                                        sh returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ./logs/flake8.log"
-                                    }
-                                  }
-                                  post {
-                                    always {
-                                        stash includes: "logs/flake8.log", name: 'FLAKE8_REPORT'
-                                        recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-                                    }
-                                  }
-                                }
-                                stage("Running Unit Tests"){
-                                    steps{
-                                        timeout(2){
-                                            sh "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=./reports/pytest/junit-pytest.xml"
-                                        }
-                                    }
-                                    post{
-                                        always{
-                                            stash includes: "reports/pytest/junit-pytest.xml", name: 'PYTEST_REPORT'
-                                            junit "reports/pytest/junit-pytest.xml"
                                         }
                                     }
                                 }
                             }
                         }
-                    }
-                    post{
-                        always{
-                            sh "coverage combine && coverage xml -o ./reports/coverage.xml"
-                            stash includes: "reports/coverage.xml", name: 'COVERAGE_REPORT'
-                            publishCoverage(
-                                adapters: [
-                                    coberturaAdapter('reports/coverage.xml')
-                                ],
-                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
-                            )
+                        stage("C++ Testing"){
+                            agent {
+                                dockerfile {
+                                    filename 'ci/docker/cpp/Dockerfile'
+                                    label 'linux && docker'
+                                    additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                }
+                            }
+                            steps{
+                                test_cpp_code('build')
+                            }
+                            post{
+                                always{
+                                    recordIssues(
+                                        filters: [excludeFile('build/_deps/*')],
+                                        tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']]
+                                        )
+
+                                    sh "mkdir -p reports/coverage && gcovr --root . --filter py3exiv2bind --print-summary  --json -o reports/coverage/coverage_cpp.json"
+                                    stash(includes: "reports/coverage/*.json", name: "CPP_COVERAGE_TRACEFILE")
+                                    xunit(
+                                        testTimeMargin: '3000',
+                                        thresholdMode: 1,
+                                        thresholds: [
+                                            failed(),
+                                            skipped()
+                                        ],
+                                        tools: [
+                                            CTest(
+                                                deleteOutputFiles: true,
+                                                failIfNotNew: true,
+                                                pattern: "build/Testing/**/*.xml",
+                                                skipNoTestFiles: true,
+                                                stopProcessingIfError: true
+                                            )
+                                        ]
+                                   )
+                                }
+                                cleanup{
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        patterns: [
+                                            [pattern: 'build/', type: 'INCLUDE'],
+                                        ]
+                                    )
+                                }
+                            }
                         }
-                        cleanup{
-                            cleanWs(patterns: [
-                                    [pattern: 'reports/coverage.xml', type: 'INCLUDE'],
-                                    [pattern: 'reports/coverage', type: 'INCLUDE'],
-                                ]
-                            )
+                        stage("Report Coverage"){
+                            agent {
+                                dockerfile {
+                                    filename 'ci/docker/linux/test/Dockerfile'
+                                    label 'linux && docker'
+                                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                }
+                            }
+                            steps{
+                                unstash "PYTHON_COVERAGE_REPORT"
+                                unstash "CPP_COVERAGE_TRACEFILE"
+                                sh "gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --print-summary --xml -o reports/coverage/coverage_cpp.xml"
+                                publishCoverage(
+                                    adapters: [
+                                            coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
+                                        ],
+                                    sourceFileResolver: sourceFiles('NEVER_STORE')
+                                )
+                            }
                         }
                     }
+//                     post{
+//                         always{
+//                             node("linux && docker"){
+//                                 script{
+//                                     docker.build("py3exiv2bind:util",'-f ci/docker/linux/test/Dockerfile --build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+//                                         checkout scm
+//                                         unstash "PYTHON_COVERAGE_REPORT"
+//                                         unstash "CPP_COVERAGE_TRACEFILE"
+//                                         sh "gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --print-summary --xml -o reports/coverage/coverage_cpp.xml"
+//                                         publishCoverage(
+//                                             adapters: [
+//                                                     coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
+//                                                 ],
+//                                             sourceFileResolver: sourceFiles('NEVER_STORE')
+//                                         )
+//                                     }
+//                                 }
+//                             }
+//                         }
+//                     }
                 }
+
                 stage("Sonarcloud Analysis"){
                     agent {
                         dockerfile {
@@ -801,38 +1030,13 @@ pipeline {
                         beforeOptions true
                     }
                     steps{
-                        unstash "COVERAGE_REPORT"
+                        unstash "PYTHON_COVERAGE_REPORT"
                         unstash "PYTEST_REPORT"
         //                 unstash "BANDIT_REPORT"
                         unstash "PYLINT_REPORT"
                         unstash "FLAKE8_REPORT"
                         unstash "DIST-INFO"
                         sonarcloudSubmit("py3exiv2bind.dist-info/METADATA", "reports/sonar-report.json", 'sonarcloud-py3exiv2bind')
-        //                 script{
-        //                     withSonarQubeEnv(installationName:"sonarcloud", credentialsId: 'sonarcloud-py3exiv2bind') {
-        //                         unstash "DIST-INFO"
-        //                         def props = readProperties(interpolate: true, file: "py3exiv2bind.dist-info/METADATA")
-        //                         if (env.CHANGE_ID){
-        //                             sh(
-        //                                 label: "Running Sonar Scanner",
-        //                                 script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
-        //                                 )
-        //                         } else {
-        //                             sh(
-        //                                 label: "Running Sonar Scanner",
-        //                                 script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
-        //                                 )
-        //                         }
-        //                     }
-        //                     timeout(time: 1, unit: 'HOURS') {
-        //                         def sonarqube_result = waitForQualityGate(abortPipeline: false)
-        //                         if (sonarqube_result.status != 'OK') {
-        //                             unstable "SonarQube quality gate: ${sonarqube_result.status}"
-        //                         }
-        //                         def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
-        //                         writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
-        //                     }
-        //                 }
                     }
                     post {
                         always{
@@ -846,32 +1050,6 @@ pipeline {
                 }
             }
         }
-        stage("Python sdist"){
-            agent{
-                dockerfile {
-                    filename 'ci/docker/linux/test/Dockerfile'
-                    label 'linux && docker'
-                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
-                }
-            }
-            when{
-                anyOf{
-                    equals expected: true, actual: params.BUILD_PACKAGES
-                    equals expected: true, actual: params.DEPLOY_DEVPI
-                    equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
-                }
-                beforeAgent true
-            }
-            steps {
-               sh "python -m pep517.build --source --out-dir dist/ ."
-            }
-            post{
-               success{
-                   stash includes: 'dist/*.zip,dist/*.tar.gz', name: "sdist"
-                   archiveArtifacts artifacts: "dist/*.tar.gz,dist/*.zip", fingerprint: true
-               }
-           }
-       }
         stage('Distribution Packages') {
             when{
                 anyOf{
@@ -881,144 +1059,248 @@ pipeline {
                 }
                 beforeAgent true
             }
-            matrix{
-                agent none
-                axes{
-                    axis {
-                        name 'PLATFORM'
-                        values(
-                            "linux",
-                            "windows"
-                        )
-                    }
-                    axis {
-                        name "PYTHON_VERSION"
-                        values(
-                            "3.6",
-                            "3.7",
-                            "3.8"
-                        )
-                    }
-                }
-                environment{
-                    TOXENV="py${PYTHON_VERSION}".replaceAll('\\.', '')
-                }
-                stages{
-                    stage("Testing sdist package"){
-                        agent {
-                            dockerfile {
-                                filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.filename}"
-                                label "${PLATFORM} && docker"
-                                additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.additionalBuildArgs}"
-                             }
+            stages{
+                stage("Python sdist"){
+                    agent{
+                        dockerfile {
+                            filename 'ci/docker/linux/test/Dockerfile'
+                            label 'linux && docker'
+                            additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                         }
-                        steps{
-                            cleanWs(
-                                notFailBuild: true,
-                                deleteDirs: true,
-                                disableDeferredWipeout: true,
-                                patterns: [
-                                        [pattern: '.git/**', type: 'EXCLUDE'],
-                                        [pattern: 'tests/**', type: 'EXCLUDE'],
-                                        [pattern: 'tox.ini', type: 'EXCLUDE'],
-                                    ]
-                            )
-                            catchError(stageResult: 'FAILURE') {
-                                unstash "sdist"
-                                test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['sdist']}", 20)
+                    }
+                    steps {
+                       sh "python -m pep517.build --source --out-dir dist/ ."
+                    }
+                    post{
+                       success{
+                           stash includes: 'dist/*.zip,dist/*.tar.gz', name: "sdist"
+                           archiveArtifacts artifacts: "dist/*.tar.gz,dist/*.zip", fingerprint: true
+                       }
+                   }
+                }
+                stage("macOS 10.14"){
+                    when{
+                        equals expected: true, actual: params.BUILD_MAC_PACKAGES
+                    }
+                    stages{
+                        stage('Building Wheel') {
+                            agent {
+                                label 'mac && 10.14 && python3.8'
+                            }
+                            steps{
+                                sh(
+                                    label: "Building wheel for macOS 10.14",
+                                    script: 'python3 -m pip wheel --no-deps -w dist .'
+                                )
+                            }
+                            post{
+                                always{
+                                    stash includes: 'dist/*.whl', name: "MacOS 10.14 py38 wheel"
+                                }
+                                success{
+                                    archiveArtifacts artifacts: "dist/*.whl"
+                                }
+                                cleanup{
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        patterns: [
+                                            [pattern: 'build/', type: 'INCLUDE'],
+                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                        ]
+                                    )
+                                }
+                            }
+                        }
+                        stage("Testing Packages"){
+                            when{
+                                equals expected: true, actual: params.TEST_PACKAGES
+                            }
+                            parallel{
+                                stage('Testing Wheel Package') {
+                                    agent {
+                                        label 'mac && 10.14 && python3.8'
+                                    }
+                                    steps{
+                                        unstash "MacOS 10.14 py38 wheel"
+                                        test_package_on_mac("dist/*.whl")
+                                    }
+                                    post{
+                                        cleanup{
+                                            deleteDir()
+                                        }
+                                    }
+                                }
+                                stage('Testing sdist Package') {
+                                    when{
+                                        anyOf{
+                                            equals expected: true, actual: params.TEST_PACKAGES
+                                        }
+                                        beforeAgent true
+                                    }
+                                    agent {
+                                        label 'mac && 10.14 && python3.8'
+                                    }
+                                    steps{
+                                        unstash "sdist"
+                                        test_package_on_mac("dist/*.tar.gz,dist/*.zip")
+                                    }
+                                    post{
+                                        cleanup{
+                                            deleteDir()
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
-                    stage("Creating bdist wheel"){
-                        agent {
-                            dockerfile {
-                                filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.package.dockerfile.filename}"
-                                label "${PLATFORM} && docker"
-                                additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.package.dockerfile.additionalBuildArgs}"
-                             }
+                }
+                stage("Windows and Linux"){
+                    matrix{
+                        agent none
+                        axes{
+                            axis {
+                                name 'PLATFORM'
+                                values(
+                                    "linux",
+                                    "windows"
+                                )
+                            }
+                            axis {
+                                name "PYTHON_VERSION"
+                                values(
+        //                             "3.6",
+                                    "3.7",
+                                    "3.8"
+                                )
+                            }
                         }
-                        steps{
-                            timeout(15){
-                                build_wheel()
-                                script{
-                                    if(PLATFORM == "linux"){
-                                        sh(
-                                            label: "Converting linux wheel to manylinux",
-                                            script:"auditwheel repair ./dist/*.whl -w ./dist"
+                        stages{
+                            stage("Creating bdist wheel"){
+                                agent {
+                                    dockerfile {
+                                        filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.package.dockerfile.filename}"
+                                        label "${PLATFORM} && docker"
+                                        additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.package.dockerfile.additionalBuildArgs}"
+                                     }
+                                }
+                                options {
+                                    warnError('Wheel Building Failed')
+                                }
+                                steps{
+                                    timeout(15){
+                                        build_wheel(PYTHON_VERSION)
+//                                         echo "Fixing up"
+                                        script{
+                                            if(PLATFORM == "linux"){
+                                                sh(
+                                                    label: "Converting linux wheel to manylinux",
+                                                    script:"auditwheel repair ./dist/*.whl -w ./dist"
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                post{
+                                    always{
+                                        script{
+                                            if(PLATFORM == "linux"){
+                                                stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
+                                            } else{
+                                                stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
+                                            }
+                                        }
+//                                         check_dll_deps("build/lib")
+                                    }
+                                    success{
+                                        archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
+                                    }
+                                    cleanup{
+                                        cleanWs(
+                                            deleteDirs: true,
+                                            patterns: [
+                                                [pattern: 'dist/', type: 'INCLUDE'],
+                                                [pattern: '.tox/', type: 'INCLUDE'],
+                                                [pattern: '**/__pycache__', type: 'INCLUDE'],
+                                            ]
                                         )
                                     }
                                 }
                             }
-                        }
-                        post{
-                            always{
-                                script{
-                                    if(PLATFORM == "linux"){
-                                        stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
-                                    } else{
-                                        stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
+                        stage("Testing Python Packages"){
+                                when{
+                                    equals expected: true, actual: params.TEST_PACKAGES
+                                }
+                                stages{
+                                    stage("Testing Wheel Package"){
+                                        agent {
+                                            dockerfile {
+                                                filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.filename}"
+                                                label "${PLATFORM} && docker"
+                                                additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.additionalBuildArgs}"
+                                             }
+                                        }
+                                        options {
+                                            warnError('Testing Wheel Failed')
+                                        }
+                                        steps{
+                                            cleanWs(
+                                                notFailBuild: true,
+                                                deleteDirs: true,
+                                                disableDeferredWipeout: true,
+                                                patterns: [
+                                                        [pattern: '.git/**', type: 'EXCLUDE'],
+                                                        [pattern: 'tests/**', type: 'EXCLUDE'],
+                                                        [pattern: 'tox.ini', type: 'EXCLUDE'],
+                                                    ]
+                                            )
+                                            unstash "whl ${PYTHON_VERSION} ${platform}"
+                                            catchError(stageResult: 'FAILURE') {
+                                                test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}", 15)
+                                            }
+                                        }
+                                        post{
+                                            cleanup{
+                                                cleanWs(
+                                                    deleteDirs: true,
+                                                    notFailBuild: true,
+                                                    patterns: [
+                                                        [pattern: 'dist/', type: 'INCLUDE'],
+                                                        [pattern: '**/__pycache__', type: 'INCLUDE'],
+                                                        [pattern: '.tox/', type: 'INCLUDE'],
+                                                    ]
+                                                )
+                                            }
+                                        }
+                                    }
+                                    stage("Testing sdist Package"){
+                                        agent {
+                                            dockerfile {
+                                                filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.filename}"
+                                                label "${PLATFORM} && docker"
+                                                additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.additionalBuildArgs}"
+                                             }
+                                        }
+                                        options {
+                                            warnError('Testing sdist Failed')
+                                        }
+                                        steps{
+                                            cleanWs(
+                                                notFailBuild: true,
+                                                deleteDirs: true,
+                                                disableDeferredWipeout: true,
+                                                patterns: [
+                                                        [pattern: '.git/**', type: 'EXCLUDE'],
+                                                        [pattern: 'tests/**', type: 'EXCLUDE'],
+                                                        [pattern: 'tox.ini', type: 'EXCLUDE'],
+                                                    ]
+                                            )
+                                            catchError(stageResult: 'FAILURE') {
+                                                unstash "sdist"
+                                                test_pkg("dist/*.zip,dist/*.tar.gz", 20)
+                                            }
+                                        }
                                     }
                                 }
-                                check_dll_deps("build/lib")
-//                                     if(!isUnix()){
-//                                         findFiles(glob: "build/lib/**/*.pyd").each{
-//                                             bat(
-//                                                 label: "Checking Python extension for dependents",
-//                                                 script: "dumpbin /DEPENDENTS ${it.path}"
-//                                             )
-//                                         }
-//                                     }
-                            }
-                            success{
-                                archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
-                            }
-                            cleanup{
-                                cleanWs(
-                                    deleteDirs: true,
-                                    patterns: [
-                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                        [pattern: '.tox/', type: 'INCLUDE'],
-                                        [pattern: '**/__pycache__', type: 'INCLUDE'],
-                                    ]
-                                )
-                            }
-                        }
-                    }
-                    stage("Testing Wheel Package"){
-                        agent {
-                            dockerfile {
-                                filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.filename}"
-                                label "${PLATFORM} && docker"
-                                additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.additionalBuildArgs}"
-                             }
-                        }
-                        steps{
-                            cleanWs(
-                                notFailBuild: true,
-                                deleteDirs: true,
-                                disableDeferredWipeout: true,
-                                patterns: [
-                                        [pattern: '.git/**', type: 'EXCLUDE'],
-                                        [pattern: 'tests/**', type: 'EXCLUDE'],
-                                        [pattern: 'tox.ini', type: 'EXCLUDE'],
-                                    ]
-                            )
-                            unstash "whl ${PYTHON_VERSION} ${platform}"
-                            catchError(stageResult: 'FAILURE') {
-                                test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}", 15)
-                            }
-                        }
-                        post{
-                            cleanup{
-                                cleanWs(
-                                    deleteDirs: true,
-                                    notFailBuild: true,
-                                    patterns: [
-                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                        [pattern: '**/__pycache__', type: 'INCLUDE'],
-                                        [pattern: '.tox/', type: 'INCLUDE'],
-                                    ]
-                                )
                             }
                         }
                     }
@@ -1056,8 +1338,13 @@ pipeline {
                     }
                     steps {
                         timeout(5){
-                            unstash "whl 3.6 windows"
-                            unstash "whl 3.6 linux"
+                            script{
+                                if(params.BUILD_MAC_PACKAGES){
+                                    unstash "MacOS 10.14 py38 wheel"
+                                }
+                            }
+//                             unstash "whl 3.6 windows"
+//                             unstash "whl 3.6 linux"
                             unstash "whl 3.7 windows"
                             unstash "whl 3.7 linux"
                             unstash "whl 3.8 windows"
@@ -1075,40 +1362,136 @@ pipeline {
                         }
                     }
                 }
-                stage("Test DevPi packages") {
-                    matrix {
-                        axes {
-                            axis {
-                                name 'PYTHON_VERSION'
-                                values '3.6', '3.7', '3.8'
+                stage("Test DevPi Packages") {
+                    stages{
+                        stage("Test DevPi Packages macOS 10.14") {
+                            when{
+                                equals expected: true, actual: params.BUILD_MAC_PACKAGES
                             }
-                            axis {
-                                name 'FORMAT'
-                                values "wheel", 'sdist'
-                            }
-                            axis {
-                                name 'PLATFORM'
-                                values(
-                                    "windows",
-                                    "linux"
-                                )
+                            parallel{
+                                stage("Wheel"){
+                                    agent {
+                                        label 'mac && 10.14 && python3.8'
+                                    }
+                                    steps{
+                                        timeout(10){
+                                            sh(
+                                                label: "Installing devpi client",
+                                                script: '''python3 -m venv venv
+                                                           venv/bin/python -m pip install --upgrade pip
+                                                           venv/bin/pip install devpi-client
+                                                           venv/bin/devpi --version
+                                                '''
+                                            )
+                                            testDevpiPackage2("venv/bin/devpi", env.devpiStagingIndex, DEVPI_USR, DEVPI_PSW, props.Name, props.Version, "38-macosx_10_14_x86_64*.*whl",  "py38")
+                                        }
+                                    }
+                                    post{
+                                        cleanup{
+                                            cleanWs(
+                                                notFailBuild: true,
+                                                deleteDirs: true,
+                                                patterns: [
+                                                    [pattern: 'venv/', type: 'INCLUDE'],
+                                                ]
+                                            )
+                                        }
+                                    }
+                                }
+                                stage("sdist"){
+                                    agent {
+                                        label 'mac && 10.14 && python3.8'
+                                    }
+                                    steps{
+                                        timeout(10){
+                                            sh(
+                                                label: "Installing devpi client",
+                                                script: '''python3 -m venv venv
+                                                           venv/bin/python -m pip install --upgrade pip
+                                                           venv/bin/pip install devpi-client
+                                                           venv/bin/devpi --version
+                                                '''
+                                            )
+                                            testDevpiPackage2(
+                                                "venv/bin/devpi",
+                                                env.devpiStagingIndex,
+                                                DEVPI_USR, DEVPI_PSW,
+                                                props.Name, props.Version,
+                                                "tar.gz",
+                                                "py38"
+                                            )
+                                        }
+                                    }
+                                    post{
+                                        cleanup{
+                                            cleanWs(
+                                                notFailBuild: true,
+                                                deleteDirs: true,
+                                                patterns: [
+                                                    [pattern: 'venv/', type: 'INCLUDE'],
+                                                ]
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
-                        agent none
-                        stages{
-                            stage("Testing DevPi Package"){
-                                agent {
-                                  dockerfile {
-                                    filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.filename}"
-                                    additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.additionalBuildArgs}"
-                                    label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.label}"
-                                  }
+                        stage("Test DevPi Packages for Windows and Linux"){
+                            matrix {
+                                axes {
+                                    axis {
+                                        name 'PYTHON_VERSION'
+                                        values  '3.7', '3.8'
+                                    }
+                                    axis {
+                                        name 'PLATFORM'
+                                        values(
+                                            "windows",
+                                            "linux"
+                                        )
+                                    }
                                 }
-                                steps{
-                                    unstash "DIST-INFO"
-                                    script{
-                                        def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATA"
-                                        testDevpiPackage(env.devpiStagingIndex, DEVPI_USR, DEVPI_PSW, props.Name, props.Version, CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector[FORMAT],  CONFIGURATIONS[PYTHON_VERSION].tox_env)
+                                agent none
+                                stages{
+                                    stage("DevPi Wheel Package"){
+                                        agent {
+                                          dockerfile {
+                                            filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi['wheel'].dockerfile.filename}"
+                                            additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi['wheel'].dockerfile.additionalBuildArgs}"
+                                            label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi['wheel'].dockerfile.label}"
+                                          }
+                                        }
+                                        steps{
+                                            script{
+                                                testDevpiPackage(
+                                                    env.devpiStagingIndex,
+                                                    DEVPI_USR, DEVPI_PSW,
+                                                    props.Name, props.Version,
+                                                    CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector['wheel'],
+                                                    CONFIGURATIONS[PYTHON_VERSION].tox_env
+                                                )
+                                            }
+                                        }
+                                    }
+                                    stage("DevPi sdist Package"){
+                                        agent {
+                                          dockerfile {
+                                            filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi['sdist'].dockerfile.filename}"
+                                            additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi['sdist'].dockerfile.additionalBuildArgs}"
+                                            label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi['sdist'].dockerfile.label}"
+                                          }
+                                        }
+                                        steps{
+                                            script{
+                                                testDevpiPackage(
+                                                    env.devpiStagingIndex,
+                                                    DEVPI_USR, DEVPI_PSW,
+                                                    props.Name, props.Version,
+                                                    "tar.gz",
+                                                    CONFIGURATIONS[PYTHON_VERSION].tox_env
+                                                    )
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -1142,8 +1525,6 @@ pipeline {
                     }
                     steps {
                         script {
-                            unstash "DIST-INFO"
-                            def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
                             sh(
                                 label: "Pushing to DS_Jenkins/${env.BRANCH_NAME} index",
                                 script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
@@ -1158,14 +1539,11 @@ pipeline {
             post{
                 success{
                     node('linux && docker') {
-                        checkout scm
                         script{
                             docker.build("py3exiv2bind:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
                                 if (!env.TAG_NAME?.trim()){
-                                    unstash "DIST-INFO"
-                                    def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
                                     sh(
-                                        label: "Connecting to DevPi Server",
+                                        label: "Pushing ${props.Name} ${props.Version} to DS_Jenkins/${env.BRANCH_NAME} index on DevPi Server",
                                         script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
                                                    devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
                                                    devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
@@ -1181,10 +1559,8 @@ pipeline {
                     node('linux && docker') {
                        script{
                             docker.build("py3exiv2bind:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
-                                unstash "DIST-INFO"
-                                def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
                                 sh(
-                                label: "Connecting to DevPi Server",
+                                label: "Removing ${props.Name} ${props.Version} from staging index on DevPi Server",
                                 script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
                                            devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
                                            devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
