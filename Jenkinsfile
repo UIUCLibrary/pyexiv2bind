@@ -1360,7 +1360,7 @@ pipeline {
                 }
                 stage("Test DevPi Packages") {
                     stages{
-                        stage("Test DevPi Packages macOS 10.14") {
+                        stage("macOS 10.14") {
                             when{
                                 equals expected: true, actual: params.BUILD_MAC_PACKAGES
                             }
@@ -1432,7 +1432,7 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Test DevPi Packages for Windows and Linux"){
+                        stage("Windows and Linux"){
                             matrix {
                                 axes {
                                     axis {
