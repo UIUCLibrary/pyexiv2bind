@@ -427,6 +427,33 @@ def test_package_on_mac(glob){
         }
     }
 }
+def devpiRunTest2(devpiClient, pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
+    script{
+        if(!fileExists(pkgPropertiesFile)){
+            error "${pkgPropertiesFile} does not exist"
+        }
+        def props = readProperties interpolate: false, file: pkgPropertiesFile
+        if (isUnix()){
+            sh(
+                label: "Running test",
+                script: """${devpiClient} use https://devpi.library.illinois.edu --clientdir certs/
+                           ${devpiClient} login ${devpiUsername} --password ${devpiPassword} --clientdir certs/
+                           ${devpiClient} use ${devpiIndex} --clientdir certs/
+                           ${devpiClient} test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs/ -e ${toxEnv} --tox-args=\"-vv\"
+                """
+            )
+        } else {
+            bat(
+                label: "Running tests on Devpi",
+                script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
+                           devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
+                           devpi use ${devpiIndex} --clientdir certs\\
+                           devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} --tox-args=\"-vv\"
+                           """
+            )
+        }
+    }
+}
 
 def testDevpiPackage(devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVersion, pkgSelector, toxEnv){
     if(isUnix()){
@@ -1304,37 +1331,124 @@ pipeline {
                     }
                 }
                 stage("Test DevPi packages") {
-                    matrix {
-                        axes {
-                            axis {
-                                name 'PYTHON_VERSION'
-                                values  '3.7', '3.8'
+                    stages{
+                        stage("Test DevPi packages macOS 10.14") {
+                            when{
+                                equals expected: true, actual: params.BUILD_MAC_PACKAGES
                             }
-                            axis {
-                                name 'FORMAT'
-                                values "wheel", 'sdist'
-                            }
-                            axis {
-                                name 'PLATFORM'
-                                values(
-                                    "windows",
-                                    "linux"
-                                )
+                            parallel{
+                                stage("Wheel"){
+                                    agent {
+                                        label 'mac && 10.14 && python3.8'
+                                    }
+                                    steps{
+                                        timeout(10){
+                                            sh(
+                                                label: "Installing devpi client",
+                                                script: '''python3 -m venv venv
+                                                           venv/bin/python -m pip install --upgrade pip
+                                                           venv/bin/pip install devpi-client
+                                                           venv/bin/devpi --version
+                                                '''
+                                            )
+                                            unstash "DIST-INFO"
+                                            devpiRunTest2(
+                                                "venv/bin/devpi",
+                                                "py3exiv2bind.dist-info/METADATA",
+                                                env.devpiStagingIndex,
+                                                "38-macosx_10_14_x86_64*.*whl",
+                                                DEVPI_USR,
+                                                DEVPI_PSW,
+                                                "py38"
+                                            )
+                                        }
+                                    }
+                                    post{
+                                        cleanup{
+                                            cleanWs(
+                                                notFailBuild: true,
+                                                deleteDirs: true,
+                                                patterns: [
+                                                    [pattern: 'venv/', type: 'INCLUDE'],
+                                                ]
+                                            )
+                                        }
+                                    }
+                                }
+                                stage("sdist"){
+                                    agent {
+                                        label 'mac && 10.14 && python3.8'
+                                    }
+                                    steps{
+                                        timeout(10){
+                                            sh(
+                                                label: "Installing devpi client",
+                                                script: '''python3 -m venv venv
+                                                           venv/bin/python -m pip install --upgrade pip
+                                                           venv/bin/pip install devpi-client
+                                                           venv/bin/devpi --version
+                                                '''
+                                            )
+                                            unstash "DIST-INFO"
+                                            devpiRunTest2(
+                                                "venv/bin/devpi",
+                                                "py3exiv2bind.dist-info/METADATA",
+                                                env.devpiStagingIndex,
+                                                "tar.gz",
+                                                DEVPI_USR,
+                                                DEVPI_PSW,
+                                                "py38"
+                                            )
+                                        }
+                                    }
+                                    post{
+                                        cleanup{
+                                            cleanWs(
+                                                notFailBuild: true,
+                                                deleteDirs: true,
+                                                patterns: [
+                                                    [pattern: 'venv/', type: 'INCLUDE'],
+                                                ]
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
-                        agent none
-                        stages{
-                            stage("Testing DevPi Package"){
-                                agent {
-                                  dockerfile {
-                                    filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.filename}"
-                                    additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.additionalBuildArgs}"
-                                    label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.label}"
-                                  }
+                        stage("Test DevPi Packages for Windows and Linux"){
+                            matrix {
+                                axes {
+                                    axis {
+                                        name 'PYTHON_VERSION'
+                                        values  '3.7', '3.8'
+                                    }
+                                    axis {
+                                        name 'FORMAT'
+                                        values "wheel", 'sdist'
+                                    }
+                                    axis {
+                                        name 'PLATFORM'
+                                        values(
+                                            "windows",
+                                            "linux"
+                                        )
+                                    }
                                 }
-                                steps{
-                                    script{
-                                        testDevpiPackage(env.devpiStagingIndex, DEVPI_USR, DEVPI_PSW, props.Name, props.Version, CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector[FORMAT],  CONFIGURATIONS[PYTHON_VERSION].tox_env)
+                                agent none
+                                stages{
+                                    stage("Testing DevPi Package"){
+                                        agent {
+                                          dockerfile {
+                                            filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.filename}"
+                                            additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.additionalBuildArgs}"
+                                            label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi[FORMAT].dockerfile.label}"
+                                          }
+                                        }
+                                        steps{
+                                            script{
+                                                testDevpiPackage(env.devpiStagingIndex, DEVPI_USR, DEVPI_PSW, props.Name, props.Version, CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector[FORMAT],  CONFIGURATIONS[PYTHON_VERSION].tox_env)
+                                            }
+                                        }
                                     }
                                 }
                             }
