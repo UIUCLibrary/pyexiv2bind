@@ -1025,7 +1025,7 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Testing"){
+                        stage("Testing Packages"){
                             when{
                                 equals expected: true, actual: params.TEST_PACKAGES
                             }
