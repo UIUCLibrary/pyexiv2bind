@@ -143,6 +143,7 @@ class BuildCMakeLib(build_clib):
         configure_command = [
             self.cmake_exec, f'-S{source_dir}',
             f'-B{dep_build_path}',
+            f"-DCMAKE_TOOLCHAIN_FILE={dep_build_path}/conan_paths.cmake",
             f'-DCMAKE_BUILD_TYPE={build_configuration_name}',
             f'-DCMAKE_INSTALL_PREFIX={os.path.abspath(self.build_clib)}',
             '-Dpyexiv2bind_generate_python_bindings:BOOL=NO',
@@ -412,17 +413,19 @@ class BuildConan(setuptools.Command):
         assert os.path.exists(conanbuildinfotext)
 
         text_md = self.get_from_txt(conanbuildinfotext)
-        for path in text_md['bin_paths']:
-            if path not in build_ext_cmd.library_dirs:
-                build_ext_cmd.library_dirs.insert(0, path)
+        for extension in build_ext_cmd.extensions:
 
-        for path in text_md['lib_paths']:
-            if path not in build_ext_cmd.library_dirs:
-                build_ext_cmd.library_dirs.insert(0, path)
+            for path in text_md['bin_paths']:
+                if path not in extension.library_dirs:
+                    extension.library_dirs.insert(0, path)
 
-        for path in text_md['lib_paths']:
-            if path not in build_ext_cmd.library_dirs:
-                build_ext_cmd.library_dirs.insert(0, path)
+            for path in text_md['lib_paths']:
+                if path not in extension.library_dirs:
+                    extension.library_dirs.insert(0, path)
+
+            for path in text_md['lib_paths']:
+                if path not in extension.library_dirs:
+                    extension.library_dirs.insert(0, path)
 
         extension_deps = set()
         all_libs = [lib.libraries for lib in build_ext_cmd.ext_map.values()]
