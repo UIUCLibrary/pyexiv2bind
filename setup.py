@@ -413,12 +413,11 @@ class BuildConan(setuptools.Command):
         assert os.path.exists(conanbuildinfotext)
 
         text_md = self.get_from_txt(conanbuildinfotext)
+        for path in text_md['bin_paths']:
+            if path not in build_ext_cmd.library_dirs:
+                build_ext_cmd.library_dirs.insert(0, path)
+
         for extension in build_ext_cmd.extensions:
-
-            for path in text_md['bin_paths']:
-                if path not in extension.library_dirs:
-                    extension.library_dirs.insert(0, path)
-
             for path in text_md['lib_paths']:
                 if path not in extension.library_dirs:
                     extension.library_dirs.insert(0, path)
