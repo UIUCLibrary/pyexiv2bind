@@ -420,13 +420,19 @@ def test_package_on_mac(glob){
                 [pattern: '.git/**', type: 'EXCLUDE'],
                 [pattern: 'tests/**', type: 'EXCLUDE'],
                 [pattern: 'tox.ini', type: 'EXCLUDE'],
+                [pattern: 'dist/', type: 'EXCLUDE'],
                 [pattern: 'pyproject.toml', type: 'EXCLUDE'],
                 [pattern: 'setup.cfg', type: 'EXCLUDE'],
                 [pattern: glob, type: 'EXCLUDE'],
             ]
     )
     script{
-        findFiles(glob: glob).each{
+        def pkgs = findFiles(glob: glob)
+//         todo here
+        if(pkgs.size() == 0){
+            error "No packages found for ${glob}"
+        }
+        pkgs.each{
             sh(
                 label: "Testing ${it}",
                 script: """python3 -m venv venv
