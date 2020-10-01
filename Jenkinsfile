@@ -426,7 +426,12 @@ def test_package_on_mac(glob){
             ]
     )
     script{
-        findFiles(glob: glob).each{
+        def pkgs = findFiles(glob: glob)
+//         todo here
+        if(pkgs.size() == 0){
+            error "No packages found for ${glob}"
+        }
+        pkgs.each{
             sh(
                 label: "Testing ${it}",
                 script: """python3 -m venv venv
