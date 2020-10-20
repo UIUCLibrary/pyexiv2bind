@@ -1,7 +1,10 @@
 # escape=`
+
 ARG PYTHON_36_VERSION=3.6.8
 ARG PYTHON_37_VERSION=3.7.9
 ARG PYTHON_38_VERSION=3.8.5
+ARG PYTHON_39_VERSION=3.9.0
+
 ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8
 FROM ${FROM_IMAGE} as BASE_BUILDER
 
@@ -93,6 +96,22 @@ RUN pip install --upgrade pip wheel && `
     pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
 
 # ==============================================================================
+
+# ==============================================================================
+FROM BASE_BUILDER as WHEEL_BUilDER_PY39
+ARG PYTHON_39_VERSION
+ARG CHOCOLATEY_SOURCE
+RUN choco install -y --stoponfirstfailure --no-progress --verbose python3 --version=${Env:PYTHON_39_VERSION}
+SHELL ["cmd", "/S", "/C" ]
+COPY requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extra.txt c:/requirements/
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+RUN pip install --upgrade pip wheel && `
+    pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
+    pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
+    pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
+
+# ==============================================================================
 FROM BASE_BUILDER
 
 ARG PYTHON_36_VERSION
@@ -104,9 +123,14 @@ RUN choco install python3 --version ${Env:PYTHON_37_VERSION} -my
 ARG PYTHON_38_VERSION
 RUN choco install python3 --version ${Env:PYTHON_38_VERSION} -my
 
+ARG PYTHON_39_VERSION
+RUN choco install python3 --version ${Env:PYTHON_39_VERSION} -my
+
 COPY --from=WHEEL_BUilDER_PY36 c:/wheels/ c:/wheels/
 COPY --from=WHEEL_BUilDER_PY37 c:/wheels/ c:/wheels/
 COPY --from=WHEEL_BUilDER_PY38 c:/wheels/ c:/wheels/
+COPY --from=WHEEL_BUilDER_PY39 c:/wheels/ c:/wheels/
+
 ENV PIP_FIND_LINKS=c:\wheels
 
 RUN python -m pip install pip --upgrade ; pip install tox
