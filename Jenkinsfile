@@ -782,6 +782,17 @@ pipeline {
                     stages{
                         stage("Python Testing"){
                             stages{
+                                stage("Run Tox test") {
+                                    when {
+                                       equals expected: true, actual: params.TEST_RUN_TOX
+                                       beforeAgent true
+                                    }
+                                    steps {
+                                        timeout(15){
+                                            sh "tox -e py -vv"
+                                        }
+                                    }
+                                }
                                 stage("Testing") {
                                     agent {
                                         dockerfile {
@@ -802,17 +813,6 @@ pipeline {
                                         }
                                         stage("Running Tests"){
                                             parallel {
-                                                stage("Run Tox test") {
-                                                    when {
-                                                       equals expected: true, actual: params.TEST_RUN_TOX
-                                                       beforeAgent true
-                                                    }
-                                                    steps {
-                                                        timeout(15){
-                                                            sh "tox -e py -vv"
-                                                        }
-                                                    }
-                                                }
                                                 stage("Run Doctest Tests"){
                                                     steps {
                                                         sh "sphinx-build docs/source reports/doctest -b doctest -d build/docs/.doctrees --no-color -w logs/doctest_warnings.log"
