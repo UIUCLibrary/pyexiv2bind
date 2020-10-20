@@ -414,15 +414,16 @@ def test_deps(glob){
 def run_tox_envs(){
     script {
         def cmds
+        def envs
         if(isUnix()){
-            def envs = sh(returnStdout: true, script: "tox -l").trim().split('\n')
+            envs = sh(returnStdout: true, script: "tox -l").trim().split('\n')
             cmds = envs.collectEntries({ tox_env ->
                 [tox_env, {
                     sh( label:"Running Tox", script: "tox  -vvve $tox_env")
                 }]
             })
         } else{
-            def envs = bat(returnStdout: true, script: "tox -l").trim().split('\n')
+            envs = bat(returnStdout: true, script: "tox -l").trim().split('\n')
             cmds = envs.collectEntries({ tox_env ->
                 [tox_env, {
                     bat( label:"Running Tox", script: "tox  -vvve $tox_env")
