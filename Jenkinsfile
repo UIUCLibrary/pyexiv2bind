@@ -791,7 +791,7 @@ pipeline {
                                         stage("Linux"){
                                             agent {
                                                 dockerfile {
-                                                    filename 'ci/docker/python/linux/tox/Dockerfile'
+                                                    filename 'ci/docker/linux/tox/Dockerfile'
                                                     label 'linux && docker'
                                                     additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                                                 }
