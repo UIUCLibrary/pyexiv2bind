@@ -809,15 +809,16 @@ pipeline {
                                        beforeAgent true
                                     }
                                     parallel{
-//                                         stage("Windows"){
-//                                             agent {
-//                                                 dockerfile {
-//                                                     filename 'ci/docker/windows/tox/Dockerfile'
-//                                                     label 'windows && docker'
-//                                                     additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
-//                                                 }
-//                                             }
-//                                             steps {
+                                        stage("Windows"){
+                                            agent {
+                                                dockerfile {
+                                                    filename 'ci/docker/windows/tox/Dockerfile'
+                                                    label 'windows && docker'
+                                                    additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
+                                                }
+                                            }
+                                            steps {
+                                                run_tox_envs()
 //                                                 script {
 //                                                     def envs = bat(returnStdout: true, script: "tox -l").trim().split('\n')
 //                                                     def cmds = envs.collectEntries({ tox_env ->
@@ -827,8 +828,8 @@ pipeline {
 //                                                   })
 //                                                   parallel(cmds)
 //                                                 }
-//                                             }
-//                                         }
+                                            }
+                                        }
                                         stage("Linux"){
                                             agent {
                                                 dockerfile {
