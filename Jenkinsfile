@@ -429,6 +429,7 @@ def run_tox_envs(){
                 }]
             })
         }
+        echo "Setting up tox tests for ${envs.join(', ')}"
         parallel(cmds)
     }
 }
