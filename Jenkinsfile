@@ -411,6 +411,21 @@ def test_deps(glob){
     }
 }
 
+def run_tox_envs(){
+    script {
+        def cmds
+        if(isUnix()){
+            def envs = sh(returnStdout: true, script: "tox -l").trim().split('\n')
+            cmds = envs.collectEntries({ tox_env ->
+                [tox_env, {
+                    sh( label:"Running Tox", script:"tox  -vve $tox_env")
+                }]
+            })
+        }
+        parallel(cmds)
+    }
+}
+
 def test_package_on_mac(glob){
     cleanWs(
         notFailBuild: true,
@@ -816,15 +831,16 @@ pipeline {
                                                 }
                                             }
                                             steps {
-                                                script {
-                                                    def envs = sh(returnStdout: true, script: "tox -l").trim().split('\n')
-                                                    def cmds = envs.collectEntries({ tox_env ->
-                                                        [tox_env, {
-                                                            sh( label:"Running Tox", script:"tox  -vve $tox_env")
-                                                        }]
-                                                  })
-                                                  parallel(cmds)
-                                                }
+                                                run_tox_envs()
+//                                                 script {
+//                                                     def envs = sh(returnStdout: true, script: "tox -l").trim().split('\n')
+//                                                     def cmds = envs.collectEntries({ tox_env ->
+//                                                         [tox_env, {
+//                                                             sh( label:"Running Tox", script:"tox  -vve $tox_env")
+//                                                         }]
+//                                                     })
+//                                                     parallel(cmds)
+//                                                 }
                                             }
                                         }
                                     }
