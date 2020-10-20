@@ -418,14 +418,14 @@ def run_tox_envs(){
         if(isUnix()){
             envs = sh(returnStdout: true, script: "tox -l").trim().split('\n')
             cmds = envs.collectEntries({ tox_env ->
-                [tox_env, {
+                ["Unix ${tox_env}", {
                     sh( label:"Running Tox", script: "tox  -vvve $tox_env")
                 }]
             })
         } else{
             envs = bat(returnStdout: true, script: "@tox -l").trim().split('\n')
             cmds = envs.collectEntries({ tox_env ->
-                [tox_env, {
+                ["Windows ${tox_env}", {
                     bat( label:"Running Tox", script: "tox  -vvve $tox_env")
                 }]
             })
