@@ -787,9 +787,26 @@ pipeline {
                                        equals expected: true, actual: params.TEST_RUN_TOX
                                        beforeAgent true
                                     }
-                                    steps {
-                                        timeout(15){
-                                            sh "tox -e py -vv"
+                                    parallel{
+                                        stage("Linux"){
+                                            agent {
+                                                dockerfile {
+                                                    filename 'ci/docker/python/linux/tox/Dockerfile'
+                                                    label 'linux && docker'
+                                                    additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                                }
+                                            }
+                                            steps {
+                                                script {
+                                                  def envs = sh(returnStdout: true, script: "tox -l").trim().split('\n')
+                                                  def cmds = envs.collectEntries({ tox_env ->
+                                                    [tox_env, {
+                                                      sh "tox  -vve $tox_env"
+                                                    }]
+                                                  })
+                                                  parallel(cmds)
+                                                }
+                                            }
                                         }
                                     }
                                 }
