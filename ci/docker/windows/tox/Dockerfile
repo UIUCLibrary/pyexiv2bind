@@ -94,13 +94,6 @@ RUN pip install --upgrade pip wheel && `
 
 # ==============================================================================
 FROM BASE_BUILDER
-# Copy wheels first to make sure that choco isn't trying to install the same
-# python version at the same time and cause a temporary ban from chocolety's
-# public server
-
-COPY --from=WHEEL_BUilDER_PY36 c:/wheels/ c:/wheels/
-COPY --from=WHEEL_BUilDER_PY37 c:/wheels/ c:/wheels/
-COPY --from=WHEEL_BUilDER_PY38 c:/wheels/ c:/wheels/
 
 ARG PYTHON_36_VERSION
 RUN choco install python3 --version ${Env:PYTHON_36_VERSION} -my
@@ -110,26 +103,10 @@ RUN choco install python3 --version ${Env:PYTHON_37_VERSION} -my
 
 ARG PYTHON_38_VERSION
 RUN choco install python3 --version ${Env:PYTHON_38_VERSION} -my
+
+COPY --from=WHEEL_BUilDER_PY36 c:/wheels/ c:/wheels/
+COPY --from=WHEEL_BUilDER_PY37 c:/wheels/ c:/wheels/
+COPY --from=WHEEL_BUilDER_PY38 c:/wheels/ c:/wheels/
+ENV PIP_FIND_LINKS=c:\wheels
+
 RUN python -m pip install pip --upgrade ; pip install tox
-#RUN dir c:\wheels\
-#ADD requirements-dev.txt ci/dockerfiles/python/shared/requirements-ci.txt  c:/requirements/
-#RUN python -m pip install --upgrade pip &&`
-#    pip install --upgrade setuptools && `
-#    pip install wheel && `
-#    pip install conan &&`
-#    pip wheel --no-cache --wheel-dir c:/wheels/ `
-#        -r c:/requirements/requirements-dev.txt  `
-#        -r c:/requirements/requirements-ci.txt  && `
-#    pip install  --find-links=c:/wheels/ `
-#        -r c:/requirements/requirements-dev.txt `
-#        -r c:/requirements/requirements-ci.txt
-#
-#ADD conanfile.py c:/temp/conanfile.py
-#ADD ci/dockerfiles/python/shared/remotes.json C:/Users/ContainerAdministrator/.conan/remotes.json
-#
-#WORKDIR C:\\BuildTools
-#
-#RUN conan config init
-#RUN type C:\Users\ContainerAdministrator\.conan\profiles\default
-#RUN conan install C:/TEMP/ --build  missing --no-import && `
-#    conan remove * -b --src -f
