@@ -807,56 +807,6 @@ pipeline {
                     stages{
                         stage("Python Testing"){
                             stages{
-                                stage("Run Tox test") {
-                                    when {
-                                       equals expected: true, actual: params.TEST_RUN_TOX
-                                       beforeAgent true
-                                    }
-                                    parallel{
-                                        stage("Windows"){
-                                            agent {
-                                                dockerfile {
-                                                    filename 'ci/docker/windows/tox/Dockerfile'
-                                                    label 'windows && docker'
-                                                    additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
-                                                }
-                                            }
-                                            steps {
-                                                run_tox_envs()
-//                                                 script {
-//                                                     def envs = bat(returnStdout: true, script: "tox -l").trim().split('\n')
-//                                                     def cmds = envs.collectEntries({ tox_env ->
-//                                                         [tox_env, {
-//                                                             bat( label:"Running Tox", script:"tox  -vve $tox_env")
-//                                                         }]
-//                                                   })
-//                                                   parallel(cmds)
-//                                                 }
-                                            }
-                                        }
-                                        stage("Linux"){
-                                            agent {
-                                                dockerfile {
-                                                    filename 'ci/docker/linux/tox/Dockerfile'
-                                                    label 'linux && docker'
-                                                    additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
-                                                }
-                                            }
-                                            steps {
-                                                run_tox_envs()
-//                                                 script {
-//                                                     def envs = sh(returnStdout: true, script: "tox -l").trim().split('\n')
-//                                                     def cmds = envs.collectEntries({ tox_env ->
-//                                                         [tox_env, {
-//                                                             sh( label:"Running Tox", script:"tox  -vve $tox_env")
-//                                                         }]
-//                                                     })
-//                                                     parallel(cmds)
-//                                                 }
-                                            }
-                                        }
-                                    }
-                                }
                                 stage("Testing") {
                                     agent {
                                         dockerfile {
@@ -980,6 +930,38 @@ pipeline {
                                                     [pattern: 'reports/coverage/', type: 'INCLUDE'],
                                                 ]
                                             )
+                                        }
+                                    }
+                                }
+                                stage("Run Tox test") {
+                                    when {
+                                       equals expected: true, actual: params.TEST_RUN_TOX
+                                       beforeAgent true
+                                    }
+                                    parallel{
+                                        stage("Linux"){
+                                            agent {
+                                                dockerfile {
+                                                    filename 'ci/docker/linux/tox/Dockerfile'
+                                                    label 'linux && docker'
+                                                    additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                                }
+                                            }
+                                            steps {
+                                                run_tox_envs()
+                                            }
+                                        }
+                                        stage("Windows"){
+                                            agent {
+                                                dockerfile {
+                                                    filename 'ci/docker/windows/tox/Dockerfile'
+                                                    label 'windows && docker'
+                                                    additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
+                                                }
+                                            }
+                                            steps {
+                                                run_tox_envs()
+                                            }
                                         }
                                     }
                                 }
