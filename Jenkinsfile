@@ -787,26 +787,26 @@ pipeline {
                                        beforeAgent true
                                     }
                                     parallel{
-                                        stage("Windows"){
-                                            agent {
-                                                dockerfile {
-                                                    filename 'ci/docker/windows/tox/Dockerfile'
-                                                    label 'windows && docker'
-                                                    additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
-                                                }
-                                            }
-                                            steps {
-                                                script {
-                                                    def envs = bat(returnStdout: true, script: "tox -l").trim().split('\n')
-                                                    def cmds = envs.collectEntries({ tox_env ->
-                                                        [tox_env, {
-                                                            bat( label:"Running Tox", script:"tox  -vve $tox_env")
-                                                        }]
-                                                  })
-                                                  parallel(cmds)
-                                                }
-                                            }
-                                        }
+//                                         stage("Windows"){
+//                                             agent {
+//                                                 dockerfile {
+//                                                     filename 'ci/docker/windows/tox/Dockerfile'
+//                                                     label 'windows && docker'
+//                                                     additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
+//                                                 }
+//                                             }
+//                                             steps {
+//                                                 script {
+//                                                     def envs = bat(returnStdout: true, script: "tox -l").trim().split('\n')
+//                                                     def cmds = envs.collectEntries({ tox_env ->
+//                                                         [tox_env, {
+//                                                             bat( label:"Running Tox", script:"tox  -vve $tox_env")
+//                                                         }]
+//                                                   })
+//                                                   parallel(cmds)
+//                                                 }
+//                                             }
+//                                         }
                                         stage("Linux"){
                                             agent {
                                                 dockerfile {
