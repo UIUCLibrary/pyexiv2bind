@@ -411,6 +411,30 @@ def test_deps(glob){
     }
 }
 
+def run_tox_envs(){
+    script {
+        def cmds
+        def envs
+        if(isUnix()){
+            envs = sh(returnStdout: true, script: "tox -l").trim().split('\n')
+            cmds = envs.collectEntries({ tox_env ->
+                ["Unix ${tox_env}", {
+                    sh( label:"Running Tox", script: "tox  -vvve $tox_env")
+                }]
+            })
+        } else{
+            envs = bat(returnStdout: true, script: "@tox -l").trim().split('\n')
+            cmds = envs.collectEntries({ tox_env ->
+                ["Windows ${tox_env}", {
+                    bat( label:"Running Tox", script: "tox  -vvve $tox_env")
+                }]
+            })
+        }
+        echo "Setting up tox tests for ${envs.join(', ')}"
+        parallel(cmds)
+    }
+}
+
 def test_package_on_mac(glob){
     cleanWs(
         notFailBuild: true,
@@ -703,7 +727,6 @@ def test_cpp_code(buildPath){
         )
     }
 }
-
 def get_props(){
     stage("Reading Package Metadata"){
         node() {
@@ -802,17 +825,6 @@ pipeline {
                                         }
                                         stage("Running Tests"){
                                             parallel {
-                                                stage("Run Tox test") {
-                                                    when {
-                                                       equals expected: true, actual: params.TEST_RUN_TOX
-                                                       beforeAgent true
-                                                    }
-                                                    steps {
-                                                        timeout(15){
-                                                            sh "tox -e py -vv"
-                                                        }
-                                                    }
-                                                }
                                                 stage("Run Doctest Tests"){
                                                     steps {
                                                         sh "sphinx-build docs/source reports/doctest -b doctest -d build/docs/.doctrees --no-color -w logs/doctest_warnings.log"
@@ -916,6 +928,38 @@ pipeline {
                                                     [pattern: 'reports/coverage/', type: 'INCLUDE'],
                                                 ]
                                             )
+                                        }
+                                    }
+                                }
+                                stage("Run Tox test") {
+                                    when {
+                                       equals expected: true, actual: params.TEST_RUN_TOX
+                                       beforeAgent true
+                                    }
+                                    parallel{
+                                        stage("Linux"){
+                                            agent {
+                                                dockerfile {
+                                                    filename 'ci/docker/linux/tox/Dockerfile'
+                                                    label 'linux && docker'
+                                                    additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                                }
+                                            }
+                                            steps {
+                                                run_tox_envs()
+                                            }
+                                        }
+                                        stage("Windows"){
+                                            agent {
+                                                dockerfile {
+                                                    filename 'ci/docker/windows/tox/Dockerfile'
+                                                    label 'windows && docker'
+                                                    additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
+                                                }
+                                            }
+                                            steps {
+                                                run_tox_envs()
+                                            }
                                         }
                                     }
                                 }
