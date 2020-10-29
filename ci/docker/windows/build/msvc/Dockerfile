@@ -10,6 +10,8 @@ FROM ${FROM_IMAGE}
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 
 # First install Visual Studio Build Tools
+
+COPY ci/docker/shared/startup.bat c:\temp\startup.bat
 RUN Invoke-WebRequest https://aka.ms/vs/16/release/vs_buildtools.exe -OutFile ${Env:TEMP}\\vs_buildtools.exe ; `
     Invoke-WebRequest https://aka.ms/vs/16/release/channel -OutFile ${Env:TEMP}\\VisualStudio.chman ; `
     Invoke-WebRequest https://aka.ms/vscollect.exe  -OutFile ${Env:TEMP}\\collect.exe ; `
@@ -21,15 +23,17 @@ RUN Invoke-WebRequest https://aka.ms/vs/16/release/vs_buildtools.exe -OutFile ${
     { `
         Start-Process -NoNewWindow -FilePath $Env:TEMP\\collect.exe -ArgumentList '-nologo -zip:${Env:TEMP}\\vslogs.zip' -Wait; `
         Expand-Archive -Path vslogs.zip -DestinationPath $Env:TEMP\\logs\\ ; `
-        ls c:\\ ; `
-        tree /F /A; `
         Get-Content -LiteralPath '$Env:TEMP\\logs\\[Content_Types].xml' ; `
         throw 'VsDevCmd.bat not found' ; `
     } ; `
     Write-Host "Testing for VsDevCmd.bat - Found" ; `
+    Write-Host "Adding VsDevCmd.bat to cmd.exe startup" ; `
+    Set-ItemProperty -Path 'HKLM:\Software\Microsoft\Command Processor' -Name 'AutoRun' -Value "c:\temp\startup.bat" ; `
+    Write-Host "Adding VsDevCmd.bat to cmd.exe startup - Done" ; `
     Write-Host "Cleaning up $Env:TEMP" ; `
     Remove-Item -Force -Recurse $Env:TEMP\* ; `
     Write-Host "Cleaning up $Env:TEMP - Done"
+
 
 ARG CHOCOLATEY_SOURCE=https://chocolatey.org/api/v2
 ARG ChocolateyEnvironmentDebug=false
@@ -63,9 +67,6 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
         throw 'git.exe not found' ; `
     }; `
     Write-Host "Finished install packages with Chocolatey"
-
-ADD ci/docker/shared/startup.bat c:\temp\startup.bat
-RUN Set-ItemProperty -Path 'HKLM:\Software\Microsoft\Command Processor' -Name 'AutoRun' -Value "c:\temp\startup.bat"
 
 COPY --from=certsgen c:/roots.sst roots.sst
 RUN certutil -addstore -f root roots.sst ; `
