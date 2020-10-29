@@ -3,6 +3,7 @@ include tox.ini CHANGELOG.rst README.rst CMakeLists.txt tests/CMakeLists.txt req
 include conanfile.py
 include patches/*.patch
 include patches/*.cmake
+include pyproject.toml
 recursive-include cmake_scripts *.cmake
 recursive-include tests *.py *.cpp
 recursive-include docs/source *.*
