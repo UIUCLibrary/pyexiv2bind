@@ -29,7 +29,7 @@ RUN Invoke-WebRequest https://aka.ms/vs/16/release/vs_buildtools.exe -OutFile ${
     Write-Host "Cleaning up $Env:TEMP" ; `
     Remove-Item -Force -Recurse $Env:TEMP\* ; `
     Write-Host "Cleaning up $Env:TEMP - Done"
-ADD CI/jenkins/dockerfiles/build_VS2019/startup.bat c:\temp\startup.bat
+ADD ci/docker/shared/startup.bat c:\temp\startup.bat
 RUN Set-ItemProperty -Path 'HKLM:\Software\Microsoft\Command Processor' -Name 'AutoRun' -Value "c:\temp\startup.bat"
 
 ARG CHOCOLATEY_SOURCE=https://chocolatey.org/api/v2
