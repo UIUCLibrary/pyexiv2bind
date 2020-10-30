@@ -445,6 +445,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
             [jenkinsStageName,{
                 node(label){
                     def dockerImageName = "tox${currentBuild.projectName}:${tox_env}"
+                    checkout scm
                     docker.build("${dockerImageName}", "-f ${dockerfile} ${dockerArgs} . ").inside(){
                         if(isUnix()){
                             sh(
