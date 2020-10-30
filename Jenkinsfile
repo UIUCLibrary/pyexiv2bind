@@ -446,31 +446,44 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
             def jenkinsStageName = "${envNamePrefix} ${tox_env}"
             [jenkinsStageName,{
                 node(label){
-                    try{
-                        publishChecks(
-                            conclusion: 'NONE',
-                            name: githubChecksName,
-                            status: 'IN_PROGRESS',
-                            summary: 'Use Tox to test installed package',
-                            title: 'Running Tox'
-                        )
-                        def dockerImageName = "tox${currentBuild.projectName}:${tox_env}"
-                        checkout scm
 
+                    def dockerImageName = "tox${currentBuild.projectName}:${tox_env}"
+                    checkout scm
+                    try{
                         docker.build("${dockerImageName}", "-f ${dockerfile} ${dockerArgs} . ").inside(){
-                            if(isUnix()){
-                                sh(
-                                    label: "Running Tox with ${tox_env} environment",
-                                    script: "tox  -vv --parallel--safe-build --result-json=tox_result.json -e $tox_env"
+                            try{
+                                publishChecks(
+                                    conclusion: 'NONE',
+                                    name: githubChecksName,
+                                    status: 'IN_PROGRESS',
+                                    summary: 'Use Tox to test installed package',
+                                    title: 'Running Tox'
                                 )
-                            } else {
-                                bat(
-                                    label: "Running Tox with ${tox_env} environment",
-                                    script: "tox  -vv --parallel--safe-build --result-json=tox_result.json -e $tox_env "
+                                if(isUnix()){
+                                    sh(
+                                        label: "Running Tox with ${tox_env} environment",
+                                        script: "tox  -vv --parallel--safe-build --result-json=tox_result.json -e $tox_env"
+                                    )
+                                } else {
+                                    bat(
+                                        label: "Running Tox with ${tox_env} environment",
+                                        script: "tox  -vv --parallel--safe-build --result-json=tox_result.json -e $tox_env "
+                                    )
+                                }
+                            } catch (e){
+                                echo "tox_result = ${tox_result}"
+                                publishChecks(
+                                    name: githubChecksName,
+                                    summary: 'Use Tox to test installed package',
+                                    text: 'Failed',
+                                    conclusion: 'FAILURE',
+                                    title: 'Running Tox'
                                 )
+                                throw e
                             }
                             tox_result = readJSON(file: 'tox_result.json')
                         }
+                    } finally{
                         if(isUnix()){
                             sh(
                                 label: "Removing Docker Image used to run tox",
@@ -482,23 +495,6 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                                 script: "docker image rm -f ${dockerImageName}"
                             )
                         }
-                        echo "tox_result = ${tox_result}"
-                        publishChecks(
-                            name: githubChecksName,
-                            summary: 'Use Tox to test installed package',
-                            text: 'Success',
-                            title: 'Running Tox'
-                        )
-                    } catch (e){
-                        echo "tox_result = ${tox_result}"
-                        publishChecks(
-                            name: githubChecksName,
-                            summary: 'Use Tox to test installed package',
-                            text: 'Failed',
-                            conclusion: 'FAILURE',
-                            title: 'Running Tox'
-                        )
-                        throw e
                     }
                 }
             }]
