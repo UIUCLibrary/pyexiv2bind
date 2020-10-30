@@ -443,7 +443,6 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
         return envs.collectEntries({ tox_env ->
             def jenkinsStageName = "${envNamePrefix} ${tox_env}"
             [jenkinsStageName,{
-
                 node(label){
                     try{
                         publishChecks(
@@ -451,7 +450,6 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                             name: "Tox: ${envNamePrefix} ${tox_env}",
                             status: 'IN_PROGRESS',
                             summary: 'Use Tox to test installed package',
-                            text: 'Working',
                             title: 'Running Tox'
                         )
                         def dockerImageName = "tox${currentBuild.projectName}:${tox_env}"
@@ -494,6 +492,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                             conclusion: 'FAILURE',
                             title: 'Running Tox'
                         )
+                        throw e
                     }
                 }
             }]
