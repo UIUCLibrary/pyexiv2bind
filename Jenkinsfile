@@ -1003,13 +1003,6 @@ pipeline {
                                     }
                                     parallel{
                                         stage("Linux"){
-//                                             agent {
-//                                                 dockerfile {
-//                                                     filename 'ci/docker/linux/tox/Dockerfile'
-//                                                     label 'linux && docker'
-//                                                     additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
-//                                                 }
-//                                             }
                                             steps {
                                                 script{
                                                     def jobs = getToxTestsParallel("Linux", "linux && docker", "ci/docker/linux/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL")
@@ -1018,15 +1011,19 @@ pipeline {
                                             }
                                         }
                                         stage("Windows"){
-                                            agent {
-                                                dockerfile {
-                                                    filename 'ci/docker/windows/tox/Dockerfile'
-                                                    label 'windows && docker'
-                                                    additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
-                                                }
-                                            }
+//                                             agent {
+//                                                 dockerfile {
+//                                                     filename 'ci/docker/windows/tox/Dockerfile'
+//                                                     label 'windows && docker'
+//                                                     additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
+//                                                 }
+//                                             }
                                             steps {
-                                                run_tox_envs()
+                                                script{
+                                                    def jobs = getToxTestsParallel("Windows", "windows && docker", "ci/docker/windows/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE")
+                                                    parallel(jobs)
+                                                }
+//                                                 run_tox_envs()
                                             }
                                         }
                                     }
