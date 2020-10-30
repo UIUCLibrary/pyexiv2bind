@@ -439,6 +439,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                 )
             }
         }
+        def tox_result
         echo "Found tox environments for ${envs.join(', ')}"
         return envs.collectEntries({ tox_env ->
             def githubChecksName = "Tox: ${tox_env} ${envNamePrefix}"
@@ -455,6 +456,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                         )
                         def dockerImageName = "tox${currentBuild.projectName}:${tox_env}"
                         checkout scm
+
                         docker.build("${dockerImageName}", "-f ${dockerfile} ${dockerArgs} . ").inside(){
                             if(isUnix()){
                                 sh(
@@ -467,6 +469,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                                     script: "tox  -vv --parallel--safe-build --result-json=tox_result.json -e $tox_env "
                                 )
                             }
+                            tox_result = readJSON(file: 'tox_result.json')
                         }
                         if(isUnix()){
                             sh(
@@ -479,6 +482,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                                 script: "docker image rm -f ${dockerImageName}"
                             )
                         }
+                        echo "tox_result = ${tox_result}"
                         publishChecks(
                             name: githubChecksName,
                             summary: 'Use Tox to test installed package',
@@ -486,6 +490,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                             title: 'Running Tox'
                         )
                     } catch (e){
+                        echo "tox_result = ${tox_result}"
                         publishChecks(
                             name: githubChecksName,
                             summary: 'Use Tox to test installed package',
