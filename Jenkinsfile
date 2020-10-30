@@ -424,7 +424,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
         node(label){
             checkout scm
             def dockerImageName = "tox${currentBuild.projectName}"
-            def container = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} .").inside(){
+            def container = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} .").inside{
                 envs = getToxEnvs()
             }
             if(isUnix()){
@@ -450,7 +450,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                     def dockerImageName = "tox${currentBuild.projectName}:${tox_env}"
                     checkout scm
                     try{
-                        docker.build("${dockerImageName}", "-f ${dockerfile} ${dockerArgs} . ").inside(){
+                        docker.build("${dockerImageName}", "-f ${dockerfile} ${dockerArgs} . ").inside{
                             try{
                                 publishChecks(
                                     conclusion: 'NONE',
