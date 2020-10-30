@@ -441,13 +441,14 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
         }
         echo "Found tox environments for ${envs.join(', ')}"
         return envs.collectEntries({ tox_env ->
+            def githubChecksName = "Tox: ${tox_env} ${envNamePrefix}"
             def jenkinsStageName = "${envNamePrefix} ${tox_env}"
             [jenkinsStageName,{
                 node(label){
                     try{
                         publishChecks(
                             conclusion: 'NONE',
-                            name: "Tox: ${envNamePrefix} ${tox_env}",
+                            name: githubChecksName,
                             status: 'IN_PROGRESS',
                             summary: 'Use Tox to test installed package',
                             title: 'Running Tox'
@@ -458,12 +459,12 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                             if(isUnix()){
                                 sh(
                                     label: "Running Tox with ${tox_env} environment",
-                                    script: "tox  -vv --parallel--safe-build -e $tox_env"
+                                    script: "tox  -vv --parallel--safe-build --result-json=tox_result.json -e $tox_env"
                                 )
                             } else {
                                 bat(
                                     label: "Running Tox with ${tox_env} environment",
-                                    script: "tox  -vv --parallel--safe-build -e $tox_env "
+                                    script: "tox  -vv --parallel--safe-build --result-json=tox_result.json -e $tox_env "
                                 )
                             }
                         }
@@ -479,14 +480,14 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                             )
                         }
                         publishChecks(
-                            name: "Tox: ${envNamePrefix} ${tox_env}",
+                            name: githubChecksName,
                             summary: 'Use Tox to test installed package',
                             text: 'Success',
                             title: 'Running Tox'
                         )
                     } catch (e){
                         publishChecks(
-                            name: "Tox: ${envNamePrefix} ${tox_env}",
+                            name: githubChecksName,
                             summary: 'Use Tox to test installed package',
                             text: 'Failed',
                             conclusion: 'FAILURE',
