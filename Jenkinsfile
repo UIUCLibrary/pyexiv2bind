@@ -471,17 +471,22 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                                     )
                                 }
                             } catch (e){
-                                echo "tox_result = ${tox_result}"
                                 publishChecks(
                                     name: githubChecksName,
                                     summary: 'Use Tox to test installed package',
-                                    text: 'Failed',
+                                    text: "${tox_result}",
                                     conclusion: 'FAILURE',
-                                    title: 'Running Tox'
+                                    title: 'Tox results'
                                 )
                                 throw e
                             }
                             tox_result = readJSON(file: 'tox_result.json')
+                            publishChecks(
+                                    name: githubChecksName,
+                                    summary: 'Use Tox to test installed package',
+                                    text: "${tox_result}",
+                                    title: 'Tox results'
+                                )
                         }
                     } finally{
                         if(isUnix()){
