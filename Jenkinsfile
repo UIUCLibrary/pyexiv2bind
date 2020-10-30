@@ -498,7 +498,13 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                                     title: 'Passed'
                                 )
                         }
-                    } finally{
+                    } catch{
+                        if(isUnix()){
+                            sh("docker run --help")
+                        } else {
+                            bat("docker run --help")
+                        }
+                    }finally{
                         if(isUnix()){
                             sh(
                                 label: "Removing Docker Image used to run tox",
