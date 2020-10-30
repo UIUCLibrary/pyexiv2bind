@@ -498,7 +498,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                                     title: 'Passed'
                                 )
                         }
-                    } catch{
+                    } catch(e){
                         if(isUnix()){
                             sh("docker run --help")
                         } else {
