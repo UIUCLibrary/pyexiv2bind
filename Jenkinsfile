@@ -448,7 +448,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                     try{
                         publishChecks(
                             conclusion: 'NONE',
-                            name: "Tox ${envNamePrefix} ${tox_env}",
+                            name: "Tox: ${envNamePrefix} ${tox_env}",
                             status: 'IN_PROGRESS',
                             summary: 'Use Tox to test installed package',
                             text: 'Working',
@@ -480,22 +480,21 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                                 script: "docker image rm -f ${dockerImageName}"
                             )
                         }
+                        publishChecks(
+                            name: "Tox: ${envNamePrefix} ${tox_env}",
+                            summary: 'Use Tox to test installed package',
+                            text: 'Success',
+                            title: 'Running Tox'
+                        )
                     } catch (e){
                         publishChecks(
-                            name: "Tox ${envNamePrefix} ${tox_env}",
+                            name: "Tox: ${envNamePrefix} ${tox_env}",
                             summary: 'Use Tox to test installed package',
                             text: 'Failed',
                             conclusion: 'FAILURE',
                             title: 'Running Tox'
                         )
                     }
-                    publishChecks(
-                            name: "Tox ${envNamePrefix} ${tox_env}",
-                            summary: 'Use Tox to test installed package',
-                            text: 'Success',
-                            title: 'Running Tox'
-                        )
-
                 }
             }]
         })
