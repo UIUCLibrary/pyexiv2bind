@@ -411,6 +411,70 @@ def test_deps(glob){
     }
 }
 
+
+def getToxEnvs(){
+    if(isUnix()){
+        return sh(returnStdout: true, script: "tox -l").trim().split('\n')
+    }
+    return bat(returnStdout: true, script: "@tox -l").trim().split('\n')
+}
+def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
+    script{
+        def envs
+        node(label){
+            checkout scm
+            def dockerImageName = "tox${currentBuild.projectName}"
+            def container = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} .").inside(){
+                envs = getToxEnvs()
+            }
+            if(isUnix()){
+                sh(
+                    label: "Removing Docker Image used to run tox",
+                    script: "docker image rm -f ${dockerImageName}"
+                )
+            } else {
+                bat(
+                    label: "Removing Docker Image used to run tox",
+                    script: "docker image rm -f ${dockerImageName}"
+                )
+            }
+        }
+        echo "Found tox environments for ${envs.join(', ')}"
+        return envs.collectEntries({ tox_env ->
+            def jenkinsStageName = "${envNamePrefix} ${tox_env}"
+            [jenkinsStageName,{
+                node(label){
+                    def dockerImageName = "tox${currentBuild.projectName}:${tox_env}"
+                    docker.build("${dockerImageName}", "-f ${dockerfile} ${dockerArgs} . ").inside(){
+                        if(isUnix()){
+                            sh(
+                                label: "Running Tox with ${tox_env} environment",
+                                script: "tox  -vv --parallel--safe-build -e $tox_env"
+                            )
+                        } else {
+                            bat(
+                                label: "Running Tox with ${tox_env} environment",
+                                script: "tox  -vv --parallel--safe-build -e $tox_env "
+                            )
+                        }
+                    }
+                    if(isUnix()){
+                        sh(
+                            label: "Removing Docker Image used to run tox",
+                            script: "docker image rm -f ${dockerImageName}"
+                        )
+                    } else {
+                        bat(
+                            label: "Removing Docker Image used to run tox",
+                            script: "docker image rm -f ${dockerImageName}"
+                        )
+                    }
+                }
+            }]
+        })
+    }
+}
+
 def run_tox_envs(){
     script {
         def cmds
@@ -938,15 +1002,18 @@ pipeline {
                                     }
                                     parallel{
                                         stage("Linux"){
-                                            agent {
-                                                dockerfile {
-                                                    filename 'ci/docker/linux/tox/Dockerfile'
-                                                    label 'linux && docker'
-                                                    additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
-                                                }
-                                            }
+//                                             agent {
+//                                                 dockerfile {
+//                                                     filename 'ci/docker/linux/tox/Dockerfile'
+//                                                     label 'linux && docker'
+//                                                     additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+//                                                 }
+//                                             }
                                             steps {
-                                                run_tox_envs()
+                                                script{
+                                                    def jobs = getToxTestsParallel("Linux", "linux && docker", "ci/docker/linux/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL")
+                                                    parallel(jobs)
+                                                }
                                             }
                                         }
                                         stage("Windows"){
