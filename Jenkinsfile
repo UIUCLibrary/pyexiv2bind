@@ -443,33 +443,59 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
         return envs.collectEntries({ tox_env ->
             def jenkinsStageName = "${envNamePrefix} ${tox_env}"
             [jenkinsStageName,{
+
                 node(label){
-                    def dockerImageName = "tox${currentBuild.projectName}:${tox_env}"
-                    checkout scm
-                    docker.build("${dockerImageName}", "-f ${dockerfile} ${dockerArgs} . ").inside(){
+                    try{
+                        publishChecks(
+                            conclusion: 'NONE',
+                            name: "Tox ${envNamePrefix} ${tox_env}",
+                            status: 'IN_PROGRESS',
+                            summary: 'Use Tox to test installed package',
+                            text: 'Working',
+                            title: 'Running Tox'
+                        )
+                        def dockerImageName = "tox${currentBuild.projectName}:${tox_env}"
+                        checkout scm
+                        docker.build("${dockerImageName}", "-f ${dockerfile} ${dockerArgs} . ").inside(){
+                            if(isUnix()){
+                                sh(
+                                    label: "Running Tox with ${tox_env} environment",
+                                    script: "tox  -vv --parallel--safe-build -e $tox_env"
+                                )
+                            } else {
+                                bat(
+                                    label: "Running Tox with ${tox_env} environment",
+                                    script: "tox  -vv --parallel--safe-build -e $tox_env "
+                                )
+                            }
+                        }
                         if(isUnix()){
                             sh(
-                                label: "Running Tox with ${tox_env} environment",
-                                script: "tox  -vv --parallel--safe-build -e $tox_env"
+                                label: "Removing Docker Image used to run tox",
+                                script: "docker image rm -f ${dockerImageName}"
                             )
                         } else {
                             bat(
-                                label: "Running Tox with ${tox_env} environment",
-                                script: "tox  -vv --parallel--safe-build -e $tox_env "
+                                label: "Removing Docker Image used to run tox",
+                                script: "docker image rm -f ${dockerImageName}"
                             )
                         }
-                    }
-                    if(isUnix()){
-                        sh(
-                            label: "Removing Docker Image used to run tox",
-                            script: "docker image rm -f ${dockerImageName}"
-                        )
-                    } else {
-                        bat(
-                            label: "Removing Docker Image used to run tox",
-                            script: "docker image rm -f ${dockerImageName}"
+                    } catch (e){
+                        publishChecks(
+                            name: "Tox ${envNamePrefix} ${tox_env}",
+                            summary: 'Use Tox to test installed package',
+                            text: 'Failed',
+                            conclusion: 'FAILURE',
+                            title: 'Running Tox'
                         )
                     }
+                    publishChecks(
+                            name: "Tox ${envNamePrefix} ${tox_env}",
+                            summary: 'Use Tox to test installed package',
+                            text: 'Success',
+                            title: 'Running Tox'
+                        )
+
                 }
             }]
         })
