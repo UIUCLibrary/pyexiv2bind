@@ -421,7 +421,9 @@ def getToxEnvs(){
 def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
     script{
         def envs
+        def originalNodeLabel
         node(label){
+            originalNodeLabel = env.NODE_NAME
             checkout scm
             def dockerImageName = "tox${currentBuild.projectName}"
             def container = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} .").inside{
@@ -441,11 +443,12 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
         }
         def tox_result
         echo "Found tox environments for ${envs.join(', ')}"
+        echo "Adding jobs to ${originalNodeLabel}"
         return envs.collectEntries({ tox_env ->
             def githubChecksName = "Tox: ${tox_env} ${envNamePrefix}"
             def jenkinsStageName = "${envNamePrefix} ${tox_env}"
             [jenkinsStageName,{
-                node(label){
+                node(originalNodeLabel){
 
                     def dockerImageName = "tox${currentBuild.projectName}:${tox_env}"
                     checkout scm
