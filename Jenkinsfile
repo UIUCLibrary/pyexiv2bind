@@ -897,48 +897,22 @@ pipeline {
                 equals expected: true, actual: params.RUN_CHECKS
             }
             stages{
-                stage("Testing"){
-                    stages{
-                        stage("Run Tox test") {
+                stage("Run Tox test") {
 //                                     when {
 //                                        equals expected: true, actual: params.TEST_RUN_TOX
 //                                        beforeAgent true
 //                                     }
-                                steps {
-                                    script{
-                                        def linux_jobs = getToxTestsParallel("Linux", "linux && docker", "ci/docker/linux/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL")
-                                        def windows_jobs = getToxTestsParallel("Windows", "windows && docker", "ci/docker/windows/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE")
-                                        def jobs = windows_jobs + linux_jobs
-                                        parallel(jobs)
-                                    }
-                                }
-//                                     parallel{
-//                                         stage("Linux"){
-//                                             steps {
-//                                                 script{
-//                                                     def jobs = getToxTestsParallel("Linux", "linux && docker", "ci/docker/linux/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL")
-//                                                     parallel(jobs)
-//                                                 }
-//                                             }
-//                                         }
-//                                         stage("Windows"){
-// //                                             agent {
-// //                                                 dockerfile {
-// //                                                     filename 'ci/docker/windows/tox/Dockerfile'
-// //                                                     label 'windows && docker'
-// //                                                     additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
-// //                                                 }
-// //                                             }
-//                                             steps {
-//                                                 script{
-//                                                     def jobs = getToxTestsParallel("Windows", "windows && docker", "ci/docker/windows/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE")
-//                                                     parallel(jobs)
-//                                                 }
-// //                                                 run_tox_envs()
-//                                             }
-//                                         }
-//                                     }
+                    steps {
+                        script{
+                            def linux_jobs = getToxTestsParallel("Linux", "linux && docker", "ci/docker/linux/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL")
+                            def windows_jobs = getToxTestsParallel("Windows", "windows && docker", "ci/docker/windows/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE")
+                            def jobs = windows_jobs + linux_jobs
+                            parallel(jobs)
                         }
+                    }
+                }
+                stage("Testing"){
+                    stages{
                         stage("Python Testing"){
                             stages{
                                 stage("Testing") {
