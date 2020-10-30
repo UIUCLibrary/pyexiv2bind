@@ -413,11 +413,18 @@ def test_deps(glob){
 
 
 def getToxEnvs(){
+    def envs
     if(isUnix()){
-        return sh(returnStdout: true, script: "tox -l").trim().split('\n')
+        envs = sh(returnStdout: true, script: "tox -l").trim().split('\n')
+    } else{
+        envs = bat(returnStdout: true, script: "@tox -l").trim().split('\n')
     }
-    return bat(returnStdout: true, script: "@tox -l").trim().split('\n')
+    envs.collect{
+        it.trim()
+    }
+    return envs
 }
+
 def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
     script{
         def envs
