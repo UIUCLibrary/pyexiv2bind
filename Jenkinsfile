@@ -460,7 +460,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                     def dockerImageName = "tox:${tox_env}"
                         checkout scm
                     try{
-                        docker.build("${dockerImageName}", "-f ${dockerfile} ${dockerArgs} . ").inside{
+                        docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} . ").inside{
                             try{
                                 publishChecks(
                                     conclusion: 'NONE',
