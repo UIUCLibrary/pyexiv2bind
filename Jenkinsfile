@@ -504,6 +504,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                         } else {
                             bat("docker run --help")
                         }
+                        throw e
                     }finally{
                         if(isUnix()){
                             sh(
