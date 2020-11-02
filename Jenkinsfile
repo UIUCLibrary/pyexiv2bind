@@ -462,8 +462,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                     try{
                         def container = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} . ")
                         echo "here"
-                        container.withRun{
-                            echo "INside"
+                        container.inside{
                             try{
                                 publishChecks(
                                     conclusion: 'NONE',
@@ -524,6 +523,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                 }
             }]
         })
+        jobs["failFast"] =  true
         return jobs
     }
 }
