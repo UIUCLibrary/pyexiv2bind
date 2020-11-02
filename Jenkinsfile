@@ -462,7 +462,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                     try{
                         def container = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} . ")
                         echo "here"
-                        container.inside{
+                        container.withRun{
                             echo "INside"
                             try{
                                 publishChecks(
