@@ -437,18 +437,18 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
             def container = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} .").inside{
                 envs = getToxEnvs()
             }
-            container.stop
-//             if(isUnix()){
-//                 sh(
-//                     label: "Removing Docker Image used to run tox",
-//                     script: "docker image rm -f ${dockerImageName}"
-//                 )
-//             } else {
-//                 bat(
-//                     label: "Removing Docker Image used to run tox",
-//                     script: "docker image rm -f ${dockerImageName}"
-//                 )
-//             }
+//             container.stop
+            if(isUnix()){
+                sh(
+                    label: "Removing Docker Image used to run tox",
+                    script: "docker image rm -f ${dockerImageName}"
+                )
+            } else {
+                bat(
+                    label: "Removing Docker Image used to run tox",
+                    script: "docker image rm -f ${dockerImageName}"
+                )
+            }
         }
         echo "Found tox environments for ${envs.join(', ')}"
         echo "Adding jobs to ${originalNodeLabel}"
