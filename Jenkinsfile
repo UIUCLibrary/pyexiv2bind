@@ -447,7 +447,9 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
             } else {
                 bat(
                     label: "Removing Docker Image used to run tox",
-                    script: "docker image rm --force ${dockerImageName}"
+                    script: """docker image ls ${dockerImageName}
+                               docker image rm --force ${dockerImageName}
+                               """
                 )
             }
         }
