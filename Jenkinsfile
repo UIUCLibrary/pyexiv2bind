@@ -436,7 +436,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
 //             def containerImage = docker.image(dockerImageName)
             def dockerImage = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} .")
             echo "dockerImage.id = ${dockerImage.id}"
-            dockerImage.inside('--rm'){
+            dockerImage.inside{
                 envs = getToxEnvs()
             }
             if(isUnix()){
