@@ -441,12 +441,12 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
             if(isUnix()){
                 sh(
                     label: "Removing Docker Image used to run tox",
-                    script: "docker image rm -f ${dockerImageName}"
+                    script: "docker image rm --force ${dockerImageName}"
                 )
             } else {
                 bat(
                     label: "Removing Docker Image used to run tox",
-                    script: "docker image rm -f ${dockerImageName}"
+                    script: "docker image rm --force ${dockerImageName}"
                 )
             }
         }
@@ -509,7 +509,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                             sh("docker image ls tox")
                         } else {
                             bat("docker run --help")
-                            bat("docker image ls tox")
+
                         }
                         throw e
                     }finally{
@@ -521,7 +521,9 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                         } else {
                             bat(
                                 label: "Removing Docker Image used to run tox",
-                                script: "docker image rm -f tox"
+                                script: """docker image ls ${dockerImageName}
+                                           docker image rm -f ${dockerImageName}
+                                           """
                             )
                         }
                     }
