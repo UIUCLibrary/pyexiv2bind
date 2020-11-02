@@ -448,10 +448,10 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                 )
             }
         }
-        def tox_result
         echo "Found tox environments for ${envs.join(', ')}"
         echo "Adding jobs to ${originalNodeLabel}"
-        return envs.collectEntries({ tox_env ->
+        def jobs = envs.collectEntries({ tox_env ->
+            def tox_result
             def githubChecksName = "Tox: ${tox_env} ${envNamePrefix}"
             def jenkinsStageName = "${envNamePrefix} ${tox_env}"
             [jenkinsStageName,{
@@ -523,6 +523,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                 }
             }]
         })
+        return jobs
     }
 }
 
@@ -929,7 +930,7 @@ pipeline {
 //                             def jobs = windows_jobs + linux_jobs
                             def jobs = windows_jobs
 //                             failFast true
-                            parallel(jobs, failFast: true)
+                            parallel(jobs)
                         }
                     }
                 }
