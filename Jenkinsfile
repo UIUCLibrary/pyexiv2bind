@@ -453,20 +453,28 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
             }
         }
         echo "Found tox environments for ${envs.join(', ')}"
-        echo "Adding jobs to ${originalNodeLabel}"
+        def dockerImageForTesting
+        node(originalNodeLabel){
+            def dockerImageName = "tox"
+            checkout scm
+            dockerImageForTesting = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} . ")
+
+        }
+        echo "Adding jobs to ${originalNodeLabel} with ${dockerImageForTesting}"
         def jobs = envs.collectEntries({ tox_env ->
             def tox_result
             def githubChecksName = "Tox: ${tox_env} ${envNamePrefix}"
             def jenkinsStageName = "${envNamePrefix} ${tox_env}"
+
             [jenkinsStageName,{
                 node(originalNodeLabel){
 
                     def dockerImageName = "tox:${tox_env}"
                     checkout scm
                     try{
-                        def image = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} . ")
-                        echo "image ${image}"
-                        image.inside{
+//                         def image = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} . ")
+//                         echo "image ${image}"
+                        dockerImageForTesting.inside{
                             echo "it = ${it}"
                             try{
                                 publishChecks(
