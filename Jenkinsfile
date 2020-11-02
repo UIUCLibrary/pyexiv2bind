@@ -431,7 +431,7 @@ def generateToxReport(tox_env, toxResultFile){
                                   Platform:   ${tox_result['platform']}
                                   """
 
-        tox_result['testenvs']['tox_env'].each{
+        tox_result['testenvs'][tox_env].each{
             echo "${it}"
         }
       return checksReportText
