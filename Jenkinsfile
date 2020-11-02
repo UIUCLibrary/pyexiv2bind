@@ -434,10 +434,11 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
             checkout scm
             def dockerImageName = "tox${currentBuild.projectName}"
 //             def containerImage = docker.image(dockerImageName)
-            def container = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} .").inside{
+            def container = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} .")
+            echo "container = ${container}"
+            container.inside{
                 envs = getToxEnvs()
             }
-            echo "container = ${container}"
             if(isUnix()){
                 sh(
                     label: "Removing Docker Image used to run tox",
