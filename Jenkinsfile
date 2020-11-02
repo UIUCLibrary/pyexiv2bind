@@ -433,7 +433,6 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
             originalNodeLabel = env.NODE_NAME
             checkout scm
             def dockerImageName = "tox${currentBuild.projectName}"
-//             def containerImage = docker.image(dockerImageName)
             def dockerImage = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} .")
             echo "dockerImage.id = ${dockerImage.id}"
             dockerImage.inside{
@@ -468,14 +467,10 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
 
             [jenkinsStageName,{
                 node(originalNodeLabel){
-
                     def dockerImageName = "tox:${tox_env}"
                     checkout scm
                     try{
-//                         def image = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} . ")
-//                         echo "image ${image}"
                         dockerImageForTesting.inside{
-                            echo "it = ${it}"
                             try{
                                 publishChecks(
                                     conclusion: 'NONE',
@@ -525,13 +520,15 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                         if(isUnix()){
                             sh(
                                 label: "Removing Docker Image used to run tox",
-                                script: """docker image ls ${dockerImageName}
+                                script: """docker image rm ${dockerImageName}
+                                           docker image ls ${dockerImageName}
                                            """
                             )
                         } else {
                             bat(
                                 label: "Removing Docker Image used to run tox",
-                                script: """docker image ls ${dockerImageName}
+                                script: """docker image rm ${dockerImageName}
+                                           docker image ls ${dockerImageName}
                                            """
                             )
                         }
@@ -539,7 +536,6 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                 }
             }]
         })
-        jobs["failFast"] =  true
         return jobs
     }
 }
@@ -944,9 +940,7 @@ pipeline {
                         script{
                             def linux_jobs = getToxTestsParallel("Linux", "linux && docker", "ci/docker/linux/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL")
                             def windows_jobs = getToxTestsParallel("Windows", "windows && docker", "ci/docker/windows/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE")
-//                             def jobs = windows_jobs + linux_jobs
-                            def jobs = windows_jobs
-//                             failFast true
+                            def jobs = windows_jobs + linux_jobs
                             parallel(jobs)
                         }
                     }
