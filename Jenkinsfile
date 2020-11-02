@@ -427,9 +427,13 @@ def getToxEnvs(){
 def generateToxReport(toxResultFile){
     try{
         def tox_result = readJSON(file: toxResultFile)
-        def checksReportText = """toxversion: ${tox_result['toxversion']}
-                                  platform:   ${tox_result['platform']}
+        def checksReportText = """Tox Version: ${tox_result['toxversion']}
+                                  Platform:   ${tox_result['platform']}
                                   """
+
+        tox_result['testenvs'].each{
+            echo "${it}"
+        }
       return checksReportText
     } catch (e){
         return readFile(toxResultFile)
