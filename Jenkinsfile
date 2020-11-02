@@ -463,7 +463,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                     checkout scm
                     try{
                         def container = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} . ")
-                        echo "here"
+                        echo "container ${container}"
                         container.inside{
                             echo "it = ${it}"
                             try{
