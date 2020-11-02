@@ -435,10 +435,9 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
             def dockerImageName = "tox${currentBuild.projectName}"
 //             def containerImage = docker.image(dockerImageName)
             def container = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} .").inside{
-                echo "it = ${it}"
                 envs = getToxEnvs()
             }
-//             container.stop
+            echo "container = ${container}"
             if(isUnix()){
                 sh(
                     label: "Removing Docker Image used to run tox",
