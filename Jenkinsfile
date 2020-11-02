@@ -424,14 +424,14 @@ def getToxEnvs(){
     }
     return envs
 }
-def generateToxReport(toxResultFile){
+def generateToxReport(tox_env, toxResultFile){
     try{
         def tox_result = readJSON(file: toxResultFile)
         def checksReportText = """Tox Version: ${tox_result['toxversion']}
                                   Platform:   ${tox_result['platform']}
                                   """
 
-        tox_result['testenvs'].each{
+        tox_result['testenvs']['tox_env'].each{
             echo "${it}"
         }
       return checksReportText
@@ -514,7 +514,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                             )
                             throw e
                         }
-                        def checksReportText = generateToxReport('tox_result.json')
+                        def checksReportText = generateToxReport(tox_env, 'tox_result.json')
                         publishChecks(
                                 name: githubChecksName,
                                 summary: 'Use Tox to test installed package',
