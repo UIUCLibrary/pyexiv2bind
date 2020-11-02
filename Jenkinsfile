@@ -500,6 +500,9 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                         }
                         tox_result = readJSON(file: 'tox_result.json')
                         echo "${readFile('tox_result.json')}"
+                        def checksReportText = """toxversion: ${tox_result['toxversion']}
+                                                  platform:   ${tox_result['platform']}
+                        """
                         publishChecks(
                                 name: githubChecksName,
                                 summary: 'Use Tox to test installed package',
