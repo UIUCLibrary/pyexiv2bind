@@ -928,6 +928,7 @@ pipeline {
                             def windows_jobs = getToxTestsParallel("Windows", "windows && docker", "ci/docker/windows/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE")
 //                             def jobs = windows_jobs + linux_jobs
                             def jobs = windows_jobs
+                            failFast true
                             parallel(jobs)
                         }
                     }
