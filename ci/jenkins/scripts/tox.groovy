@@ -22,6 +22,9 @@ def generateToxPackageReport(testEnv){
 
 def generateToxReport(tox_env, toxResultFile){
     try{
+        if(!fileExists "${toxResultFile}"){
+            error "No file found for ${toxResultFile}"
+        }
         def tox_result = readJSON(file: toxResultFile)
         def checksReportText = ""
 
