@@ -34,7 +34,7 @@ def generateToxReport(tox_env, toxResultFile){
 **Platform:**   ${tox_result['platform']}
 """
     if(! tox_result['testenvs'].containsKey(tox_env)){
-        tox_result.each{
+        tox_result['testenvs'].each{
             echo "${it}"
         }
         error "No test env for ${tox_env} found in ${toxResultFile}"
