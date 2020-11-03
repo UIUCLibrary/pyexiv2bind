@@ -34,7 +34,7 @@ def generateToxReport(tox_env, toxResultFile){
 **Platform:**   ${tox_result['platform']}
 """
     if(! tox_result['testenvs'].containsKey(tox_env)){
-        tox_result['testenvs'].each{->test_env
+        tox_result['testenvs'].each{test_env->
             echo "${test_env}"
             test_env.each{
                 echo "${it}"
