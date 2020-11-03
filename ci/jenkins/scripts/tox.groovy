@@ -30,6 +30,9 @@ def generateToxReport(tox_env, toxResultFile){
 **Tox Version:** ${tox_result['toxversion']}
 **Platform:**   ${tox_result['platform']}
 """
+    if(! tox_result['testenvs'].containsKey(tox_env)){
+        error "No test env for ${tox_env} found in ${toxResultFile}"
+    }
     def tox_test_env = tox_result['testenvs'][tox_env]
     echo "${tox_env}"
 //         =========
