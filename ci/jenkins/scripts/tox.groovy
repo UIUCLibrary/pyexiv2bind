@@ -30,9 +30,10 @@ def generateToxReport(tox_env, toxResultFile){
 **Tox Version:** ${tox_result['toxversion']}
 **Platform:**   ${tox_result['platform']}
 """
-
+    def tox_test_env = tox_result['testenvs'][tox_env]
+    echo "${tox_test_env}"
 //         =========
-        def packageReport = generateToxPackageReport(tox_result['testenvs'][tox_env])
+        def packageReport = generateToxPackageReport(tox_test_env)
         checksReportText = testingEnvReport + " \n" + packageReport
 //         =========
 
