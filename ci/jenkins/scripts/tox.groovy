@@ -10,6 +10,15 @@ def getToxEnvs(){
     }
     return envs
 }
+def generateToxPackageReport(testEnv){
+
+        def packageReport = "\n**Installed Packages:**"
+        testEnv['installed_packages'].each{
+            packageReport =  packageReport + "\n ${it}"
+        }
+
+        return packageReport
+}
 
 def generateToxReport(tox_env, toxResultFile){
     try{
@@ -22,13 +31,8 @@ def generateToxReport(tox_env, toxResultFile){
 **Platform:**   ${tox_result['platform']}
 """
 
-        def testEnv = tox_result['testenvs'][tox_env]
-
-        def packageReport = "\n**Installed Packages:**"
-        testEnv['installed_packages'].each{
-            packageReport =  packageReport + "\n ${it}"
-        }
-
+//         =========
+        def packageReport = generateToxPackageReport(tox_result['testenvs'][tox_env])
         checksReportText = testingEnvReport + " \n" + packageReport
 //         =========
 
