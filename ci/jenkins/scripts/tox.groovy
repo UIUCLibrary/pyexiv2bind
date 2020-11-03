@@ -21,10 +21,10 @@ def generateToxPackageReport(testEnv){
 }
 
 def generateToxReport(tox_env, toxResultFile){
+    if(!fileExists(toxResultFile)){
+        error "No file found for ${toxResultFile}"
+    }
     try{
-        if(!fileExists(toxResultFile)){
-            error "No file found for ${toxResultFile}"
-        }
         def tox_result = readJSON(file: toxResultFile)
         def checksReportText = ""
 
@@ -144,10 +144,17 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                                 )
                             }
                         } catch (e){
+                            def text
+                            try{
+                                text = generateToxReport(tox_env, 'tox_result.json')
+                            }
+                            catch (ex){
+                                text = "No details given. Unable to read tox_result.json"
+                            }
                             publishChecks(
                                 name: githubChecksName,
                                 summary: 'Use Tox to test installed package',
-                                text: generateToxReport(tox_env, 'tox_result.json'),
+                                text: text,
                                 conclusion: 'FAILURE',
                                 title: 'Failed'
                             )
