@@ -921,25 +921,6 @@ pipeline {
                 equals expected: true, actual: params.RUN_CHECKS
             }
             stages{
-                stage("Run Tox test") {
-//                                     when {
-//                                        equals expected: true, actual: params.TEST_RUN_TOX
-//                                        beforeAgent true
-//                                     }
-                    steps {
-                        script{
-                            def tox
-                            node(){
-                                checkout scm
-                                tox = load("ci/jenkins/scripts/tox.groovy")
-                            }
-                            def linux_jobs = tox.getToxTestsParallel("Linux", "linux && docker", "ci/docker/linux/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL")
-                            def windows_jobs = tox.getToxTestsParallel("Windows", "windows && docker", "ci/docker/windows/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE")
-                            def jobs = windows_jobs + linux_jobs
-                            parallel(jobs)
-                        }
-                    }
-                }
                 stage("Testing"){
                     stages{
                         stage("Python Testing"){
@@ -1197,6 +1178,25 @@ pipeline {
                                     recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
                                 }
                             }
+                        }
+                    }
+                }
+                stage("Run Tox test") {
+                    when {
+                       equals expected: true, actual: params.TEST_RUN_TOX
+                       beforeAgent true
+                    }
+                    steps {
+                        script{
+                            def tox
+                            node(){
+                                checkout scm
+                                tox = load("ci/jenkins/scripts/tox.groovy")
+                            }
+                            def linux_jobs = tox.getToxTestsParallel("Linux", "linux && docker", "ci/docker/linux/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL")
+                            def windows_jobs = tox.getToxTestsParallel("Windows", "windows && docker", "ci/docker/windows/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE")
+                            def jobs = windows_jobs + linux_jobs
+                            parallel(jobs)
                         }
                     }
                 }
