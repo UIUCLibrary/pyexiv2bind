@@ -877,7 +877,6 @@ pipeline {
         booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation")
     }
     stages {
-//     todo turn this back on
         stage("Building Documentation"){
             agent {
                 dockerfile {
