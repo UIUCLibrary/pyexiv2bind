@@ -878,44 +878,44 @@ pipeline {
     }
     stages {
 //     todo turn this back on
-//         stage("Building Documentation"){
-//             agent {
-//                 dockerfile {
-//                     filename 'ci/docker/linux/test/Dockerfile'
-//                     label 'linux && docker'
-//                     additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
-//                 }
-//             }
-//             steps {
-//                 sh(label: "Running Sphinx",
-//                    script: '''mkdir -p logs
-//                               mkdir -p build/docs/html
-//                               python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
-//                               python -m sphinx docs/source build/docs/html -b html -d build/docs/.doctrees --no-color -w logs/build_sphinx.log
-//                               '''
-//                   )
-//             }
-//             post{
-//                 always {
-//                     recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', id: 'sphinx_build')])
-//                 }
-//                 success{
-//                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-//                     script{
-//                         def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
-//                         zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
-//                     }
-//                     stash includes: "dist/*.doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
-//                 }
-//                 cleanup{
-//                     cleanWs(patterns: [
-//                             [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
-//                             [pattern: "dist/*doc.zip,", type: 'INCLUDE']
-//                         ]
-//                     )
-//                 }
-//             }
-//         }
+        stage("Building Documentation"){
+            agent {
+                dockerfile {
+                    filename 'ci/docker/linux/test/Dockerfile'
+                    label 'linux && docker'
+                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                }
+            }
+            steps {
+                sh(label: "Running Sphinx",
+                   script: '''mkdir -p logs
+                              mkdir -p build/docs/html
+                              python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
+                              python -m sphinx docs/source build/docs/html -b html -d build/docs/.doctrees --no-color -w logs/build_sphinx.log
+                              '''
+                  )
+            }
+            post{
+                always {
+                    recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', id: 'sphinx_build')])
+                }
+                success{
+                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+                    script{
+                        def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
+                        zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                    }
+                    stash includes: "dist/*.doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
+                }
+                cleanup{
+                    cleanWs(patterns: [
+                            [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
+                            [pattern: "dist/*doc.zip,", type: 'INCLUDE']
+                        ]
+                    )
+                }
+            }
+        }
         stage("Checks"){
             when{
                 equals expected: true, actual: params.RUN_CHECKS
