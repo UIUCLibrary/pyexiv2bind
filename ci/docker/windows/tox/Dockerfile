@@ -65,66 +65,86 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     }; `
     Write-Host "Finished install packages with Chocolatey"
 
+ARG PYTHON_36_VERSION
+ARG PYTHON_37_VERSION
+ARG PYTHON_38_VERSION
+ARG PYTHON_39_VERSION
+
+RUN $PYTHON_VERSIONS = @(${Env:PYTHON_36_VERSION}, ${Env:PYTHON_37_VERSION}, ${Env:PYTHON_38_VERSION}, ${Env:PYTHON_39_VERSION}) ; `
+    foreach( $PYTHON_VERSION in $PYTHON_VERSIONS ){ `
+        Write-Host "Installing Python $PYTHON_VERSION with Chocolatey" ; `
+        $process = start-process -NoNewWindow -PassThru -FilePath C:\ProgramData\chocolatey\bin\choco.exe -ArgumentList 'install -y --stoponfirstfailure --no-progress --verbose python3', "--version=$PYTHON_VERSION", "-my" -Wait ;`
+        if ( $process.ExitCode -eq 0) `
+        { `
+            Write-Host "Installing Python $PYTHON_VERSION with Chocolatey - Done" ; `
+        } else { `
+            throw "Installing packages with Chocolatey - Failed with exit code ($process.ExitCode)" ;  `
+        };`
+    } ; `
+    Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse ; `
+    Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
+    py --list ;`
+    py -3.6 --version ; `
+    py -3.7 --version ; `
+    py -3.8 --version ; `
+    py -3.9 --version ; `
+    Write-Host "Installing Python with Chocolatey - Done"
+
 # ==============================================================================
 FROM BASE_BUILDER as WHEEL_BUilDER_PY36
-ARG PYTHON_36_VERSION
-ARG CHOCOLATEY_SOURCE
-RUN choco install -y --stoponfirstfailure --no-progress --verbose python3 --version=${Env:PYTHON_36_VERSION}
 SHELL ["cmd", "/S", "/C" ]
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 COPY requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extra.txt c:/requirements/
-RUN pip install --upgrade pip wheel && `
-    pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
-    pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
-    pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
+ENV PY_PYTHON=3.6
+RUN py -m pip install --upgrade pip && `
+    py -m pip install wheel && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
 
 # ==============================================================================
 FROM BASE_BUILDER as WHEEL_BUilDER_PY37
-ARG PYTHON_37_VERSION
-ARG CHOCOLATEY_SOURCE
-RUN choco install -y --stoponfirstfailure --no-progress --verbose python3 --version=${Env:PYTHON_37_VERSION}
 SHELL ["cmd", "/S", "/C" ]
 COPY requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extra.txt c:/requirements/
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-RUN pip install --upgrade pip wheel && `
-    pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
-    pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
-    pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
+ENV PY_PYTHON=3.7
+RUN py -m pip install --upgrade pip && `
+    py -m pip install wheel && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
 
 # ==============================================================================
 FROM BASE_BUILDER as WHEEL_BUilDER_PY38
-ARG PYTHON_38_VERSION
-ARG CHOCOLATEY_SOURCE
-RUN choco install -y --stoponfirstfailure --no-progress --verbose python3 --version=${Env:PYTHON_38_VERSION}
 SHELL ["cmd", "/S", "/C" ]
 COPY requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extra.txt c:/requirements/
-ARG PIP_EXTRA_INDEX_URL
+ARG PIP_EXTRA_INDEX_URL-
 ARG PIP_INDEX_URL
-RUN pip install --upgrade pip wheel && `
-    pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
-    pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
-    pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
-
-# ==============================================================================
+ENV PY_PYTHON=3.8
+RUN py -m pip install --upgrade pip && `
+    py -m pip install wheel && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
 
 # ==============================================================================
 FROM BASE_BUILDER as WHEEL_BUilDER_PY39
-ARG PYTHON_39_VERSION
-ARG CHOCOLATEY_SOURCE
-RUN choco install -y --stoponfirstfailure --no-progress --verbose python3 --version=${Env:PYTHON_39_VERSION}
 SHELL ["cmd", "/S", "/C" ]
 COPY requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extra.txt c:/requirements/
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-RUN pip install --upgrade pip wheel && `
-    pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
-    pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
-    pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
+ENV PY_PYTHON=3.9
+RUN py -m pip install --upgrade pip && `
+    py -m pip install wheel && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
+
+
 # ==============================================================================
 FROM BASE_BUILDER as CONAN_BUILDER
-RUN choco install -y --stoponfirstfailure --verbose python3
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 RUN python -m pip install --upgrade pip ; `
@@ -132,28 +152,17 @@ RUN python -m pip install --upgrade pip ; `
     pip install conan cmake
 COPY conanfile.py c:/temp/conanfile.py
 COPY ci/docker/shared/conan/remotes.json  C:/Users/ContainerAdministrator/.conan/remotes.json
+COPY ci/docker/windows/shared/conan/profile.ini  C:/Users/ContainerAdministrator/.conan/profiles/default
+SHELL ["cmd", "/S", "/C" ]
 RUN conan config home
-RUN conan install c:/temp/ --no-import  ; `
-    conan remove "*" -b --src -f ; `
+RUN conan install c:/temp/ --build missing --no-import  && `
+    conan remove "*" -b --src -f && `
     conan remove --lock
-# ==============================================================================
 
 FROM BASE_BUILDER
 COPY --from=certsgen c:/roots.sst roots.sst
 RUN certutil -addstore -f root roots.sst ; `
     del roots.sst
-
-ARG PYTHON_36_VERSION
-RUN choco install python3 --version ${Env:PYTHON_36_VERSION} -my
-
-ARG PYTHON_37_VERSION
-RUN choco install python3 --version ${Env:PYTHON_37_VERSION} -my
-
-ARG PYTHON_38_VERSION
-RUN choco install python3 --version ${Env:PYTHON_38_VERSION} -my
-
-ARG PYTHON_39_VERSION
-RUN choco install python3 --version ${Env:PYTHON_39_VERSION} -my
 
 COPY --from=WHEEL_BUilDER_PY36 c:/wheels/ c:/wheels/
 COPY --from=WHEEL_BUilDER_PY37 c:/wheels/ c:/wheels/
@@ -169,7 +178,7 @@ COPY --from=CONAN_BUILDER C:/Users/ContainerAdministrator/.conan/ C:/Users/Conta
 ENV CONAN_USER_HOME=C:/Users/ContainerAdministrator
 COPY conanfile.py c:/temp/conanfile.py
 RUN conan config home
-RUN conan install c:/temp/ --build missing --no-import  ; `
+RUN conan install c:/temp/ --build outdated --no-import  ; `
     conan remove "*" -b --src -f ; `
     conan remove --locks
 
