@@ -124,6 +124,7 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
 
             [jenkinsStageName,{
                 node(originalNodeLabel){
+                    deleteDir()
                     checkout scm
                     dockerImageForTesting.inside{
                         try{
