@@ -122,8 +122,22 @@ RUN pip install --upgrade pip wheel && `
     pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
     pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
     pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
-
 # ==============================================================================
+FROM BASE_BUILDER as CONAN_BUILDER
+RUN choco install -y --stoponfirstfailure --verbose python3
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+RUN python -m pip install --upgrade pip ; `
+    pip install wheel ; `
+    pip install conan cmake
+COPY conanfile.py c:/temp/conanfile.py
+COPY ci/docker/shared/conan/remotes.json  C:/Users/ContainerAdministrator/.conan/remotes.json
+RUN conan config home
+RUN conan install c:/temp/ --no-import  ; `
+    conan remove "*" -b --src -f ; `
+    conan remove --lock
+# ==============================================================================
+
 FROM BASE_BUILDER
 COPY --from=certsgen c:/roots.sst roots.sst
 RUN certutil -addstore -f root roots.sst ; `
@@ -147,6 +161,17 @@ COPY --from=WHEEL_BUilDER_PY38 c:/wheels/ c:/wheels/
 COPY --from=WHEEL_BUilDER_PY39 c:/wheels/ c:/wheels/
 
 ENV PIP_FIND_LINKS=c:\wheels
+RUN python -m pip install pip --upgrade ; pip install tox conan
+COPY --from=certsgen c:/roots.sst roots.sst
+RUN certutil -addstore -f root roots.sst ; `
+    del roots.sst
+COPY --from=CONAN_BUILDER C:/Users/ContainerAdministrator/.conan/ C:/Users/ContainerAdministrator/.conan/
+ENV CONAN_USER_HOME=C:/Users/ContainerAdministrator
+COPY conanfile.py c:/temp/conanfile.py
+RUN conan config home
+RUN conan install c:/temp/ --build missing --no-import  ; `
+    conan remove "*" -b --src -f ; `
+    conan remove --locks
 
 RUN python -m pip install pip --upgrade ; pip install tox
 WORKDIR C:/src
