@@ -65,7 +65,7 @@ RUN PYTHON=python3.9 && \
 FROM base as conan_builder
 RUN pip3 install conan cmake
 COPY --chown=user:user ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
-COPY --chown=user:user ci/docker/shared/conan/profile.ini  /home/user/profiles/default
+COPY --chown=user:user ci/docker/linux/shared/remotes.json  /home/user/profiles/default
 USER user
 WORKDIR /home/user
 ADD conanfile.py /tmp/conanfile.py
@@ -88,7 +88,7 @@ RUN pip3 install tox conan cmake
 USER user
 WORKDIR /home/user
 COPY --from=conan_builder --chown=user:user /home/user/.conan/ /home/user/.conan/
-COPY --chown=user:user ci/docker/shared/conan/profile.ini  /home/user/.conan/profiles/default
+COPY --chown=user:user ci/docker/linux/shared/remotes.json  /home/user/.conan/profiles/default
 COPY --chown=user:user ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
 ADD conanfile.py /tmp/conanfile.py
 ENV CONAN_USER_HOME=/home/user/
