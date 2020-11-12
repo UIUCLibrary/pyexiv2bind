@@ -375,11 +375,23 @@ class BuildConan(setuptools.Command):
         }
 
     def initialize_options(self):
-        pass
         self.conan_exec = None
+        self.conan_cache = None
 
     def finalize_options(self):
-        pass
+        if self.conan_exec is None:
+            self.conan_exec = shutil.which("conan")
+            if self.conan_exec is None:
+                raise Exception("missing conan_exec")
+        if self.conan_cache is None:
+            build_ext_cmd = self.get_finalized_command("build_ext")
+            build_dir = build_ext_cmd.build_temp
+
+            self.conan_cache = \
+                os.path.join(
+                    os.environ.get("CONAN_USER_HOME", build_dir),
+                    ".conan"
+                )
 
     def getConanBuildInfo(self, root_dir):
         for root, dirs, files in os.walk(root_dir):
@@ -393,10 +405,12 @@ class BuildConan(setuptools.Command):
         build_dir = build_ext_cmd.build_temp
 
         build_dir_full_path = os.path.abspath(build_dir)
-        conan_cache = os.path.join(build_dir, "conan_cache")
-        self.mkpath(conan_cache)
-        self.mkpath(build_dir_full_path)
-        self.mkpath(os.path.join(build_dir_full_path, "lib"))
+        conan_cache = self.conan_cache
+        if not os.path.exists(conan_cache):
+            self.mkpath(conan_cache)
+            self.mkpath(build_dir_full_path)
+            self.mkpath(os.path.join(build_dir_full_path, "lib"))
+
         from conans.client import conan_api
         conan = conan_api.Conan(cache_folder=os.path.abspath(conan_cache))
         conan_options = []
