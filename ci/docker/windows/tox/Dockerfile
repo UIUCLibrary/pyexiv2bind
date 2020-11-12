@@ -184,4 +184,4 @@ RUN conan install c:/temp/ --build outdated --no-import  ; `
 
 RUN python -m pip install pip --upgrade ; pip install tox
 WORKDIR C:/src
-CMD tox --workdir ${Env:TEMP}\tox\ -vv  --recreate
+CMD tox --workdir ${Env:TEMP}\tox\ -vv  --recreate -p=auto
