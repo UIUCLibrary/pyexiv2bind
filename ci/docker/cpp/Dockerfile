@@ -13,7 +13,7 @@ RUN apt-get install -y python3-venv
 
 USER user
 WORKDIR /home/user
-COPY --chown=user:user ci/docker/linux/shared/remotes.json /home/user/.conan/remotes.json
+COPY --chown=user:user ci/docker/shared/conan/remotes.json /home/user/.conan/remotes.json
 COPY conanfile.py /tmp/conanfile.py
 ENV CONAN_USER_HOME=/home/user/
 RUN conan config home
