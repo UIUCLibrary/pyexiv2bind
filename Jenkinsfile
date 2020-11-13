@@ -1312,7 +1312,7 @@ pipeline {
                             axis {
                                 name 'PLATFORM'
                                 values(
-                                    "linux",
+//                                     "linux",
                                     "windows"
                                 )
                             }
