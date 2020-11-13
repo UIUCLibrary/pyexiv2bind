@@ -1324,6 +1324,18 @@ pipeline {
                                     "3.8"
                                 )
                             }
+                            excludes {
+                                exclude {
+                                    axis {
+                                        name 'PYTHON_VERSION'
+                                        values '3.6'
+                                    }
+                                    axis {
+                                        name 'PLATFORM'
+                                        values 'linux'
+                                    }
+                                }
+                            }
                         }
                         stages{
                             stage("Creating bdist wheel"){
