@@ -6,7 +6,7 @@ import sys
 import shutil
 import tempfile
 from typing import List, Optional, Tuple, Iterable, Dict, Any, Union
-import ninja
+# import ninja
 import setuptools
 
 from setuptools import setup, Extension
