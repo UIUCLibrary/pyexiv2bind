@@ -6,7 +6,7 @@ import sys
 import shutil
 import tempfile
 from typing import List, Optional, Tuple, Iterable, Dict, Any, Union
-
+# import ninja
 import setuptools
 
 from setuptools import setup, Extension
@@ -144,6 +144,7 @@ class BuildCMakeLib(build_clib):
 
         configure_command = [
             self.cmake_exec, f'-S{source_dir}',
+            "-G", "Ninja",
             f'-B{dep_build_path}',
             f"-DCMAKE_TOOLCHAIN_FILE={dep_build_path}/conan_paths.cmake",
             f'-DCMAKE_BUILD_TYPE={build_configuration_name}',
@@ -254,9 +255,6 @@ class BuildCMakeLib(build_clib):
         if build_ext_cmd.parallel:
             build_command.extend(["-j", str(build_ext_cmd.parallel)])
 
-        if "Visual Studio" in self.get_build_generator_name():
-            build_command += ["--", "/NOLOGO", "/verbosity:minimal"]
-
         if sys.gettrace():
             subprocess.check_call(build_command)
         else:
@@ -283,8 +281,8 @@ class BuildCMakeLib(build_clib):
         if build_ext_cmd.parallel:
             install_command.extend(["-j", str(build_ext_cmd.parallel)])
 
-        if "Visual Studio" in self.get_build_generator_name():
-            install_command += ["--", "/NOLOGO", "/verbosity:quiet"]
+        # if "Visual Studio" in self.get_build_generator_name():
+        #     install_command += ["--", "/NOLOGO", "/verbosity:quiet"]
 
         build_ext_cmd.include_dirs.insert(
             0,
