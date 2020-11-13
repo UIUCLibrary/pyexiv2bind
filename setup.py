@@ -281,8 +281,8 @@ class BuildCMakeLib(build_clib):
         if build_ext_cmd.parallel:
             install_command.extend(["-j", str(build_ext_cmd.parallel)])
 
-        if "Visual Studio" in self.get_build_generator_name():
-            install_command += ["--", "/NOLOGO", "/verbosity:quiet"]
+        # if "Visual Studio" in self.get_build_generator_name():
+        #     install_command += ["--", "/NOLOGO", "/verbosity:quiet"]
 
         build_ext_cmd.include_dirs.insert(
             0,
