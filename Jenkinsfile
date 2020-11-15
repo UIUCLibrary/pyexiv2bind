@@ -710,7 +710,16 @@ def test_pkg(glob, timeout_time){
         }
     }
 }
-
+def stash_wheel(args = [:]){
+    script{
+        def stash_name =  "whl ${args['pythonVersion']} ${args['platform']}"
+        if(args['platform'] == "linux"){
+            stash includes: 'dist/*manylinux*.whl', name: stash_name
+        } else{
+            stash includes: 'dist/*.whl', name: stash_name
+        }
+    }
+}
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
 
@@ -778,6 +787,24 @@ def build_wheel(){
         )
     }
 }
+def build_wheel2(args=[:]){
+
+    if(isUnix()){
+        sh(label: "Building Python Wheel",
+            script: "python -m pip wheel -w dist/ --no-deps ."
+        )
+        if(args["platform"] == "linux"){
+            sh(
+                label: "Converting linux wheel to manylinux",
+                script:"auditwheel repair ./dist/*.whl -w ./dist"
+            )
+        }
+    } else{
+        bat(label: "Building Python Wheel",
+            script: "python -m pip wheel -w dist/ -v --no-deps ."
+        )
+    }
+}
 
 def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
     def props = readProperties interpolate: true, file: metadataFile
@@ -806,21 +833,30 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
 def startup(){
     stage("Getting Distribution Info"){
         node('linux && docker') {
-            docker.image('python:3.8').inside {
-                timeout(2){
-                    try{
-                        checkout scm
-                        sh(
-                           label: "Running setup.py with dist_info",
-                           script: """python --version
-                                      python setup.py dist_info
-                                   """
-                        )
-                        stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
-                        archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
-                    } finally{
-                        deleteDir()
+            ws{
+                checkout scm
+                try{
+                    docker.image('python:3.8').inside {
+                        timeout(2){
+                            sh(
+                               label: "Running setup.py with dist_info",
+                               script: """python --version
+                                          python setup.py dist_info
+                                       """
+                            )
+                            stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
+                            archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
+    //                     }
+                        }
                     }
+                } finally{
+                    cleanWs()
+    //                 cleanWs(
+    //                     deleteDirs: true,
+    //                     patterns: [
+    //                         [pattern: '*.dist-info/', type: 'INCLUDE']
+    //                     ]
+    //                 )
                 }
             }
         }
@@ -854,14 +890,13 @@ def get_props(){
                 def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATA"
                 return props
             } finally {
-                deleteDir()
+                cleanWs()
             }
         }
     }
 }
 startup()
 def props = get_props()
-
 pipeline {
     agent none
     parameters {
@@ -909,7 +944,7 @@ pipeline {
                 cleanup{
                     cleanWs(patterns: [
                             [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
-                            [pattern: "dist/*doc.zip,", type: 'INCLUDE']
+                            [pattern: "dist/*doc.zip", type: 'INCLUDE']
                         ]
                     )
                 }
@@ -1312,7 +1347,7 @@ pipeline {
                             axis {
                                 name 'PLATFORM'
                                 values(
-//                                     "linux",
+                                    "linux",
                                     "windows"
                                 )
                             }
@@ -1351,27 +1386,16 @@ pipeline {
                                 }
                                 steps{
                                     timeout(15){
-                                        build_wheel()
-                                        script{
-                                            if(PLATFORM == "linux"){
-                                                sh(
-                                                    label: "Converting linux wheel to manylinux",
-                                                    script:"auditwheel repair ./dist/*.whl -w ./dist"
-                                                )
-                                            }
-                                        }
+                                        build_wheel2(platform: PLATFORM)
+
                                     }
                                 }
                                 post{
                                     always{
-                                        script{
-                                            if(PLATFORM == "linux"){
-                                                stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
-                                            } else{
-                                                stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
-                                            }
-                                        }
-//                                         check_dll_deps("build/lib")
+                                        stash_wheel(
+                                            platform: PLATFORM,
+                                            pythonVersion: PYTHON_VERSION
+                                        )
                                     }
                                     success{
                                         archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
@@ -1521,6 +1545,16 @@ pipeline {
                                            devpi upload --from-dir dist --clientdir ./devpi
                                            """
                             )
+                        }
+                        post{
+                            cleanup{
+                                cleanWs(
+                                    deleteDirs: true,
+                                    patterns: [
+                                            [pattern: "dist/", type: 'INCLUDE']
+                                        ]
+                                )
+                            }
                         }
                     }
                 }
