@@ -39,9 +39,9 @@ def test_pkg(glob, timeout_time){
         }
     }
 }
-def test_one(pythonVersion, dockerAgent, stashName, glob){
+def test_one(pythonVersion, dockerAgent, dockerImageName, stashName, glob){
 
-    def dockerImageName = "${currentBuild.projectName}:wheel${pythonVersion}".replaceAll("-", "").toLowerCase()
+
     def docker_build
     checkout scm
     try{
@@ -83,12 +83,14 @@ def test_package_stages(args = [:]){
 
     stage("Testing Wheel Package"){
         node(whlTestAgent.label){
-            test_one(pythonVersion, whlTestAgent, whlStashName, "dist/*.whl")
+            def dockerImageName = "${currentBuild.projectName}:wheel${pythonVersion}".replaceAll("-", "").toLowerCase()
+            test_one(pythonVersion, whlTestAgent, dockerImageName, whlStashName, "dist/*.whl")
         }
     }
     stage("Testing sdist Package"){
         node(sdistTestAgent.label){
-            test_one(pythonVersion, sdistTestAgent, sdistStashName, "dist/*.zip,dist/*.tar.gz")
+            def dockerImageName = "${currentBuild.projectName}:sdist${pythonVersion}".replaceAll("-", "").toLowerCase()
+            test_one(pythonVersion, sdistTestAgent, dockerImageName, sdistStashName, "dist/*.zip,dist/*.tar.gz")
         }
     }
 }
