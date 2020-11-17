@@ -715,11 +715,6 @@ def test_pkg(glob, timeout_time){
                 throw e
 
             } finally{
-                if(isUnix()){
-                    sh "ls -la"
-                } else {
-                    bat "dir"
-                }
                 cleanWs(
                     deleteDirs: true,
                     patterns: [
@@ -1374,18 +1369,6 @@ pipeline {
                                 )
                             }
                         }
-//                         excludes {
-//                             exclude {
-//                                 axis {
-//                                     name 'PYTHON_VERSION'
-//                                     values '3.6'
-//                                 }
-//                                 axis {
-//                                     name 'PLATFORM'
-//                                     values 'linux'
-//                                 }
-//                             }
-//                         }
                         stages{
                             stage("Creating bdist wheel"){
                                 agent {
@@ -1543,7 +1526,7 @@ pipeline {
                                     unstash "MacOS 10.14 py38 wheel"
                                 }
                             }
-                            unstash "whl 3.6 windows"
+//                             unstash "whl 3.6 windows"
 //                             unstash "whl 3.6 linux"
                             unstash "whl 3.7 windows"
                             unstash "whl 3.7 linux"
