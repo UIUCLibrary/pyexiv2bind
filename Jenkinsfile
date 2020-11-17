@@ -529,23 +529,7 @@ def test_deps(glob){
 //         return jobs
 //     }
 // }
-def test_package_stages(args = [:]){
-    def platform = args['platform']
-    def pythonVersion = args['pythonVersion']
-    def builtDockerfile = args['builtDockerfile']
-    def sourceDockerFile = args['sourceDockerFile']
 
-    stage("Testing Wheel Package"){
-        node("${platform} && docker"){
-            echo "testing ${pythonVersion} on ${platform} ${env.NODE_NAME} using ${builtDockerfile}"
-        }
-    }
-    stage("Testing sdist Package"){
-        node("${platform} && docker"){
-            echo "testing ${pythonVersion} on ${platform} ${env.NODE_NAME} using ${sourceDockerFile}"
-        }
-    }
-}
 def run_tox_envs(){
     script {
         def cmds
@@ -861,6 +845,11 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
          writeJSON file: outputJson, json: outstandingIssues
      }
 }
+def packaging
+node(){
+    checkout scm
+    packaging = load("ci/jenkins/scripts/packaging.groovy")
+}
 def startup(){
     stage("Getting Distribution Info"){
         node('linux && docker') {
@@ -937,44 +926,45 @@ pipeline {
         booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation")
     }
     stages {
-        stage("Building Documentation"){
-            agent {
-                dockerfile {
-                    filename 'ci/docker/linux/test/Dockerfile'
-                    label 'linux && docker'
-                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
-                }
-            }
-            steps {
-                sh(label: "Running Sphinx",
-                   script: '''mkdir -p logs
-                              mkdir -p build/docs/html
-                              python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
-                              python -m sphinx docs/source build/docs/html -b html -d build/docs/.doctrees --no-color -w logs/build_sphinx.log
-                              '''
-                  )
-            }
-            post{
-                always {
-                    recordIssues(skipPublishingChecks: true, tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', id: 'sphinx_build')])
-                }
-                success{
-                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                    script{
-                        def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
-                        zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
-                    }
-                    stash includes: "dist/*.doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
-                }
-                cleanup{
-                    cleanWs(patterns: [
-                            [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
-                            [pattern: "dist/*doc.zip", type: 'INCLUDE']
-                        ]
-                    )
-                }
-            }
-        }
+//     TODO: turn back on
+//         stage("Building Documentation"){
+//             agent {
+//                 dockerfile {
+//                     filename 'ci/docker/linux/test/Dockerfile'
+//                     label 'linux && docker'
+//                     additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+//                 }
+//             }
+//             steps {
+//                 sh(label: "Running Sphinx",
+//                    script: '''mkdir -p logs
+//                               mkdir -p build/docs/html
+//                               python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
+//                               python -m sphinx docs/source build/docs/html -b html -d build/docs/.doctrees --no-color -w logs/build_sphinx.log
+//                               '''
+//                   )
+//             }
+//             post{
+//                 always {
+//                     recordIssues(skipPublishingChecks: true, tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', id: 'sphinx_build')])
+//                 }
+//                 success{
+//                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+//                     script{
+//                         def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
+//                         zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+//                     }
+//                     stash includes: "dist/*.doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
+//                 }
+//                 cleanup{
+//                     cleanWs(patterns: [
+//                             [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
+//                             [pattern: "dist/*doc.zip", type: 'INCLUDE']
+//                         ]
+//                     )
+//                 }
+//             }
+//         }
         stage("Checks"){
             when{
                 equals expected: true, actual: params.RUN_CHECKS
@@ -1379,8 +1369,8 @@ pipeline {
                             axis {
                                 name "PYTHON_VERSION"
                                 values(
-                                    "3.6",
-                                    "3.7",
+//                                     "3.6",
+//                                     "3.7",
                                     "3.8"
                                 )
                             }
@@ -1416,6 +1406,7 @@ pipeline {
                                     cleanup{
                                         cleanWs(
                                             deleteDirs: true,
+                                            disableDeferredWipeout: true,
                                             patterns: [
                                                 [pattern: 'dist/', type: 'INCLUDE'],
                                                 [pattern: '.tox/', type: 'INCLUDE'],
@@ -1430,14 +1421,38 @@ pipeline {
                                 equals expected: true, actual: params.TEST_PACKAGES
                             }
                             steps{
-                                test_package_stages(
-                                    platform: PLATFORM,
-                                    pythonVersion: PYTHON_VERSION,
-                                    builtDockerfile: CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.filename,
-                                    sourceDockerFile: CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.filename
-                                )
-
-//                                 echo "testing"
+                                script{
+//                                     packaging.test_package_stages(
+//                                         platform: "linux",
+//                                         pythonVersion: "3.6",
+//                                         whlTestAgent: [
+//                                             filename: 'ci/docker/linux/test/Dockerfile',
+//                                             label: 'linux && docker',
+//                                             additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+//                                         ],
+//                                         sdistTestAgent: [
+//                                             filename: 'ci/docker/linux/test/Dockerfile',
+//                                             label: 'linux && docker',
+//                                             additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+//                                         ]
+//                                     )
+                                    packaging.test_package_stages(
+                                        platform: PLATFORM,
+                                        pythonVersion: PYTHON_VERSION,
+                                        whlTestAgent: [
+                                            filename: CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.filename,
+                                            label: "${PLATFORM} && docker",
+                                            additionalBuildArgs: CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.additionalBuildArgs
+                                        ],
+                                        sdistTestAgent: [
+                                            filename: CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.filename,
+                                            label: "${PLATFORM} && docker",
+                                            additionalBuildArgs: CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.additionalBuildArgs
+                                        ],
+                                        whlStashName: "whl ${PYTHON_VERSION} ${platform}",
+                                        sdistStashName: "sdist"
+                                    )
+                                }
                             }
 
                         }
