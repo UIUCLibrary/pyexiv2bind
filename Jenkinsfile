@@ -529,7 +529,14 @@ def test_deps(glob){
 //         return jobs
 //     }
 // }
-
+def test_package_stages(platform, pythonVersion, builtDockerfile, sourceDockerFile){
+    stage("Testing Wheel Package"){
+        echo "testing ${pythonVersion} on ${platform}"
+    }
+    stage("Testing sdist Package"){
+        echo "testing ${pythonVersion} on ${platform}"
+    }
+}
 def run_tox_envs(){
     script {
         def cmds
@@ -1409,10 +1416,17 @@ pipeline {
                                     }
                                 }
                             }
-//                         stage("Testing Python Packages"){
-//                                 when{
-//                                     equals expected: true, actual: params.TEST_PACKAGES
-//                                 }
+                        stage("Testing Python Packages"){
+                            when{
+                                equals expected: true, actual: params.TEST_PACKAGES
+                            }
+                            steps{
+                                test_package_stages(PLATFORM, PYTHON_VERSION, CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.filename, CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.filename)
+
+//                                 echo "testing"
+                            }
+
+                        }
 //                                 stages{
 //                                     stage("Testing Wheel Package"){
 //                                         agent {
