@@ -88,8 +88,7 @@ def test_package_stages(args = [:]){
     }
     stage("Testing sdist Package"){
         node(sdistTestAgent.label){
-            test_one(pythonVersion,
-            whlTestAgent, sdistStashName, "dist/*.zip,dist/*.tar.gz")
+            test_one(pythonVersion, sdistTestAgent, sdistStashName, "dist/*.zip,dist/*.tar.gz")
         }
     }
 }
