@@ -529,12 +529,21 @@ def test_deps(glob){
 //         return jobs
 //     }
 // }
-def test_package_stages(platform, pythonVersion, builtDockerfile, sourceDockerFile){
+def test_package_stages(args = [:]){
+    def platform = args['platform']
+    def pythonVersion = args['pythonVersion']
+    def builtDockerfile = args['builtDockerfile']
+    def sourceDockerFile = args['sourceDockerFile']
+
     stage("Testing Wheel Package"){
-        echo "testing ${pythonVersion} on ${platform}"
+        node("${platform} && docker"){
+            echo "testing ${pythonVersion} on ${platform} ${env.NODE_NAME} using ${builtDockerfile}"
+        }
     }
     stage("Testing sdist Package"){
-        echo "testing ${pythonVersion} on ${platform}"
+        node("${platform} && docker"){
+            echo "testing ${pythonVersion} on ${platform} ${env.NODE_NAME} using ${sourceDockerFile}"
+        }
     }
 }
 def run_tox_envs(){
@@ -1421,7 +1430,12 @@ pipeline {
                                 equals expected: true, actual: params.TEST_PACKAGES
                             }
                             steps{
-                                test_package_stages(PLATFORM, PYTHON_VERSION, CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.filename, CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.filename)
+                                test_package_stages(
+                                    platform: PLATFORM,
+                                    pythonVersion: PYTHON_VERSION,
+                                    builtDockerfile: CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.filename,
+                                    sourceDockerFile: CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.filename
+                                )
 
 //                                 echo "testing"
                             }
