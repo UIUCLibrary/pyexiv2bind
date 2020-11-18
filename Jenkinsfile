@@ -1,6 +1,6 @@
 #!groovy
 // @Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
-
+def wheel_stashes = []
 def CONFIGURATIONS = [
         "3.6" : [
             os: [
@@ -691,26 +691,50 @@ def test_pkg(glob, timeout_time){
     if( pkgFiles.size() == 0){
         error "Unable to check package. No files found with ${glob}"
     }
-
+    echo "Starting ${glob}"
     pkgFiles.each{
         timeout(timeout_time){
-            if(isUnix()){
-                sh(label: "Testing ${it}",
-                   script: """python --version
-                              tox --installpkg=${it.path} -e py -vv
-                              """
-                )
-            } else {
-                bat(label: "Testing ${it}",
-                    script: """python --version
-                               tox --installpkg=${it.path} -e py -vv
-                               """
+            try{
+                echo "Testing ${it} on ${env.NODE_NAME}"
+                if(isUnix()){
+                    sh(label: "Testing ${it}",
+                       script: """python --version
+                                  tox --installpkg=${it.path} -e py -vv --workdir=./.tox --recreate
+                                  """
+                    )
+                } else {
+                    bat(label: "Testing ${it}",
+                        script: """python --version
+                                   tox --installpkg=${it.path} -e py -vv --workdir=./.tox --recreate
+                                   """
+                    )
+                }
+                echo "Testing ${it} on ${env.NODE_NAME} - Success"
+            } catch (e){
+                echo "Testing ${it} on ${env.NODE_NAME} - Failed"
+                throw e
+
+            } finally{
+                cleanWs(
+                    deleteDirs: true,
+                    patterns: [
+                        [pattern: '.tox/', type: 'INCLUDE']
+                    ]
                 )
             }
         }
     }
 }
-
+def stash_wheel(args = [:]){
+    script{
+        def stash_name =  "whl ${args['pythonVersion']} ${args['platform']}"
+        if(args['platform'] == "linux"){
+            stash includes: 'dist/*manylinux*.whl', name: stash_name
+        } else{
+            stash includes: 'dist/*.whl', name: stash_name
+        }
+    }
+}
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
 
@@ -778,6 +802,24 @@ def build_wheel(){
         )
     }
 }
+def build_wheel2(args=[:]){
+
+    if(isUnix()){
+        sh(label: "Building Python Wheel",
+            script: "python -m pip wheel -w dist/ --no-deps ."
+        )
+        if(args["platform"] == "linux"){
+            sh(
+                label: "Converting linux wheel to manylinux",
+                script:"auditwheel repair ./dist/*.whl -w ./dist"
+            )
+        }
+    } else{
+        bat(label: "Building Python Wheel",
+            script: "python -m pip wheel -w dist/ -v --no-deps ."
+        )
+    }
+}
 
 def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
     def props = readProperties interpolate: true, file: metadataFile
@@ -803,24 +845,32 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
          writeJSON file: outputJson, json: outstandingIssues
      }
 }
+def packaging
+node(){
+    checkout scm
+    packaging = load("ci/jenkins/scripts/packaging.groovy")
+}
 def startup(){
     stage("Getting Distribution Info"){
         node('linux && docker') {
-            docker.image('python:3.8').inside {
-                timeout(2){
-                    try{
-                        checkout scm
-                        sh(
-                           label: "Running setup.py with dist_info",
-                           script: """python --version
-                                      python setup.py dist_info
-                                   """
-                        )
-                        stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
-                        archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
-                    } finally{
-                        deleteDir()
+            ws{
+                checkout scm
+                try{
+                    docker.image('python:3.8').inside {
+                        timeout(2){
+                            sh(
+                               label: "Running setup.py with dist_info",
+                               script: """python --version
+                                          python setup.py dist_info
+                                       """
+                            )
+                            stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
+                            archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
+    //                     }
+                        }
                     }
+                } finally{
+                    cleanWs()
                 }
             }
         }
@@ -854,14 +904,13 @@ def get_props(){
                 def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATA"
                 return props
             } finally {
-                deleteDir()
+                cleanWs()
             }
         }
     }
 }
 startup()
 def props = get_props()
-
 pipeline {
     agent none
     parameters {
@@ -896,7 +945,7 @@ pipeline {
             }
             post{
                 always {
-                    recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', id: 'sphinx_build')])
+                    recordIssues(skipPublishingChecks: true, tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', id: 'sphinx_build')])
                 }
                 success{
                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
@@ -909,7 +958,7 @@ pipeline {
                 cleanup{
                     cleanWs(patterns: [
                             [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
-                            [pattern: "dist/*doc.zip,", type: 'INCLUDE']
+                            [pattern: "dist/*doc.zip", type: 'INCLUDE']
                         ]
                     )
                 }
@@ -1319,7 +1368,7 @@ pipeline {
                             axis {
                                 name "PYTHON_VERSION"
                                 values(
-        //                             "3.6",
+                                    "3.6",
                                     "3.7",
                                     "3.8"
                                 )
@@ -1338,28 +1387,22 @@ pipeline {
                                     warnError('Wheel Building Failed')
                                 }
                                 steps{
-                                    timeout(15){
-                                        build_wheel()
-                                        script{
-                                            if(PLATFORM == "linux"){
-                                                sh(
-                                                    label: "Converting linux wheel to manylinux",
-                                                    script:"auditwheel repair ./dist/*.whl -w ./dist"
-                                                )
-                                            }
-                                        }
+                                    timeout(25){
+                                        build_wheel2(platform: PLATFORM)
+
                                     }
                                 }
                                 post{
                                     always{
                                         script{
+                                            def stash_name =  "whl ${PYTHON_VERSION} ${PLATFORM}"
                                             if(PLATFORM == "linux"){
-                                                stash includes: 'dist/*manylinux*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
+                                                stash includes: 'dist/*manylinux*.whl', name: stash_name
                                             } else{
-                                                stash includes: 'dist/*.whl', name: "whl ${PYTHON_VERSION} ${PLATFORM}"
+                                                stash includes: 'dist/*.whl', name: stash_name
                                             }
+                                            wheel_stashes << stash_name
                                         }
-//                                         check_dll_deps("build/lib")
                                     }
                                     success{
                                         archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
@@ -1367,6 +1410,7 @@ pipeline {
                                     cleanup{
                                         cleanWs(
                                             deleteDirs: true,
+                                            disableDeferredWipeout: true,
                                             patterns: [
                                                 [pattern: 'dist/', type: 'INCLUDE'],
                                                 [pattern: '.tox/', type: 'INCLUDE'],
@@ -1377,81 +1421,117 @@ pipeline {
                                 }
                             }
                         stage("Testing Python Packages"){
-                                when{
-                                    equals expected: true, actual: params.TEST_PACKAGES
-                                }
-                                stages{
-                                    stage("Testing Wheel Package"){
-                                        agent {
-                                            dockerfile {
-                                                filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.filename}"
-                                                label "${PLATFORM} && docker"
-                                                additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.additionalBuildArgs}"
-                                             }
-                                        }
-                                        options {
-                                            warnError('Testing Wheel Failed')
-                                        }
-                                        steps{
-                                            cleanWs(
-                                                notFailBuild: true,
-                                                deleteDirs: true,
-                                                disableDeferredWipeout: true,
-                                                patterns: [
-                                                        [pattern: '.git/**', type: 'EXCLUDE'],
-                                                        [pattern: 'tests/**', type: 'EXCLUDE'],
-                                                        [pattern: 'tox.ini', type: 'EXCLUDE'],
-                                                    ]
-                                            )
-                                            unstash "whl ${PYTHON_VERSION} ${platform}"
-                                            catchError(stageResult: 'FAILURE') {
-                                                test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}", 15)
-                                            }
-                                        }
-                                        post{
-                                            cleanup{
-                                                cleanWs(
-                                                    deleteDirs: true,
-                                                    notFailBuild: true,
-                                                    patterns: [
-                                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                                        [pattern: '**/__pycache__', type: 'INCLUDE'],
-                                                        [pattern: '.tox/', type: 'INCLUDE'],
-                                                    ]
-                                                )
-                                            }
-                                        }
-                                    }
-                                    stage("Testing sdist Package"){
-                                        agent {
-                                            dockerfile {
-                                                filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.filename}"
-                                                label "${PLATFORM} && docker"
-                                                additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.additionalBuildArgs}"
-                                             }
-                                        }
-                                        options {
-                                            warnError('Testing sdist Failed')
-                                        }
-                                        steps{
-                                            cleanWs(
-                                                notFailBuild: true,
-                                                deleteDirs: true,
-                                                disableDeferredWipeout: true,
-                                                patterns: [
-                                                        [pattern: '.git/**', type: 'EXCLUDE'],
-                                                        [pattern: 'tests/**', type: 'EXCLUDE'],
-                                                        [pattern: 'tox.ini', type: 'EXCLUDE'],
-                                                    ]
-                                            )
-                                            catchError(stageResult: 'FAILURE') {
-                                                unstash "sdist"
-                                                test_pkg("dist/*.zip,dist/*.tar.gz", 20)
-                                            }
-                                        }
-                                    }
+                            when{
+                                equals expected: true, actual: params.TEST_PACKAGES
+                            }
+                            steps{
+                                script{
+//                                     packaging.test_package_stages(
+//                                         platform: "linux",
+//                                         pythonVersion: "3.6",
+//                                         whlTestAgent: [
+//                                             filename: 'ci/docker/linux/test/Dockerfile',
+//                                             label: 'linux && docker',
+//                                             additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+//                                         ],
+//                                         sdistTestAgent: [
+//                                             filename: 'ci/docker/linux/test/Dockerfile',
+//                                             label: 'linux && docker',
+//                                             additionalBuildArgs: '--build-arg PYTHON_VERSION=3.6 --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+//                                         ]
+//                                     )
+                                    packaging.test_package_stages(
+                                        platform: PLATFORM,
+                                        pythonVersion: PYTHON_VERSION,
+                                        whlTestAgent: [
+                                            filename: CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.filename,
+                                            label: "${PLATFORM} && docker",
+                                            additionalBuildArgs: CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.additionalBuildArgs
+                                        ],
+                                        sdistTestAgent: [
+                                            filename: CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.filename,
+                                            label: "${PLATFORM} && docker",
+                                            additionalBuildArgs: CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.additionalBuildArgs
+                                        ],
+                                        whlStashName: "whl ${PYTHON_VERSION} ${platform}",
+                                        sdistStashName: "sdist"
+                                    )
                                 }
                             }
+
+                        }
+//                                 stages{
+//                                     stage("Testing Wheel Package"){
+//                                         agent {
+//                                             dockerfile {
+//                                                 filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.filename}"
+//                                                 label "${PLATFORM} && docker"
+//                                                 additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.additionalBuildArgs}"
+//                                              }
+//                                         }
+//                                         options {
+//                                             warnError('Testing Wheel Failed')
+//                                         }
+//                                         steps{
+//                                             cleanWs(
+//                                                 notFailBuild: true,
+//                                                 deleteDirs: true,
+//                                                 disableDeferredWipeout: true,
+//                                                 patterns: [
+//                                                         [pattern: '.git/**', type: 'EXCLUDE'],
+//                                                         [pattern: 'tests/**', type: 'EXCLUDE'],
+//                                                         [pattern: 'tox.ini', type: 'EXCLUDE'],
+//                                                     ]
+//                                             )
+//                                             unstash "whl ${PYTHON_VERSION} ${platform}"
+//                                             catchError(stageResult: 'FAILURE') {
+//                                                 test_pkg("dist/**/${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].pkgRegex['wheel']}", 15)
+//                                             }
+//                                         }
+//                                         post{
+//                                             cleanup{
+//                                                 cleanWs(
+//                                                     deleteDirs: true,
+//                                                     notFailBuild: true,
+//                                                     patterns: [
+//                                                         [pattern: 'dist/', type: 'INCLUDE'],
+//                                                         [pattern: '**/__pycache__', type: 'INCLUDE'],
+//                                                         [pattern: '.tox/', type: 'INCLUDE'],
+//                                                     ]
+//                                                 )
+//                                             }
+//                                         }
+//                                     }
+//                                     stage("Testing sdist Package"){
+//                                         agent {
+//                                             dockerfile {
+//                                                 filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.filename}"
+//                                                 label "${PLATFORM} && docker"
+//                                                 additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.additionalBuildArgs}"
+//                                              }
+//                                         }
+//                                         options {
+//                                             warnError('Testing sdist Failed')
+//                                         }
+//                                         steps{
+//                                             cleanWs(
+//                                                 notFailBuild: true,
+//                                                 deleteDirs: true,
+//                                                 disableDeferredWipeout: true,
+//                                                 patterns: [
+//                                                         [pattern: '.git/**', type: 'EXCLUDE'],
+//                                                         [pattern: 'tests/**', type: 'EXCLUDE'],
+//                                                         [pattern: 'tox.ini', type: 'EXCLUDE'],
+//                                                     ]
+//                                             )
+//                                             catchError(stageResult: 'FAILURE') {
+//                                                 unstash "sdist"
+//                                                 test_pkg("dist/*.zip,dist/*.tar.gz", 20)
+//                                             }
+//                                         }
+//                                     }
+//                                 }
+//                             }
                         }
                     }
                 }
@@ -1492,13 +1572,10 @@ pipeline {
                                 if(params.BUILD_MAC_PACKAGES){
                                     unstash "MacOS 10.14 py38 wheel"
                                 }
+                                wheel_stashes.each{
+                                    unstash it
+                                }
                             }
-//                             unstash "whl 3.6 windows"
-//                             unstash "whl 3.6 linux"
-                            unstash "whl 3.7 windows"
-                            unstash "whl 3.7 linux"
-                            unstash "whl 3.8 windows"
-                            unstash "whl 3.8 linux"
                             unstash "sdist"
                             unstash "DOCS_ARCHIVE"
                             sh(
@@ -1508,6 +1585,16 @@ pipeline {
                                            devpi use /${env.DEVPI_USR}/${env.devpiStagingIndex} --clientdir ./devpi
                                            devpi upload --from-dir dist --clientdir ./devpi
                                            """
+                            )
+                        }
+                    }
+                    post{
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                        [pattern: "dist/", type: 'INCLUDE']
+                                    ]
                             )
                         }
                     }
@@ -1591,7 +1678,7 @@ pipeline {
                                 axes {
                                     axis {
                                         name 'PYTHON_VERSION'
-                                        values  '3.7', '3.8'
+                                        values  '3.6', '3.7', '3.8'
                                     }
                                     axis {
                                         name 'PLATFORM'
