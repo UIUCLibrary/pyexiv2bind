@@ -1587,15 +1587,15 @@ pipeline {
                                            """
                             )
                         }
-                        post{
-                            cleanup{
-                                cleanWs(
-                                    deleteDirs: true,
-                                    patterns: [
-                                            [pattern: "dist/", type: 'INCLUDE']
-                                        ]
-                                )
-                            }
+                    }
+                    post{
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                        [pattern: "dist/", type: 'INCLUDE']
+                                    ]
+                            )
                         }
                     }
                 }
