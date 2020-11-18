@@ -1576,12 +1576,6 @@ pipeline {
                                     unstash it
                                 }
                             }
-//                             unstash "whl 3.6 windows"
-//                             unstash "whl 3.6 linux"
-//                             unstash "whl 3.7 windows"
-//                             unstash "whl 3.7 linux"
-//                             unstash "whl 3.8 windows"
-//                             unstash "whl 3.8 linux"
                             unstash "sdist"
                             unstash "DOCS_ARCHIVE"
                             sh(
