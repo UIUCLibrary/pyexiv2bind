@@ -43,34 +43,35 @@ def test_one(pythonVersion, dockerAgent, dockerImageName, stashName, glob){
 
 
     def docker_build
-    checkout scm
-    try{
-        docker_build = docker.build(dockerImageName,"-f ${dockerAgent.filename} ${dockerAgent.additionalBuildArgs} .")
-        docker_build.inside{
-            cleanWs(
-                notFailBuild: true,
-                deleteDirs: true,
-                disableDeferredWipeout: true,
-                patterns: [
-                        [pattern: '.git/**', type: 'EXCLUDE'],
-                        [pattern: 'tests/**', type: 'EXCLUDE'],
-                        [pattern: 'tox.ini', type: 'EXCLUDE'],
-                    ]
-            )
-            unstash stashName
-//                 echo "testing ${pythonVersion} on ${platform} ${env.NODE_NAME} using ${whlTestAgent.filename}"
-            catchError(stageResult: 'FAILURE') {
-                test_pkg(glob, 15)
-            }
+    ws{
+        checkout scm
+        try{
+            docker_build = docker.build(dockerImageName,"-f ${dockerAgent.filename} ${dockerAgent.additionalBuildArgs} .")
+            docker_build.inside{
+                cleanWs(
+                    notFailBuild: true,
+                    deleteDirs: true,
+                    disableDeferredWipeout: true,
+                    patterns: [
+                            [pattern: '.git/**', type: 'EXCLUDE'],
+                            [pattern: 'tests/**', type: 'EXCLUDE'],
+                            [pattern: 'tox.ini', type: 'EXCLUDE'],
+                        ]
+                )
+                unstash stashName
+                catchError(stageResult: 'FAILURE') {
+                    test_pkg(glob, 15)
+                }
 
+            }
+        } finally {
+            if(isUnix()){
+                sh "docker image rm ${docker_build.id}"
+            } else {
+                bat "docker image rm ${docker_build.id}"
+            }
+            cleanWs()
         }
-    } finally {
-        if(isUnix()){
-            sh "docker image rm ${docker_build.id}"
-        } else {
-            bat "docker image rm ${docker_build.id}"
-        }
-        cleanWs()
     }
 }
 def test_package_stages(args = [:]){
@@ -80,19 +81,20 @@ def test_package_stages(args = [:]){
     def sdistTestAgent  = args['sdistTestAgent']
     def sdistStashName  = args['sdistStashName']
     def whlStashName    = args['whlStashName']
-
-    stage("Testing Wheel Package"){
-        node(whlTestAgent.label){
-            def dockerImageName = "${currentBuild.projectName}:wheel${pythonVersion}".replaceAll("-", "").toLowerCase()
-            test_one(pythonVersion, whlTestAgent, dockerImageName, whlStashName, "dist/*.whl")
+    parallel(
+        "Testing Wheel Package": {
+            node(whlTestAgent.label){
+                def dockerImageName = "${currentBuild.projectName}:wheel${pythonVersion}".replaceAll("-", "").toLowerCase()
+                test_one(pythonVersion, whlTestAgent, dockerImageName, whlStashName, "dist/*.whl")
+            }
+        },
+        "Testing sdist Package": {
+            node(sdistTestAgent.label){
+                def dockerImageName = "${currentBuild.projectName}:sdist${pythonVersion}".replaceAll("-", "").toLowerCase()
+                test_one(pythonVersion, sdistTestAgent, dockerImageName, sdistStashName, "dist/*.zip,dist/*.tar.gz")
+            }
         }
-    }
-    stage("Testing sdist Package"){
-        node(sdistTestAgent.label){
-            def dockerImageName = "${currentBuild.projectName}:sdist${pythonVersion}".replaceAll("-", "").toLowerCase()
-            test_one(pythonVersion, sdistTestAgent, dockerImageName, sdistStashName, "dist/*.zip,dist/*.tar.gz")
-        }
-    }
+    )
 }
 
 return this
