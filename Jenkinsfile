@@ -1,6 +1,6 @@
 #!groovy
 // @Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
-
+def wheel_stashes = []
 def CONFIGURATIONS = [
         "3.6" : [
             os: [
@@ -1394,10 +1394,15 @@ pipeline {
                                 }
                                 post{
                                     always{
-                                        stash_wheel(
-                                            platform: PLATFORM,
-                                            pythonVersion: PYTHON_VERSION
-                                        )
+                                        script{
+                                            def stash_name =  "whl ${PYTHON_VERSION} ${PLATFORM}"
+                                            if(PLATFORM == "linux"){
+                                                stash includes: 'dist/*manylinux*.whl', name: stash_name
+                                            } else{
+                                                stash includes: 'dist/*.whl', name: stash_name
+                                            }
+                                            wheel_stashes << stash_name
+                                        }
                                     }
                                     success{
                                         archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
@@ -1567,13 +1572,16 @@ pipeline {
                                 if(params.BUILD_MAC_PACKAGES){
                                     unstash "MacOS 10.14 py38 wheel"
                                 }
+                                wheel_stashes.each{
+                                    unstash it
+                                }
                             }
 //                             unstash "whl 3.6 windows"
 //                             unstash "whl 3.6 linux"
-                            unstash "whl 3.7 windows"
-                            unstash "whl 3.7 linux"
-                            unstash "whl 3.8 windows"
-                            unstash "whl 3.8 linux"
+//                             unstash "whl 3.7 windows"
+//                             unstash "whl 3.7 linux"
+//                             unstash "whl 3.8 windows"
+//                             unstash "whl 3.8 linux"
                             unstash "sdist"
                             unstash "DOCS_ARCHIVE"
                             sh(
