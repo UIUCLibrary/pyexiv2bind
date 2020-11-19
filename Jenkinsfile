@@ -416,10 +416,13 @@ pipeline {
     agent none
     parameters {
         booleanParam(name: "TEST_RUN_TOX", defaultValue: false, description: "Run Tox Tests")
-        booleanParam(name: "RUN_CHECKS", defaultValue: true, description: "Run checks on code")
+//         todo: make default true
+        booleanParam(name: "RUN_CHECKS", defaultValue: false, description: "Run checks on code")
         booleanParam(name: "USE_SONARQUBE", defaultValue: true, description: "Send data test data to SonarQube")
-        booleanParam(name: "BUILD_PACKAGES", defaultValue: false, description: "Build Python packages")
-        booleanParam(name: "BUILD_MAC_PACKAGES", defaultValue: false, description: "Test Python packages on Mac")
+//         todo: make false
+        booleanParam(name: "BUILD_PACKAGES", defaultValue: true, description: "Build Python packages")
+//         todo: make false
+        booleanParam(name: "BUILD_MAC_PACKAGES", defaultValue: true, description: "Test Python packages on Mac")
         booleanParam(name: "TEST_PACKAGES", defaultValue: true, description: "Test Python packages by installing them and running tests on the installed package")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to https://devpi.library.illinois.edu/production/release")
@@ -785,33 +788,69 @@ pipeline {
                     }
                     stages{
                         stage('Building Wheel') {
-                            agent {
-                                label 'mac && 10.14 && python3.8'
-                            }
-                            steps{
-                                sh(
-                                    label: "Building wheel for macOS 10.14",
-                                    script: 'python3 -m pip wheel --no-deps -w dist .'
-                                )
-                            }
-                            post{
-                                always{
-                                    stash includes: 'dist/*.whl', name: "MacOS 10.14 py38 wheel"
-                                    script{
-                                        wheel_stashes << "MacOS 10.14 py38 wheel"
+                            parallel{
+                                stage("3.8"){
+                                    agent {
+                                        label 'mac && 10.14 && python3.8'
+                                    }
+                                    steps{
+                                        sh(
+                                            label: "Building wheel for macOS 10.14",
+                                            script: 'python3.8 -m pip wheel --no-deps -w dist .'
+                                        )
+                                    }
+                                    post{
+                                        always{
+                                            stash includes: 'dist/*.whl', name: "MacOS 10.14 py38 wheel"
+                                            script{
+                                                wheel_stashes << "MacOS 10.14 py38 wheel"
+                                            }
+                                        }
+                                        success{
+                                            archiveArtifacts artifacts: "dist/*.whl"
+                                        }
+                                        cleanup{
+                                            cleanWs(
+                                                deleteDirs: true,
+                                                patterns: [
+                                                    [pattern: 'build/', type: 'INCLUDE'],
+                                                    [pattern: 'dist/', type: 'INCLUDE'],
+                                                ]
+                                            )
+                                        }
                                     }
                                 }
-                                success{
-                                    archiveArtifacts artifacts: "dist/*.whl"
-                                }
-                                cleanup{
-                                    cleanWs(
-                                        deleteDirs: true,
-                                        patterns: [
-                                            [pattern: 'build/', type: 'INCLUDE'],
-                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                        ]
-                                    )
+                                stage("3.9"){
+                                    agent {
+                                        label 'mac && 10.14 && python3.9'
+                                    }
+                                    steps{
+                                        sh(
+                                            label: "Building wheel for macOS 10.14",
+                                            script: 'python3.9 -m pip wheel --no-deps -w dist .'
+                                        )
+                                    }
+                                    post{
+                                        always{
+                                            script{
+                                                def stash_name = "MacOS 10.14 py39 wheel"
+                                                stash includes: 'dist/*.whl', name: stash_name
+                                                wheel_stashes << stash_name
+                                            }
+                                        }
+                                        success{
+                                            archiveArtifacts artifacts: "dist/*.whl"
+                                        }
+                                        cleanup{
+                                            cleanWs(
+                                                deleteDirs: true,
+                                                patterns: [
+                                                    [pattern: 'build/', type: 'INCLUDE'],
+                                                    [pattern: 'dist/', type: 'INCLUDE'],
+                                                ]
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
