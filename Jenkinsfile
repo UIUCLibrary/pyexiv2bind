@@ -105,46 +105,6 @@ def testDevpiPackage2(devpiExec, devpiIndex, devpiUsername, devpiPassword,  pkgN
     }
 }
 
-def test_pkg(glob, timeout_time){
-
-    def pkgFiles = findFiles( glob: glob)
-    if( pkgFiles.size() == 0){
-        error "Unable to check package. No files found with ${glob}"
-    }
-    echo "Starting ${glob}"
-    pkgFiles.each{
-        timeout(timeout_time){
-            try{
-                echo "Testing ${it} on ${env.NODE_NAME}"
-                if(isUnix()){
-                    sh(label: "Testing ${it}",
-                       script: """python --version
-                                  tox --installpkg=${it.path} -e py -vv --workdir=./.tox --recreate
-                                  """
-                    )
-                } else {
-                    bat(label: "Testing ${it}",
-                        script: """python --version
-                                   tox --installpkg=${it.path} -e py -vv --workdir=./.tox --recreate
-                                   """
-                    )
-                }
-                echo "Testing ${it} on ${env.NODE_NAME} - Success"
-            } catch (e){
-                echo "Testing ${it} on ${env.NODE_NAME} - Failed"
-                throw e
-
-            } finally{
-                cleanWs(
-                    deleteDirs: true,
-                    patterns: [
-                        [pattern: '.tox/', type: 'INCLUDE']
-                    ]
-                )
-            }
-        }
-    }
-}
 def stash_wheel(args = [:]){
     script{
         def stash_name =  "whl ${args['pythonVersion']} ${args['platform']}"
@@ -210,18 +170,6 @@ def deploy_docs(pkgName, prefix){
     )
 }
 
-def build_wheel(){
-
-    if(isUnix()){
-        sh(label: "Building Python Wheel",
-            script: "python -m pip wheel -w dist/ --no-deps ."
-        )
-    } else{
-        bat(label: "Building Python Wheel",
-            script: "python -m pip wheel -w dist/ -v --no-deps ."
-        )
-    }
-}
 def build_wheel2(args=[:]){
 
     if(isUnix()){
@@ -372,10 +320,7 @@ pipeline {
                 }
                 success{
                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                    script{
-                        def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
-                        zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
-                    }
+                    zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${props.Name}-${props.Version}.doc.zip"
                     stash includes: "dist/*.doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
                 }
                 cleanup{
@@ -1287,25 +1232,25 @@ pipeline {
         }
 //         stage("Deploy"){
 //             parallel {
-//                 stage("Deploy Online Documentation") {
-//                     agent any
-//                     when{
-//                         equals expected: true, actual: params.DEPLOY_DOCS
-//                         beforeAgent true
-//                         beforeInput true
-//                         beforeInput true
-//                     }
-//                     options{
-//                         timeout(30)
-//                     }
-//                     input{
-//                         message 'Update project documentation?'
-//                     }
-//                     steps{
-//                         unstash "DOCS_ARCHIVE"
-//                         deploy_docs(get_package_name("DIST-INFO", "py3exiv2bind.dist-info/METADATA"), "build/docs/html")
-//                     }
-//                 }
+                stage("Deploy Online Documentation") {
+                    agent any
+                    when{
+                        equals expected: true, actual: params.DEPLOY_DOCS
+                        beforeAgent true
+                        beforeInput true
+                        beforeInput true
+                    }
+                    options{
+                        timeout(30)
+                    }
+                    input{
+                        message 'Update project documentation?'
+                    }
+                    steps{
+                        unstash "DOCS_ARCHIVE"
+                        deploy_docs(get_package_name("DIST-INFO", "py3exiv2bind.dist-info/METADATA"), "build/docs/html")
+                    }
+                }
 //             }
 //         }
     }
