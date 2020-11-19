@@ -55,7 +55,7 @@ def run_tox_envs(){
     }
 }
 
-def test_package_on_mac(glob){
+def test_package_on_mac(python, glob){
     cleanWs(
         notFailBuild: true,
         deleteDirs: true,
@@ -79,7 +79,7 @@ def test_package_on_mac(glob){
         pkgs.each{
             sh(
                 label: "Testing ${it}",
-                script: """python3 -m venv venv
+                script: """${python} -m venv venv
                            venv/bin/python -m pip install pip --upgrade
                            venv/bin/python -m pip install wheel
                            venv/bin/python -m pip install --upgrade setuptools
@@ -833,7 +833,7 @@ pipeline {
                                             }
                                             steps{
                                                 unstash "MacOS 10.14 py38 wheel"
-                                                test_package_on_mac("dist/*.whl")
+                                                test_package_on_mac("python3.8", "dist/*.whl")
                                             }
                                             post{
                                                 cleanup{
@@ -847,7 +847,7 @@ pipeline {
                                             }
                                             steps{
                                                 unstash "sdist"
-                                                test_package_on_mac("dist/*.tar.gz,dist/*.zip")
+                                                test_package_on_mac("python3.8", "dist/*.tar.gz,dist/*.zip")
                                             }
                                             post{
                                                 cleanup{
@@ -905,7 +905,7 @@ pipeline {
                                             }
                                             steps{
                                                 unstash "MacOS 10.14 py39 wheel"
-                                                test_package_on_mac("dist/*.whl")
+                                                test_package_on_mac("python3.9", "dist/*.whl")
                                             }
                                             post{
                                                 cleanup{
@@ -919,7 +919,7 @@ pipeline {
                                             }
                                             steps{
                                                 unstash "sdist"
-                                                test_package_on_mac("dist/*.tar.gz,dist/*.zip")
+                                                test_package_on_mac("python3.9", "dist/*.tar.gz,dist/*.zip")
                                             }
                                             post{
                                                 cleanup{
