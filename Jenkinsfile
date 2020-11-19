@@ -786,10 +786,10 @@ pipeline {
                     when{
                         equals expected: true, actual: params.BUILD_MAC_PACKAGES
                     }
-                    stages{
-                        stage('Building Wheel') {
-                            parallel{
-                                stage("3.8"){
+                    parallel{
+                        stage("3.8"){
+                            stages{
+                                stage('Building Wheel') {
                                     agent {
                                         label 'mac && 10.14 && python3.8'
                                     }
@@ -801,9 +801,10 @@ pipeline {
                                     }
                                     post{
                                         always{
-                                            stash includes: 'dist/*.whl', name: "MacOS 10.14 py38 wheel"
                                             script{
-                                                wheel_stashes << "MacOS 10.14 py38 wheel"
+                                                def stash_name = "MacOS 10.14 py38 wheel"
+                                                stash includes: 'dist/*.whl', name: stash_name
+                                                wheel_stashes << stash_name
                                             }
                                         }
                                         success{
@@ -820,7 +821,47 @@ pipeline {
                                         }
                                     }
                                 }
-                                stage("3.9"){
+                                stage("Testing Packages"){
+                                    when{
+                                        equals expected: true, actual: params.TEST_PACKAGES
+                                        beforeAgent true
+                                    }
+                                    stages{
+                                        stage('Testing Wheel Package') {
+                                            agent {
+                                                label 'mac && 10.14 && python3.8'
+                                            }
+                                            steps{
+                                                unstash "MacOS 10.14 py38 wheel"
+                                                test_package_on_mac("dist/*.whl")
+                                            }
+                                            post{
+                                                cleanup{
+                                                    deleteDir()
+                                                }
+                                            }
+                                        }
+                                        stage('Testing sdist Package') {
+                                            agent {
+                                                label 'mac && 10.14 && python3.8'
+                                            }
+                                            steps{
+                                                unstash "sdist"
+                                                test_package_on_mac("dist/*.tar.gz,dist/*.zip")
+                                            }
+                                            post{
+                                                cleanup{
+                                                    deleteDir()
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        stage("3.9"){
+                            stages{
+                                stage('Building Wheel') {
                                     agent {
                                         label 'mac && 10.14 && python3.9'
                                     }
@@ -852,44 +893,39 @@ pipeline {
                                         }
                                     }
                                 }
-                            }
-                        }
-                        stage("Testing Packages"){
-                            when{
-                                equals expected: true, actual: params.TEST_PACKAGES
-                            }
-                            parallel{
-                                stage('Testing Wheel Package') {
-                                    agent {
-                                        label 'mac && 10.14 && python3.8'
-                                    }
-                                    steps{
-                                        unstash "MacOS 10.14 py38 wheel"
-                                        test_package_on_mac("dist/*.whl")
-                                    }
-                                    post{
-                                        cleanup{
-                                            deleteDir()
-                                        }
-                                    }
-                                }
-                                stage('Testing sdist Package') {
+                                stage("Testing Packages"){
                                     when{
-                                        anyOf{
-                                            equals expected: true, actual: params.TEST_PACKAGES
-                                        }
+                                        equals expected: true, actual: params.TEST_PACKAGES
                                         beforeAgent true
                                     }
-                                    agent {
-                                        label 'mac && 10.14 && python3.8'
-                                    }
-                                    steps{
-                                        unstash "sdist"
-                                        test_package_on_mac("dist/*.tar.gz,dist/*.zip")
-                                    }
-                                    post{
-                                        cleanup{
-                                            deleteDir()
+                                    stages{
+                                        stage('Testing Wheel Package') {
+                                            agent {
+                                                label 'mac && 10.14 && python3.9'
+                                            }
+                                            steps{
+                                                unstash "MacOS 10.14 py39 wheel"
+                                                test_package_on_mac("dist/*.whl")
+                                            }
+                                            post{
+                                                cleanup{
+                                                    deleteDir()
+                                                }
+                                            }
+                                        }
+                                        stage('Testing sdist Package') {
+                                            agent {
+                                                label 'mac && 10.14 && python3.9'
+                                            }
+                                            steps{
+                                                unstash "sdist"
+                                                test_package_on_mac("dist/*.tar.gz,dist/*.zip")
+                                            }
+                                            post{
+                                                cleanup{
+                                                    deleteDir()
+                                                }
+                                            }
                                         }
                                     }
                                 }
