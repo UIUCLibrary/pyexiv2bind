@@ -1096,7 +1096,7 @@ pipeline {
                                                                    venv/bin/devpi --version
                                                         '''
                                                     )
-                                                    testDevpiPackage2("venv/bin/devpi", env.devpiStagingIndex, DEVPI_USR, DEVPI_PSW, props.Name, props.Version, "39-macosx_10_14_x86_64*.*whl",  "py38")
+                                                    testDevpiPackage2("venv/bin/devpi", env.devpiStagingIndex, DEVPI_USR, DEVPI_PSW, props.Name, props.Version, "39-macosx_10_14_x86_64*.*whl",  "py39")
                                                 }
                                             }
                                             post{
