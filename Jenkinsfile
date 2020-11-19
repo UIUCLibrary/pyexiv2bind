@@ -213,11 +213,16 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
          writeJSON file: outputJson, json: outstandingIssues
      }
 }
-def packaging
-node(){
-    checkout scm
-    packaging = load("ci/jenkins/scripts/packaging.groovy")
+
+def loadHelper(file){
+    node(){
+        checkout scm
+        return load(file)
+    }
 }
+def packaging = loadHelper("ci/jenkins/scripts/packaging.groovy")
+def tox = loadHelper("ci/jenkins/scripts/tox.groovy")
+
 def startup(){
     stage("Getting Distribution Info"){
         node('linux && docker') {
@@ -601,11 +606,6 @@ pipeline {
                     }
                     steps {
                         script{
-                            def tox
-                            node(){
-                                checkout scm
-                                tox = load("ci/jenkins/scripts/tox.groovy")
-                            }
                             def linux_jobs = tox.getToxTestsParallel("Linux", "linux && docker", "ci/docker/linux/tox/Dockerfile", '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL')
                             def windows_jobs = tox.getToxTestsParallel("Windows", "windows && docker", "ci/docker/windows/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE")
                             parallel(windows_jobs + linux_jobs)
@@ -1095,7 +1095,7 @@ pipeline {
                                 axes {
                                     axis {
                                         name 'PYTHON_VERSION'
-                                        values  '3.6', '3.7', '3.8'
+                                        values  '3.6', '3.7', '3.8', '3.9'
                                     }
                                     axis {
                                         name 'PLATFORM'
@@ -1105,7 +1105,6 @@ pipeline {
                                         )
                                     }
                                 }
-                                agent none
                                 stages{
                                     stage("DevPi Wheel Package"){
                                         agent {
@@ -1116,15 +1115,13 @@ pipeline {
                                           }
                                         }
                                         steps{
-                                            script{
-                                                testDevpiPackage(
-                                                    env.devpiStagingIndex,
-                                                    DEVPI_USR, DEVPI_PSW,
-                                                    props.Name, props.Version,
-                                                    CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector['wheel'],
-                                                    CONFIGURATIONS[PYTHON_VERSION].tox_env
-                                                )
-                                            }
+                                            testDevpiPackage(
+                                                env.devpiStagingIndex,
+                                                DEVPI_USR, DEVPI_PSW,
+                                                props.Name, props.Version,
+                                                CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector['wheel'],
+                                                CONFIGURATIONS[PYTHON_VERSION].tox_env
+                                            )
                                         }
                                     }
                                     stage("DevPi sdist Package"){
@@ -1136,15 +1133,13 @@ pipeline {
                                           }
                                         }
                                         steps{
-                                            script{
-                                                testDevpiPackage(
-                                                    env.devpiStagingIndex,
-                                                    DEVPI_USR, DEVPI_PSW,
-                                                    props.Name, props.Version,
-                                                    "tar.gz",
-                                                    CONFIGURATIONS[PYTHON_VERSION].tox_env
-                                                    )
-                                            }
+                                            testDevpiPackage(
+                                                env.devpiStagingIndex,
+                                                DEVPI_USR, DEVPI_PSW,
+                                                props.Name, props.Version,
+                                                "tar.gz",
+                                                CONFIGURATIONS[PYTHON_VERSION].tox_env
+                                                )
                                         }
                                     }
                                 }
