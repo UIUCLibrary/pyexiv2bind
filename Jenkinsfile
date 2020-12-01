@@ -220,8 +220,9 @@ def startup(){
                 checkout scm
                 packaging = load("ci/jenkins/scripts/packaging.groovy")
                 tox = load("ci/jenkins/scripts/tox.groovy")
-                defaultParamValues = readYaml(  file: 'ci/jenkins/defaultParameters.yaml').parameters.defaults
+                devpi = load("ci/jenkins/scripts/devpi.groovy")
                 echo "loading configurations"
+                defaultParamValues = readYaml(file: 'ci/jenkins/defaultParameters.yaml').parameters.defaults
                 configurations = load("ci/jenkins/scripts/configs.groovy").getConfigurations()
             }
         }
@@ -959,7 +960,7 @@ pipeline {
             }
             agent none
             environment{
-                DEVPI = credentials("DS_devpi")
+//                 DEVPI = credentials("DS_devpi")
                 devpiStagingIndex = getDevPiStagingIndex()
             }
             options{
@@ -976,21 +977,18 @@ pipeline {
                     }
                     steps {
                         timeout(5){
+                            unstash "sdist"
+                            unstash "DOCS_ARCHIVE"
                             script{
                                 wheel_stashes.each{
                                     unstash it
                                 }
+                                devpi.upload(
+                                    server: "https://devpi.library.illinois.edu",
+                                    credentialsId: "DS_devpi",
+                                    index: getDevPiStagingIndex(),
+                                )
                             }
-                            unstash "sdist"
-                            unstash "DOCS_ARCHIVE"
-                            sh(
-                                label: "Uploading to DevPi Staging",
-                                script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-                                           devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
-                                           devpi use /${env.DEVPI_USR}/${env.devpiStagingIndex} --clientdir ./devpi
-                                           devpi upload --from-dir dist --clientdir ./devpi
-                                           """
-                            )
                         }
                     }
                     post{
@@ -1006,145 +1004,260 @@ pipeline {
                 }
                 stage("Test DevPi Packages") {
                     stages{
-                        stage("macOS 10.14") {
+                        stage("Test DevPi packages mac") {
                             when{
                                 equals expected: true, actual: params.BUILD_MAC_PACKAGES
+                                beforeAgent true
                             }
-                            parallel{
-                                stage("3.8"){
-                                    agent {
-                                        label 'mac && 10.14 && python3.8'
+                            matrix {
+                                axes{
+                                    axis {
+                                        name "PYTHON_VERSION"
+                                        values(
+                                            "3.8",
+                                            '3.9'
+                                        )
                                     }
-                                    stages{
-                                        stage("Wheel"){
-                                            steps{
-                                                timeout(10){
-                                                    sh(
-                                                        label: "Installing devpi client",
-                                                        script: '''python3.8 -m venv venv
-                                                                   venv/bin/python -m pip install --upgrade pip
-                                                                   venv/bin/pip install devpi-client
-                                                                   venv/bin/devpi --version
-                                                        '''
-                                                    )
-                                                    testDevpiPackage2("venv/bin/devpi", env.devpiStagingIndex, DEVPI_USR, DEVPI_PSW, props.Name, props.Version, "38-macosx_10_14_x86_64*.*whl",  "py38")
-                                                }
-                                            }
-                                            post{
-                                                cleanup{
-                                                    cleanWs(
-                                                        notFailBuild: true,
-                                                        deleteDirs: true,
-                                                        patterns: [
-                                                            [pattern: 'venv/', type: 'INCLUDE'],
-                                                        ]
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        stage("sdist"){
-                                            steps{
-                                                timeout(10){
-                                                    sh(
-                                                        label: "Installing devpi client",
-                                                        script: '''python3.8 -m venv venv
-                                                                   venv/bin/python -m pip install --upgrade pip
-                                                                   venv/bin/pip install devpi-client
-                                                                   venv/bin/devpi --version
-                                                        '''
-                                                    )
-                                                    testDevpiPackage2(
-                                                        "venv/bin/devpi",
-                                                        env.devpiStagingIndex,
-                                                        DEVPI_USR, DEVPI_PSW,
-                                                        props.Name, props.Version,
-                                                        "tar.gz",
-                                                        "py38"
-                                                    )
-                                                }
-                                            }
-                                            post{
-                                                cleanup{
-                                                    cleanWs(
-                                                        notFailBuild: true,
-                                                        deleteDirs: true,
-                                                        patterns: [
-                                                            [pattern: 'venv/', type: 'INCLUDE'],
-                                                        ]
-                                                    )
-                                                }
-                                            }
-                                        }
+                                    axis {
+                                        name "FORMAT"
+                                        values(
+                                            "wheel",
+                                            'sdist'
+                                        )
                                     }
                                 }
-                                stage("3.9"){
-                                    agent {
-                                        label 'mac && 10.14 && python3.9'
-                                    }
-                                    stages{
-                                        stage("Wheel"){
-                                            steps{
-                                                timeout(10){
-                                                    sh(
-                                                        label: "Installing devpi client",
-                                                        script: '''python3.9 -m venv venv
-                                                                   venv/bin/python -m pip install --upgrade pip
-                                                                   venv/bin/pip install devpi-client
-                                                                   venv/bin/devpi --version
-                                                        '''
-                                                    )
-                                                    testDevpiPackage2("venv/bin/devpi", env.devpiStagingIndex, DEVPI_USR, DEVPI_PSW, props.Name, props.Version, "39-macosx_10_14_x86_64*.*whl",  "py39")
-                                                }
-                                            }
-                                            post{
-                                                cleanup{
-                                                    cleanWs(
-                                                        notFailBuild: true,
-                                                        deleteDirs: true,
-                                                        patterns: [
-                                                            [pattern: 'venv/', type: 'INCLUDE'],
-                                                        ]
+                                agent none
+                                stages{
+                                    stage("Test devpi Package"){
+                                        agent {
+                                            label "mac && 10.14 && python${PYTHON_VERSION}"
+                                        }
+                                        steps{
+                                            timeout(10){
+                                                sh(
+                                                    label: "Installing devpi client",
+                                                    script: '''python${PYTHON_VERSION} -m venv venv
+                                                               venv/bin/python -m pip install --upgrade pip
+                                                               venv/bin/pip install devpi-client
+                                                               venv/bin/devpi --version
+                                                    '''
+                                                )
+                                                script{
+                                                    devpi.testDevpiPackage(
+                                                        devpiExec: "venv/bin/devpi",
+                                                        devpiIndex: getDevPiStagingIndex(),
+                                                        server: "https://devpi.library.illinois.edu",
+                                                        credentialsId: "DS_devpi",
+                                                        pkgName: props.Name,
+                                                        pkgVersion: props.Version,
+                                                        pkgSelector: devpi.getMacDevpiName(PYTHON_VERSION, FORMAT),
+                                                        toxEnv: "py${PYTHON_VERSION.replace('.','')}"
                                                     )
                                                 }
                                             }
                                         }
-                                        stage("sdist"){
-                                            steps{
-                                                timeout(10){
-                                                    sh(
-                                                        label: "Installing devpi client",
-                                                        script: '''python3.9 -m venv venv
-                                                                   venv/bin/python -m pip install --upgrade pip
-                                                                   venv/bin/pip install devpi-client
-                                                                   venv/bin/devpi --version
-                                                        '''
-                                                    )
-                                                    testDevpiPackage2(
-                                                        "venv/bin/devpi",
-                                                        env.devpiStagingIndex,
-                                                        DEVPI_USR, DEVPI_PSW,
-                                                        props.Name, props.Version,
-                                                        "tar.gz",
-                                                        "py39"
-                                                    )
-                                                }
-                                            }
-                                            post{
-                                                cleanup{
-                                                    cleanWs(
-                                                        notFailBuild: true,
-                                                        deleteDirs: true,
-                                                        patterns: [
-                                                            [pattern: 'venv/', type: 'INCLUDE'],
-                                                        ]
-                                                    )
-                                                }
+                                        post{
+                                            cleanup{
+                                                cleanWs(
+                                                    notFailBuild: true,
+                                                    deleteDirs: true,
+                                                    patterns: [
+                                                        [pattern: 'venv/', type: 'INCLUDE'],
+                                                    ]
+                                                )
                                             }
                                         }
                                     }
                                 }
                             }
                         }
+//                         stage("macOS 10.14") {
+//                             when{
+//                                 equals expected: true, actual: params.BUILD_MAC_PACKAGES
+//                             }
+//                             parallel{
+//                                 stage("3.8"){
+//                                     agent {
+//                                         label 'mac && 10.14 && python3.8'
+//                                     }
+//                                     stages{
+//                                         stage("Wheel"){
+//                                             steps{
+//                                                 timeout(10){
+//                                                     sh(
+//                                                         label: "Installing devpi client",
+//                                                         script: '''python3.8 -m venv venv
+//                                                                    venv/bin/python -m pip install --upgrade pip
+//                                                                    venv/bin/pip install devpi-client
+//                                                                    venv/bin/devpi --version
+//                                                         '''
+//                                                     )
+//                                                     testDevpiPackage2("venv/bin/devpi", env.devpiStagingIndex, DEVPI_USR, DEVPI_PSW, props.Name, props.Version, "38-macosx_10_14_x86_64*.*whl",  "py38")
+//                                                     script{
+//                                                         devpi.testDevpiPackage(
+//                                                             devpiExec: "venv/bin/devpi",
+//                                                             devpiIndex: getDevPiStagingIndex(),
+//                                                             server: "https://devpi.library.illinois.edu",
+//                                                             credentialsId: "DS_devpi",
+//                                                             pkgName: props.Name,
+//                                                             pkgVersion: props.Version,
+//                                                             pkgSelector: devpi.getMacDevpiName("3.8", "wheel"),
+//                                                             toxEnv: "py38"
+//                                                         )
+//                                                     }
+//                                                 }
+//                                             }
+//                                             post{
+//                                                 cleanup{
+//                                                     cleanWs(
+//                                                         notFailBuild: true,
+//                                                         deleteDirs: true,
+//                                                         patterns: [
+//                                                             [pattern: 'venv/', type: 'INCLUDE'],
+//                                                         ]
+//                                                     )
+//                                                 }
+//                                             }
+//                                         }
+//                                         stage("sdist"){
+//                                             steps{
+//                                                 timeout(10){
+//                                                     sh(
+//                                                         label: "Installing devpi client",
+//                                                         script: '''python3.8 -m venv venv
+//                                                                    venv/bin/python -m pip install --upgrade pip
+//                                                                    venv/bin/pip install devpi-client
+//                                                                    venv/bin/devpi --version
+//                                                         '''
+//                                                     )
+// //                                                     testDevpiPackage2(
+// //                                                         "venv/bin/devpi",
+// //                                                         env.devpiStagingIndex,
+// //                                                         DEVPI_USR, DEVPI_PSW,
+// //                                                         props.Name, props.Version,
+// //                                                         "tar.gz",
+// //                                                         "py38"
+// //                                                     )
+//                                                     script{
+//                                                         devpi.testDevpiPackage(
+//                                                             devpiExec: "venv/bin/devpi",
+//                                                             devpiIndex: getDevPiStagingIndex(),
+//                                                             server: "https://devpi.library.illinois.edu",
+//                                                             credentialsId: "DS_devpi",
+//                                                             pkgName: props.Name,
+//                                                             pkgVersion: props.Version,
+//                                                             pkgSelector: devpi.getMacDevpiName("3.8", "sdist"),
+//                                                             toxEnv: "py38"
+//                                                         )
+//                                                     }
+//                                                 }
+//                                             }
+//                                             post{
+//                                                 cleanup{
+//                                                     cleanWs(
+//                                                         notFailBuild: true,
+//                                                         deleteDirs: true,
+//                                                         patterns: [
+//                                                             [pattern: 'venv/', type: 'INCLUDE'],
+//                                                         ]
+//                                                     )
+//                                                 }
+//                                             }
+//                                         }
+//                                     }
+//                                 }
+//                                 stage("3.9"){
+//                                     agent {
+//                                         label 'mac && 10.14 && python3.9'
+//                                     }
+//                                     stages{
+//                                         stage("Wheel"){
+//                                             steps{
+//                                                 timeout(10){
+//                                                     sh(
+//                                                         label: "Installing devpi client",
+//                                                         script: '''python3.9 -m venv venv
+//                                                                    venv/bin/python -m pip install --upgrade pip
+//                                                                    venv/bin/pip install devpi-client
+//                                                                    venv/bin/devpi --version
+//                                                         '''
+//                                                     )
+//                                                     script{
+//                                                         devpi.testDevpiPackage(
+//                                                             devpiExec: "venv/bin/devpi",
+//                                                             devpiIndex: getDevPiStagingIndex(),
+//                                                             server: "https://devpi.library.illinois.edu",
+//                                                             credentialsId: "DS_devpi",
+//                                                             pkgName: props.Name,
+//                                                             pkgVersion: props.Version,
+//                                                             pkgSelector: devpi.getMacDevpiName("3.9", "wheel"),
+//                                                             toxEnv: "py39"
+//                                                         )
+//                                                     }
+// //                                                     testDevpiPackage2("venv/bin/devpi", env.devpiStagingIndex, DEVPI_USR, DEVPI_PSW, props.Name, props.Version, "39-macosx_10_14_x86_64*.*whl",  "py39")
+//                                                 }
+//                                             }
+//                                             post{
+//                                                 cleanup{
+//                                                     cleanWs(
+//                                                         notFailBuild: true,
+//                                                         deleteDirs: true,
+//                                                         patterns: [
+//                                                             [pattern: 'venv/', type: 'INCLUDE'],
+//                                                         ]
+//                                                     )
+//                                                 }
+//                                             }
+//                                         }
+//                                         stage("sdist"){
+//                                             steps{
+//                                                 timeout(10){
+//                                                     sh(
+//                                                         label: "Installing devpi client",
+//                                                         script: '''python3.9 -m venv venv
+//                                                                    venv/bin/python -m pip install --upgrade pip
+//                                                                    venv/bin/pip install devpi-client
+//                                                                    venv/bin/devpi --version
+//                                                         '''
+//                                                     )
+//                                                     script{
+//                                                         devpi.testDevpiPackage(
+//                                                             devpiExec: "venv/bin/devpi",
+//                                                             devpiIndex: getDevPiStagingIndex(),
+//                                                             server: "https://devpi.library.illinois.edu",
+//                                                             credentialsId: "DS_devpi",
+//                                                             pkgName: props.Name,
+//                                                             pkgVersion: props.Version,
+//                                                             pkgSelector: devpi.getMacDevpiName("3.8", "sdist"),
+//                                                             toxEnv: "py39"
+//                                                         )
+//                                                     }
+// //                                                     testDevpiPackage2(
+// //                                                         "venv/bin/devpi",
+// //                                                         env.devpiStagingIndex,
+// //                                                         DEVPI_USR, DEVPI_PSW,
+// //                                                         props.Name, props.Version,
+// //                                                         "tar.gz",
+// //                                                         "py39"
+// //                                                     )
+//                                                 }
+//                                             }
+//                                             post{
+//                                                 cleanup{
+//                                                     cleanWs(
+//                                                         notFailBuild: true,
+//                                                         deleteDirs: true,
+//                                                         patterns: [
+//                                                             [pattern: 'venv/', type: 'INCLUDE'],
+//                                                         ]
+//                                                     )
+//                                                 }
+//                                             }
+//                                         }
+//                                     }
+//                                 }
+//                             }
+//                         }
                         stage("Windows and Linux"){
                             matrix {
                                 axes {
@@ -1170,13 +1283,24 @@ pipeline {
                                           }
                                         }
                                         steps{
-                                            testDevpiPackage(
-                                                env.devpiStagingIndex,
-                                                DEVPI_USR, DEVPI_PSW,
-                                                props.Name, props.Version,
-                                                configurations[PYTHON_VERSION].os[PLATFORM].devpiSelector['wheel'],
-                                                configurations[PYTHON_VERSION].tox_env
-                                            )
+                                            script{
+                                                devpi.testDevpiPackage(
+                                                    devpiIndex: getDevPiStagingIndex(),
+                                                    server: "https://devpi.library.illinois.edu",
+                                                    credentialsId: "DS_devpi",
+                                                    pkgName: props.Name,
+                                                    pkgVersion: props.Version,
+                                                    pkgSelector: configurations[PYTHON_VERSION].os[PLATFORM].devpiSelector['wheel'],
+                                                    toxEnv: configurations[PYTHON_VERSION].tox_env
+                                                )
+                                            }
+//                                             testDevpiPackage(
+//                                                 env.devpiStagingIndex,
+//                                                 DEVPI_USR, DEVPI_PSW,
+//                                                 props.Name, props.Version,
+//                                                 configurations[PYTHON_VERSION].os[PLATFORM].devpiSelector['wheel'],
+//                                                 configurations[PYTHON_VERSION].tox_env
+//                                             )
                                         }
                                     }
                                     stage("DevPi sdist Package"){
@@ -1188,13 +1312,24 @@ pipeline {
                                           }
                                         }
                                         steps{
-                                            testDevpiPackage(
-                                                env.devpiStagingIndex,
-                                                DEVPI_USR, DEVPI_PSW,
-                                                props.Name, props.Version,
-                                                "tar.gz",
-                                                configurations[PYTHON_VERSION].tox_env
+                                            script{
+                                                devpi.testDevpiPackage(
+                                                    devpiIndex: getDevPiStagingIndex(),
+                                                    server: "https://devpi.library.illinois.edu",
+                                                    credentialsId: "DS_devpi",
+                                                    pkgName: props.Name,
+                                                    pkgVersion: props.Version,
+                                                    pkgSelector: "tar.gz",
+                                                    toxEnv: configurations[PYTHON_VERSION].tox_env
                                                 )
+                                            }
+//                                             testDevpiPackage(
+//                                                 env.devpiStagingIndex,
+//                                                 DEVPI_USR, DEVPI_PSW,
+//                                                 props.Name, props.Version,
+//                                                 "tar.gz",
+//                                                 configurations[PYTHON_VERSION].tox_env
+//                                                 )
                                         }
                                     }
                                 }
@@ -1228,14 +1363,25 @@ pipeline {
                         }
                     }
                     steps {
-//                         script {
-                            sh(
-                                label: "Pushing to DS_Jenkins/${env.BRANCH_NAME} index",
-                                script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-                                           devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
-                                           devpi push --index DS_Jenkins/${env.devpiStagingIndex} ${props.Name}==${props.Version} production/release --clientdir ./devpi
-                                           """
+                        script{
+                            echo "Pushing to production/release index"
+                            devpi.pushPackageToIndex(
+                                pkgName: props.Name,
+                                pkgVersion: props.Version,
+                                server: "https://devpi.library.illinois.edu",
+                                indexSource: "DS_Jenkins/${getDevPiStagingIndex()}",
+                                indexDestination: "production/release",
+                                credentialsId: 'DS_devpi'
                             )
+                        }
+//                         script {
+//                             sh(
+//                                 label: "Pushing to DS_Jenkins/${env.BRANCH_NAME} index",
+//                                 script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+//                                            devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+//                                            devpi push --index DS_Jenkins/${env.devpiStagingIndex} ${props.Name}==${props.Version} production/release --clientdir ./devpi
+//                                            """
+//                             )
 //                         }
                     }
                 }
@@ -1244,36 +1390,66 @@ pipeline {
                 success{
                     node('linux && docker') {
                         script{
-                            docker.build("py3exiv2bind:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
-                                if (!env.TAG_NAME?.trim()){
-                                    sh(
-                                        label: "Pushing ${props.Name} ${props.Version} to DS_Jenkins/${env.BRANCH_NAME} index on DevPi Server",
-                                        script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-                                                   devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
-                                                   devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
-                                                   devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.BRANCH_NAME} --clientdir ./devpi
-                                                   """
+                            if (!env.TAG_NAME?.trim()){
+                                docker.build("py3exiv2bind:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+                                    devpi.pushPackageToIndex(
+                                        pkgName: props.Name,
+                                        pkgVersion: props.Version,
+                                        server: "https://devpi.library.illinois.edu",
+                                        indexSource: "DS_Jenkins/${getDevPiStagingIndex()}",
+                                        indexDestination: "DS_Jenkins/${env.BRANCH_NAME}",
+                                        credentialsId: 'DS_devpi'
                                     )
                                 }
                             }
                         }
                     }
+//                     node('linux && docker') {
+//                         script{
+//                             docker.build("py3exiv2bind:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+//                                 if (!env.TAG_NAME?.trim()){
+//                                     sh(
+//                                         label: "Pushing ${props.Name} ${props.Version} to DS_Jenkins/${env.BRANCH_NAME} index on DevPi Server",
+//                                         script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+//                                                    devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+//                                                    devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
+//                                                    devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.BRANCH_NAME} --clientdir ./devpi
+//                                                    """
+//                                     )
+//                                 }
+//                             }
+//                         }
+//                     }
                 }
                 cleanup{
                     node('linux && docker') {
-                       script{
+                        script{
                             docker.build("py3exiv2bind:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
-                                sh(
-                                label: "Removing ${props.Name} ${props.Version} from staging index on DevPi Server",
-                                script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-                                           devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
-                                           devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
-                                           devpi remove -y ${props.Name}==${props.Version} --clientdir ./devpi
-                                           """
-                               )
+                                devpi.removePackage(
+                                    pkgName: props.Name,
+                                    pkgVersion: props.Version,
+                                    index: "DS_Jenkins/${getDevPiStagingIndex()}",
+                                    server: "https://devpi.library.illinois.edu",
+                                    credentialsId: 'DS_devpi',
+
+                                )
                             }
-                       }
+                        }
                     }
+//                     node('linux && docker') {
+//                        script{
+//                             docker.build("py3exiv2bind:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+//                                 sh(
+//                                 label: "Removing ${props.Name} ${props.Version} from staging index on DevPi Server",
+//                                 script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+//                                            devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+//                                            devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
+//                                            devpi remove -y ${props.Name}==${props.Version} --clientdir ./devpi
+//                                            """
+//                                )
+//                             }
+//                        }
+//                     }
                 }
             }
         }
