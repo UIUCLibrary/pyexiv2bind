@@ -3,14 +3,14 @@
 // ============================================================================
 //  Groovy helper scripts loaded during start of pipeline
 // ============================================================================
-def packaging
-def tox
+def packaging   = null
+def tox         = null
 
 // ============================================================================
 // Configurations loaded at start of pipeline
 // ============================================================================
-def configurations
-def defaultParamValues
+configurations      = null
+defaultParamValues  = null
 
 // ============================================================================
 //  Dynamic variables. Used to help manage state
@@ -113,16 +113,6 @@ def testDevpiPackage2(devpiExec, devpiIndex, devpiUsername, devpiPassword,  pkgN
     }
 }
 
-def stash_wheel(args = [:]){
-    script{
-        def stash_name =  "whl ${args['pythonVersion']} ${args['platform']}"
-        if(args['platform'] == "linux"){
-            stash includes: 'dist/*manylinux*.whl', name: stash_name
-        } else{
-            stash includes: 'dist/*.whl', name: stash_name
-        }
-    }
-}
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
 
