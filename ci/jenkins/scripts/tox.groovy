@@ -132,7 +132,7 @@ def getToxTestsParallel(args = [:]){
                 node(originalNodeLabel){
                     ws{
                         checkout scm
-                        def containerName = "${currentBuild.fullProjectName}_tox_${tox_env}"
+                        def containerName = "${currentBuild.fullProjectName}_tox_${tox_env}".replaceAll('/','_' )
                         dockerImageForTesting.inside("--name=${containerName} --rm"){
                             try{
                                 publishChecks(
