@@ -76,7 +76,7 @@ def generateToxReport(tox_env, toxResultFile){
         checksReportText = testingEnvReport + " \n" + resultsReport
         return checksReportText
     } catch (e){
-        echo "Unable to parse json file, \nReason: ${e}"
+        echo "Unable to parse json file"
         def data =  "No data available"
 //         def data =  readFile(file: toxResultFile)
 //         data = "``` json\n${data}\n```"
@@ -96,23 +96,23 @@ def getToxTestsParallel(args = [:]){
         node(label){
             originalNodeLabel = env.NODE_NAME
             checkout scm
-            def dockerImageName = "${currentBuild.projectName}:tox".replaceAll("-", "").toLowerCase()
+            def dockerImageName = "${currentBuild.projectName}:tox".replaceAll("-", "").toLowerCase().toLowerCase()
             def dockerImage = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} .")
             dockerImage.inside{
                 envs = getToxEnvs()
             }
-            if(isUnix()){
-                sh(
-                    label: "Removing Docker Image used to run tox",
-                    script: "docker image ls ${dockerImageName}"
-                )
-            } else {
-                bat(
-                    label: "Removing Docker Image used to run tox",
-                    script: """docker image ls ${dockerImageName}
-                               """
-                )
-            }
+//             if(isUnix()){
+//                 sh(
+//                     label: "Removing Docker Image used to run tox",
+//                     script: "docker image ls ${dockerImageName}"
+//                 )
+//             } else {
+//                 bat(
+//                     label: "Removing Docker Image used to run tox",
+//                     script: """docker image ls ${dockerImageName}
+//                                """
+//                 )
+//             }
         }
         echo "Found tox environments for ${envs.join(', ')}"
         def dockerImageForTesting = "${currentBuild.projectName}:tox".replaceAll("-", "").toLowerCase()
@@ -124,7 +124,7 @@ def getToxTestsParallel(args = [:]){
         }
         echo "Adding jobs to ${originalNodeLabel}"
         def jobs = envs.collectEntries({ tox_env ->
-            def tox_result
+//             def tox_result
             def githubChecksName = "Tox: ${tox_env} ${envNamePrefix}"
             def jenkinsStageName = "${envNamePrefix} ${tox_env}"
 
@@ -133,7 +133,7 @@ def getToxTestsParallel(args = [:]){
                     ws{
                         checkout scm
                         def containerName = "${currentBuild.fullProjectName}_tox_${tox_env}".replaceAll('/','_' )
-                        dockerImageForTesting.inside("--name=${containerName} --rm"){
+                        dockerImageForTesting.inside("--name=${containerName}"){
                             try{
                                 publishChecks(
                                     conclusion: 'NONE',
