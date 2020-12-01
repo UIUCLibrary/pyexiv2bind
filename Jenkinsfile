@@ -3,14 +3,14 @@
 // ============================================================================
 //  Groovy helper scripts loaded during start of pipeline
 // ============================================================================
-def packaging   = null
-def tox         = null
+// def packaging   = null
+// def tox         = null
 
 // ============================================================================
 // Configurations loaded at start of pipeline
 // ============================================================================
-configurations      = null
-defaultParamValues  = null
+// configurations      = null
+// defaultParamValues  = null
 
 // ============================================================================
 //  Dynamic variables. Used to help manage state
@@ -19,17 +19,17 @@ def wheel_stashes = []
 // ============================================================================
 // Helper functions.
 // ============================================================================
-def check_dll_deps(path){
-    if(!isUnix()){
-        findFiles(glob: "${path}/**/*.pyd").each{
-            bat(
-                label: "Checking Python extension for dependents",
-                script: "dumpbin /DEPENDENTS ${it.path}"
-            )
-        }
-    }
-}
-
+// def check_dll_deps(path){
+//     if(!isUnix()){
+//         findFiles(glob: "${path}/**/*.pyd").each{
+//             bat(
+//                 label: "Checking Python extension for dependents",
+//                 script: "dumpbin /DEPENDENTS ${it.path}"
+//             )
+//         }
+//     }
+// }
+//
 
 def test_package_on_mac(python, glob){
     cleanWs(
@@ -1210,7 +1210,7 @@ pipeline {
                         }
                     }
                     steps {
-                        script {
+//                         script {
                             sh(
                                 label: "Pushing to DS_Jenkins/${env.BRANCH_NAME} index",
                                 script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
@@ -1218,7 +1218,7 @@ pipeline {
                                            devpi push --index DS_Jenkins/${env.devpiStagingIndex} ${props.Name}==${props.Version} production/release --clientdir ./devpi
                                            """
                             )
-                        }
+//                         }
                     }
                 }
             }
