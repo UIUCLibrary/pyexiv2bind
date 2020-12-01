@@ -77,7 +77,7 @@ def generateToxReport(tox_env, toxResultFile){
         return checksReportText
     } catch (e){
         echo "Unable to parse json file, Falling back to reading the file as text. \nReason: ${e}"
-        def data =  readFile(toxResultFile)
+        def data =  readFile(file: toxResultFile)
         data = "``` json\n${data}\n```"
         return data
     }
@@ -131,7 +131,8 @@ def getToxTestsParallel(args = [:]){
                 node(originalNodeLabel){
                     ws{
                         checkout scm
-                        dockerImageForTesting.inside("--name=${currentBuild.projectName}_tox_${tox_env}"){
+                        def containerName = "${currentBuild.fullProjectName}_tox_${tox_env}"
+                        dockerImageForTesting.inside("--name=${containerName} --rm"){
                             try{
                                 publishChecks(
                                     conclusion: 'NONE',
