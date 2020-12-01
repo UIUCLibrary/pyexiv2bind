@@ -6,6 +6,7 @@ flake8
 gcovr
 lxml
 mypy
+ninja
 pep517
 pytest
 pylint
