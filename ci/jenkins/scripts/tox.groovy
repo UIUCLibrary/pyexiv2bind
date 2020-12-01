@@ -76,9 +76,10 @@ def generateToxReport(tox_env, toxResultFile){
         checksReportText = testingEnvReport + " \n" + resultsReport
         return checksReportText
     } catch (e){
-        echo "Unable to parse json file, Falling back to reading the file as text. \nReason: ${e}"
-        def data =  readFile(file: toxResultFile)
-        data = "``` json\n${data}\n```"
+        echo "Unable to parse json file, \nReason: ${e}"
+        def data =  "No data available"
+//         def data =  readFile(file: toxResultFile)
+//         data = "``` json\n${data}\n```"
         return data
     }
 }
