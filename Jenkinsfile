@@ -1,17 +1,24 @@
 #!groovy
 // @Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
+// ============================================================================
+//  Groovy helper scripts loaded during start of pipeline
+// ============================================================================
+def packaging
+def tox
+
+// ============================================================================
+// Configurations loaded at start of pipeline
+// ============================================================================
+def configurations
+def defaultParamValues
+
+// ============================================================================
+//  Dynamic variables. Used to help manage state
 def wheel_stashes = []
 
-def loadConfigs(){
-    node(){
-        echo "loading configurations"
-        checkout scm
-        return load("ci/jenkins/scripts/configs.groovy").getConfigurations()
-    }
-}
-
-def CONFIGURATIONS = loadConfigs()
-
+// ============================================================================
+// Helper functions.
+// ============================================================================
 def check_dll_deps(path){
     if(!isUnix()){
         findFiles(glob: "${path}/**/*.pyd").each{
@@ -224,6 +231,8 @@ def startup(){
                 packaging = load("ci/jenkins/scripts/packaging.groovy")
                 tox = load("ci/jenkins/scripts/tox.groovy")
                 defaultParamValues = readYaml(  file: 'ci/jenkins/defaultParameters.yaml').parameters.defaults
+                echo "loading configurations"
+                configurations = load("ci/jenkins/scripts/configs.groovy").getConfigurations()
             }
         }
     }
@@ -284,6 +293,7 @@ def get_props(){
         }
     }
 }
+// *****************************************************************************
 startup()
 def props = get_props()
 pipeline {
@@ -355,7 +365,7 @@ pipeline {
             }
             post{
                 always {
-                    recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', id: 'sphinx_build')])
+                    recordIssues(skipPublishingChecks: true, tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', id: 'sphinx_build')])
                 }
                 success{
                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
@@ -855,9 +865,9 @@ pipeline {
                             stage("Creating bdist wheel"){
                                 agent {
                                     dockerfile {
-                                        filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.package.dockerfile.filename}"
+                                        filename "${configurations[PYTHON_VERSION].os[PLATFORM].agents.package.dockerfile.filename}"
                                         label "${PLATFORM} && docker"
-                                        additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.package.dockerfile.additionalBuildArgs}"
+                                        additionalBuildArgs "${configurations[PYTHON_VERSION].os[PLATFORM].agents.package.dockerfile.additionalBuildArgs}"
                                      }
                                 }
                                 options {
@@ -907,14 +917,14 @@ pipeline {
                                             platform: PLATFORM,
                                             pythonVersion: PYTHON_VERSION,
                                             whlTestAgent: [
-                                                filename: CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.filename,
+                                                filename: configurations[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.filename,
                                                 label: "${PLATFORM} && docker",
-                                                additionalBuildArgs: CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.additionalBuildArgs
+                                                additionalBuildArgs: configurations[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.additionalBuildArgs
                                             ],
                                             sdistTestAgent: [
-                                                filename: CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.filename,
+                                                filename: configurations[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.filename,
                                                 label: "${PLATFORM} && docker",
-                                                additionalBuildArgs: CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.additionalBuildArgs
+                                                additionalBuildArgs: configurations[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.additionalBuildArgs
                                             ],
                                             whlStashName: "whl ${PYTHON_VERSION} ${platform}",
                                             sdistStashName: "sdist"
@@ -1146,9 +1156,9 @@ pipeline {
                                     stage("DevPi Wheel Package"){
                                         agent {
                                           dockerfile {
-                                            filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi['wheel'].dockerfile.filename}"
-                                            additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi['wheel'].dockerfile.additionalBuildArgs}"
-                                            label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi['wheel'].dockerfile.label}"
+                                            filename "${configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['wheel'].dockerfile.filename}"
+                                            additionalBuildArgs "${configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['wheel'].dockerfile.additionalBuildArgs}"
+                                            label "${configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['wheel'].dockerfile.label}"
                                           }
                                         }
                                         steps{
@@ -1156,17 +1166,17 @@ pipeline {
                                                 env.devpiStagingIndex,
                                                 DEVPI_USR, DEVPI_PSW,
                                                 props.Name, props.Version,
-                                                CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].devpiSelector['wheel'],
-                                                CONFIGURATIONS[PYTHON_VERSION].tox_env
+                                                configurations[PYTHON_VERSION].os[PLATFORM].devpiSelector['wheel'],
+                                                configurations[PYTHON_VERSION].tox_env
                                             )
                                         }
                                     }
                                     stage("DevPi sdist Package"){
                                         agent {
                                           dockerfile {
-                                            filename "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi['sdist'].dockerfile.filename}"
-                                            additionalBuildArgs "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi['sdist'].dockerfile.additionalBuildArgs}"
-                                            label "${CONFIGURATIONS[PYTHON_VERSION].os[PLATFORM].agents.devpi['sdist'].dockerfile.label}"
+                                            filename "${configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['sdist'].dockerfile.filename}"
+                                            additionalBuildArgs "${configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['sdist'].dockerfile.additionalBuildArgs}"
+                                            label "${configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['sdist'].dockerfile.label}"
                                           }
                                         }
                                         steps{
@@ -1175,7 +1185,7 @@ pipeline {
                                                 DEVPI_USR, DEVPI_PSW,
                                                 props.Name, props.Version,
                                                 "tar.gz",
-                                                CONFIGURATIONS[PYTHON_VERSION].tox_env
+                                                configurations[PYTHON_VERSION].tox_env
                                                 )
                                         }
                                     }
