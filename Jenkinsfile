@@ -378,9 +378,6 @@ pipeline {
             }
             stages{
                 stage("Code Quality"){
-                    when{
-                        equals expected: true, actual: false
-                    }
                     stages{
                         stage("Testing"){
                             stages{
