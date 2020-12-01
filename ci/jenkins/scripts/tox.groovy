@@ -95,7 +95,7 @@ def getToxTestsParallel(args = [:]){
         node(label){
             originalNodeLabel = env.NODE_NAME
             checkout scm
-            def dockerImageName = "tox${currentBuild.projectName}".replaceAll("-", "").toLowerCase()
+            def dockerImageName = "${currentBuild.projectName}:tox".replaceAll("-", "").toLowerCase()
             def dockerImage = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} .")
             dockerImage.inside{
                 envs = getToxEnvs()
@@ -114,7 +114,7 @@ def getToxTestsParallel(args = [:]){
             }
         }
         echo "Found tox environments for ${envs.join(', ')}"
-        def dockerImageForTesting
+        def dockerImageForTesting = "${currentBuild.projectName}:tox".replaceAll("-", "").toLowerCase()
         node(originalNodeLabel){
             def dockerImageName = "tox"
             checkout scm
@@ -131,7 +131,7 @@ def getToxTestsParallel(args = [:]){
                 node(originalNodeLabel){
                     ws{
                         checkout scm
-                        dockerImageForTesting.inside{
+                        dockerImageForTesting.inside("--name=${currentBuild.projectName}_tox_${tox_env}"){
                             try{
                                 publishChecks(
                                     conclusion: 'NONE',
@@ -143,12 +143,12 @@ def getToxTestsParallel(args = [:]){
                                 if(isUnix()){
                                     sh(
                                         label: "Running Tox with ${tox_env} environment",
-                                        script: "tox  -vv --parallel--safe-build --result-json=${TOX_RESULT_FILE_NAME} -e $tox_env"
+                                        script: "tox  -vv --parallel--safe-build --recreate --result-json=${TOX_RESULT_FILE_NAME} -e $tox_env"
                                     )
                                 } else {
                                     bat(
                                         label: "Running Tox with ${tox_env} environment",
-                                        script: "tox  -vv --parallel--safe-build --result-json=${TOX_RESULT_FILE_NAME} -e $tox_env "
+                                        script: "tox  -vv --parallel--safe-build --recreate --result-json=${TOX_RESULT_FILE_NAME} -e $tox_env "
                                     )
                                 }
                             } catch (e){
