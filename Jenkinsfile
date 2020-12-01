@@ -643,9 +643,27 @@ pipeline {
                     }
                     steps {
                         script{
-                            def linux_jobs = tox.getToxTestsParallel("Linux", "linux && docker", "ci/docker/linux/tox/Dockerfile", '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL')
-                            def windows_jobs = tox.getToxTestsParallel("Windows", "windows && docker", "ci/docker/windows/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE")
-                            parallel(windows_jobs + linux_jobs)
+                            def windowsJobs = [:]
+                            def linuxJobs = [:]
+                            parallel(
+                                "Linux":{
+                                    linuxJobs = tox.getToxTestsParallel(
+                                                envNamePrefix: "Tox Linux",
+                                                label: "linux && docker",
+                                                dockerfile: "ci/docker/linux/tox/Dockerfile",
+                                                dockerArgs: '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                            )
+                                },
+                                "Windows":{
+                                    windowsJobs = tox.getToxTestsParallel(
+                                                    envNamePrefix: "Tox Windows",
+                                                    label: "windows && docker",
+                                                    dockerfile: "ci/docker/windows/tox/Dockerfile",
+                                                    dockerArgs: "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE"
+                                                )
+                                }
+                            )
+                            parallel(windowsJobs + linuxJobs)
                         }
                     }
                 }
