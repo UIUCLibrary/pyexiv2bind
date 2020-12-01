@@ -11,6 +11,7 @@ def loadConfigs(){
 }
 
 def CONFIGURATIONS = loadConfigs()
+
 def check_dll_deps(path){
     if(!isUnix()){
         findFiles(glob: "${path}/**/*.pyd").each{
@@ -214,16 +215,18 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
      }
 }
 
-def loadHelper(file){
-    node(){
-        checkout scm
-        return load(file)
-    }
-}
-def packaging = loadHelper("ci/jenkins/scripts/packaging.groovy")
-def tox = loadHelper("ci/jenkins/scripts/tox.groovy")
 
 def startup(){
+    stage("Loading helper scripts and configs"){
+        node(){
+            ws{
+                checkout scm
+                packaging = load("ci/jenkins/scripts/packaging.groovy")
+                tox = load("ci/jenkins/scripts/tox.groovy")
+                defaultParamValues = readYaml(  file: 'ci/jenkins/defaultParameters.yaml').parameters.defaults
+            }
+        }
+    }
     stage("Getting Distribution Info"){
         node('linux && docker') {
             ws{
@@ -239,7 +242,6 @@ def startup(){
                             )
                             stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
                             archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
-    //                     }
                         }
                     }
                 } finally{
@@ -287,16 +289,51 @@ def props = get_props()
 pipeline {
     agent none
     parameters {
-        booleanParam(name: "TEST_RUN_TOX", defaultValue: false, description: "Run Tox Tests")
-        booleanParam(name: "RUN_CHECKS", defaultValue: true, description: "Run checks on code")
-        booleanParam(name: "USE_SONARQUBE", defaultValue: true, description: "Send data test data to SonarQube")
-        booleanParam(name: "BUILD_PACKAGES", defaultValue: false, description: "Build Python packages")
-        booleanParam(name: "BUILD_MAC_PACKAGES", defaultValue: false, description: "Test Python packages on Mac")
-        booleanParam(name: "TEST_PACKAGES", defaultValue: true, description: "Test Python packages by installing them and running tests on the installed package")
-        booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
-        booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to https://devpi.library.illinois.edu/production/release")
-        string(name: 'URL_SUBFOLDER', defaultValue: "py3exiv2bind", description: 'The directory that the docs should be saved under')
-        booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation")
+        booleanParam(
+                name: "TEST_RUN_TOX",
+                defaultValue: defaultParamValues.TEST_RUN_TOX,
+                description: "Run Tox Tests"
+            )
+        booleanParam(
+                name: "RUN_CHECKS",
+                defaultValue: defaultParamValues.RUN_CHECKS,
+                description: "Run checks on code"
+            )
+        booleanParam(
+                name: "USE_SONARQUBE",
+                defaultValue: defaultParamValues.USE_SONARQUBE,
+                description: "Send data test data to SonarQube"
+            )
+        booleanParam(
+                name: "BUILD_PACKAGES",
+                defaultValue: defaultParamValues.BUILD_PACKAGES,
+                description: "Build Python packages"
+            )
+        booleanParam(
+                name: "BUILD_MAC_PACKAGES",
+                defaultValue: defaultParamValues.BUILD_MAC_PACKAGES,
+                description: "Test Python packages on Mac"
+            )
+        booleanParam(
+                name: "TEST_PACKAGES",
+                defaultValue: defaultParamValues.TEST_PACKAGES,
+                description: "Test Python packages by installing them and running tests on the installed package"
+            )
+        booleanParam(
+                name: "DEPLOY_DEVPI",
+                defaultValue: defaultParamValues.DEPLOY_DEVPI,
+                description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}"
+            )
+        booleanParam(
+                name: "DEPLOY_DEVPI_PRODUCTION",
+                defaultValue: defaultParamValues.DEPLOY_DEVPI_PRODUCTION,
+                description: "Deploy to https://devpi.library.illinois.edu/production/release"
+            )
+        booleanParam(
+                name: "DEPLOY_DOCS",
+                defaultValue: defaultParamValues.DEPLOY_DOCS,
+                description: "Update online documentation"
+        )
     }
     stages {
         stage("Building Documentation"){
