@@ -69,7 +69,7 @@ def generateToxReport(tox_env, toxResultFile){
             resultsReport = resultsReport + "\n" + "Success\n"
         }
 //         =========
-        checksReportText = testingEnvReport + " \n" + resultsReport
+        checksReportText = testingEnvReport + " \n" + resultsReport + testingEnvReport
         return checksReportText
     } catch (e){
         echo e
