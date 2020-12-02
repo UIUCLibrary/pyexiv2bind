@@ -5,17 +5,22 @@ def getToxEnvs(){
     } else{
         envs = bat(returnStdout: true, script: "@tox -l").trim().split('\n')
     }
-    envs.collect{
-        it.trim()
+    def n = []
+    envs.each{
+        n << it.trim()
     }
-    return envs
+    return n
 }
-def generateToxPackageReport(testEnv){
+def generateToxPackageReport(testEnv, toxResultFile){
+//  TODO: Read toxResultFile and find the  result for testEnv
+        def tox_result = readJSON(file: toxResultFile)
 
         def packageReport = "\n**Installed Packages:**"
-        testEnv['installed_packages'].each{
+        echo "packageReport before = ${packageReport}"
+        tox_result.testenvs[testEnv].installed_packages.each{
             packageReport =  packageReport + "\n ${it}"
         }
+        echo "packageReport after = ${packageReport}"
 
         return packageReport
 }
@@ -33,23 +38,18 @@ def generateToxReport(tox_env, toxResultFile){
 **Tox Version:** ${tox_result['toxversion']}
 **Platform:**   ${tox_result['platform']}
 """
-    if(! tox_result['testenvs'].containsKey(tox_env)){
-        tox_result['testenvs'].each{test_env->
-            echo "${test_env}"
-            test_env.each{
-                echo "${it}"
-
+        echo "testingEnvReport = ${testingEnvReport}"
+        if(! tox_result['testenvs'].containsKey(tox_env)){
+            tox_result['testenvs'].each{key, test_env->
+                test_env.each{
+                    echo "${it}"
+                }
             }
+            error "No test env for ${tox_env} found in ${toxResultFile}"
         }
-        error "No test env for ${tox_env} found in ${toxResultFile}"
-    }
-    def tox_test_env = tox_result['testenvs'][tox_env]
-    echo "${tox_env}"
-//         =========
-        def packageReport = generateToxPackageReport(tox_test_env)
+        def tox_test_env = tox_result['testenvs'][tox_env]
+        def packageReport = generateToxPackageReport(tox_env, toxResultFile)
         checksReportText = testingEnvReport + " \n" + packageReport
-//         =========
-
 
         def errorMessages = []
         try{
@@ -61,8 +61,7 @@ def generateToxReport(tox_env, toxResultFile){
                     errorMessages += "**${failedCommand}**\n${errorOutput}"
                 }
             }
-        }
-        catch (e) {
+        } catch (e) {
             echo "unable to parse Error output"
             throw e
         }
@@ -76,6 +75,7 @@ def generateToxReport(tox_env, toxResultFile){
         checksReportText = testingEnvReport + " \n" + resultsReport
         return checksReportText
     } catch (e){
+        echo e
         echo "Unable to parse json file"
         def data =  "No data available"
 //         def data =  readFile(file: toxResultFile)
@@ -96,7 +96,7 @@ def getToxTestsParallel(args = [:]){
         node(label){
             originalNodeLabel = env.NODE_NAME
             checkout scm
-            def dockerImageName = "${currentBuild.projectName}:tox".replaceAll("-", "").toLowerCase().toLowerCase()
+            def dockerImageName = "${currentBuild.projectName}:tox".replaceAll("-", "").toLowerCase()
             def dockerImage = docker.build(dockerImageName, "-f ${dockerfile} ${dockerArgs} .")
             dockerImage.inside{
                 envs = getToxEnvs()
@@ -114,7 +114,7 @@ def getToxTestsParallel(args = [:]){
 //                 )
 //             }
         }
-        echo "Found tox environments for ${envs.join(', ')}"
+        echo "Found tox environments for ${envs.join(', ')}."
         def dockerImageForTesting = "${currentBuild.projectName}:tox".replaceAll("-", "").toLowerCase()
         node(originalNodeLabel){
             def dockerImageName = "tox"
@@ -124,16 +124,15 @@ def getToxTestsParallel(args = [:]){
         }
         echo "Adding jobs to ${originalNodeLabel}"
         def jobs = envs.collectEntries({ tox_env ->
-//             def tox_result
-            def githubChecksName = "Tox: ${tox_env} ${envNamePrefix}"
-            def jenkinsStageName = "${envNamePrefix} ${tox_env}"
+            def toxEnv = tox_env.trim()
+            def githubChecksName = "Tox: ${toxEnv} ${envNamePrefix}"
+            def jenkinsStageName = "${envNamePrefix} ${toxEnv}"
 
             [jenkinsStageName,{
                 node(originalNodeLabel){
                     ws{
                         checkout scm
-                        def containerName = "${currentBuild.fullProjectName}_tox_${tox_env}".replaceAll('/','_' )
-                        dockerImageForTesting.inside("--name=${containerName}"){
+                        dockerImageForTesting.inside{
                             try{
                                 publishChecks(
                                     conclusion: 'NONE',
@@ -144,23 +143,23 @@ def getToxTestsParallel(args = [:]){
                                 )
                                 if(isUnix()){
                                     sh(
-                                        label: "Running Tox with ${tox_env} environment",
-                                        script: "tox  -vv --parallel--safe-build --recreate --result-json=${TOX_RESULT_FILE_NAME} -e $tox_env"
+                                        label: "Running Tox with ${toxEnv} environment",
+                                        script: "tox -vv --parallel--safe-build --recreate --result-json=${TOX_RESULT_FILE_NAME} -e $tox_env"
                                     )
                                 } else {
                                     bat(
-                                        label: "Running Tox with ${tox_env} environment",
-                                        script: "tox  -vv --parallel--safe-build --recreate --result-json=${TOX_RESULT_FILE_NAME} -e $tox_env "
+                                        label: "Running Tox with ${toxEnv} environment",
+                                        script: "tox -vv --parallel--safe-build --recreate --result-json=${TOX_RESULT_FILE_NAME} -e $tox_env "
                                     )
                                 }
                             } catch (e){
                                 def text
                                 try{
-                                    text = generateToxReport(tox_env, 'tox_result.json')
-                                }
-                                catch (ex){
+                                    text = generateToxReport(toxEnv, TOX_RESULT_FILE_NAME)
+                                } catch (ex){
                                     text = "No details given. Unable to read tox_result.json"
                                 }
+
                                 publishChecks(
                                     name: githubChecksName,
                                     summary: 'Use Tox to test installed package',
@@ -170,7 +169,7 @@ def getToxTestsParallel(args = [:]){
                                 )
                                 throw e
                             }
-                            def checksReportText = generateToxReport(tox_env, 'tox_result.json')
+                            def checksReportText = generateToxReport(toxEnv, TOX_RESULT_FILE_NAME)
                             publishChecks(
                                     name: githubChecksName,
                                     summary: 'Use Tox to test installed package',
