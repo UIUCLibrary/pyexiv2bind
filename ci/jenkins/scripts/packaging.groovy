@@ -65,11 +65,11 @@ def test_one(pythonVersion, dockerAgent, dockerImageName, stashName, glob){
 
             }
         } finally {
-            if(isUnix()){
-                sh "docker image rm ${docker_build.id}"
-            } else {
-                bat "docker image rm ${docker_build.id}"
-            }
+//             if(isUnix()){
+//                 sh "docker image rm ${docker_build.id}"
+//             } else {
+//                 bat "docker image rm ${docker_build.id}"
+//             }
             cleanWs()
         }
     }
