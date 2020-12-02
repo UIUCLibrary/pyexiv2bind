@@ -16,11 +16,9 @@ def generateToxPackageReport(testEnv, toxResultFile){
         def tox_result = readJSON(file: toxResultFile)
 
         def packageReport = "\n**Installed Packages:**"
-        echo "packageReport before = ${packageReport}"
         tox_result.testenvs[testEnv].installed_packages.each{
             packageReport =  packageReport + "\n ${it}"
         }
-        echo "packageReport after = ${packageReport}"
 
         return packageReport
 }
@@ -29,6 +27,7 @@ def generateToxReport(tox_env, toxResultFile){
     if(!fileExists(toxResultFile)){
         error "No file found for ${toxResultFile}"
     }
+    def toxEnv = tox_env.trim()
     try{
         def tox_result = readJSON(file: toxResultFile)
         def checksReportText = ""
@@ -38,22 +37,20 @@ def generateToxReport(tox_env, toxResultFile){
 **Tox Version:** ${tox_result['toxversion']}
 **Platform:**   ${tox_result['platform']}
 """
-        echo "testingEnvReport = ${testingEnvReport}"
-        if(! tox_result['testenvs'].containsKey(tox_env)){
+        if(! tox_result['testenvs'].containsKey(toxEnv)){
             tox_result['testenvs'].each{key, test_env->
-                test_env.each{
-                    echo "${it}"
-                }
+                echo "test_env = ${test_env}"
             }
-            error "No test env for ${tox_env} found in ${toxResultFile}"
+            error "No test env for ${toxEnv} found in ${toxResultFile}"
         }
-        def tox_test_env = tox_result['testenvs'][tox_env]
-        def packageReport = generateToxPackageReport(tox_env, toxResultFile)
+        def tox_test_env = tox_result['testenvs'][toxEnv]
+        def packageReport = generateToxPackageReport(toxEnv, toxResultFile)
+        echo "${packageReport}"
         checksReportText = testingEnvReport + " \n" + packageReport
 
         def errorMessages = []
         try{
-            tox_env["test"].each{
+            tox_test_env["test"].each{
                 if (it['retcode'] != 0){
                     echo "Found error ${it}"
                     def errorOutput =  it['output']
