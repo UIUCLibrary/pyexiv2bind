@@ -31,6 +31,15 @@ def wheel_stashes = []
 // }
 //
 
+library(
+    identifier: 'JenkinsPythonHelperLibrary@getToxTestsParallel',
+    retriever: modernSCM([
+        $class: 'GitSCMSource',
+        credentialsId: '',
+        remote: 'https://github.com/UIUCLibrary/JenkinsPythonHelperLibrary.git',
+        traits: [gitBranchDiscovery()]
+    ])
+)
 def test_package_on_mac(python, glob){
     cleanWs(
         notFailBuild: true,
@@ -219,7 +228,7 @@ def startup(){
             ws{
                 checkout scm
                 packaging = load("ci/jenkins/scripts/packaging.groovy")
-                tox = load("ci/jenkins/scripts/tox.groovy")
+//                 tox = load("ci/jenkins/scripts/tox.groovy")
                 devpi = load("ci/jenkins/scripts/devpi.groovy")
                 echo "loading configurations"
                 defaultParamValues = readYaml(file: 'ci/jenkins/defaultParameters.yaml').parameters.defaults
@@ -631,19 +640,27 @@ pipeline {
                             def linuxJobs = [:]
                             parallel(
                                 "Linux":{
-                                    linuxJobs = tox.getToxTestsParallel(
+                                    linuxJobs = getToxTestsParallel(
                                                 envNamePrefix: "Tox Linux",
-                                                label: "linux && docker",
-                                                dockerfile: "ci/docker/linux/tox/Dockerfile",
-                                                dockerArgs: '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                                agent:[
+                                                    dockerfile:[
+                                                        label: "linux && docker",
+                                                        filename: "ci/docker/linux/tox/Dockerfile",
+                                                        additionalBuildArgs: '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                                    ]
+                                                ]
                                             )
                                 },
                                 "Windows":{
-                                    windowsJobs = tox.getToxTestsParallel(
+                                    windowsJobs = getToxTestsParallel(
                                                     envNamePrefix: "Tox Windows",
-                                                    label: "windows && docker",
-                                                    dockerfile: "ci/docker/windows/tox/Dockerfile",
-                                                    dockerArgs: "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE"
+                                                    agent:[
+                                                        dockerfile: [
+                                                            label: "windows && docker",
+                                                            filename: "ci/docker/windows/tox/Dockerfile",
+                                                            additionalBuildArgs: "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE"
+                                                        ]
+                                                    ]
                                                 )
                                 }
                             )
