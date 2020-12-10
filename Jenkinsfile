@@ -219,7 +219,6 @@ def startup(){
             ws{
                 checkout scm
                 packaging = load("ci/jenkins/scripts/packaging.groovy")
-                tox = load("ci/jenkins/scripts/tox.groovy")
                 devpi = load("ci/jenkins/scripts/devpi.groovy")
                 echo "loading configurations"
                 defaultParamValues = readYaml(file: 'ci/jenkins/defaultParameters.yaml').parameters.defaults
@@ -627,6 +626,11 @@ pipeline {
                     }
                     steps {
                         script{
+                            def tox
+                            node(){
+                                checkout scm
+                                tox = load("ci/jenkins/scripts/tox.groovy")
+                            }
                             def windowsJobs = [:]
                             def linuxJobs = [:]
                             parallel(
