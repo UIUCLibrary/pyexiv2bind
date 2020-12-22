@@ -2,18 +2,19 @@
 from collections import namedtuple
 import struct
 import copy
+from typing import Optional, Union, Tuple, Any
 
 
 class ICC_data:
     """ICC data container."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Create a ICC data container."""
         self.friendly_name = None
-        self.value = None
-        self.raw_data = None
+        self.value: Optional[Any] = None
+        self.raw_data: Optional[bytes] = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Provide a friendly name keys if possible."""
         if self.friendly_name:
             return self.friendly_name
@@ -37,7 +38,7 @@ def build_ICC_data(value: bytes, lookup_table: dict = None,
 
 
 def build_ICC_friendly_names(icc_data: ICC_data, lookup_table=None,
-                             restrict=False):
+                             restrict=False) -> ICC_data:
     """Update the keys to display easier to read names."""
     new_icc = copy.deepcopy(icc_data)
     if lookup_table:
@@ -46,13 +47,13 @@ def build_ICC_friendly_names(icc_data: ICC_data, lookup_table=None,
         else:
             if restrict:
                 raise LookupError("Invalid signature: {}".format(
-                    icc_data.value)
+                    str(icc_data.value))
                 )
 
     return new_icc
 
 
-def build_ICC_empty_data(raw_data) -> ICC_data:
+def build_ICC_empty_data(raw_data: bytes) -> ICC_data:
     """Create an empty ICC data set from raw data.
 
     Args:
