@@ -1,16 +1,20 @@
-"""For extracting the ICC data"""
+"""For extracting the ICC data."""
 from collections import namedtuple
 import struct
 import copy
 
 
 class ICC_data:
+    """ICC data container."""
+
     def __init__(self):
+        """Create a ICC data container."""
         self.friendly_name = None
         self.value = None
         self.raw_data = None
 
     def __str__(self):
+        """Provide a friendly name keys if possible."""
         if self.friendly_name:
             return self.friendly_name
         if self.value:
@@ -20,7 +24,7 @@ class ICC_data:
 
 def build_ICC_data(value: bytes, lookup_table: dict = None,
                    restrict=False) -> ICC_data:
-
+    """Build an ICC_data object."""
     new_value = ICC_data()
     new_value.value = value
     if lookup_table:
@@ -34,7 +38,7 @@ def build_ICC_data(value: bytes, lookup_table: dict = None,
 
 def build_ICC_friendly_names(icc_data: ICC_data, lookup_table=None,
                              restrict=False):
-
+    """Update the keys to display easier to read names."""
     new_icc = copy.deepcopy(icc_data)
     if lookup_table:
         if icc_data.value in lookup_table:
@@ -49,12 +53,22 @@ def build_ICC_friendly_names(icc_data: ICC_data, lookup_table=None,
 
 
 def build_ICC_empty_data(raw_data) -> ICC_data:
+    """Create an empty ICC data set from raw data.
+
+    Args:
+        raw_data:
+
+    Returns:
+        New ICC data set
+
+    """
     new_value = ICC_data()
     new_value.raw_data = raw_data
     return new_value
 
 
 def add_decoded_value(icc_data: ICC_data, data: tuple):
+    """Include decoded values."""
     new_data = copy.deepcopy(icc_data)
     new_data.value = data
     return new_data
@@ -128,6 +142,7 @@ primary_platforms = {
 
 
 def unpack_binary(data) -> ICC_Profile_Header:
+    """Unpack binary data into a a ICC profile header."""
     return unpack_header(data[:128])
 
 
@@ -261,8 +276,7 @@ def _map_header_strings(parsed: ICC_Profile_Header):
 
 
 def unpack_header(raw_data: bytes) -> ICC_Profile_Header:
-    """Unpack and decode the binary information from the header of ICC profile
-    data
+    """Unpack & decode binary information from header of ICC profile data.
 
     Args:
         raw_data: raw stream of bytes from the ICC Profile header to decode

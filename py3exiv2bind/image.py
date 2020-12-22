@@ -1,3 +1,4 @@
+"""Manage image files."""
 import os
 
 import collections
@@ -9,10 +10,12 @@ from . import icc
 
 
 class Image(core.Image):
+    """Evaluate an image file."""
+
     _INVALID_FORMATS_FOR_ICC: typing.List[str] = []
 
     def __init__(self, *args, **kwargs):
-        """Loads the file to get information about it."""
+        """Load the file to get information about it."""
         if not os.path.exists(args[0]):
             raise FileNotFoundError("Unable to locate {}.".format(args[0]))
         super().__init__(*args, **kwargs)
@@ -21,14 +24,14 @@ class Image(core.Image):
 
     @property
     def metadata(self) -> dict:
-        """Extracts embedded metadata stored in exif, iptc, and xmp."""
+        """Extract embedded metadata stored in exif, iptc, and xmp."""
         return dict(collections.ChainMap(self.exif, self.iptc, self.xmp))
 
-    def icc(self):
-        """
-        Extract the ICC profile
+    def icc(self) -> typing.Dict[str, typing.Any]:
+        """Extract the ICC profile.
 
         Returns:
+            Dictionary of ICC metadata
 
         """
         extension = os.path.splitext(self.filename)[1].lower()
