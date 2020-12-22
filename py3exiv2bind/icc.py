@@ -1,4 +1,7 @@
 """For extracting the ICC data."""
+# pylint: disable=invalid-name
+# pylint: disable=unsubscriptable-object
+
 from collections import namedtuple
 import struct
 import copy
