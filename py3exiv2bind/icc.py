@@ -28,7 +28,7 @@ def build_ICC_data(value: bytes, lookup_table: dict = None,
             new_value.friendly_name = lookup_table[value]
         else:
             if restrict:
-                raise LookupError("Invalid signature: {}".format(value))
+                raise LookupError("Invalid signature: {}".format(str(value)))
     return new_value
 
 
