@@ -2,7 +2,7 @@
 from collections import namedtuple
 import struct
 import copy
-from typing import Optional, Any
+from typing import Optional, Union, Tuple, Any
 
 
 class ICC_data:
