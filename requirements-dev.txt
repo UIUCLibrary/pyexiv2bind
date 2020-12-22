@@ -1,8 +1,10 @@
-wheel
-pytest
-pytest-runner
-tox
-sphinx
-mypy
+conan
+cmake
 flake8
 lxml
+mypy
+macholib ; sys_platform == 'darwin'
+pytest
+pytest-runner
+sphinx
+tox
