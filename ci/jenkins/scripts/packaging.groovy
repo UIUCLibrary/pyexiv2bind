@@ -19,7 +19,7 @@ def test_pkg(glob, timeout_time){
                 } else {
                     bat(label: "Testing ${it}",
                         script: """python --version
-                                   tox --installpkg=${it.path} -e py -vv --workdir=./.tox --recreate
+                                   tox --installpkg=${it.path} -e py -vv --workdir=%TEMP% --recreate
                                    """
                     )
                 }
