@@ -175,9 +175,9 @@ def deploy_docs(pkgName, prefix){
                 makeEmptyDirs: false,
                 noDefaultExcludes: false,
                 patternSeparator: '[, ]+',
-                remoteDirectory: "${pkgName}",
+                remoteDirectory: pkgName,
                 remoteDirectorySDF: false,
-                removePrefix: "${prefix}",
+                removePrefix: prefix,
                 sourceFiles: "${prefix}/**")],
             usePromotionTimestamp: false,
             useWorkspaceInPromotion: false,
@@ -1443,9 +1443,9 @@ pipeline {
                                     stage('DevPi Wheel Package'){
                                         agent {
                                           dockerfile {
-                                            filename "${configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['wheel'].dockerfile.filename}"
-                                            additionalBuildArgs "${configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['wheel'].dockerfile.additionalBuildArgs}"
-                                            label "${configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['wheel'].dockerfile.label}"
+                                            filename configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['wheel'].dockerfile.filename
+                                            additionalBuildArgs configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['wheel'].dockerfile.additionalBuildArgs
+                                            label configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['wheel'].dockerfile.label
                                           }
                                         }
                                         steps{
@@ -1472,9 +1472,9 @@ pipeline {
                                     stage('DevPi sdist Package'){
                                         agent {
                                           dockerfile {
-                                            filename "${configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['sdist'].dockerfile.filename}"
-                                            additionalBuildArgs "${configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['sdist'].dockerfile.additionalBuildArgs}"
-                                            label "${configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['sdist'].dockerfile.label}"
+                                            filename configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['sdist'].dockerfile.filename
+                                            additionalBuildArgs configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['sdist'].dockerfile.additionalBuildArgs
+                                            label configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['sdist'].dockerfile.label
                                           }
                                         }
                                         steps{
