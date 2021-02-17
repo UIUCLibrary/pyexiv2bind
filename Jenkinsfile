@@ -237,8 +237,7 @@ pipeline {
     stages {
         stage('Building Documentation'){
             when{
-                equals expected: true, actual: false
-//                 equals expected: true, actual: params.RUN_CHECKS
+                equals expected: true, actual: params.RUN_CHECKS
             }
             agent {
                 dockerfile {
