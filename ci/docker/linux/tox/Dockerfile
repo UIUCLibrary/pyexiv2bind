@@ -90,11 +90,11 @@ RUN chmod -R 777 /wheels
 ENV PIP_FIND_LINKS=/wheels
 RUN pip3 install tox conan cmake
 
-USER user
-WORKDIR /home/user
-COPY --from=conan_builder --chown=user:user /home/user/.conan/ /home/user/.conan/
-COPY --chown=user:user ci/docker/linux/shared/conan/profile.ini  /home/user/.conan/profiles/default
-COPY --chown=user:user ci/docker/shared/conan/remotes.json  /home/user/.conan/remotes.json
+#USER user
+#WORKDIR /home/user
+COPY --from=conan_builder /home/user/.conan/ /conan/.conan/
+COPY ci/docker/linux/tox/conan/profile.ini  /conan/.conan/profiles/default
+COPY ci/docker/shared/conan/remotes.json  /conan/.conan/remotes.json
 ADD conanfile.py /tmp/conanfile.py
 ENV CONAN_USER_HOME=/conan
 RUN conan config home
