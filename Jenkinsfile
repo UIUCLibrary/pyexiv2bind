@@ -1129,7 +1129,7 @@ pipeline {
                         timeout(5){
                             unstash 'DOCS_ARCHIVE'
                             script{
-                                wheel_stashes.each{
+                                wheelStashes.each{
                                     unstash it
                                 }
                                 devpi.upload(
