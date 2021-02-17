@@ -401,7 +401,7 @@ pipeline {
                                                 }
                                                 stage('Running Tests'){
                                                     parallel {
-                                                        stage("Run Doctest Tests"){
+                                                        stage('Run Doctest Tests'){
                                                             steps {
                                                                 sh 'sphinx-build docs/source reports/doctest -b doctest -d build/docs/.doctrees --no-color -w logs/doctest_warnings.log'
                                                             }
@@ -526,8 +526,8 @@ pipeline {
                                                 tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']]
                                                 )
 
-                                            sh "mkdir -p reports/coverage && gcovr --root . --filter py3exiv2bind --print-summary  --json -o reports/coverage/coverage_cpp.json"
-                                            stash(includes: "reports/coverage/*.json", name: "CPP_COVERAGE_TRACEFILE")
+                                            sh 'mkdir -p reports/coverage && gcovr --root . --filter py3exiv2bind --print-summary  --json -o reports/coverage/coverage_cpp.json'
+                                            stash(includes: 'reports/coverage/*.json', name: 'CPP_COVERAGE_TRACEFILE')
                                             xunit(
                                                 testTimeMargin: '3000',
                                                 thresholdMode: 1,
@@ -539,7 +539,7 @@ pipeline {
                                                     CTest(
                                                         deleteOutputFiles: true,
                                                         failIfNotNew: true,
-                                                        pattern: "build/Testing/**/*.xml",
+                                                        pattern: 'build/Testing/**/*.xml',
                                                         skipNoTestFiles: true,
                                                         stopProcessingIfError: true
                                                     )
@@ -744,7 +744,7 @@ pipeline {
                                                 ]
                                             ],
                                             buildCmd: {
-                                                sh "python3 -m pep517.build --source --out-dir dist/ ."
+                                                sh 'python3 -m pep517.build --source --out-dir dist/ .'
                                             },
                                             post:[
                                                 success: {
@@ -780,7 +780,7 @@ pipeline {
                                                 ]
                                             ],
                                             buildCmd: {
-                                                sh(label: "Building python wheel",
+                                                sh(label: 'Building python wheel',
                                                    script:"""python${pythonVersion} -m pip wheel --no-deps -w ./dist .
                                                              auditwheel repair ./dist/*.whl -w ./dist
                                                              """
