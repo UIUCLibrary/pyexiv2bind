@@ -119,7 +119,7 @@ def get_sonarqube_unresolved_issues(report_task_file){
     script{
 
         def props = readProperties  file: '.scannerwork/report-task.txt'
-        def response = httpRequest url : props['serverUrl'] + "/api/issues/search?componentKeys=" + props['projectKey'] + "&resolved=no"
+        def response = httpRequest url : props['serverUrl'] + '/api/issues/search?componentKeys=' + props['projectKey'] + '&resolved=no'
         def outstandingIssues = readJSON text: response.content
         return outstandingIssues
     }
@@ -191,15 +191,15 @@ def build_wheel2(args=[:]){
 
 def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
     def props = readProperties interpolate: true, file: metadataFile
-    withSonarQubeEnv(installationName:"sonarcloud", credentialsId: sonarCredentials) {
+    withSonarQubeEnv(installationName:'sonarcloud', credentialsId: sonarCredentials) {
         if (env.CHANGE_ID){
             sh(
-                label: "Running Sonar Scanner",
+                label: 'Running Sonar Scanner',
                 script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
                 )
         } else {
             sh(
-                label: "Running Sonar Scanner",
+                label: 'Running Sonar Scanner',
                 script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
                 )
         }
@@ -209,21 +209,21 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
          if (sonarqube_result.status != 'OK') {
              unstable "SonarQube quality gate: ${sonarqube_result.status}"
          }
-         def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
+         def outstandingIssues = get_sonarqube_unresolved_issues('.scannerwork/report-task.txt')
          writeJSON file: outputJson, json: outstandingIssues
      }
 }
 
 
 def startup(){
-    stage("Loading helper scripts and configs"){
+    stage('Loading helper scripts and configs'){
         node(){
             ws{
                 checkout scm
-                devpi = load("ci/jenkins/scripts/devpi.groovy")
-                echo "loading configurations"
+                devpi = load('ci/jenkins/scripts/devpi.groovy')
+                echo 'loading configurations'
                 defaultParamValues = readYaml(file: 'ci/jenkins/defaultParameters.yaml').parameters.defaults
-                configurations = load("ci/jenkins/scripts/configs.groovy").getConfigurations()
+                configurations = load('ci/jenkins/scripts/configs.groovy').getConfigurations()
             }
         }
     }
@@ -255,9 +255,9 @@ def startup(){
 
 
 def test_cpp_code(buildPath){
-    stage("Build"){
-        tee("logs/cmake-build.log"){
-            sh(label: "Building C++ Code",
+    stage('Build'){
+        tee('logs/cmake-build.log'){
+            sh(label: 'Building C++ Code',
                script: """conan install . -if ${buildPath}
                           cmake -B ${buildPath} -Wdev -DCMAKE_TOOLCHAIN_FILE=build/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
                           cmake --build ${buildPath} -j \$(grep -c ^processor /proc/cpuinfo)
@@ -265,18 +265,18 @@ def test_cpp_code(buildPath){
             )
         }
     }
-    stage("CTest"){
-        sh(label: "Running CTest",
+    stage('CTest'){
+        sh(label: 'Running CTest',
            script: "cd ${buildPath} && ctest --output-on-failure --no-compress-output -T Test"
         )
     }
 }
 def get_props(){
-    stage("Reading Package Metadata"){
+    stage('Reading Package Metadata'){
         node() {
             try{
-                unstash "DIST-INFO"
-                def props = readProperties interpolate: true, file: "py3exiv2bind.dist-info/METADATA"
+                unstash 'DIST-INFO'
+                def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
                 return props
             } finally {
                 cleanWs()
@@ -291,49 +291,49 @@ pipeline {
     agent none
     parameters {
         booleanParam(
-                name: "TEST_RUN_TOX",
+                name: 'TEST_RUN_TOX',
                 defaultValue: defaultParamValues.TEST_RUN_TOX,
-                description: "Run Tox Tests"
+                description: 'Run Tox Tests'
             )
         booleanParam(
-                name: "RUN_CHECKS",
+                name: 'RUN_CHECKS',
                 defaultValue: defaultParamValues.RUN_CHECKS,
-                description: "Run checks on code"
+                description: 'Run checks on code'
             )
         booleanParam(
-                name: "USE_SONARQUBE",
+                name: 'USE_SONARQUBE',
                 defaultValue: defaultParamValues.USE_SONARQUBE,
-                description: "Send data test data to SonarQube"
+                description: 'Send data test data to SonarQube'
             )
         booleanParam(
-                name: "BUILD_PACKAGES",
+                name: 'BUILD_PACKAGES',
                 defaultValue: defaultParamValues.BUILD_PACKAGES,
-                description: "Build Python packages"
+                description: 'Build Python packages'
             )
         booleanParam(
-                name: "BUILD_MAC_PACKAGES",
+                name: 'BUILD_MAC_PACKAGES',
                 defaultValue: defaultParamValues.BUILD_MAC_PACKAGES,
-                description: "Test Python packages on Mac"
+                description: 'Test Python packages on Mac'
             )
         booleanParam(
-                name: "TEST_PACKAGES",
+                name: 'TEST_PACKAGES',
                 defaultValue: defaultParamValues.TEST_PACKAGES,
-                description: "Test Python packages by installing them and running tests on the installed package"
+                description: 'Test Python packages by installing them and running tests on the installed package'
             )
         booleanParam(
-                name: "DEPLOY_DEVPI",
+                name: 'DEPLOY_DEVPI',
                 defaultValue: defaultParamValues.DEPLOY_DEVPI,
                 description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}"
             )
         booleanParam(
-                name: "DEPLOY_DEVPI_PRODUCTION",
+                name: 'DEPLOY_DEVPI_PRODUCTION',
                 defaultValue: defaultParamValues.DEPLOY_DEVPI_PRODUCTION,
-                description: "Deploy to https://devpi.library.illinois.edu/production/release"
+                description: 'Deploy to https://devpi.library.illinois.edu/production/release'
             )
         booleanParam(
-                name: "DEPLOY_DOCS",
+                name: 'DEPLOY_DOCS',
                 defaultValue: defaultParamValues.DEPLOY_DOCS,
-                description: "Update online documentation"
+                description: 'Update online documentation'
         )
     }
     stages {
@@ -346,7 +346,7 @@ pipeline {
                 }
             }
             steps {
-                sh(label: "Running Sphinx",
+                sh(label: 'Running Sphinx',
                    script: '''mkdir -p logs
                               mkdir -p build/docs/html
                               python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
@@ -360,30 +360,30 @@ pipeline {
                 }
                 success{
                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                    zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${props.Name}-${props.Version}.doc.zip"
-                    stash includes: "dist/*.doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
+                    zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${props.Name}-${props.Version}.doc.zip"
+                    stash includes: 'dist/*.doc.zip,build/docs/html/**', name: 'DOCS_ARCHIVE'
                 }
                 cleanup{
                     cleanWs(patterns: [
                             [pattern: 'logs/build_sphinx.log', type: 'INCLUDE'],
-                            [pattern: "dist/*doc.zip", type: 'INCLUDE']
+                            [pattern: 'dist/*doc.zip', type: 'INCLUDE']
                         ]
                     )
                 }
             }
         }
-        stage("Checks"){
+        stage('Checks'){
             when{
                 equals expected: true, actual: params.RUN_CHECKS
             }
             stages{
-                stage("Code Quality"){
+                stage('Code Quality'){
                     stages{
-                        stage("Testing"){
+                        stage('Testing'){
                             stages{
-                                stage("Python Testing"){
+                                stage('Python Testing'){
                                     stages{
-                                        stage("Testing") {
+                                        stage('Testing') {
                                             agent {
                                                 dockerfile {
                                                     filename 'ci/docker/linux/test/Dockerfile'
@@ -392,20 +392,20 @@ pipeline {
                                                 }
                                             }
                                             stages{
-                                                stage("Setting up Test Env"){
+                                                stage('Setting up Test Env'){
                                                     steps{
-                                                        sh(label: "Building debug build with coverage data",
+                                                        sh(label: 'Building debug build with coverage data',
                                                            script: '''CFLAGS="--coverage" python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
                                                                       mkdir -p logs
                                                                       '''
                                                        )
                                                     }
                                                 }
-                                                stage("Running Tests"){
+                                                stage('Running Tests'){
                                                     parallel {
                                                         stage("Run Doctest Tests"){
                                                             steps {
-                                                                sh "sphinx-build docs/source reports/doctest -b doctest -d build/docs/.doctrees --no-color -w logs/doctest_warnings.log"
+                                                                sh 'sphinx-build docs/source reports/doctest -b doctest -d build/docs/.doctrees --no-color -w logs/doctest_warnings.log'
                                                             }
                                                             post{
                                                                 always {
@@ -413,7 +413,7 @@ pipeline {
                                                                 }
                                                             }
                                                         }
-                                                        stage("MyPy Static Analysis") {
+                                                        stage('MyPy Static Analysis') {
                                                             steps{
                                                                 sh(returnStatus: true,
                                                                    script: 'mypy -p py3exiv2bind --html-report reports/mypy/html > logs/mypy.log'
@@ -432,7 +432,7 @@ pipeline {
                                                                 }
                                                             }
                                                         }
-                                                        stage("Run Pylint Static Analysis") {
+                                                        stage('Run Pylint Static Analysis') {
                                                             steps{
                                                                 catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
                                                                     sh(
@@ -440,45 +440,45 @@ pipeline {
                                                                                    mkdir -p reports
                                                                                    PYLINTHOME=. pylint py3exiv2bind -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
                                                                                    ''',
-                                                                        label: "Running pylint"
+                                                                        label: 'Running pylint'
                                                                     )
                                                                 }
                                                                 sh(
                                                                     script: 'PYLINTHOME=. pylint  -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt',
-                                                                    label: "Running pylint for sonarqube",
+                                                                    label: 'Running pylint for sonarqube',
                                                                     returnStatus: true
                                                                 )
                                                             }
                                                             post{
                                                                 always{
-                                                                    stash includes: "reports/pylint_issues.txt,reports/pylint.txt", name: 'PYLINT_REPORT'
+                                                                    stash includes: 'reports/pylint_issues.txt,reports/pylint.txt', name: 'PYLINT_REPORT'
                                                                     recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
                                                                 }
                                                             }
                                                         }
-                                                        stage("Flake8") {
+                                                        stage('Flake8') {
                                                           steps{
                                                             timeout(2){
-                                                                sh returnStatus: true, script: "flake8 py3exiv2bind --tee --output-file ./logs/flake8.log"
+                                                                sh returnStatus: true, script: 'flake8 py3exiv2bind --tee --output-file ./logs/flake8.log'
                                                             }
                                                           }
                                                           post {
                                                             always {
-                                                                stash includes: "logs/flake8.log", name: 'FLAKE8_REPORT'
+                                                                stash includes: 'logs/flake8.log', name: 'FLAKE8_REPORT'
                                                                 recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
                                                             }
                                                           }
                                                         }
-                                                        stage("Running Unit Tests"){
+                                                        stage('Running Unit Tests'){
                                                             steps{
                                                                 timeout(2){
-                                                                    sh "coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=./reports/pytest/junit-pytest.xml"
+                                                                    sh 'coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=./reports/pytest/junit-pytest.xml'
                                                                 }
                                                             }
                                                             post{
                                                                 always{
-                                                                    stash includes: "reports/pytest/junit-pytest.xml", name: 'PYTEST_REPORT'
-                                                                    junit "reports/pytest/junit-pytest.xml"
+                                                                    stash includes: 'reports/pytest/junit-pytest.xml', name: 'PYTEST_REPORT'
+                                                                    junit 'reports/pytest/junit-pytest.xml'
                                                                 }
                                                             }
                                                         }
@@ -501,6 +501,7 @@ pipeline {
                                                         deleteDirs: true,
                                                         patterns: [
                                                             [pattern: 'reports/coverage/', type: 'INCLUDE'],
+                                                            [pattern: 'mypy_stubs', type: 'INCLUDE']
                                                         ]
                                                     )
                                                 }
@@ -509,7 +510,7 @@ pipeline {
 
                                     }
                                 }
-                                stage("C++ Testing"){
+                                stage('C++ Testing'){
                                     agent {
                                         dockerfile {
                                             filename 'ci/docker/cpp/Dockerfile'
@@ -557,7 +558,7 @@ pipeline {
                                         }
                                     }
                                 }
-                                stage("Report Coverage"){
+                                stage('Report Coverage'){
                                     agent {
                                         dockerfile {
                                             filename 'ci/docker/linux/test/Dockerfile'
@@ -566,9 +567,9 @@ pipeline {
                                         }
                                     }
                                     steps{
-                                        unstash "PYTHON_COVERAGE_REPORT"
-                                        unstash "CPP_COVERAGE_TRACEFILE"
-                                        sh "gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --print-summary --xml -o reports/coverage/coverage_cpp.xml"
+                                        unstash 'PYTHON_COVERAGE_REPORT'
+                                        unstash 'CPP_COVERAGE_TRACEFILE'
+                                        sh 'gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --print-summary --xml -o reports/coverage/coverage_cpp.xml'
                                         publishCoverage(
                                             adapters: [
                                                     coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
@@ -579,7 +580,7 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Sonarcloud Analysis"){
+                        stage('Sonarcloud Analysis'){
                             agent {
                                 dockerfile {
                                     filename 'ci/docker/linux/test/Dockerfile'
@@ -589,7 +590,7 @@ pipeline {
                                 }
                             }
                             options{
-                                lock("py3exiv2bind-sonarcloud")
+                                lock('py3exiv2bind-sonarcloud')
                             }
                             when{
                                 equals expected: true, actual: params.USE_SONARQUBE
@@ -597,13 +598,13 @@ pipeline {
                                 beforeOptions true
                             }
                             steps{
-                                unstash "PYTHON_COVERAGE_REPORT"
-                                unstash "PYTEST_REPORT"
-                //                 unstash "BANDIT_REPORT"
-                                unstash "PYLINT_REPORT"
-                                unstash "FLAKE8_REPORT"
-                                unstash "DIST-INFO"
-                                sonarcloudSubmit("py3exiv2bind.dist-info/METADATA", "reports/sonar-report.json", 'sonarcloud-py3exiv2bind')
+                                unstash 'PYTHON_COVERAGE_REPORT'
+                                unstash 'PYTEST_REPORT'
+                //                 unstash 'BANDIT_REPORT'
+                                unstash 'PYLINT_REPORT'
+                                unstash 'FLAKE8_REPORT'
+                                unstash 'DIST-INFO'
+                                sonarcloudSubmit('py3exiv2bind.dist-info/METADATA', 'reports/sonar-report.json', 'sonarcloud-py3exiv2bind')
                             }
                             post {
                                 always{
@@ -617,7 +618,7 @@ pipeline {
                         }
                     }
                 }
-                stage("Run Tox test") {
+                stage('Run Tox test') {
                     when {
                        equals expected: true, actual: params.TEST_RUN_TOX
                        beforeAgent true
@@ -627,25 +628,25 @@ pipeline {
                             def tox
                             node(){
                                 checkout scm
-                                tox = load("ci/jenkins/scripts/tox.groovy")
+                                tox = load('ci/jenkins/scripts/tox.groovy')
                             }
                             def windowsJobs = [:]
                             def linuxJobs = [:]
                             parallel(
-                                "Linux":{
+                                'Linux':{
                                     linuxJobs = tox.getToxTestsParallel(
-                                                envNamePrefix: "Tox Linux",
-                                                label: "linux && docker",
-                                                dockerfile: "ci/docker/linux/tox/Dockerfile",
+                                                envNamePrefix: 'Tox Linux',
+                                                label: 'linux && docker',
+                                                dockerfile: 'ci/docker/linux/tox/Dockerfile',
                                                 dockerArgs: '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                                             )
                                 },
-                                "Windows":{
+                                'Windows':{
                                     windowsJobs = tox.getToxTestsParallel(
-                                                    envNamePrefix: "Tox Windows",
-                                                    label: "windows && docker",
-                                                    dockerfile: "ci/docker/windows/tox/Dockerfile",
-                                                    dockerArgs: "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE"
+                                                    envNamePrefix: 'Tox Windows',
+                                                    label: 'windows && docker',
+                                                    dockerfile: 'ci/docker/windows/tox/Dockerfile',
+                                                    dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
                                                 )
                                 }
                             )
@@ -655,7 +656,7 @@ pipeline {
                 }
             }
         }
-        stage("Python Packaging"){
+        stage('Python Packaging'){
             when{
                 anyOf{
                     equals expected: true, actual: params.BUILD_PACKAGES
@@ -1092,14 +1093,14 @@ pipeline {
 //                 }
 //             }
 //         }
-        stage("Deploy to Devpi"){
+        stage('Deploy to Devpi'){
             when {
                 allOf{
                     equals expected: true, actual: params.DEPLOY_DEVPI
                     anyOf {
-                        equals expected: "master", actual: env.BRANCH_NAME
-                        equals expected: "dev", actual: env.BRANCH_NAME
-                        tag "*"
+                        equals expected: 'master', actual: env.BRANCH_NAME
+                        equals expected: 'dev', actual: env.BRANCH_NAME
+                        tag '*'
                     }
                 }
                 beforeAgent true
@@ -1110,10 +1111,10 @@ pipeline {
                 devpiStagingIndex = getDevPiStagingIndex()
             }
             options{
-                lock("py3exiv2bind-devpi")
+                lock('py3exiv2bind-devpi')
             }
             stages{
-                stage("Deploy to Devpi Staging") {
+                stage('Deploy to Devpi Staging') {
                     agent {
                         dockerfile {
                             filename 'ci/docker/deploy/devpi/deploy/Dockerfile'
@@ -1126,8 +1127,7 @@ pipeline {
                     }
                     steps {
                         timeout(5){
-                            unstash "sdist"
-                            unstash "DOCS_ARCHIVE"
+                            unstash 'DOCS_ARCHIVE'
                             script{
                                 wheel_stashes.each{
                                     unstash it
@@ -1145,15 +1145,15 @@ pipeline {
                             cleanWs(
                                 deleteDirs: true,
                                 patterns: [
-                                        [pattern: "dist/", type: 'INCLUDE']
+                                        [pattern: 'dist/', type: 'INCLUDE']
                                     ]
                             )
                         }
                     }
                 }
-                stage("Test DevPi Packages") {
+                stage('Test DevPi Packages') {
                     stages{
-                        stage("Test DevPi packages mac") {
+                        stage('Test DevPi packages mac') {
                             when{
                                 equals expected: true, actual: params.BUILD_MAC_PACKAGES
                                 beforeAgent true
@@ -1161,30 +1161,30 @@ pipeline {
                             matrix {
                                 axes{
                                     axis {
-                                        name "PYTHON_VERSION"
+                                        name 'PYTHON_VERSION'
                                         values(
-                                            "3.8",
+                                            '3.8',
                                             '3.9'
                                         )
                                     }
                                     axis {
-                                        name "FORMAT"
+                                        name 'FORMAT'
                                         values(
-                                            "wheel",
+                                            'wheel',
                                             'sdist'
                                         )
                                     }
                                 }
                                 agent none
                                 stages{
-                                    stage("Test devpi Package"){
+                                    stage('Test devpi Package'){
                                         agent {
                                             label "mac && 10.14 && python${PYTHON_VERSION}"
                                         }
                                         steps{
                                             timeout(10){
                                                 sh(
-                                                    label: "Installing devpi client",
+                                                    label: 'Installing devpi client',
                                                     script: '''python${PYTHON_VERSION} -m venv venv
                                                                venv/bin/python -m pip install --upgrade pip
                                                                venv/bin/pip install devpi-client
@@ -1407,7 +1407,7 @@ pipeline {
 //                                 }
 //                             }
 //                         }
-                        stage("Windows and Linux"){
+                        stage('Windows and Linux'){
                             matrix {
                                 axes {
                                     axis {
@@ -1417,13 +1417,13 @@ pipeline {
                                     axis {
                                         name 'PLATFORM'
                                         values(
-                                            "windows",
-                                            "linux"
+                                            'windows',
+                                            'linux'
                                         )
                                     }
                                 }
                                 stages{
-                                    stage("DevPi Wheel Package"){
+                                    stage('DevPi Wheel Package'){
                                         agent {
                                           dockerfile {
                                             filename "${configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['wheel'].dockerfile.filename}"
@@ -1452,7 +1452,7 @@ pipeline {
 //                                             )
                                         }
                                     }
-                                    stage("DevPi sdist Package"){
+                                    stage('DevPi sdist Package'){
                                         agent {
                                           dockerfile {
                                             filename "${configurations[PYTHON_VERSION].os[PLATFORM].agents.devpi['sdist'].dockerfile.filename}"
@@ -1468,7 +1468,7 @@ pipeline {
                                                     credentialsId: "DS_devpi",
                                                     pkgName: props.Name,
                                                     pkgVersion: props.Version,
-                                                    pkgSelector: "tar.gz",
+                                                    pkgSelector: 'tar.gz',
                                                     toxEnv: configurations[PYTHON_VERSION].tox_env
                                                 )
                                             }
@@ -1476,7 +1476,7 @@ pipeline {
 //                                                 env.devpiStagingIndex,
 //                                                 DEVPI_USR, DEVPI_PSW,
 //                                                 props.Name, props.Version,
-//                                                 "tar.gz",
+//                                                 'tar.gz',
 //                                                 configurations[PYTHON_VERSION].tox_env
 //                                                 )
                                         }
@@ -1486,13 +1486,13 @@ pipeline {
                         }
                     }
                 }
-                stage("Deploy to DevPi Production") {
+                stage('Deploy to DevPi Production') {
                     when {
                         allOf{
                             equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
                             anyOf {
-                                branch "master"
-                                tag "*"
+                                branch 'master'
+                                tag '*'
                             }
                         }
                         beforeAgent true
@@ -1540,7 +1540,7 @@ pipeline {
                     node('linux && docker') {
                         script{
                             if (!env.TAG_NAME?.trim()){
-                                docker.build("py3exiv2bind:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+                                docker.build('py3exiv2bind:devpi','-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
                                     devpi.pushPackageToIndex(
                                         pkgName: props.Name,
                                         pkgVersion: props.Version,
@@ -1555,7 +1555,7 @@ pipeline {
                     }
 //                     node('linux && docker') {
 //                         script{
-//                             docker.build("py3exiv2bind:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+//                             docker.build('py3exiv2bind:devpi','-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
 //                                 if (!env.TAG_NAME?.trim()){
 //                                     sh(
 //                                         label: "Pushing ${props.Name} ${props.Version} to DS_Jenkins/${env.BRANCH_NAME} index on DevPi Server",
@@ -1573,7 +1573,7 @@ pipeline {
                 cleanup{
                     node('linux && docker') {
                         script{
-                            docker.build("py3exiv2bind:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+                            docker.build('py3exiv2bind:devpi','-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
                                 devpi.removePackage(
                                     pkgName: props.Name,
                                     pkgVersion: props.Version,
@@ -1587,7 +1587,7 @@ pipeline {
                     }
 //                     node('linux && docker') {
 //                        script{
-//                             docker.build("py3exiv2bind:devpi",'-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+//                             docker.build('py3exiv2bind:devpi','-f ./ci/docker/deploy/devpi/deploy/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
 //                                 sh(
 //                                 label: "Removing ${props.Name} ${props.Version} from staging index on DevPi Server",
 //                                 script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
@@ -1602,9 +1602,9 @@ pipeline {
                 }
             }
         }
-//         stage("Deploy"){
+//         stage('Deploy'){
 //             parallel {
-                stage("Deploy Online Documentation") {
+                stage('Deploy Online Documentation') {
                     agent any
                     when{
                         equals expected: true, actual: params.DEPLOY_DOCS
@@ -1619,8 +1619,8 @@ pipeline {
                         message 'Update project documentation?'
                     }
                     steps{
-                        unstash "DOCS_ARCHIVE"
-                        deploy_docs(get_package_name("DIST-INFO", "py3exiv2bind.dist-info/METADATA"), "build/docs/html")
+                        unstash 'DOCS_ARCHIVE'
+                        deploy_docs(props.Name, 'build/docs/html')
                     }
                 }
 //             }
