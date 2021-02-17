@@ -748,8 +748,8 @@ pipeline {
                                             },
                                             post:[
                                                 success: {
-                                                    stash includes: 'dist/*.tar.gz,dist/*.zip', name: 'python sdist'
-                                                    wheelStashes << 'python sdist'
+                                                    stash includes: 'dist/*.tar.gz,dist/*.zip', name: 'sdist'
+                                                    wheelStashes << 'sdist'
                                                     archiveArtifacts artifacts: 'dist/*.tar.gz,dist/*.zip'
                                                 },
                                                 cleanup: {
