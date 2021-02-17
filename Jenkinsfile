@@ -11,6 +11,23 @@
 // ============================================================================
 // configurations      = null
 // defaultParamValues  = null
+
+
+def getDevPiStagingIndex(){
+
+    if (env.TAG_NAME?.trim()){
+        return 'tag_staging'
+    } else{
+        return "${env.BRANCH_NAME}_staging"
+    }
+}
+
+def DEVPI_CONFIG = [
+    stagingIndex: getDevPiStagingIndex(),
+    server: 'https://devpi.library.illinois.edu',
+    credentialsId: 'DS_devpi',
+]
+
 SUPPORTED_MAC_VERSIONS = ['3.8', '3.9']
 SUPPORTED_LINUX_VERSIONS = ['3.6', '3.7', '3.8', '3.9']
 SUPPORTED_WINDOWS_VERSIONS = ['3.6', '3.7', '3.8', '3.9']
@@ -1133,9 +1150,9 @@ pipeline {
                                     unstash it
                                 }
                                 devpi.upload(
-                                    server: "https://devpi.library.illinois.edu",
-                                    credentialsId: "DS_devpi",
-                                    index: getDevPiStagingIndex(),
+                                    server: DEVPI_CONFIG.server,
+                                    credentialsId: DEVPI_CONFIG.credentialsId,
+                                    index: DEVPI_CONFIG.stagingIndex,
                                 )
                             }
                         }
@@ -1193,10 +1210,10 @@ pipeline {
                                                 )
                                                 script{
                                                     devpi.testDevpiPackage(
-                                                        devpiExec: "venv/bin/devpi",
-                                                        devpiIndex: getDevPiStagingIndex(),
-                                                        server: "https://devpi.library.illinois.edu",
-                                                        credentialsId: "DS_devpi",
+                                                        devpiExec: 'venv/bin/devpi',
+                                                        devpiIndex: DEVPI_CONFIG.stagingIndex,
+                                                        server: DEVPI_CONFIG.server,
+                                                        credentialsId: DEVPI_CONFIG.credentialsId,
                                                         pkgName: props.Name,
                                                         pkgVersion: props.Version,
                                                         pkgSelector: devpi.getMacDevpiName(PYTHON_VERSION, FORMAT),
@@ -1434,9 +1451,9 @@ pipeline {
                                         steps{
                                             script{
                                                 devpi.testDevpiPackage(
-                                                    devpiIndex: getDevPiStagingIndex(),
-                                                    server: "https://devpi.library.illinois.edu",
-                                                    credentialsId: "DS_devpi",
+                                                    devpiIndex: DEVPI_CONFIG.stagingIndex,
+                                                    server: DEVPI_CONFIG.server,
+                                                    credentialsId: DEVPI_CONFIG.credentialsId,
                                                     pkgName: props.Name,
                                                     pkgVersion: props.Version,
                                                     pkgSelector: configurations[PYTHON_VERSION].os[PLATFORM].devpiSelector['wheel'],
@@ -1463,9 +1480,9 @@ pipeline {
                                         steps{
                                             script{
                                                 devpi.testDevpiPackage(
-                                                    devpiIndex: getDevPiStagingIndex(),
-                                                    server: "https://devpi.library.illinois.edu",
-                                                    credentialsId: "DS_devpi",
+                                                    devpiIndex: DEVPI_CONFIG.stagingIndex,
+                                                    server: DEVPI_CONFIG.server,
+                                                    credentialsId: DEVPI_CONFIG.credentialsId,
                                                     pkgName: props.Name,
                                                     pkgVersion: props.Version,
                                                     pkgSelector: 'tar.gz',
@@ -1517,10 +1534,10 @@ pipeline {
                             devpi.pushPackageToIndex(
                                 pkgName: props.Name,
                                 pkgVersion: props.Version,
-                                server: "https://devpi.library.illinois.edu",
-                                indexSource: "DS_Jenkins/${getDevPiStagingIndex()}",
-                                indexDestination: "production/release",
-                                credentialsId: 'DS_devpi'
+                                server: DEVPI_CONFIG.server,
+                                indexSource: "DS_Jenkins/${DEVPI_CONFIG.stagingIndex}",
+                                indexDestination: 'production/release',
+                                credentialsId: DEVPI_CONFIG.credentialsId
                             )
                         }
 //                         script {
@@ -1544,10 +1561,10 @@ pipeline {
                                     devpi.pushPackageToIndex(
                                         pkgName: props.Name,
                                         pkgVersion: props.Version,
-                                        server: "https://devpi.library.illinois.edu",
-                                        indexSource: "DS_Jenkins/${getDevPiStagingIndex()}",
+                                        server: DEVPI_CONFIG.server,
+                                        indexSource: "DS_Jenkins/${DEVPI_CONFIG.stagingIndex}",
                                         indexDestination: "DS_Jenkins/${env.BRANCH_NAME}",
-                                        credentialsId: 'DS_devpi'
+                                        credentialsId: DEVPI_CONFIG.credentialsId
                                     )
                                 }
                             }
@@ -1577,9 +1594,9 @@ pipeline {
                                 devpi.removePackage(
                                     pkgName: props.Name,
                                     pkgVersion: props.Version,
-                                    index: "DS_Jenkins/${getDevPiStagingIndex()}",
-                                    server: "https://devpi.library.illinois.edu",
-                                    credentialsId: 'DS_devpi',
+                                    index: "DS_Jenkins/${DEVPI_CONFIG.stagingIndex}",
+                                    server: DEVPI_CONFIG.server,
+                                    credentialsId: DEVPI_CONFIG.credentialsId,
 
                                 )
                             }
