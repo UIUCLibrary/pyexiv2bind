@@ -50,88 +50,6 @@ wheelStashes = []
 // }
 //
 
-def test_package_on_mac(python, glob){
-    cleanWs(
-        notFailBuild: true,
-        deleteDirs: true,
-        disableDeferredWipeout: true,
-        patterns: [
-                [pattern: '.git/**', type: 'EXCLUDE'],
-                [pattern: 'tests/**', type: 'EXCLUDE'],
-                [pattern: 'tox.ini', type: 'EXCLUDE'],
-                [pattern: 'dist/', type: 'EXCLUDE'],
-                [pattern: 'pyproject.toml', type: 'EXCLUDE'],
-                [pattern: 'setup.cfg', type: 'EXCLUDE'],
-                [pattern: glob, type: 'EXCLUDE'],
-            ]
-    )
-    script{
-        def pkgs = findFiles(glob: glob)
-//         todo here
-        if(pkgs.size() == 0){
-            error "No packages found for ${glob}"
-        }
-        pkgs.each{
-            sh(
-                label: "Testing ${it}",
-                script: """${python} -m venv venv
-                           venv/bin/python -m pip install pip --upgrade
-                           venv/bin/python -m pip install wheel
-                           venv/bin/python -m pip install --upgrade setuptools
-                           venv/bin/python -m pip install tox
-                           venv/bin/tox --installpkg=${it.path} -e py -vv --recreate
-                           """
-            )
-        }
-    }
-}
-
-def testDevpiPackage(devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVersion, pkgSelector, toxEnv){
-    if(isUnix()){
-        sh(
-            label: "Running tests on Packages on DevPi",
-            script: """python --version
-                       devpi use https://devpi.library.illinois.edu --clientdir certs
-                       devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs
-                       devpi use ${devpiIndex} --clientdir certs
-                       devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir certs -e ${toxEnv} -v
-                       """
-        )
-    } else {
-        bat(
-            label: "Running tests on Packages on DevPi",
-            script: """python --version
-                       devpi use https://devpi.library.illinois.edu --clientdir certs\\
-                       devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
-                       devpi use ${devpiIndex} --clientdir certs\\
-                       devpi test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir certs\\ -e ${toxEnv} -v
-                       """
-        )
-    }
-}
-
-def testDevpiPackage2(devpiExec, devpiIndex, devpiUsername, devpiPassword,  pkgName, pkgVersion, pkgSelector, toxEnv){
-    if(isUnix()){
-        sh(
-            label: "Running tests on Packages on DevPi",
-            script: """${devpiExec} use https://devpi.library.illinois.edu --clientdir certs
-                       ${devpiExec} login ${devpiUsername} --password ${devpiPassword} --clientdir certs
-                       ${devpiExec} use ${devpiIndex} --clientdir certs
-                       ${devpiExec} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector} --clientdir certs -e ${toxEnv} -v
-                       """
-        )
-    } else {
-        bat(
-            label: "Running tests on Packages on DevPi",
-            script: """${devpiExec} use https://devpi.library.illinois.edu --clientdir certs\\
-                       ${devpiExec} login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
-                       ${devpiExec} use ${devpiIndex} --clientdir certs\\
-                       ${devpiExec} test --index ${devpiIndex} ${pkgName}==${pkgVersion} -s ${pkgSelector}  --clientdir certs\\ -e ${toxEnv} -v
-                       """
-        )
-    }
-}
-
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
 
@@ -168,24 +86,6 @@ def deploy_docs(pkgName, prefix){
     )
 }
 
-def build_wheel2(args=[:]){
-
-    if(isUnix()){
-        sh(label: "Building Python Wheel",
-            script: "python -m pip wheel -w dist/ --no-deps ."
-        )
-        if(args["platform"] == "linux"){
-            sh(
-                label: "Converting linux wheel to manylinux",
-                script:"auditwheel repair ./dist/*.whl -w ./dist"
-            )
-        }
-    } else{
-        bat(label: "Building Python Wheel",
-            script: "python -m pip wheel -w dist/ -v --no-deps ."
-        )
-    }
-}
 
 def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
     def props = readProperties interpolate: true, file: metadataFile
@@ -335,7 +235,11 @@ pipeline {
         )
     }
     stages {
-        stage("Building Documentation"){
+        stage('Building Documentation'){
+            when{
+                equals expected: true, actual: false
+//                 equals expected: true, actual: params.RUN_CHECKS
+            }
             agent {
                 dockerfile {
                     filename 'ci/docker/linux/test/Dockerfile'
@@ -422,12 +326,6 @@ pipeline {
                                                                     recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
                                                                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                                                                 }
-                                                                cleanup{
-                                                                    cleanWs(
-                                                                        deleteDirs: true,
-                                                                        patterns: [[pattern: 'mypy_stubs', type: 'INCLUDE']]
-                                                                    )
-                                                                }
                                                             }
                                                         }
                                                         stage('Run Pylint Static Analysis') {
@@ -456,9 +354,7 @@ pipeline {
                                                         }
                                                         stage('Flake8') {
                                                           steps{
-                                                            timeout(2){
-                                                                sh returnStatus: true, script: 'flake8 py3exiv2bind --tee --output-file ./logs/flake8.log'
-                                                            }
+                                                            sh returnStatus: true, script: 'flake8 py3exiv2bind --tee --output-file ./logs/flake8.log'
                                                           }
                                                           post {
                                                             always {
@@ -469,9 +365,7 @@ pipeline {
                                                         }
                                                         stage('Running Unit Tests'){
                                                             steps{
-                                                                timeout(2){
-                                                                    sh 'coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=./reports/pytest/junit-pytest.xml'
-                                                                }
+                                                                sh 'coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=./reports/pytest/junit-pytest.xml'
                                                             }
                                                             post{
                                                                 always{
@@ -505,7 +399,6 @@ pipeline {
                                                 }
                                             }
                                         }
-
                                     }
                                 }
                                 stage('C++ Testing'){
@@ -761,9 +654,6 @@ pipeline {
                                                         deleteDirs: true
                                                     )
                                                 },
-                                                failure: {
-                                                    sh "python3 -m pip list"
-                                                }
                                             ]
                                         )
                                     }
@@ -1062,282 +952,6 @@ pipeline {
                 }
             }
         }
-//         stage('Distribution Packages') {
-//             when{
-//                 anyOf{
-//                     equals expected: true, actual: params.BUILD_PACKAGES
-//                     equals expected: true, actual: params.DEPLOY_DEVPI
-//                     equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
-//                 }
-//                 beforeAgent true
-//             }
-//             stages{
-//                 stage("Python sdist"){
-//                     agent{
-//                         dockerfile {
-//                             filename 'ci/docker/linux/test/Dockerfile'
-//                             label 'linux && docker'
-//                             additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
-//                         }
-//                     }
-//                     steps {
-//                        sh "python -m pep517.build --source --out-dir dist/ ."
-//                     }
-//                     post{
-//                        success{
-//                            stash includes: 'dist/*.zip,dist/*.tar.gz', name: "sdist"
-//                            archiveArtifacts artifacts: "dist/*.tar.gz,dist/*.zip", fingerprint: true
-//                        }
-//                    }
-//                 }
-//                 stage("macOS 10.14"){
-//                     when{
-//                         equals expected: true, actual: params.BUILD_MAC_PACKAGES
-//                     }
-//                     parallel{
-//                         stage("3.8"){
-//                             stages{
-//                                 stage('Building Wheel') {
-//                                     agent {
-//                                         label 'mac && 10.14 && python3.8'
-//                                     }
-//                                     steps{
-//                                         sh(
-//                                             label: "Building wheel for macOS 10.14",
-//                                             script: 'python3.8 -m pip wheel --no-deps -w dist .'
-//                                         )
-//                                     }
-//                                     post{
-//                                         always{
-//                                             script{
-//                                                 def stash_name = "MacOS 10.14 py38 wheel"
-//                                                 stash includes: 'dist/*.whl', name: stash_name
-//                                                 wheelStashes << stash_name
-//                                             }
-//                                         }
-//                                         success{
-//                                             archiveArtifacts artifacts: "dist/*.whl"
-//                                         }
-//                                         cleanup{
-//                                             cleanWs(
-//                                                 deleteDirs: true,
-//                                                 patterns: [
-//                                                     [pattern: 'build/', type: 'INCLUDE'],
-//                                                     [pattern: 'dist/', type: 'INCLUDE'],
-//                                                 ]
-//                                             )
-//                                         }
-//                                     }
-//                                 }
-//                                 stage("Testing Packages"){
-//                                     when{
-//                                         equals expected: true, actual: params.TEST_PACKAGES
-//                                         beforeAgent true
-//                                     }
-//                                     stages{
-//                                         stage('Testing Wheel Package') {
-//                                             agent {
-//                                                 label 'mac && 10.14 && python3.8'
-//                                             }
-//                                             steps{
-//                                                 unstash "MacOS 10.14 py38 wheel"
-//                                                 test_package_on_mac("python3.8", "dist/*.whl")
-//                                             }
-//                                             post{
-//                                                 cleanup{
-//                                                     deleteDir()
-//                                                 }
-//                                             }
-//                                         }
-//                                         stage('Testing sdist Package') {
-//                                             agent {
-//                                                 label 'mac && 10.14 && python3.8'
-//                                             }
-//                                             steps{
-//                                                 unstash "sdist"
-//                                                 test_package_on_mac("python3.8", "dist/*.tar.gz,dist/*.zip")
-//                                             }
-//                                             post{
-//                                                 cleanup{
-//                                                     deleteDir()
-//                                                 }
-//                                             }
-//                                         }
-//                                     }
-//                                 }
-//                             }
-//                         }
-//                         stage("3.9"){
-//                             stages{
-//                                 stage('Building Wheel') {
-//                                     agent {
-//                                         label 'mac && 10.14 && python3.9'
-//                                     }
-//                                     steps{
-//                                         sh(
-//                                             label: "Building wheel for macOS 10.14",
-//                                             script: 'python3.9 -m pip wheel --no-deps -w dist .'
-//                                         )
-//                                     }
-//                                     post{
-//                                         always{
-//                                             script{
-//                                                 def stash_name = "MacOS 10.14 py39 wheel"
-//                                                 stash includes: 'dist/*.whl', name: stash_name
-//                                                 wheelStashes << stash_name
-//                                             }
-//                                         }
-//                                         success{
-//                                             archiveArtifacts artifacts: "dist/*.whl"
-//                                         }
-//                                         cleanup{
-//                                             cleanWs(
-//                                                 deleteDirs: true,
-//                                                 patterns: [
-//                                                     [pattern: 'build/', type: 'INCLUDE'],
-//                                                     [pattern: 'dist/', type: 'INCLUDE'],
-//                                                 ]
-//                                             )
-//                                         }
-//                                     }
-//                                 }
-//                                 stage("Testing Packages"){
-//                                     when{
-//                                         equals expected: true, actual: params.TEST_PACKAGES
-//                                         beforeAgent true
-//                                     }
-//                                     stages{
-//                                         stage('Testing Wheel Package') {
-//                                             agent {
-//                                                 label 'mac && 10.14 && python3.9'
-//                                             }
-//                                             steps{
-//                                                 unstash "MacOS 10.14 py39 wheel"
-//                                                 test_package_on_mac("python3.9", "dist/*.whl")
-//                                             }
-//                                             post{
-//                                                 cleanup{
-//                                                     deleteDir()
-//                                                 }
-//                                             }
-//                                         }
-//                                         stage('Testing sdist Package') {
-//                                             agent {
-//                                                 label 'mac && 10.14 && python3.9'
-//                                             }
-//                                             steps{
-//                                                 unstash "sdist"
-//                                                 test_package_on_mac("python3.9", "dist/*.tar.gz,dist/*.zip")
-//                                             }
-//                                             post{
-//                                                 cleanup{
-//                                                     deleteDir()
-//                                                 }
-//                                             }
-//                                         }
-//                                     }
-//                                 }
-//                             }
-//                         }
-//                     }
-//                 }
-//                 stage("Windows and Linux"){
-//                     matrix{
-//                         agent none
-//                         axes{
-//                             axis {
-//                                 name 'PLATFORM'
-//                                 values(
-//                                     "linux",
-//                                     "windows"
-//                                 )
-//                             }
-//                             axis {
-//                                 name "PYTHON_VERSION"
-//                                 values(
-//                                     "3.6",
-//                                     "3.7",
-//                                     "3.8",
-//                                     "3.9",
-//                                 )
-//                             }
-//                         }
-//                         stages{
-//                             stage("Creating bdist wheel"){
-//                                 agent {
-//                                     dockerfile {
-//                                         filename "${configurations[PYTHON_VERSION].os[PLATFORM].agents.package.dockerfile.filename}"
-//                                         label "${PLATFORM} && docker"
-//                                         additionalBuildArgs "${configurations[PYTHON_VERSION].os[PLATFORM].agents.package.dockerfile.additionalBuildArgs}"
-//                                      }
-//                                 }
-//                                 options {
-//                                     warnError('Wheel Building Failed')
-//                                 }
-//                                 steps{
-//                                     timeout(25){
-//                                         build_wheel2(platform: PLATFORM)
-//
-//                                     }
-//                                 }
-//                                 post{
-//                                     always{
-//                                         script{
-//                                             def stash_name =  "whl ${PYTHON_VERSION} ${PLATFORM}"
-//                                             if(PLATFORM == "linux"){
-//                                                 stash includes: 'dist/*manylinux*.whl', name: stash_name
-//                                             } else{
-//                                                 stash includes: 'dist/*.whl', name: stash_name
-//                                             }
-//                                             wheelStashes << stash_name
-//                                         }
-//                                     }
-//                                     success{
-//                                         archiveArtifacts artifacts: "dist/*.whl", fingerprint: true
-//                                     }
-//                                     cleanup{
-//                                         cleanWs(
-//                                             deleteDirs: true,
-//                                             disableDeferredWipeout: true,
-//                                             patterns: [
-//                                                 [pattern: 'dist/', type: 'INCLUDE'],
-//                                                 [pattern: '.tox/', type: 'INCLUDE'],
-//                                                 [pattern: '**/__pycache__', type: 'INCLUDE'],
-//                                             ]
-//                                         )
-//                                     }
-//                                 }
-//                             }
-//                             stage("Testing Python Packages"){
-//                                 when{
-//                                     equals expected: true, actual: params.TEST_PACKAGES
-//                                 }
-//                                 steps{
-//                                     script{
-//                                         packaging.test_package_stages(
-//                                             platform: PLATFORM,
-//                                             pythonVersion: PYTHON_VERSION,
-//                                             whlTestAgent: [
-//                                                 filename: configurations[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.filename,
-//                                                 label: "${PLATFORM} && docker",
-//                                                 additionalBuildArgs: configurations[PYTHON_VERSION].os[PLATFORM].agents.test['wheel'].dockerfile.additionalBuildArgs
-//                                             ],
-//                                             sdistTestAgent: [
-//                                                 filename: configurations[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.filename,
-//                                                 label: "${PLATFORM} && docker",
-//                                                 additionalBuildArgs: configurations[PYTHON_VERSION].os[PLATFORM].agents.test['sdist'].dockerfile.additionalBuildArgs
-//                                             ],
-//                                             whlStashName: "whl ${PYTHON_VERSION} ${platform}",
-//                                             sdistStashName: "sdist"
-//                                         )
-//                                     }
-//                                 }
-//                             }
-//                         }
-//                     }
-//                 }
-//             }
-//         }
         stage('Deploy to Devpi'){
             when {
                 allOf{
@@ -1854,7 +1468,6 @@ pipeline {
                     when{
                         equals expected: true, actual: params.DEPLOY_DOCS
                         beforeAgent true
-                        beforeInput true
                         beforeInput true
                     }
                     options{
