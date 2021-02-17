@@ -142,25 +142,6 @@ def get_sonarqube_unresolved_issues(report_task_file){
     }
 }
 
-def get_package_name(stashName, metadataFile){
-    node {
-        unstash "${stashName}"
-        script{
-            def props = readProperties interpolate: true, file: "${metadataFile}"
-            deleteDir()
-            return props.Name
-        }
-    }
-}
-
-def getDevPiStagingIndex(){
-
-    if (env.TAG_NAME?.trim()){
-        return "tag_staging"
-    } else{
-        return "${env.BRANCH_NAME}_staging"
-    }
-}
 
 def deploy_docs(pkgName, prefix){
     sshPublisher(
