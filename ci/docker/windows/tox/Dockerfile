@@ -170,7 +170,7 @@ COPY --from=WHEEL_BUilDER_PY38 c:/wheels/ c:/wheels/
 COPY --from=WHEEL_BUilDER_PY39 c:/wheels/ c:/wheels/
 
 ENV PIP_FIND_LINKS=c:\wheels
-RUN python -m pip install pip --upgrade ; pip install tox conan
+RUN python -m pip install pip --upgrade ; pip install tox conan wheel
 COPY --from=certsgen c:/roots.sst roots.sst
 RUN certutil -addstore -f root roots.sst ; `
     del roots.sst
@@ -182,6 +182,6 @@ RUN conan install c:/temp/ --build outdated --no-import  ; `
     conan remove "*" -b --src -f ; `
     conan remove --locks
 
-RUN python -m pip install pip --upgrade ; pip install tox
+RUN python -m pip install pip --upgrade ; pip install tox devpi_client
 WORKDIR C:/src
 CMD tox --workdir ${Env:TEMP}\tox\ -vv  --recreate -p=auto
