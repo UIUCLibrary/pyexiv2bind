@@ -182,6 +182,6 @@ RUN conan install c:/temp/ --build outdated --no-import  ; `
     conan remove "*" -b --src -f ; `
     conan remove --locks
 
-RUN python -m pip install pip --upgrade ; pip install tox
+RUN python -m pip install pip --upgrade ; pip install tox devpi_client
 WORKDIR C:/src
 CMD tox --workdir ${Env:TEMP}\tox\ -vv  --recreate -p=auto
