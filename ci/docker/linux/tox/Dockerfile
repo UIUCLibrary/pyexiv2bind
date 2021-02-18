@@ -88,7 +88,7 @@ COPY --from=WHEEL_BUILDER_PY38 /wheels/* /wheels/
 COPY --from=WHEEL_BUILDER_PY39 /wheels/* /wheels/
 RUN chmod -R 777 /wheels
 ENV PIP_FIND_LINKS=/wheels
-RUN pip3 install tox conan cmake devpi_client
+RUN pip3 install tox conan cmake devpi_client wheel
 
 #USER user
 #WORKDIR /home/user
