@@ -236,9 +236,6 @@ pipeline {
     }
     stages {
         stage('Building Documentation'){
-            when{
-                equals expected: true, actual: params.RUN_CHECKS
-            }
             agent {
                 dockerfile {
                     filename 'ci/docker/linux/test/Dockerfile'
