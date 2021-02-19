@@ -50,6 +50,15 @@ wheelStashes = []
 // }
 //
 
+def getMacDevpiName(pythonVersion, format){
+    if(format == "wheel"){
+        return "${pythonVersion.replace('.','')}-*macosx*.*whl"
+    } else if(format == "sdist"){
+        return "tar.gz"
+    } else{
+        error "unknown format ${format}"
+    }
+}
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
 
