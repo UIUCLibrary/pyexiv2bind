@@ -812,7 +812,9 @@ pipeline {
                                         },
                                         testCommand: {
                                              findFiles(glob: 'dist/*.whl').each{
-                                                 bat(label: 'Running Tox', script: "tox --installpkg ${it.path} --workdir %TEMP%\\tox  -e py${pythonVersion.replace('.', '')}")
+                                                timeout(10){
+                                                    bat(label: 'Running Tox', script: "tox --installpkg ${it.path} --workdir %TEMP%\\tox  -e py${pythonVersion.replace('.', '')}")
+                                                }
                                              }
 
                                         },
@@ -834,6 +836,7 @@ pipeline {
                                     )
                                 }
                                 windowsTestStages["Windows - Python ${pythonVersion}: sdist"] = {
+
                                     packages.testPkg2(
                                         agent: [
                                             dockerfile: [
@@ -849,7 +852,9 @@ pipeline {
                                         },
                                         testCommand: {
                                             findFiles(glob: 'dist/*.tar.gz').each{
-                                                bat(label: 'Running Tox', script: "tox --workdir %TEMP%\\tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}")
+                                                timeout(60){
+                                                    bat(label: 'Running Tox', script: "tox --workdir %TEMP%\\tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}")
+                                                }
                                             }
                                         },
                                         post:[
