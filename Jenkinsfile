@@ -295,6 +295,7 @@ pipeline {
                                     filename 'ci/docker/linux/test/Dockerfile'
                                     label 'linux && docker'
                                     additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL'
+                                    args '--mount source=sonar-cache-py3exiv2bind,target=/.sonar/cache'
                                 }
                             }
                             stages{
@@ -457,6 +458,34 @@ pipeline {
                                         }
                                     }
                                 }
+                                stage('Sonarcloud Analysis'){
+                                    options{
+                                        lock('py3exiv2bind-sonarcloud')
+                                    }
+                                    when{
+                                        equals expected: true, actual: params.USE_SONARQUBE
+                                        beforeAgent true
+                                        beforeOptions true
+                                    }
+                                    steps{
+                                        unstash 'PYTHON_COVERAGE_REPORT'
+                                        unstash 'PYTEST_REPORT'
+                        //                 unstash 'BANDIT_REPORT'
+                                        unstash 'PYLINT_REPORT'
+                                        unstash 'FLAKE8_REPORT'
+                                        unstash 'DIST-INFO'
+                                        sonarcloudSubmit('py3exiv2bind.dist-info/METADATA', 'reports/sonar-report.json', 'sonarcloud-py3exiv2bind')
+                                    }
+                                    post {
+                                        always{
+                                            script{
+                                                if(fileExists('reports/sonar-report.json')){
+                                                    recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                             post{
                                 cleanup{
@@ -478,42 +507,6 @@ pipeline {
                                         notFailBuild: true,
                                         deleteDirs: true
                                     )
-                                }
-                            }
-                        }
-                        stage('Sonarcloud Analysis'){
-                            agent {
-                                dockerfile {
-                                    filename 'ci/docker/linux/test/Dockerfile'
-                                    label 'linux && docker'
-                                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL'
-                                    args '--mount source=sonar-cache-py3exiv2bind,target=/.sonar/cache'
-                                }
-                            }
-                            options{
-                                lock('py3exiv2bind-sonarcloud')
-                            }
-                            when{
-                                equals expected: true, actual: params.USE_SONARQUBE
-                                beforeAgent true
-                                beforeOptions true
-                            }
-                            steps{
-                                unstash 'PYTHON_COVERAGE_REPORT'
-                                unstash 'PYTEST_REPORT'
-                //                 unstash 'BANDIT_REPORT'
-                                unstash 'PYLINT_REPORT'
-                                unstash 'FLAKE8_REPORT'
-                                unstash 'DIST-INFO'
-                                sonarcloudSubmit('py3exiv2bind.dist-info/METADATA', 'reports/sonar-report.json', 'sonarcloud-py3exiv2bind')
-                            }
-                            post {
-                                always{
-                                    script{
-                                        if(fileExists('reports/sonar-report.json')){
-                                            recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
-                                        }
-                                    }
                                 }
                             }
                         }
