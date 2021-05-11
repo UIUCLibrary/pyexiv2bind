@@ -458,6 +458,9 @@ pipeline {
                                             ],
                                         sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
                                     )
+                                    sh "mkdir -p build/coverage"
+                                    sh "find ./build -name '*.gcno' -exec gcov {} -p --source-prefix=${WORKSPACE}/ \\;"
+                                    sh "mv *.gcov build/coverage/"
                                 }
                             }
                         }
