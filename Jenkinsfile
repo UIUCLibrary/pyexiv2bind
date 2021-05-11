@@ -249,7 +249,7 @@ pipeline {
                 dockerfile {
                     filename 'ci/docker/linux/test/Dockerfile'
                     label 'linux && docker'
-                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL'
                 }
             }
             steps {
@@ -295,7 +295,7 @@ pipeline {
                                                 dockerfile {
                                                     filename 'ci/docker/linux/test/Dockerfile'
                                                     label 'linux && docker'
-                                                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL'
                                                 }
                                             }
                                             stages{
@@ -459,7 +459,7 @@ pipeline {
                                         dockerfile {
                                             filename 'ci/docker/linux/test/Dockerfile'
                                             label 'linux && docker'
-                                            additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                                            additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL'
                                         }
                                     }
                                     steps{
@@ -481,8 +481,8 @@ pipeline {
                                 dockerfile {
                                     filename 'ci/docker/linux/test/Dockerfile'
                                     label 'linux && docker'
-                                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
-                                    args '--mount source=sonar-cache-py3exiv2bind,target=/home/user/.sonar/cache'
+                                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL'
+                                    args '--mount source=sonar-cache-py3exiv2bind,target=/.sonar/cache'
                                 }
                             }
                             options{
