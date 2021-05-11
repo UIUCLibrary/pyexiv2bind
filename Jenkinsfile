@@ -445,13 +445,13 @@ pipeline {
                                        script: '''mkdir -p reports/coverage
                                                   coverage combine
                                                   coverage xml -o ./reports/coverage/coverage-python.xml
-                                                  gcovr --root . --filter py3exiv2bind --exclude-directories build/python/temp/conan_cache --print-summary --json -o reports/coverage/coverage-c-extension.json
+                                                  gcovr --root . --filter py3exiv2bind --exclude-directories build/python/temp/conan_cache --print-summary --keep --json -o reports/coverage/coverage-c-extension.json
                                                   '''
                                     )
-                                    sh 'gcovr --root . --filter py3exiv2bind --print-summary  --json -o reports/coverage/coverage_cpp.json'
+                                    sh 'gcovr --root . --filter py3exiv2bind --print-summary --keep --json -o reports/coverage/coverage_cpp.json '
+                                    sh 'gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --keep --print-summary --xml -o reports/coverage/coverage_cpp.xml'
                                     stash(includes: 'reports/coverage/*.xml,reports/coverage/*.json', name: 'PYTHON_COVERAGE_REPORT')
                                     unstash 'PYTHON_COVERAGE_REPORT'
-                                    sh 'gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --print-summary --xml -o reports/coverage/coverage_cpp.xml'
                                     publishCoverage(
                                         adapters: [
                                                 coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
