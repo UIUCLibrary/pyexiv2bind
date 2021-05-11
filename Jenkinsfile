@@ -472,7 +472,7 @@ pipeline {
                             }
                             steps{
                                 sh(
-                                    label: 'Preparing c++ coverage data available for sonarQube',
+                                    label: 'Preparing c++ coverage data available for SonarQube',
                                     script: """mkdir -p build/coverage
                                     find ./build -name '*.gcno' -exec gcov {} -p --source-prefix=${WORKSPACE}/ \\;
                                     mv *.gcov build/coverage/
