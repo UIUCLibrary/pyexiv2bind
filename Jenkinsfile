@@ -458,9 +458,6 @@ pipeline {
                                             ],
                                         sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
                                     )
-                                    sh "mkdir -p build/coverage"
-                                    sh "find ./build -name '*.gcno' -exec gcov {} -p --source-prefix=${WORKSPACE}/ \\;"
-                                    sh "mv *.gcov build/coverage/"
                                 }
                             }
                         }
@@ -474,6 +471,14 @@ pipeline {
                                 beforeOptions true
                             }
                             steps{
+                                sh(
+                                    label: 'Preparing c++ coverage data available for sonarQube',
+                                    script: """mkdir -p build/coverage
+                                    find ./build -name '*.gcno' -exec gcov {} -p --source-prefix=${WORKSPACE}/ \\;
+                                    mv *.gcov build/coverage/
+                                    """
+                                    )
+
                                 unstash 'PYTHON_COVERAGE_REPORT'
                                 unstash 'PYTEST_REPORT'
                 //                 unstash 'BANDIT_REPORT'
