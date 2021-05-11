@@ -352,7 +352,7 @@ pipeline {
                                                     recordIssues(
                                                         filters: [
                                                             excludeFile('build/cpp/_deps/*'),
-                                                            excludeFile('usr/include/*'),
+                                                            excludeFile('/usr/include/*'),
                                                         ],
                                                         tools: [clangTidy(pattern: 'logs/clang-tidy.log')]
                                                     )
