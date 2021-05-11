@@ -451,7 +451,7 @@ pipeline {
                                         adapters: [
                                                 coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
                                             ],
-                                        sourceFileResolver: sourceFiles('NEVER_STORE')
+                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
                                     )
                                 }
                             }
