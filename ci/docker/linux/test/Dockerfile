@@ -34,6 +34,20 @@ RUN curl --create-dirs -sSLo /tmp/sonar-scanner.zip \
     chmod -R 777 "${SONAR_USER_HOME}" &&\
     ln -s /opt/sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner && \
     which sonar-scanner
+# ==============================================================================
+FROM base_image as conan_builder
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+RUN pip3 install conan
+ENV CONAN_USER_HOME=/conan
+COPY ci/docker/shared/conan/remotes.json /conan/.conan/remotes.json
+COPY ci/docker/linux/test/conan/profile.ini  /conan/.conan/profiles/default
+COPY conanfile.py /tmp/conanfile.py
+RUN conan config init
+RUN conan install /tmp --build outdated --no-import  && \
+    conan install /tmp --build outdated --no-import  -s build_type=Debug && \
+    conan remove "*" -b --src -f && \
+    conan remove --locks
 #==============================================================================
 
 FROM base_image
@@ -60,5 +74,16 @@ RUN python -m pip install pip --upgrade && \
     pip install --no-index --find-links=/wheels/ \
          -r /requirements/requirements.txt \
          -r /requirements/requirements-ci.txt
+
+ENV CONAN_USER_HOME=/conan
+COPY --from=conan_builder /conan/.conan/ /conan/.conan/
+COPY ci/docker/shared/conan/remotes.json /conan/.conan/remotes.json
+COPY ci/docker/linux/test/conan/profile.ini  /conan/.conan/profiles/default
+ADD conanfile.py /tmp/conanfile.py
+RUN conan config init
+RUN conan install /tmp --build  missing --no-import && \
+    conan remove "*" -b --src -f && \
+    conan remove --locks && \
+    chmod -R 777 /conan
 
 ENV PIP_FIND_LINKS=/wheels/
