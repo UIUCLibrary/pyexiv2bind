@@ -34,6 +34,13 @@ RUN curl --create-dirs -sSLo /tmp/sonar-scanner.zip \
     chmod -R 777 "${SONAR_USER_HOME}" &&\
     ln -s /opt/sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner && \
     which sonar-scanner
+
+
+RUN curl --create-dirs -sSLo /tmp/build-wrapper-linux-x86.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip && \
+    unzip -o /tmp/build-wrapper-linux-x86.zip -d /opt/ &&\
+    ln -s /opt/build-wrapper-linux-x86/build-wrapper-linux-x86-64 /usr/local/bin/build-wrapper-linux-x86-64 && \
+    which build-wrapper-linux-x86-64
+
 # ==============================================================================
 FROM base_image as conan_builder
 ARG PIP_EXTRA_INDEX_URL
@@ -54,12 +61,22 @@ FROM base_image
 
 RUN apt update && apt install -y ninja-build
 COPY --from=SONAR_BUILDER /opt/sonar /opt/sonar/
+COPY --from=SONAR_BUILDER /opt/build-wrapper-linux-x86 /opt/build-wrapper-linux-x86/
 ENV SONAR_SCANNER_VERSION=4.4.0.2170
 ARG SONAR_SCANNER_HOME=/opt/sonar/${SONAR_SCANNER_VERSION}-linux
+ENV SONAR_USER_HOME=/opt/sonar/.sonar
+
 RUN ln -s /opt/sonar/sonar-scanner-${SONAR_SCANNER_VERSION}-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner && \
     which sonar-scanner
+
+RUN ln -s /opt/build-wrapper-linux-x86/build-wrapper-linux-x86-64 /usr/local/bin/build-wrapper-linux-x86-64 && \
+    which build-wrapper-linux-x86-64
+
 RUN mkdir -p /.sonar/cache && \
     chmod -R 777 /.sonar/cache
+
+RUN chmod -R 777 $SONAR_USER_HOME
+
 ENV SONAR_SCANNER_OPTS="-server"
 
 

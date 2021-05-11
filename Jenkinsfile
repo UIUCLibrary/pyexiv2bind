@@ -102,12 +102,12 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
         if (env.CHANGE_ID){
             sh(
                 label: 'Running Sonar Scanner',
-                script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
+                script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory"
                 )
         } else {
             sh(
                 label: 'Running Sonar Scanner',
-                script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
+                script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory"
                 )
         }
     }
@@ -293,33 +293,38 @@ pipeline {
                             filename 'ci/docker/linux/test/Dockerfile'
                             label 'linux && docker'
                             additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL'
-                            args '--mount source=sonar-cache-py3exiv2bind,target=/.sonar/cache'
+                            args '--mount source=sonar-cache-py3exiv2bind,target=/opt/sonar/.sonar/cache'
                         }
                     }
                     stages{
                         stage('Testing') {
                             stages{
                                 stage('Setting up Test Env'){
+                                    steps{
+                                        sh '''mkdir -p build
+                                              mkdir -p logs
+                                              '''
+                                    }
+                                }
+                                stage('Building Project for Testing'){
                                     parallel{
-                                        stage('Setting up Python Tests'){
+                                        stage('Building Extension for Python with coverage data'){
                                             steps{
                                                 sh(label: 'Building debug build with coverage data',
-                                                   script: '''CFLAGS="--coverage" python setup.py build -b build/python --build-lib build/python/lib/ --build-temp build/python/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
-                                                              mkdir -p logs
-                                                              '''
+                                                   script: 'CFLAGS="--coverage -fprofile-arcs -ftest-coverage" LFLAGS="-lgcov --coverage" python setup.py build -b build/python --build-lib build/python/lib/ --build-temp build/python/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace'
                                                )
                                             }
                                         }
-                                        stage('Setting up C++ Tests'){
+                                        stage('Building Extension code and C++ Tests with coverage data'){
                                             steps{
                                                 tee('logs/cmake-build.log'){
                                                     sh(label: 'Building C++ Code',
                                                        script: '''conan install . -if build/cpp/
-                                                                  cmake -B build/cpp/ -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
-                                                                  cmake --build build/cpp/ -j $(grep -c ^processor /proc/cpuinfo)
+                                                                  cmake -B build/cpp/ -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
                                                                   '''
                                                     )
                                                 }
+                                                sh 'build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --target all '
                                             }
                                             post{
                                                 always{
@@ -475,6 +480,9 @@ pipeline {
                                 sonarcloudSubmit('py3exiv2bind.dist-info/METADATA', 'reports/sonar-report.json', 'sonarcloud-py3exiv2bind')
                             }
                             post {
+                                failure{
+                                    sh 'ls -aR'
+                                }
                                 always{
                                     script{
                                         if(fileExists('reports/sonar-report.json')){
