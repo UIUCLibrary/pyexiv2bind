@@ -311,7 +311,7 @@ pipeline {
                                         stage('Building Extension for Python with coverage data'){
                                             steps{
                                                 sh(label: 'Building debug build with coverage data',
-                                                   script: 'CFLAGS="--coverage -fprofile-arcs -ftest-coverage" LFLAGS="-lgcov --coverage" python setup.py build -b build/python --build-lib build/python/lib/ --build-temp build/python/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace'
+                                                   script: 'CFLAGS="--coverage -fprofile-arcs -ftest-coverage" LFLAGS="-lgcov --coverage" build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory python setup.py build -b build/python --build-lib build/python/lib/ --build-temp build/python/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace'
                                                )
                                             }
                                         }
@@ -445,13 +445,13 @@ pipeline {
                                        script: '''mkdir -p reports/coverage
                                                   coverage combine
                                                   coverage xml -o ./reports/coverage/coverage-python.xml
-                                                  gcovr --root . --filter py3exiv2bind --exclude-directories build/python/temp/conan_cache --print-summary --json -o reports/coverage/coverage-c-extension.json
+                                                  gcovr --root . --filter py3exiv2bind --exclude-directories build/python/temp/conan_cache --print-summary --keep --json -o reports/coverage/coverage-c-extension.json
                                                   '''
                                     )
-                                    sh 'gcovr --root . --filter py3exiv2bind --print-summary  --json -o reports/coverage/coverage_cpp.json'
+                                    sh 'gcovr --root . --filter py3exiv2bind --print-summary --keep --json -o reports/coverage/coverage_cpp.json '
+                                    sh 'gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --keep --print-summary --xml -o reports/coverage/coverage_cpp.xml'
                                     stash(includes: 'reports/coverage/*.xml,reports/coverage/*.json', name: 'PYTHON_COVERAGE_REPORT')
                                     unstash 'PYTHON_COVERAGE_REPORT'
-                                    sh 'gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --print-summary --xml -o reports/coverage/coverage_cpp.xml'
                                     publishCoverage(
                                         adapters: [
                                                 coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
@@ -471,6 +471,14 @@ pipeline {
                                 beforeOptions true
                             }
                             steps{
+                                sh(
+                                    label: 'Preparing c++ coverage data available for SonarQube',
+                                    script: """mkdir -p build/coverage
+                                    find ./build -name '*.gcno' -exec gcov {} -p --source-prefix=${WORKSPACE}/ \\;
+                                    mv *.gcov build/coverage/
+                                    """
+                                    )
+
                                 unstash 'PYTHON_COVERAGE_REPORT'
                                 unstash 'PYTEST_REPORT'
                 //                 unstash 'BANDIT_REPORT'
