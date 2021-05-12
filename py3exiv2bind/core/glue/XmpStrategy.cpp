@@ -6,8 +6,8 @@
 #include "make_dictionary.h"
 #include <exiv2/error.hpp>
 #include <iostream>
-
-std::map<std::string, std::string> XmpStrategy::load(const Exiv2::Image::AutoPtr &image) {
+std::map<std::string, std::string> XmpStrategy::load(const std::unique_ptr<Exiv2::Image> &image){
+//std::map<std::string, std::string> XmpStrategy::load(const Exiv2::Image::AutoPtr &image) {
     try{
         return make_dictionary(image->xmpData());
 
