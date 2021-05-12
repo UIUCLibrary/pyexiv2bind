@@ -13,7 +13,6 @@ void d(){
 }
 
 std::map<std::string, std::string> ExifStrategy::load(const std::unique_ptr<Exiv2::Image> &image){
-//std::map<std::string, std::string> ExifStrategy::load(const Exiv2::Image::AutoPtr &image) {
     try{
         return make_dictionary(image->exifData());
     }catch (Exiv2::AnyError &e){
