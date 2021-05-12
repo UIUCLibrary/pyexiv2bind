@@ -78,7 +78,7 @@ std::string exiv2_version() {
 
 int get_pixelHeight(const std::string &filename){
     try {
-        Image::AutoPtr image = ImageFactory::open(filename);
+        auto image = ImageFactory::open(filename);
         assert(image.get() != 0); // Make sure it's able to read the file
         image->readMetadata();
         return image->pixelHeight();
@@ -94,7 +94,7 @@ int get_pixelHeight(const std::string &filename){
 int get_pixelWidth(const std::string &filename){
     try {
 //        using namespace Exiv2;
-        Image::AutoPtr image = ImageFactory::open(filename);
+        auto image = ImageFactory::open(filename);
         assert(image.get() != 0); // Make sure it's able to read the file
         image->readMetadata();
         return image->pixelWidth();
@@ -109,7 +109,7 @@ int get_pixelWidth(const std::string &filename){
 
 void set_dpi(const std::string &filename, int x, int y){
     try{
-        Image::AutoPtr image = ImageFactory::open(filename);
+        auto image = ImageFactory::open(filename);
 
         image->readMetadata();
 
