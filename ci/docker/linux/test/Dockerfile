@@ -59,7 +59,7 @@ RUN conan install /tmp --build outdated --no-import  && \
 
 FROM base_image
 
-RUN apt update && apt install -y ninja-build clang-tidy
+RUN apt update && apt install -y ninja-build clang-tidy cppcheck
 COPY --from=SONAR_BUILDER /opt/sonar /opt/sonar/
 COPY --from=SONAR_BUILDER /opt/build-wrapper-linux-x86 /opt/build-wrapper-linux-x86/
 ENV SONAR_SCANNER_VERSION=4.4.0.2170
