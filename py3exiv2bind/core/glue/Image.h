@@ -10,7 +10,6 @@ struct Image {
 private:
     std::string filename;
     std::unique_ptr<Exiv2::Image> image;
-//    Exiv2::Image::AutoPtr image;
     std::list<std::string> warning_logs;
     std::list<std::string> error_logs;
 public:
