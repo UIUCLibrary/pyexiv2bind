@@ -11,7 +11,7 @@ const std::map<std::string, std::string> &MetadataProcessor::getMetadata() const
     return metadata;
 }
 
-void MetadataProcessor::build(const Exiv2::Image::AutoPtr &image) {
+void MetadataProcessor::build(const Exiv2::Image &image) {
     metadata = this->metadata_strategy->load(image);
 }
 

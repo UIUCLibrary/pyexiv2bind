@@ -17,7 +17,7 @@ private:
     std::unique_ptr<AbsMetadataStrategy> metadata_strategy;
     std::map<std::string, std::string> metadata;
 public:
-    void build(const Exiv2::Image::AutoPtr &image);
+    void build(const Exiv2::Image &image);
     const std::map<std::string, std::string> &getMetadata() const;
     void set_output_format(MetadataStrategies);
 };

@@ -6,10 +6,15 @@
 #include "make_dictionary.h"
 #include <exiv2/error.hpp>
 #include <iostream>
+void d();
+void d(){
+    std::unique_ptr<Exiv2::Image> x;
 
-std::map<std::string, std::string> ExifStrategy::load(const Exiv2::Image::AutoPtr &image) {
+}
+
+std::map<std::string, std::string> ExifStrategy::load(const Exiv2::Image &image){
     try{
-        return make_dictionary(image->exifData());
+        return make_dictionary(image.exifData());
     }catch (Exiv2::AnyError &e){
 //        TODO: Handle errors
         std::cerr << e.what() <<std::endl;
