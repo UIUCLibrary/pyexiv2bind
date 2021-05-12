@@ -339,6 +339,26 @@ pipeline {
                                 }
                                 stage('Running Tests'){
                                     parallel {
+                                        stage("Clang Tidy Analysis") {
+                                            steps{
+                                                tee('logs/clang-tidy.log') {
+                                                    catchError(buildResult: 'SUCCESS', message: 'Clang-Tidy found issues', stageResult: 'UNSTABLE') {
+                                                        sh(label: 'Run Clang Tidy', script: 'run-clang-tidy -clang-tidy-binary clang-tidy -p ./build/cpp/')
+                                                    }
+                                                }
+                                            }
+                                            post{
+                                                always {
+                                                    recordIssues(
+                                                        filters: [
+                                                            excludeFile('build/cpp/_deps/*'),
+                                                            excludeFile('/usr/include/*'),
+                                                        ],
+                                                        tools: [clangTidy(pattern: 'logs/clang-tidy.log')]
+                                                    )
+                                                }
+                                            }
+                                        }
                                         stage('CTest'){
                                             steps{
                                                 sh(label: 'Running CTest',
