@@ -18,7 +18,7 @@ TEST_CASE("Edit"){
     const std::string filename = IMAGE_TEST_PATH + "dummy.tif";
     {
 
-        Exiv2::Image::AutoPtr image = Exiv2::ImageFactory::open(filename);
+        auto image = Exiv2::ImageFactory::open(filename);
         assert(image.get() != 0);
         assert(image->good());
         assert(image->checkMode(Exiv2::MetadataId::mdExif) !=Exiv2::AccessMode::amRead);
@@ -93,7 +93,7 @@ TEST_CASE("Edit"){
 
     std::cout << "Written to " << filename <<std::endl;
     {
-        Exiv2::Image::AutoPtr image = Exiv2::ImageFactory::open(filename);
+        auto image = Exiv2::ImageFactory::open(filename);
         assert(image.get() != 0);
         image->readMetadata();
         Exiv2::ExifData exifData_second = image->exifData();
@@ -121,7 +121,7 @@ TEST_CASE("Edit tiff") {
     const std::string filename = IMAGE_TEST_PATH + "dummy.tif";
     {
 
-        Exiv2::Image::AutoPtr image = Exiv2::ImageFactory::open(filename);
+        auto image = Exiv2::ImageFactory::open(filename);
 
         assert(image.get() != 0);
         assert(image->good());
@@ -148,7 +148,7 @@ TEST_CASE("Edit tiff") {
     }
 
     {
-        Exiv2::Image::AutoPtr image = Exiv2::ImageFactory::open(filename);
+        auto image = Exiv2::ImageFactory::open(filename);
         assert(image.get() != 0);
         image->readMetadata();
         Exiv2::ExifData exifData_second = image->exifData();
