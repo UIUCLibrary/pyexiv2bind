@@ -14,7 +14,8 @@ std::string exiv2_version() {
 
 void set_dpi(const std::string &filename, int x, int y){
     try{
-        auto image = ImageFactory::open(filename);
+
+        std::unique_ptr<Exiv2::Image> image = ImageFactory::open(filename);
 
         image->readMetadata();
 
