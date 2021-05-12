@@ -21,9 +21,9 @@ struct metadata_chunk {
 std::string exiv2_version();
 
 
-int get_pixelHeight(const std::string &filename);
-
-int get_pixelWidth(const std::string &filename);
+//int get_pixelHeight(const std::string &filename);
+//
+//int get_pixelWidth(const std::string &filename);
 
 void set_dpi(const std::string &filename, int x, int y);
 

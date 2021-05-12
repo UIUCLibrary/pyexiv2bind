@@ -75,36 +75,36 @@ std::string exiv2_version() {
 ////    std::cout << "Returning\n";
 //    return metadata;
 //}
-
-int get_pixelHeight(const std::string &filename){
-    try {
-        auto image = ImageFactory::open(filename);
-        assert(image.get() != nullptr); // Make sure it's able to read the file
-        image->readMetadata();
-        return image->pixelHeight();
-
-    }catch (Exiv2::AnyError &e){
-//        TODO: Handle errors
-        std::cerr << e.what() <<std::endl;
-        throw;
-    }
-
-}
-
-int get_pixelWidth(const std::string &filename){
-    try {
-//        using namespace Exiv2;
-        auto image = ImageFactory::open(filename);
-        assert(image.get() != nullptr); // Make sure it's able to read the file
-        image->readMetadata();
-        return image->pixelWidth();
-
-    }catch (Exiv2::AnyError &e) {
-//        TODO: Handle errors
-        std::cerr << e.what() << std::endl;
-        throw;
-    }
-}
+//
+//int get_pixelHeight(const std::string &filename){
+//    try {
+//        auto image = ImageFactory::open(filename);
+//        assert(image.get() != nullptr); // Make sure it's able to read the file
+//        image->readMetadata();
+//        return image->pixelHeight();
+//
+//    }catch (Exiv2::AnyError &e){
+////        TODO: Handle errors
+//        std::cerr << e.what() <<std::endl;
+//        throw;
+//    }
+//
+//}
+//
+//int get_pixelWidth(const std::string &filename){
+//    try {
+////        using namespace Exiv2;
+//        auto image = ImageFactory::open(filename);
+//        assert(image.get() != nullptr); // Make sure it's able to read the file
+//        image->readMetadata();
+//        return image->pixelWidth();
+//
+//    }catch (Exiv2::AnyError &e) {
+////        TODO: Handle errors
+//        std::cerr << e.what() << std::endl;
+//        throw;
+//    }
+//}
 
 
 void set_dpi(const std::string &filename, int x, int y){
