@@ -26,6 +26,16 @@ if (BUILD_TESTING)
 #            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_common.py ${CMAKE_CURRENT_BINARY_DIR}
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_image.py ${CMAKE_CURRENT_BINARY_DIR}
             )
+    find_path(PYTEST_PATH
+            NAMES pytest
+            PATHS ${Python3_SITELIB}
+            )
+    if(PYTEST_PATH)
+
+        add_test(NAME pytest COMMAND ${Python3_EXECUTABLE} -m pytest ${PROJECT_SOURCE_DIR}/tests WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+        set_tests_properties(pytest PROPERTIES ENVIRONMENT PYTHONPATH=${PROJECT_SOURCE_DIR})
+    endif()
+
     FetchContent_MakeAvailable(libcatch2)
     FetchContent_GetProperties(libcatch2)
     list(APPEND CMAKE_MODULE_PATH ${libcatch2_SOURCE_DIR}/contrib/)
