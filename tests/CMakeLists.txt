@@ -26,6 +26,31 @@ if (BUILD_TESTING)
 #            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_common.py ${CMAKE_CURRENT_BINARY_DIR}
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/test_image.py ${CMAKE_CURRENT_BINARY_DIR}
             )
+    find_path(PYTEST_PATH
+            NAMES pytest
+            PATHS ${Python3_SITELIB}
+            )
+    if(PYTEST_PATH)
+        execute_process(
+                COMMAND ${Python3_EXECUTABLE} -m pytest --collect-only
+                WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                OUTPUT_FILE ${PROJECT_BINARY_DIR}/pytest_collection.xml
+#                OUTPUT_VARIABLE PYTEST_COLLECTION
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        file(STRINGS "${PROJECT_BINARY_DIR}/pytest_collection.xml" PYTEST_COLLECTION)
+        foreach(line ${PYTEST_COLLECTION})
+            if (line MATCHES "^<Module ([a-z]+\\/test_[a-zA-Z]+.py)")
+                add_test(NAME ${PROJECT_NAME}::${CMAKE_MATCH_1}
+                    COMMAND ${Python3_EXECUTABLE} -m pytest ${PROJECT_SOURCE_DIR}/${CMAKE_MATCH_1}
+                    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+                    )
+
+            endif ()
+        endforeach()
+        set_target_properties(core PROPERTIES EXCLUDE_FROM_ALL off)
+    endif()
+
     FetchContent_MakeAvailable(libcatch2)
     FetchContent_GetProperties(libcatch2)
     list(APPEND CMAKE_MODULE_PATH ${libcatch2_SOURCE_DIR}/contrib/)
