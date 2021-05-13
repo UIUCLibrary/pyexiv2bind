@@ -4,8 +4,7 @@
 
 #ifndef PYEXIV2BIND_MAKE_DICTIONARY_H
 #define PYEXIV2BIND_MAKE_DICTIONARY_H
-//template<typename T1>
-//void make_dictionary(T1);
+
 
 template<typename T1>
 std::map<std::string, std::string> make_dictionary(const T1 &data) {
