@@ -8,6 +8,7 @@ add_custom_command(TARGET core
         COMMAND ${Python3_EXECUTABLE} setup.py build_py --build-lib ${PROJECT_BINARY_DIR}
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         )
+set_target_properties(core PROPERTIES EXCLUDE_FROM_ALL on)
 
 if (pyexiv2bind_generate_python_bindings)
     if (SKBUILD)

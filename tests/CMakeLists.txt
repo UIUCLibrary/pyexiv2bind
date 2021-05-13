@@ -35,6 +35,7 @@ if (BUILD_TESTING)
                 COMMAND ${Python3_EXECUTABLE} -m pytest ${PROJECT_SOURCE_DIR}/tests
                 WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
                 )
+        set_target_properties(core PROPERTIES EXCLUDE_FROM_ALL off)
     endif()
 
     FetchContent_MakeAvailable(libcatch2)
