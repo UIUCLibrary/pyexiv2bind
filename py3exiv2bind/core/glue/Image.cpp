@@ -33,6 +33,7 @@ Image::Image(const std::string &filename) : filename(filename) {
                     error_log << msg;
                     break;
                 case Exiv2::LogMsg::mute:break;
+                default: break;
             }
         });
 //        std::make_unique<Exiv2::Image>()
