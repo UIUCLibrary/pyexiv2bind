@@ -31,7 +31,7 @@ if (BUILD_TESTING)
             PATHS ${Python3_SITELIB}
             )
     if(PYTEST_PATH)
-
+        set_target_properties(core PROPERTIES EXCLUDE_FROM_ALL off)
         add_test(NAME pytest COMMAND ${Python3_EXECUTABLE} -m pytest ${PROJECT_SOURCE_DIR}/tests WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
         set_tests_properties(pytest PROPERTIES ENVIRONMENT PYTHONPATH=${PROJECT_SOURCE_DIR})
     endif()
