@@ -48,7 +48,9 @@ if (BUILD_TESTING)
 
             endif ()
         endforeach()
-        set_target_properties(core PROPERTIES EXCLUDE_FROM_ALL off)
+        if(pyexiv2bind_generate_python_bindings)
+            set_target_properties(core PROPERTIES EXCLUDE_FROM_ALL off)
+        endif()
     endif()
 
     FetchContent_MakeAvailable(libcatch2)
