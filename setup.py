@@ -154,6 +154,10 @@ class BuildCMakeLib(build_clib):
             '-DEXIV2_ENABLE_VIDEO:BOOL=OFF',
             '-DEXIV2_ENABLE_PNG:BOOL=OFF'
         ]
+        if os.getenv('HOMEBREW_SDKROOT'):
+            configure_command.append(
+                f"-DCMAKE_OSX_SYSROOT={os.getenv('HOMEBREW_SDKROOT')}",
+            )
 
         if platform.system() == "Linux":
             configure_command.append('-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=OFF')
