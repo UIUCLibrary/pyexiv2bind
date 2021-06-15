@@ -1308,8 +1308,8 @@ pipeline {
                 }
             }
         }
-//         stage('Deploy'){
-//             parallel {
+        stage('Deploy'){
+            parallel {
                 stage('Deploy Online Documentation') {
                     agent any
                     when{
@@ -1328,7 +1328,7 @@ pipeline {
                         deploy_docs(props.Name, 'build/docs/html')
                     }
                 }
-//             }
-//         }
+            }
+        }
     }
 }
