@@ -1330,6 +1330,13 @@ pipeline {
                             wheelStashes.each{
                                 unstash it
                             }
+                            def pypi = fileLoader.fromGit(
+                                    'pypi',
+                                    'https://github.com/UIUCLibrary/jenkins_helper_scripts.git',
+                                    'main',
+                                    null,
+                                    ''
+                                )
                         }
                     }
                     post{
