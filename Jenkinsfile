@@ -1326,6 +1326,13 @@ pipeline {
                     steps{
                         echo "Deploy to pypi"
                     }
+                    post{
+                        cleanup{
+                            sh 'ls -laR'
+
+                        }
+                    }
+
                 }
                 stage('Deploy Online Documentation') {
                     agent any
