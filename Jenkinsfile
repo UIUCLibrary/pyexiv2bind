@@ -1325,6 +1325,12 @@ pipeline {
                     }
                     steps{
                         echo "Deploy to pypi"
+                        unstash 'sdist'
+                        script{
+                            wheelStashes.each{
+                                unstash it
+                            }
+                        }
                     }
                     post{
                         cleanup{
