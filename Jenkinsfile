@@ -1310,6 +1310,12 @@ pipeline {
         }
         stage('Deploy'){
             parallel {
+                stage('Deploy to pypi') {
+                    agent any
+                    steps{
+                        echo "Deploy to pypi"
+                    }
+                }
                 stage('Deploy Online Documentation') {
                     agent any
                     when{
