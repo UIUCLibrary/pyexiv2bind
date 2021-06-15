@@ -27,7 +27,7 @@ def DEVPI_CONFIG = [
     server: 'https://devpi.library.illinois.edu',
     credentialsId: 'DS_devpi',
 ]
-
+PYPI_SERVERS = ['https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python/']
 SUPPORTED_MAC_VERSIONS = ['3.8', '3.9']
 SUPPORTED_LINUX_VERSIONS = ['3.6', '3.7', '3.8', '3.9']
 SUPPORTED_WINDOWS_VERSIONS = ['3.6', '3.7', '3.8', '3.9']
@@ -1334,6 +1334,17 @@ pipeline {
                     options{
                         retry(3)
                     }
+                    input {
+                        message 'Upload to pypi server?'
+                        parameters {
+                            choice(
+                                choices: PYPI_SERVERS,
+                                description: 'Url to the pypi index to upload python packages.',
+                                name: 'SERVER_URL'
+                            )
+                        }
+                    }
+
                     steps{
                         echo "Deploy to pypi"
                         unstash 'sdist'
