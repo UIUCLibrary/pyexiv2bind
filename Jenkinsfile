@@ -1331,6 +1331,9 @@ pipeline {
                         beforeAgent true
                         beforeInput true
                     }
+                    options{
+                        retry(3)
+                    }
                     steps{
                         echo "Deploy to pypi"
                         unstash 'sdist'
