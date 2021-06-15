@@ -1341,6 +1341,12 @@ pipeline {
                     }
                     post{
                         cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                        [pattern: 'dist/', type: 'INCLUDE']
+                                    ]
+                            )
                             sh 'ls -laR'
 
                         }
