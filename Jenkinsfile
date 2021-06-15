@@ -1349,7 +1349,6 @@ pipeline {
                         }
                     }
                     steps{
-                        echo "Deploy to pypi"
                         unstash 'sdist'
                         script{
                             wheelStashes.each{
@@ -1377,8 +1376,6 @@ pipeline {
                                         [pattern: 'dist/', type: 'INCLUDE']
                                     ]
                             )
-                            sh 'ls -laR'
-
                         }
                     }
 
