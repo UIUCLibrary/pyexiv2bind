@@ -1344,7 +1344,6 @@ pipeline {
                             )
                         }
                     }
-
                     steps{
                         echo "Deploy to pypi"
                         unstash 'sdist'
