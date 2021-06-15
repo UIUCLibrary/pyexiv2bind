@@ -1337,6 +1337,11 @@ pipeline {
                                     null,
                                     ''
                                 )
+                            pypi.pypiUpload(
+                                credentialsId: 'jenkins-nexus',
+                                repositoryUrl: 'https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python/',
+                                glob: 'dist/*'
+                                )
                         }
                     }
                     post{
