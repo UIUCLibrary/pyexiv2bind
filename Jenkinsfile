@@ -1357,7 +1357,7 @@ pipeline {
                             def pypi = fileLoader.fromGit(
                                     'pypi',
                                     'https://github.com/UIUCLibrary/jenkins_helper_scripts.git',
-                                    'main',
+                                    '1',
                                     null,
                                     ''
                                 )
