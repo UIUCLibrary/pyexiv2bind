@@ -27,7 +27,11 @@ def DEVPI_CONFIG = [
     server: 'https://devpi.library.illinois.edu',
     credentialsId: 'DS_devpi',
 ]
-
+PYPI_SERVERS = [
+    'https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python/',
+    'https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_public/',
+    'https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_testing/'
+    ]
 SUPPORTED_MAC_VERSIONS = ['3.8', '3.9']
 SUPPORTED_LINUX_VERSIONS = ['3.6', '3.7', '3.8', '3.9']
 SUPPORTED_WINDOWS_VERSIONS = ['3.6', '3.7', '3.8', '3.9']
@@ -236,6 +240,11 @@ pipeline {
                 name: 'DEPLOY_DEVPI_PRODUCTION',
                 defaultValue: defaultParamValues.DEPLOY_DEVPI_PRODUCTION,
                 description: 'Deploy to https://devpi.library.illinois.edu/production/release'
+            )
+        booleanParam(
+                name: 'DEPLOY_PYPI',
+                defaultValue: false,
+                description: 'Deploy to pypi'
             )
         booleanParam(
                 name: 'DEPLOY_DOCS',
@@ -1308,8 +1317,69 @@ pipeline {
                 }
             }
         }
-//         stage('Deploy'){
-//             parallel {
+        stage('Deploy'){
+            parallel {
+                stage('Deploy to pypi') {
+                    agent {
+                        dockerfile {
+                            filename 'ci/docker/linux/test/Dockerfile'
+                            label 'linux && docker'
+                            additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL'
+                        }
+                    }
+                    when{
+                        allOf{
+                            equals expected: true, actual: params.BUILD_PACKAGES
+                            equals expected: true, actual: params.DEPLOY_PYPI
+                        }
+                        beforeAgent true
+                        beforeInput true
+                    }
+                    options{
+                        retry(3)
+                    }
+                    input {
+                        message 'Upload to pypi server?'
+                        parameters {
+                            choice(
+                                choices: PYPI_SERVERS,
+                                description: 'Url to the pypi index to upload python packages.',
+                                name: 'SERVER_URL'
+                            )
+                        }
+                    }
+                    steps{
+                        unstash 'sdist'
+                        script{
+                            wheelStashes.each{
+                                unstash it
+                            }
+                            def pypi = fileLoader.fromGit(
+                                    'pypi',
+                                    'https://github.com/UIUCLibrary/jenkins_helper_scripts.git',
+                                    '1',
+                                    null,
+                                    ''
+                                )
+                            pypi.pypiUpload(
+                                credentialsId: 'jenkins-nexus',
+                                repositoryUrl: SERVER_URL,
+                                glob: 'dist/*'
+                                )
+                        }
+                    }
+                    post{
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                        [pattern: 'dist/', type: 'INCLUDE']
+                                    ]
+                            )
+                        }
+                    }
+
+                }
                 stage('Deploy Online Documentation') {
                     agent any
                     when{
@@ -1328,7 +1398,7 @@ pipeline {
                         deploy_docs(props.Name, 'build/docs/html')
                     }
                 }
-//             }
-//         }
+            }
+        }
     }
 }

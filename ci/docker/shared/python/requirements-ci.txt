@@ -16,3 +16,4 @@ pytest-cov
 pytest-runner
 sphinx
 tox
+twine
