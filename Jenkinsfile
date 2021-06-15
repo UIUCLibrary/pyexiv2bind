@@ -238,6 +238,11 @@ pipeline {
                 description: 'Deploy to https://devpi.library.illinois.edu/production/release'
             )
         booleanParam(
+                name: 'DEPLOY_PYPI',
+                defaultValue: false,
+                description: 'Deploy to pypi'
+            )
+        booleanParam(
                 name: 'DEPLOY_DOCS',
                 defaultValue: defaultParamValues.DEPLOY_DOCS,
                 description: 'Update online documentation'
@@ -1319,7 +1324,10 @@ pipeline {
                         }
                     }
                     when{
-                        equals expected: true, actual: params.BUILD_PACKAGES
+                        allOf{
+                            equals expected: true, actual: params.BUILD_PACKAGES
+                            equals expected: true, actual: params.DEPLOY_PYPI
+                        }
                         beforeAgent true
                         beforeInput true
                     }
