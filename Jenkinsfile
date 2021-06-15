@@ -1360,7 +1360,7 @@ pipeline {
                                 )
                             pypi.pypiUpload(
                                 credentialsId: 'jenkins-nexus',
-                                repositoryUrl: 'https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python/',
+                                repositoryUrl: SERVER_URL,
                                 glob: 'dist/*'
                                 )
                         }
