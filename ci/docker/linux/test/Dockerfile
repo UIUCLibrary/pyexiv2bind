@@ -22,7 +22,7 @@ FROM base_image as SONAR_BUILDER
 RUN apt-get update && \
     apt-get install -y unzip
 
-ENV SONAR_SCANNER_VERSION=4.4.0.2170
+ENV SONAR_SCANNER_VERSION=4.6.2.2472
 ARG SONAR_SCANNER_HOME=/opt/sonar/${SONAR_SCANNER_VERSION}-linux
 ENV SONAR_USER_HOME=/opt/sonar/.sonar
 
@@ -62,7 +62,7 @@ FROM base_image
 RUN apt update && apt install -y ninja-build clang-tidy
 COPY --from=SONAR_BUILDER /opt/sonar /opt/sonar/
 COPY --from=SONAR_BUILDER /opt/build-wrapper-linux-x86 /opt/build-wrapper-linux-x86/
-ENV SONAR_SCANNER_VERSION=4.4.0.2170
+ENV SONAR_SCANNER_VERSION=4.6.2.2472
 ARG SONAR_SCANNER_HOME=/opt/sonar/${SONAR_SCANNER_VERSION}-linux
 ENV SONAR_USER_HOME=/opt/sonar/.sonar
 
