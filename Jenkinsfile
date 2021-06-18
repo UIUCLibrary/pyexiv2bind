@@ -143,7 +143,7 @@ def startup(){
             ws{
                 checkout scm
                 try{
-                    docker.image('python:3.8').inside {
+                    docker.image('python').inside {
                         timeout(2){
                             sh(
                                label: "Running setup.py with dist_info",
