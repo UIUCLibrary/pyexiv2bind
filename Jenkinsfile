@@ -419,9 +419,11 @@ pipeline {
                                         }
                                         stage('MyPy Static Analysis') {
                                             steps{
-                                                sh(returnStatus: true,
-                                                   script: 'mypy -p py3exiv2bind --html-report reports/mypy/html > logs/mypy.log'
-                                                  )
+                                                tee('logs/mypy.log'){
+                                                    sh(returnStatus: true,
+                                                       script: 'mypy -p py3exiv2bind --html-report reports/mypy/html'
+                                                      )
+                                                }
                                             }
                                             post {
                                                 always {
