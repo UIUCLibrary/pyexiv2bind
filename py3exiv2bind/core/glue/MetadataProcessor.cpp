@@ -7,7 +7,7 @@
 #include "ExifStrategy.h"
 #include "XmpStrategy.h"
 
-const std::map<std::string, std::string> &MetadataProcessor::getMetadata() const {
+const std::unordered_map<std::string, std::string> &MetadataProcessor::getMetadata() const {
     return metadata;
 }
 

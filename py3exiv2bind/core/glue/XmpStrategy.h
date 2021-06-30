@@ -8,7 +8,7 @@
 #include "AbsMetadataStrategy.h"
 class XmpStrategy : public AbsMetadataStrategy {
 public:
-    std::map<std::string, std::string> load(const Exiv2::Image &image) override;
+    std::unordered_map<std::string, std::string> load(const Exiv2::Image &image) override;
 };
 
 

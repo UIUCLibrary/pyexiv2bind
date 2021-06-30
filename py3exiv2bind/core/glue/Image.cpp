@@ -70,21 +70,21 @@ int Image::get_pixelWidth() const {
     return image->pixelWidth();
 }
 
-std::map<std::string, std::string> Image::get_exif_metadata() const {
+std::unordered_map<std::string, std::string> Image::get_exif_metadata() const {
     MetadataProcessor processor;
     processor.set_output_format(MetadataStrategies::EXIF);
     processor.build(*image);
     return processor.getMetadata();
 }
 
-std::map<std::string, std::string> Image::get_iptc_metadata() const {
+std::unordered_map<std::string, std::string> Image::get_iptc_metadata() const {
     MetadataProcessor processor;
     processor.set_output_format(MetadataStrategies::IPTC);
     processor.build(*image);
     return processor.getMetadata();
 }
 
-std::map<std::string, std::string> Image::get_xmp_metadata() const {
+std::unordered_map<std::string, std::string> Image::get_xmp_metadata() const {
     MetadataProcessor processor;
     processor.set_output_format(MetadataStrategies::XMP);
     processor.build(*image);

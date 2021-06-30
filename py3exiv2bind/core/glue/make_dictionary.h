@@ -7,13 +7,13 @@
 
 
 template<typename T1>
-std::map<std::string, std::string> make_dictionary(const T1 &data) {
+std::unordered_map<std::string, std::string> make_dictionary(const T1 &data) {
 
     if(data.empty()){
-        return std::map<std::string, std::string>();
+        return std::unordered_map<std::string, std::string>();
     }
 
-    std::map<std::string, std::string> metadata;
+    std::unordered_map<std::string, std::string> metadata;
     auto end = data.end();
     for (auto md = data.begin(); md != end; md++){
         metadata[md->key()] = md->value().toString();
