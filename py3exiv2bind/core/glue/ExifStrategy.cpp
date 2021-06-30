@@ -7,7 +7,7 @@
 #include <exiv2/error.hpp>
 #include <iostream>
 
-std::map<std::string, std::string> ExifStrategy::load(const Exiv2::Image &image){
+std::unordered_map<std::string, std::string> ExifStrategy::load(const Exiv2::Image &image){
     try{
         return make_dictionary(image.exifData());
     }catch (const Exiv2::AnyError &e){
