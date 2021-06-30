@@ -130,6 +130,12 @@ def startup(){
     parallel(
         [
             failFast: true,
+            'Loading Reference Build Information': {
+                node(){
+                    checkout scm
+                    discoverGitReferenceBuild(latestBuildIfNotFound: true)
+                }
+            },
             'Loading helper scripts and configs': {
                 node(){
                     ws{
