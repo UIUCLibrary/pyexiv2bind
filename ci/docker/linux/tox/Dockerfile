@@ -25,7 +25,7 @@ COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/require
 FROM wheel_builder_base as WHEEL_BUILDER_PY36
 RUN PYTHON=python3.6 && \
     $PYTHON -m pip install pip --upgrade pip && \
-    $PYTHON -m pip install wheel && \
+    $PYTHON -m pip install wheel build && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-ci.txt && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extra.txt
@@ -37,7 +37,7 @@ ARG PIP_INDEX_URL
 
 RUN PYTHON=python3.7 && \
     $PYTHON -m pip install pip --upgrade pip && \
-    $PYTHON -m pip install wheel && \
+    $PYTHON -m pip install wheel build && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-ci.txt && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extra.txt
@@ -49,7 +49,7 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 RUN PYTHON=python3.8 && \
     $PYTHON -m pip install pip --upgrade pip && \
-    $PYTHON -m pip install wheel && \
+    $PYTHON -m pip install wheel build && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-ci.txt && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extra.txt
@@ -61,7 +61,7 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 RUN PYTHON=python3.9 && \
     $PYTHON -m pip install pip --upgrade pip && \
-    $PYTHON -m pip install wheel && \
+    $PYTHON -m pip install wheel build && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-ci.txt && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements-extra.txt
