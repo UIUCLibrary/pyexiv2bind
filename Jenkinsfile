@@ -127,40 +127,45 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
 
 
 def startup(){
-    stage('Loading helper scripts and configs'){
-        node(){
-            ws{
-                checkout scm
-                devpi = load('ci/jenkins/scripts/devpi.groovy')
-                echo 'loading configurations'
-                defaultParamValues = readYaml(file: 'ci/jenkins/defaultParameters.yaml').parameters.defaults
-                configurations = load('ci/jenkins/scripts/configs.groovy').getConfigurations()
-            }
-        }
-    }
-    stage("Getting Distribution Info"){
-        node('linux && docker') {
-            ws{
-                checkout scm
-                try{
-                    docker.image('python').inside {
-                        timeout(2){
-                            sh(
-                               label: "Running setup.py with dist_info",
-                               script: """python --version
-                                          PIP_NO_CACHE_DIR=off python setup.py dist_info
-                                       """
-                            )
-                            stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
-                            archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
+    parallel(
+        [
+            failFast: true,
+            'Loading helper scripts and configs': {
+                node(){
+                    ws{
+                        checkout scm
+                        devpi = load('ci/jenkins/scripts/devpi.groovy')
+                        echo 'loading configurations'
+                        defaultParamValues = readYaml(file: 'ci/jenkins/defaultParameters.yaml').parameters.defaults
+                        configurations = load('ci/jenkins/scripts/configs.groovy').getConfigurations()
+                    }
+                }
+            },
+            "Getting Distribution Info": {
+                node('linux && docker') {
+                    ws{
+                        checkout scm
+                        try{
+                            docker.image('python').inside {
+                                timeout(2){
+                                    sh(
+                                       label: "Running setup.py with dist_info",
+                                       script: """python --version
+                                                  PIP_NO_CACHE_DIR=off python setup.py dist_info
+                                               """
+                                    )
+                                    stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
+                                    archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
+                                }
+                            }
+                        } finally{
+                            cleanWs()
                         }
                     }
-                } finally{
-                    cleanWs()
                 }
             }
-        }
-    }
+        ]
+    )
 }
 
 
