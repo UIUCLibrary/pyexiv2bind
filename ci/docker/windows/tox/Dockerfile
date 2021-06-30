@@ -98,7 +98,7 @@ ARG PIP_INDEX_URL
 COPY requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extra.txt c:/requirements/
 ENV PY_PYTHON=3.6
 RUN py -m pip install --upgrade pip && `
-    py -m pip install wheel && `
+    py -m pip install wheel build && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
@@ -111,7 +111,7 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 ENV PY_PYTHON=3.7
 RUN py -m pip install --upgrade pip && `
-    py -m pip install wheel && `
+    py -m pip install wheel build && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
@@ -124,7 +124,7 @@ ARG PIP_EXTRA_INDEX_URL-
 ARG PIP_INDEX_URL
 ENV PY_PYTHON=3.8
 RUN py -m pip install --upgrade pip && `
-    py -m pip install wheel && `
+    py -m pip install wheel build && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
@@ -137,7 +137,7 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 ENV PY_PYTHON=3.9
 RUN py -m pip install --upgrade pip && `
-    py -m pip install wheel && `
+    py -m pip install wheel build && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
