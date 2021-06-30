@@ -19,7 +19,7 @@ class Image(core.Image):
         if not os.path.exists(args[0]):
             raise FileNotFoundError("Unable to locate {}.".format(args[0]))
         super().__init__(*args, **kwargs)
-        for warning in self.warnings_logs:
+        for warning in self.warnings_logs:  # pylint: disable=not-an-iterable
             warnings.warn(warning.strip(), Warning)
 
     @property
