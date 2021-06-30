@@ -26,5 +26,7 @@ void MetadataProcessor::set_output_format(MetadataStrategies metadata_type) {
         case MetadataStrategies::XMP:
             metadata_strategy = std::make_unique<XmpStrategy>();
             break;
+        default:
+            break;
     }
 }
