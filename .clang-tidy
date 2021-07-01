@@ -1,0 +1,13 @@
+Checks: "-*,\
+clang-analyzer-*,\
+clang-diagnostic-*,\
+cert-*,\
+llvm-*,\
+misc-*,\
+readability-*,\
+-readability-magic-numbers,\
+google-*,\
+-google-readability-todo,\
+-google-readability-casting,\
+bugprone-*,
+"
