@@ -140,7 +140,7 @@ def startup(){
                 node(){
                     ws{
                         checkout scm
-//                         devpi = load('ci/jenkins/scripts/devpi.groovy')
+                        devpi = load('ci/jenkins/scripts/devpi.groovy')
                         echo 'loading configurations'
                         defaultParamValues = readYaml(file: 'ci/jenkins/defaultParameters.yaml').parameters.defaults
 //                         configurations = load('ci/jenkins/scripts/configs.groovy').getConfigurations()
@@ -379,27 +379,27 @@ pipeline {
                                                 }
                                             }
                                         }
-                                        stage('CPP Check'){
-                                            steps{
-                                                catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
-                                                    sh(label: 'Running cppcheck',
-                                                       script:'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json --enable=all --xml --output-file=logs/cppcheck_debug.xml'
-                                                       )
-                                                }
-                                            }
-                                            post{
-                                                always {
-                                                    recordIssues(
-                                                        filters: [
-//                                                             excludeFile('build/cpp/_deps/*'),
-                                                        ],
-                                                        tools: [
-                                                            cppCheck(pattern: 'logs/cppcheck_debug.xml')
-                                                        ]
-                                                    )
-                                                }
-                                            }
-                                        }
+//                                         stage('CPP Check'){
+//                                             steps{
+//                                                 catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
+//                                                     sh(label: 'Running cppcheck',
+//                                                        script:'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json --enable=all --xml --output-file=logs/cppcheck_debug.xml'
+//                                                        )
+//                                                 }
+//                                             }
+//                                             post{
+//                                                 always {
+//                                                     recordIssues(
+//                                                         filters: [
+// //                                                             excludeFile('build/cpp/_deps/*'),
+//                                                         ],
+//                                                         tools: [
+//                                                             cppCheck(pattern: 'logs/cppcheck_debug.xml')
+//                                                         ]
+//                                                     )
+//                                                 }
+//                                             }
+//                                         }
                                         stage('CTest'){
                                             steps{
                                                 sh(label: 'Running CTest',
