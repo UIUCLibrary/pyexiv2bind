@@ -4,7 +4,7 @@
 
 #ifndef PYEXIV2BIND_MAKE_DICTIONARY_H
 #define PYEXIV2BIND_MAKE_DICTIONARY_H
-
+#include <unordered_map>
 
 template<typename T1>
 std::unordered_map<std::string, std::string> make_dictionary(const T1 &data) {
