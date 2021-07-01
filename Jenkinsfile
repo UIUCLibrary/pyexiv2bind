@@ -1402,17 +1402,6 @@ pipeline {
                                 )
                         }
                     }
-                    post{
-                        cleanup{
-                            cleanWs(
-                                deleteDirs: true,
-                                patterns: [
-                                        [pattern: 'dist/', type: 'INCLUDE']
-                                    ]
-                            )
-                        }
-                    }
-
                 }
                 stage('Deploy Online Documentation') {
                     agent any
