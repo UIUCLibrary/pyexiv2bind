@@ -1,7 +1,8 @@
 Checks: "-*,\
+cert-*,\
 clang-analyzer-*,\
 clang-diagnostic-*,\
-cert-*,\
+cppcoreguidelines-*,\
 llvm-*,\
 misc-*,\
 readability-*,\
