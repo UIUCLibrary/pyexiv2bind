@@ -102,7 +102,9 @@ std::string Image::get_icc_profile() const {
         throw NoIccError();
     }
     const Exiv2::DataBuf *f = image->iccProfile();
-    data.write(reinterpret_cast<char *>(f->pData_), f->size_);
+    for(int i = 0; i < f->size_; i++){
+        data << f->pData_[i];
+    }
     data << std::endl;
     return data.str();
 
