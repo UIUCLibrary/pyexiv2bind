@@ -511,7 +511,7 @@ pipeline {
                                                   gcovr --root . --filter py3exiv2bind --exclude-directories build/python/temp/conan_cache --print-summary --keep --json -o reports/coverage/coverage-c-extension.json
                                                   '''
                                     )
-                                    sh '''gcovr --root . --filter py3exiv2bind --print-summary --keep --json -o reports/coverage/coverage_cpp.json '
+                                    sh '''gcovr --root . --filter py3exiv2bind --print-summary --keep --json -o reports/coverage/coverage_cpp.json
                                           gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --keep --print-summary --xml -o reports/coverage/coverage_cpp.xml
                                           '''
                                     stash(includes: 'reports/coverage/*.xml,reports/coverage/*.json', name: 'PYTHON_COVERAGE_REPORT')
