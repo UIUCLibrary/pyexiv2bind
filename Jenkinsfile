@@ -394,6 +394,7 @@ pipeline {
                                                 always {
                                                     recordIssues(
                                                         filters: [
+                                                            excludeType('unmatchedSuppression')
 //                                                             excludeFile('build/cpp/_deps/*'),
                                                         ],
                                                         tools: [
