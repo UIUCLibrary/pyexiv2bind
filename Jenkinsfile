@@ -372,10 +372,6 @@ pipeline {
                                             post{
                                                 always {
                                                     recordIssues(
-//                                                         filters: [
-//                                                             excludeFile('build/cpp/_deps/*'),
-//                                                             excludeFile('/usr/include/*'),
-//                                                         ],
                                                         tools: [clangTidy(pattern: 'logs/clang-tidy.log')]
                                                     )
                                                 }
