@@ -385,7 +385,6 @@ pipeline {
                                             steps{
                                                 catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
                                                     sh(label: 'Running cppcheck',
-//                                                        script: "cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json -i$WORKSPACE/build/cpp/_deps  --suppress=missingIncludeSystem --suppress=unmatchedSuppression --enable=all  --xml --output-file=logs/cppcheck_debug.xml"
                                                        script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json -i$WORKSPACE/build/cpp/_deps --suppress=*:$WORKSPACE/build/cpp/_deps/* --enable=all  --xml --output-file=logs/cppcheck_debug.xml'
                                                        )
                                                 }
@@ -1415,24 +1414,24 @@ pipeline {
                     }
 
                 }
-//                 stage('Deploy Online Documentation') {
-//                     agent any
-//                     when{
-//                         equals expected: true, actual: params.DEPLOY_DOCS
-//                         beforeAgent true
-//                         beforeInput true
-//                     }
-//                     options{
-//                         timeout(30)
-//                     }
-//                     input{
-//                         message 'Update project documentation?'
-//                     }
-//                     steps{
-//                         unstash 'DOCS_ARCHIVE'
-//                         deploy_docs(props.Name, 'build/docs/html')
-//                     }
-//                 }
+                stage('Deploy Online Documentation') {
+                    agent any
+                    when{
+                        equals expected: true, actual: params.DEPLOY_DOCS
+                        beforeAgent true
+                        beforeInput true
+                    }
+                    options{
+                        timeout(30)
+                    }
+                    input{
+                        message 'Update project documentation?'
+                    }
+                    steps{
+                        unstash 'DOCS_ARCHIVE'
+                        deploy_docs(props.Name, 'build/docs/html')
+                    }
+                }
             }
         }
     }
