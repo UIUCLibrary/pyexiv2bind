@@ -544,11 +544,11 @@ pipeline {
                                     """
                                     )
 
-                                unstash 'PYTHON_COVERAGE_REPORT'
-                                unstash 'PYTEST_REPORT'
+//                                 unstash 'PYTHON_COVERAGE_REPORT'
+//                                 unstash 'PYTEST_REPORT'
                 //                 unstash 'BANDIT_REPORT'
-                                unstash 'PYLINT_REPORT'
-                                unstash 'FLAKE8_REPORT'
+//                                 unstash 'PYLINT_REPORT'
+//                                 unstash 'FLAKE8_REPORT'
 
                                 sonarcloudSubmit('reports/sonar-report.json', 'sonarcloud-py3exiv2bind')
                             }
