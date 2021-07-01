@@ -9,7 +9,7 @@
 #include "AbsMetadataStrategy.h"
 
 class IPTC_Strategy : public AbsMetadataStrategy {
-    std::map<std::string, std::string> load(const Exiv2::Image::AutoPtr &image) override;
+    std::unordered_map<std::string, std::string> load(const Exiv2::Image &image) override;
 };
 
 

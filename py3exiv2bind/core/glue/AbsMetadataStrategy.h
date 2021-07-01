@@ -7,10 +7,11 @@
 
 
 #include <exiv2/image.hpp>
-
+#include <unordered_map>
 class AbsMetadataStrategy {
 public:
-    virtual std::map<std::string, std::string> load(const Exiv2::Image::AutoPtr &image) = 0;
+    virtual std::unordered_map<std::string, std::string> load(const Exiv2::Image &image) = 0;
+    virtual ~AbsMetadataStrategy() = default;
 };
 
 

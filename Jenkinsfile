@@ -27,7 +27,11 @@ def DEVPI_CONFIG = [
     server: 'https://devpi.library.illinois.edu',
     credentialsId: 'DS_devpi',
 ]
-
+PYPI_SERVERS = [
+    'https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python/',
+    'https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_public/',
+    'https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_testing/'
+    ]
 SUPPORTED_MAC_VERSIONS = ['3.8', '3.9']
 SUPPORTED_LINUX_VERSIONS = ['3.6', '3.7', '3.8', '3.9']
 SUPPORTED_WINDOWS_VERSIONS = ['3.6', '3.7', '3.8', '3.9']
@@ -123,40 +127,51 @@ def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
 
 
 def startup(){
-    stage('Loading helper scripts and configs'){
-        node(){
-            ws{
-                checkout scm
-                devpi = load('ci/jenkins/scripts/devpi.groovy')
-                echo 'loading configurations'
-                defaultParamValues = readYaml(file: 'ci/jenkins/defaultParameters.yaml').parameters.defaults
-                configurations = load('ci/jenkins/scripts/configs.groovy').getConfigurations()
-            }
-        }
-    }
-    stage("Getting Distribution Info"){
-        node('linux && docker') {
-            ws{
-                checkout scm
-                try{
-                    docker.image('python:3.8').inside {
-                        timeout(2){
-                            sh(
-                               label: "Running setup.py with dist_info",
-                               script: """python --version
-                                          PIP_NO_CACHE_DIR=off python setup.py dist_info
-                                       """
-                            )
-                            stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
-                            archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
+    parallel(
+        [
+            failFast: true,
+            'Loading Reference Build Information': {
+                node(){
+                    checkout scm
+                    discoverGitReferenceBuild(latestBuildIfNotFound: true)
+                }
+            },
+            'Loading helper scripts and configs': {
+                node(){
+                    ws{
+                        checkout scm
+                        devpi = load('ci/jenkins/scripts/devpi.groovy')
+                        echo 'loading configurations'
+                        defaultParamValues = readYaml(file: 'ci/jenkins/defaultParameters.yaml').parameters.defaults
+                        configurations = load('ci/jenkins/scripts/configs.groovy').getConfigurations()
+                    }
+                }
+            },
+            "Getting Distribution Info": {
+                node('linux && docker') {
+                    ws{
+                        checkout scm
+                        try{
+                            docker.image('python').inside {
+                                timeout(2){
+                                    sh(
+                                       label: "Running setup.py with dist_info",
+                                       script: """python --version
+                                                  PIP_NO_CACHE_DIR=off python setup.py dist_info
+                                               """
+                                    )
+                                    stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
+                                    archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
+                                }
+                            }
+                        } finally{
+                            cleanWs()
                         }
                     }
-                } finally{
-                    cleanWs()
                 }
             }
-        }
-    }
+        ]
+    )
 }
 
 
@@ -236,6 +251,11 @@ pipeline {
                 name: 'DEPLOY_DEVPI_PRODUCTION',
                 defaultValue: defaultParamValues.DEPLOY_DEVPI_PRODUCTION,
                 description: 'Deploy to https://devpi.library.illinois.edu/production/release'
+            )
+        booleanParam(
+                name: 'DEPLOY_PYPI',
+                defaultValue: false,
+                description: 'Deploy to pypi'
             )
         booleanParam(
                 name: 'DEPLOY_DOCS',
@@ -420,9 +440,11 @@ pipeline {
                                         }
                                         stage('MyPy Static Analysis') {
                                             steps{
-                                                sh(returnStatus: true,
-                                                   script: 'mypy -p py3exiv2bind --html-report reports/mypy/html > logs/mypy.log'
-                                                  )
+                                                tee('logs/mypy.log'){
+                                                    sh(returnStatus: true,
+                                                       script: 'mypy -p py3exiv2bind --html-report reports/mypy/html'
+                                                      )
+                                                }
                                             }
                                             post {
                                                 always {
@@ -661,7 +683,7 @@ pipeline {
                                                 ]
                                             ],
                                             buildCmd: {
-                                                bat "py -${pythonVersion} -m pip wheel -v --no-deps -w ./dist ."
+                                                bat "py -${pythonVersion} -m build --wheel"
                                             },
                                             post:[
                                                 cleanup: {
@@ -693,7 +715,7 @@ pipeline {
                                                 ]
                                             ],
                                             buildCmd: {
-                                                sh 'python3 -m pep517.build --source --out-dir dist/ .'
+                                                sh 'python3 -m build --sdist'
                                             },
                                             post:[
                                                 success: {
@@ -727,7 +749,7 @@ pipeline {
                                             ],
                                             buildCmd: {
                                                 sh(label: 'Building python wheel',
-                                                   script:"""python${pythonVersion} -m pip wheel --no-deps -w ./dist .
+                                                   script:"""python${pythonVersion} -m build --wheel
                                                              auditwheel repair ./dist/*.whl -w ./dist
                                                              """
                                                    )
@@ -1329,8 +1351,69 @@ pipeline {
                 }
             }
         }
-//         stage('Deploy'){
-//             parallel {
+        stage('Deploy'){
+            parallel {
+                stage('Deploy to pypi') {
+                    agent {
+                        dockerfile {
+                            filename 'ci/docker/linux/test/Dockerfile'
+                            label 'linux && docker'
+                            additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL'
+                        }
+                    }
+                    when{
+                        allOf{
+                            equals expected: true, actual: params.BUILD_PACKAGES
+                            equals expected: true, actual: params.DEPLOY_PYPI
+                        }
+                        beforeAgent true
+                        beforeInput true
+                    }
+                    options{
+                        retry(3)
+                    }
+                    input {
+                        message 'Upload to pypi server?'
+                        parameters {
+                            choice(
+                                choices: PYPI_SERVERS,
+                                description: 'Url to the pypi index to upload python packages.',
+                                name: 'SERVER_URL'
+                            )
+                        }
+                    }
+                    steps{
+                        unstash 'sdist'
+                        script{
+                            wheelStashes.each{
+                                unstash it
+                            }
+                            def pypi = fileLoader.fromGit(
+                                    'pypi',
+                                    'https://github.com/UIUCLibrary/jenkins_helper_scripts.git',
+                                    '1',
+                                    null,
+                                    ''
+                                )
+                            pypi.pypiUpload(
+                                credentialsId: 'jenkins-nexus',
+                                repositoryUrl: SERVER_URL,
+                                glob: 'dist/*'
+                                )
+                        }
+                    }
+                    post{
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                        [pattern: 'dist/', type: 'INCLUDE']
+                                    ]
+                            )
+                        }
+                    }
+
+                }
                 stage('Deploy Online Documentation') {
                     agent any
                     when{
@@ -1349,7 +1432,7 @@ pipeline {
                         deploy_docs(props.Name, 'build/docs/html')
                     }
                 }
-//             }
-//         }
+            }
+        }
     }
 }

@@ -7,10 +7,10 @@
 #include <exiv2/error.hpp>
 #include <iostream>
 
-std::map<std::string, std::string> IPTC_Strategy::load(const Exiv2::Image::AutoPtr &image) {
+std::unordered_map<std::string, std::string> IPTC_Strategy::load(const Exiv2::Image &image){
     try{
-        return make_dictionary(image->iptcData());
-    }catch (Exiv2::AnyError &e){
+        return make_dictionary(image.iptcData());
+    }catch (const Exiv2::AnyError &e){
 //        TODO: Handle errors
         std::cerr << e.what() <<std::endl;
         throw;

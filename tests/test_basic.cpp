@@ -59,7 +59,7 @@ TEST_CASE("Try tiff Image", "[glue][tiff]"){
 
     SECTION("get_icc_profile"){
         std::string icc_profile = i.get_icc_profile();
-        REQUIRE(icc_profile.length() != 0);
+        REQUIRE(icc_profile.length() > 1);
     }
 
     SECTION("get xmp"){

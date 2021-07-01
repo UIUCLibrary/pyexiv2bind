@@ -7,11 +7,11 @@
 #include "ExifStrategy.h"
 #include "XmpStrategy.h"
 
-const std::map<std::string, std::string> &MetadataProcessor::getMetadata() const {
+const std::unordered_map<std::string, std::string> &MetadataProcessor::getMetadata() const {
     return metadata;
 }
 
-void MetadataProcessor::build(const Exiv2::Image::AutoPtr &image) {
+void MetadataProcessor::build(const Exiv2::Image &image) {
     metadata = this->metadata_strategy->load(image);
 }
 
@@ -25,6 +25,8 @@ void MetadataProcessor::set_output_format(MetadataStrategies metadata_type) {
             break;
         case MetadataStrategies::XMP:
             metadata_strategy = std::make_unique<XmpStrategy>();
+            break;
+        default:
             break;
     }
 }

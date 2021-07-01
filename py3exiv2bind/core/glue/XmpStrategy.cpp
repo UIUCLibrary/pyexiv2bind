@@ -6,12 +6,11 @@
 #include "make_dictionary.h"
 #include <exiv2/error.hpp>
 #include <iostream>
-
-std::map<std::string, std::string> XmpStrategy::load(const Exiv2::Image::AutoPtr &image) {
+std::unordered_map<std::string, std::string> XmpStrategy::load(const Exiv2::Image &image){
     try{
-        return make_dictionary(image->xmpData());
+        return make_dictionary(image.xmpData());
 
-    }catch (Exiv2::AnyError &e){
+    }catch (const Exiv2::AnyError &e){
 //        TODO: Handle errors
         std::cerr << e.what() <<std::endl;
         throw;
