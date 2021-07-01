@@ -394,8 +394,8 @@ pipeline {
                                                 always {
                                                     recordIssues(
                                                         filters: [
-                                                            excludeType('unmatchedSuppression')
-//                                                             excludeFile('build/cpp/_deps/*'),
+                                                            excludeType('unmatchedSuppression'),
+                                                            excludeType('missingIncludeSystem'),
                                                         ],
                                                         tools: [
                                                             cppCheck(pattern: 'logs/cppcheck_debug.xml')
