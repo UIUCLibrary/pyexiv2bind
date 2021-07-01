@@ -344,7 +344,7 @@ pipeline {
                                                                   '''
                                                     )
                                                 }
-                                                sh 'build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --target all '
+                                                sh 'mkdir -p build/build_wrapper_output_directory && build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --target all '
                                             }
                                             post{
                                                 always{
