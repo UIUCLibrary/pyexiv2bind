@@ -319,13 +319,13 @@ pipeline {
                     stages{
                         stage('Testing') {
                             stages{
-                                stage('Setting up Test Env'){
-                                    steps{
-                                        sh '''mkdir -p build
-                                              mkdir -p logs
-                                              '''
-                                    }
-                                }
+//                                 stage('Setting up Test Env'){
+//                                     steps{
+//                                         sh '''mkdir -p build
+//                                               mkdir -p logs
+//                                               '''
+//                                     }
+//                                 }
                                 stage('Building Project for Testing'){
                                     parallel{
                                         stage('Building Extension for Python with coverage data'){
