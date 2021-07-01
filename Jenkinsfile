@@ -55,10 +55,10 @@ wheelStashes = []
 //
 
 def getMacDevpiName(pythonVersion, format){
-    if(format == "wheel"){
+    if(format == 'wheel'){
         return "${pythonVersion.replace('.','')}-*macosx*.*whl"
-    } else if(format == "sdist"){
-        return "tar.gz"
+    } else if(format == 'sdist'){
+        return 'tar.gz'
     } else{
         error "unknown format ${format}"
     }
@@ -147,7 +147,7 @@ def startup(){
                     }
                 }
             },
-            "Getting Distribution Info": {
+            'Getting Distribution Info': {
                 node('linux && docker') {
                     ws{
                         checkout scm
@@ -155,13 +155,13 @@ def startup(){
                             docker.image('python').inside {
                                 timeout(2){
                                     sh(
-                                       label: "Running setup.py with dist_info",
+                                       label: 'Running setup.py with dist_info',
                                        script: """python --version
                                                   PIP_NO_CACHE_DIR=off python setup.py dist_info
                                                """
                                     )
-                                    stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
-                                    archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
+                                    stash includes: 'py3exiv2bind.dist-info/**', name: 'DIST-INFO'
+                                    archiveArtifacts artifacts: 'py3exiv2bind.dist-info/**'
                                 }
                             }
                         } finally{
@@ -359,7 +359,7 @@ pipeline {
                                 }
                                 stage('Running Tests'){
                                     parallel {
-                                        stage("Clang Tidy Analysis") {
+                                        stage('Clang Tidy Analysis') {
                                             steps{
                                                 tee('logs/clang-tidy.log') {
                                                     catchError(buildResult: 'SUCCESS', message: 'Clang-Tidy found issues', stageResult: 'UNSTABLE') {
@@ -379,7 +379,7 @@ pipeline {
                                                 }
                                             }
                                         }
-                                        stage("CPP Check"){
+                                        stage('CPP Check'){
                                             steps{
                                                 catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
                                                     sh(label: 'Running cppcheck',
@@ -1301,7 +1301,7 @@ pipeline {
                     }
                     steps {
                         script{
-                            echo "Pushing to production/release index"
+                            echo 'Pushing to production/release index'
                             devpi.pushPackageToIndex(
                                 pkgName: props.Name,
                                 pkgVersion: props.Version,
