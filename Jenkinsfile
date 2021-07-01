@@ -1413,24 +1413,24 @@ pipeline {
                     }
 
                 }
-                stage('Deploy Online Documentation') {
-                    agent any
-                    when{
-                        equals expected: true, actual: params.DEPLOY_DOCS
-                        beforeAgent true
-                        beforeInput true
-                    }
-                    options{
-                        timeout(30)
-                    }
-                    input{
-                        message 'Update project documentation?'
-                    }
-                    steps{
-                        unstash 'DOCS_ARCHIVE'
-                        deploy_docs(props.Name, 'build/docs/html')
-                    }
-                }
+//                 stage('Deploy Online Documentation') {
+//                     agent any
+//                     when{
+//                         equals expected: true, actual: params.DEPLOY_DOCS
+//                         beforeAgent true
+//                         beforeInput true
+//                     }
+//                     options{
+//                         timeout(30)
+//                     }
+//                     input{
+//                         message 'Update project documentation?'
+//                     }
+//                     steps{
+//                         unstash 'DOCS_ARCHIVE'
+//                         deploy_docs(props.Name, 'build/docs/html')
+//                     }
+//                 }
             }
         }
     }
