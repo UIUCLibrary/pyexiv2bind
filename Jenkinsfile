@@ -140,7 +140,7 @@ def startup(){
                 node(){
                     ws{
                         checkout scm
-                        devpi = load('ci/jenkins/scripts/devpi.groovy')
+//                         devpi = load('ci/jenkins/scripts/devpi.groovy')
                         echo 'loading configurations'
                         defaultParamValues = readYaml(file: 'ci/jenkins/defaultParameters.yaml').parameters.defaults
 //                         configurations = load('ci/jenkins/scripts/configs.groovy').getConfigurations()
