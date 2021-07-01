@@ -387,18 +387,18 @@ pipeline {
                                                        )
                                                 }
                                             }
-                                            post{
-                                                always {
-                                                    recordIssues(
-                                                        filters: [
-//                                                             excludeFile('build/cpp/_deps/*'),
-                                                        ],
-                                                        tools: [
-                                                            cppCheck(pattern: 'logs/cppcheck_debug.xml')
-                                                        ]
-                                                    )
-                                                }
-                                            }
+//                                             post{
+//                                                 always {
+//                                                     recordIssues(
+//                                                         filters: [
+// //                                                             excludeFile('build/cpp/_deps/*'),
+//                                                         ],
+//                                                         tools: [
+//                                                             cppCheck(pattern: 'logs/cppcheck_debug.xml')
+//                                                         ]
+//                                                     )
+//                                                 }
+//                                             }
                                         }
                                         stage('CTest'){
                                             steps{
