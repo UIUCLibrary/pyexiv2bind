@@ -143,7 +143,7 @@ def startup(){
                         devpi = load('ci/jenkins/scripts/devpi.groovy')
                         echo 'loading configurations'
                         defaultParamValues = readYaml(file: 'ci/jenkins/defaultParameters.yaml').parameters.defaults
-                        configurations = load('ci/jenkins/scripts/configs.groovy').getConfigurations()
+//                         configurations = load('ci/jenkins/scripts/configs.groovy').getConfigurations()
                     }
                 }
             },
