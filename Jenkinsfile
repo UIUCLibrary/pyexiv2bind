@@ -1299,7 +1299,7 @@ pipeline {
                     }
                     steps {
                         script{
-                            echo 'Pushing to production/release index'
+//                             echo 'Pushing to production/release index'
                             devpi.pushPackageToIndex(
                                 pkgName: props.Name,
                                 pkgVersion: props.Version,
