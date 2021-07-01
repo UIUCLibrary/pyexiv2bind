@@ -156,9 +156,9 @@ def startup(){
                                 timeout(2){
                                     sh(
                                        label: 'Running setup.py with dist_info',
-                                       script: """python --version
+                                       script: '''python --version
                                                   PIP_NO_CACHE_DIR=off python setup.py dist_info
-                                               """
+                                               '''
                                     )
                                     stash includes: 'py3exiv2bind.dist-info/**', name: 'DIST-INFO'
                                     archiveArtifacts artifacts: 'py3exiv2bind.dist-info/**'
