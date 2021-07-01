@@ -365,17 +365,13 @@ pipeline {
                                             steps{
                                                 tee('logs/clang-tidy.log') {
                                                     catchError(buildResult: 'SUCCESS', message: 'Clang-Tidy found issues', stageResult: 'UNSTABLE') {
-                                                        sh(label: 'Run Clang Tidy', script: 'run-clang-tidy -clang-tidy-binary clang-tidy -p ./build/cpp/')
+                                                        sh(label: 'Run Clang Tidy', script: 'run-clang-tidy -clang-tidy-binary clang-tidy -p ./build/cpp/ py3exiv2bind/')
                                                     }
                                                 }
                                             }
                                             post{
                                                 always {
                                                     recordIssues(
-                                                        filters: [
-                                                            excludeFile('build/cpp/_deps/*'),
-                                                            excludeFile('/usr/include/*'),
-                                                        ],
                                                         tools: [clangTidy(pattern: 'logs/clang-tidy.log')]
                                                     )
                                                 }
