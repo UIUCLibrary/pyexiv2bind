@@ -15,4 +15,4 @@ RUN conan install /tmp --build  missing --no-import  && \
     conan remove --locks && \
     chmod -R 777 /conan
 
-RUN python3 -m pip install pep517
+RUN python3 -m pip install build
