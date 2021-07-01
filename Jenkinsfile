@@ -100,8 +100,10 @@ def deploy_docs(pkgName, prefix){
 }
 
 
-def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
-    def props = readProperties interpolate: true, file: metadataFile
+def sonarcloudSubmit(outputJson, sonarCredentials){
+    unstash 'DIST-INFO'
+
+    def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
     withSonarQubeEnv(installationName:'sonarcloud', credentialsId: sonarCredentials) {
         if (env.CHANGE_ID){
             sh(
@@ -548,8 +550,8 @@ pipeline {
                 //                 unstash 'BANDIT_REPORT'
                                 unstash 'PYLINT_REPORT'
                                 unstash 'FLAKE8_REPORT'
-                                unstash 'DIST-INFO'
-                                sonarcloudSubmit('py3exiv2bind.dist-info/METADATA', 'reports/sonar-report.json', 'sonarcloud-py3exiv2bind')
+
+                                sonarcloudSubmit('reports/sonar-report.json', 'sonarcloud-py3exiv2bind')
                             }
                             post {
                                 always{
