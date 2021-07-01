@@ -55,10 +55,10 @@ wheelStashes = []
 //
 
 def getMacDevpiName(pythonVersion, format){
-    if(format == "wheel"){
+    if(format == 'wheel'){
         return "${pythonVersion.replace('.','')}-*macosx*.*whl"
-    } else if(format == "sdist"){
-        return "tar.gz"
+    } else if(format == 'sdist'){
+        return 'tar.gz'
     } else{
         error "unknown format ${format}"
     }
@@ -100,8 +100,10 @@ def deploy_docs(pkgName, prefix){
 }
 
 
-def sonarcloudSubmit(metadataFile, outputJson, sonarCredentials){
-    def props = readProperties interpolate: true, file: metadataFile
+def sonarcloudSubmit(outputJson, sonarCredentials){
+    unstash 'DIST-INFO'
+
+    def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
     withSonarQubeEnv(installationName:'sonarcloud', credentialsId: sonarCredentials) {
         if (env.CHANGE_ID){
             sh(
@@ -143,11 +145,11 @@ def startup(){
                         devpi = load('ci/jenkins/scripts/devpi.groovy')
                         echo 'loading configurations'
                         defaultParamValues = readYaml(file: 'ci/jenkins/defaultParameters.yaml').parameters.defaults
-                        configurations = load('ci/jenkins/scripts/configs.groovy').getConfigurations()
+//                         configurations = load('ci/jenkins/scripts/configs.groovy').getConfigurations()
                     }
                 }
             },
-            "Getting Distribution Info": {
+            'Getting Distribution Info': {
                 node('linux && docker') {
                     ws{
                         checkout scm
@@ -155,13 +157,13 @@ def startup(){
                             docker.image('python').inside {
                                 timeout(2){
                                     sh(
-                                       label: "Running setup.py with dist_info",
-                                       script: """python --version
+                                       label: 'Running setup.py with dist_info',
+                                       script: '''python --version
                                                   PIP_NO_CACHE_DIR=off python setup.py dist_info
-                                               """
+                                               '''
                                     )
-                                    stash includes: "py3exiv2bind.dist-info/**", name: 'DIST-INFO'
-                                    archiveArtifacts artifacts: "py3exiv2bind.dist-info/**"
+                                    stash includes: 'py3exiv2bind.dist-info/**', name: 'DIST-INFO'
+                                    archiveArtifacts artifacts: 'py3exiv2bind.dist-info/**'
                                 }
                             }
                         } finally{
@@ -319,19 +321,19 @@ pipeline {
                     stages{
                         stage('Testing') {
                             stages{
-                                stage('Setting up Test Env'){
-                                    steps{
-                                        sh '''mkdir -p build
-                                              mkdir -p logs
-                                              '''
-                                    }
-                                }
+//                                 stage('Setting up Test Env'){
+//                                     steps{
+//                                         sh '''mkdir -p build
+//                                               mkdir -p logs
+//                                               '''
+//                                     }
+//                                 }
                                 stage('Building Project for Testing'){
                                     parallel{
                                         stage('Building Extension for Python with coverage data'){
                                             steps{
                                                 sh(label: 'Building debug build with coverage data',
-                                                   script: 'CFLAGS="--coverage -fprofile-arcs -ftest-coverage" LFLAGS="-lgcov --coverage" build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory python setup.py build -b build/python --build-lib build/python/lib/ --build-temp build/python/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace'
+                                                   script: 'mkdir -p build/build_wrapper_output_directory && CFLAGS="--coverage -fprofile-arcs -ftest-coverage" LFLAGS="-lgcov --coverage" build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory python setup.py build -b build/python --build-lib build/python/lib/ --build-temp build/python/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace'
                                                )
                                             }
                                         }
@@ -344,7 +346,7 @@ pipeline {
                                                                   '''
                                                     )
                                                 }
-                                                sh 'build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --target all '
+                                                sh 'mkdir -p build/build_wrapper_output_directory && build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --target all '
                                             }
                                             post{
                                                 always{
@@ -359,7 +361,7 @@ pipeline {
                                 }
                                 stage('Running Tests'){
                                     parallel {
-                                        stage("Clang Tidy Analysis") {
+                                        stage('Clang Tidy Analysis') {
                                             steps{
                                                 tee('logs/clang-tidy.log') {
                                                     catchError(buildResult: 'SUCCESS', message: 'Clang-Tidy found issues', stageResult: 'UNSTABLE') {
@@ -375,6 +377,28 @@ pipeline {
                                                             excludeFile('/usr/include/*'),
                                                         ],
                                                         tools: [clangTidy(pattern: 'logs/clang-tidy.log')]
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        stage('CPP Check'){
+                                            steps{
+                                                catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
+                                                    sh(label: 'Running cppcheck',
+                                                       script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json -i$WORKSPACE/build/cpp/_deps --suppress=*:$WORKSPACE/build/cpp/_deps/* --enable=all  --xml --output-file=logs/cppcheck_debug.xml'
+                                                       )
+                                                }
+                                            }
+                                            post{
+                                                always {
+                                                    recordIssues(
+                                                        filters: [
+                                                            excludeType('unmatchedSuppression'),
+                                                            excludeType('missingIncludeSystem'),
+                                                        ],
+                                                        tools: [
+                                                            cppCheck(pattern: 'logs/cppcheck_debug.xml')
+                                                        ]
                                                     )
                                                 }
                                             }
@@ -488,10 +512,10 @@ pipeline {
                                                   coverage combine
                                                   coverage xml -o ./reports/coverage/coverage-python.xml
                                                   gcovr --root . --filter py3exiv2bind --exclude-directories build/python/temp/conan_cache --print-summary --keep --json -o reports/coverage/coverage-c-extension.json
+                                                  gcovr --root . --filter py3exiv2bind --print-summary --keep --json -o reports/coverage/coverage_cpp.json
+                                                  gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --keep --print-summary --xml -o reports/coverage/coverage_cpp.xml
                                                   '''
-                                    )
-                                    sh 'gcovr --root . --filter py3exiv2bind --print-summary --keep --json -o reports/coverage/coverage_cpp.json '
-                                    sh 'gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --keep --print-summary --xml -o reports/coverage/coverage_cpp.xml'
+                                          )
                                     stash(includes: 'reports/coverage/*.xml,reports/coverage/*.json', name: 'PYTHON_COVERAGE_REPORT')
                                     unstash 'PYTHON_COVERAGE_REPORT'
                                     publishCoverage(
@@ -521,18 +545,15 @@ pipeline {
                                     """
                                     )
 
-                                unstash 'PYTHON_COVERAGE_REPORT'
-                                unstash 'PYTEST_REPORT'
+//                                 unstash 'PYTHON_COVERAGE_REPORT'
+//                                 unstash 'PYTEST_REPORT'
                 //                 unstash 'BANDIT_REPORT'
-                                unstash 'PYLINT_REPORT'
-                                unstash 'FLAKE8_REPORT'
-                                unstash 'DIST-INFO'
-                                sonarcloudSubmit('py3exiv2bind.dist-info/METADATA', 'reports/sonar-report.json', 'sonarcloud-py3exiv2bind')
+//                                 unstash 'PYLINT_REPORT'
+//                                 unstash 'FLAKE8_REPORT'
+
+                                sonarcloudSubmit('reports/sonar-report.json', 'sonarcloud-py3exiv2bind')
                             }
                             post {
-                                failure{
-                                    sh 'ls -aR'
-                                }
                                 always{
                                     script{
                                         if(fileExists('reports/sonar-report.json')){
@@ -1280,7 +1301,7 @@ pipeline {
                     }
                     steps {
                         script{
-                            echo "Pushing to production/release index"
+//                             echo 'Pushing to production/release index'
                             devpi.pushPackageToIndex(
                                 pkgName: props.Name,
                                 pkgVersion: props.Version,
@@ -1381,17 +1402,6 @@ pipeline {
                                 )
                         }
                     }
-                    post{
-                        cleanup{
-                            cleanWs(
-                                deleteDirs: true,
-                                patterns: [
-                                        [pattern: 'dist/', type: 'INCLUDE']
-                                    ]
-                            )
-                        }
-                    }
-
                 }
                 stage('Deploy Online Documentation') {
                     agent any
