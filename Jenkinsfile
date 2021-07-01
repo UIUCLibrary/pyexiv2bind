@@ -552,9 +552,6 @@ pipeline {
                                 sonarcloudSubmit('py3exiv2bind.dist-info/METADATA', 'reports/sonar-report.json', 'sonarcloud-py3exiv2bind')
                             }
                             post {
-                                failure{
-                                    sh 'ls -aR'
-                                }
                                 always{
                                     script{
                                         if(fileExists('reports/sonar-report.json')){
