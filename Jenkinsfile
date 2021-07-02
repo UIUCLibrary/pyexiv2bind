@@ -12,10 +12,11 @@
 // configurations      = null
 // defaultParamValues  = null
 
-def generate_ctest_memtest_script(){
-    writeFile(file: 'memcheck.cmake',
+def generate_ctest_memtest_script(scriptName){
+    writeFile(file: scriptName,
               text: '''set(CTEST_SOURCE_DIRECTORY "$ENV{WORKSPACE}")
                        set(CTEST_BINARY_DIRECTORY build/cpp)
+                       set(CTEST_MEMORYCHECK_COMMAND /usr/local/bin/drmemory)
                        set(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE "suppression.txt")
                        ctest_start("Experimental")
                        ctest_memcheck()
@@ -375,7 +376,7 @@ pipeline {
                                                            text: '''UNINITIALIZED READ: reading register rcx
                                                                     libpthread.so.0!__pthread_initialize_minimal_internal
                                                                     ''')
-                                                generate_ctest_memtest_script()
+                                                generate_ctest_memtest_script('memcheck.cmake')
 //                                                                                                 writeFile( file: 'memtest.cmake',
 //                                                                                                            text: '''set(CTEST_SOURCE_DIRECTORY "$ENV{WORKSPACE}")
 //                                                                                                                     set(CTEST_BINARY_DIRECTORY build/cpp)
