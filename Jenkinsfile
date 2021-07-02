@@ -369,7 +369,7 @@ pipeline {
                                                                     ''')
                                                 timeout(30){
                                                     sh( label: 'Running memcheck',
-                                                        script: 'ctest --test-dir build/cpp -T memcheck -j $(grep -c ^processor /proc/cpuinfo)'
+                                                        script: 'ctest --test-dir build/cpp -T memcheck --verbose -j $(grep -c ^processor /proc/cpuinfo)'
                                                         )
                                                 }
                                             }
