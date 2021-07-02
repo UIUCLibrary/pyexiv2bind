@@ -12,6 +12,15 @@
 // configurations      = null
 // defaultParamValues  = null
 
+def generate_ctest_memtest_script(){
+    writeFile(file: 'memtest.cmake',
+              text: '''set(CTEST_SOURCE_DIRECTORY "$ENV{WORKSPACE}")
+                       set(CTEST_BINARY_DIRECTORY build/cpp)
+                       set(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE "suppression.txt")
+                       ctest_start("Experimental")
+                       ctest_memcheck()
+                       ''')
+}
 
 def getDevPiStagingIndex(){
 
@@ -366,13 +375,14 @@ pipeline {
                                                            text: '''UNINITIALIZED READ: reading register rcx
                                                                     libpthread.so.0!__pthread_initialize_minimal_internal
                                                                     ''')
-                                                writeFile( file: 'memtest.cmake',
-                                                           text: '''set(CTEST_SOURCE_DIRECTORY "$ENV{WORKSPACE}")
-                                                                    set(CTEST_BINARY_DIRECTORY build/cpp)
-                                                                    set(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE "suppression.txt")
-                                                                    ctest_start("Experimental")
-                                                                    ctest_memcheck()
-                                                                    ''')
+                                                generate_ctest_memtest_script()
+//                                                                                                 writeFile( file: 'memtest.cmake',
+//                                                                                                            text: '''set(CTEST_SOURCE_DIRECTORY "$ENV{WORKSPACE}")
+//                                                                                                                     set(CTEST_BINARY_DIRECTORY build/cpp)
+//                                                                                                                     set(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE "suppression.txt")
+//                                                                                                                     ctest_start("Experimental")
+//                                                                                                                     ctest_memcheck()
+//                                                                                                                     ''')
                                                 timeout(30){
                                                     sh( label: 'Running memcheck',
                                                         script: 'ctest -S memcheck.cmake --verbose -j $(grep -c ^processor /proc/cpuinfo)'
