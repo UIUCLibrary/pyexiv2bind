@@ -37,7 +37,7 @@ Image::Image(const std::string &filename) : filename(filename) {
             }
         });
         image = std::unique_ptr<Exiv2::Image>(Exiv2::ImageFactory::open(filename));
-        assert(image != nullptr); // Make sure it's able to read the file
+        assert(image); // Make sure it's able to read the file
         image->readMetadata();
     } catch (const Exiv2::AnyError &e) {
         std::cerr << e.what() << std::endl;
