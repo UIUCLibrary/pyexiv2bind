@@ -2,13 +2,14 @@
 // Created by hborcher on 9/15/2017.
 //
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 #include "glue/glue.h"
 #include "glue/Image.h"
 #include "glue/glue_execeptions.h"
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
-
+// PyBind11 library generates warnings for clang-tidy that I can't do anything about
+// NOLINTNEXTLINE
 PYBIND11_MODULE(core, m) {
     pybind11::options options;
     options.enable_function_signatures();
@@ -31,8 +32,9 @@ PYBIND11_MODULE(core, m) {
             .def_property_readonly("warnings_logs", &Image::getWarning_logs,   "Warnings produced by Exiv2 library")
             .def("get_icc_profile_data",            [](const Image &i) {
                      return pybind11::bytes(i.get_icc_profile());
-                 },                                                            "Get the icc profile data"
-            );
+                 },                                                            "Get the icc profile data")
+            .def("is_good",                  &Image::is_good,     "Check if a file is loaded.")
+            ;
     pybind11::register_exception<NoIccError>(m, "NoICCError");
 
     m.def("set_dpi", &set_dpi,

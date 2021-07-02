@@ -2,15 +2,15 @@
 // Created by hborcher on 10/11/2017.
 //
 
-#include <string>
-#include <sstream>
-#include <cassert>
 #include "Image.h"
+#include "MetadataProcessor.h"
 #include "glue.h"
 #include "glue_execeptions.h"
-#include "MetadataProcessor.h"
+#include <cassert>
 #include <exiv2/error.hpp>
 #include <iostream>
+#include <sstream>
+#include <string>
 
 std::ostringstream warning_log;
 std::ostringstream error_log;
@@ -36,9 +36,8 @@ Image::Image(const std::string &filename) : filename(filename) {
                 default: break;
             }
         });
-//        std::make_unique<Exiv2::Image>()
         image = std::unique_ptr<Exiv2::Image>(Exiv2::ImageFactory::open(filename));
-        assert(image.get() != nullptr); // Make sure it's able to read the file
+        assert(image); // Make sure it's able to read the file
         image->readMetadata();
     } catch (const Exiv2::AnyError &e) {
         std::cerr << e.what() << std::endl;
@@ -96,7 +95,6 @@ bool Image::is_good() const {
 }
 
 std::string Image::get_icc_profile() const {
-    std::string profile;
     std::stringstream data;
     if (!image->iccProfileDefined()) {
         throw NoIccError();
