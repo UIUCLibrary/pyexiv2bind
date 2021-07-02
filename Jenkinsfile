@@ -13,7 +13,7 @@
 // defaultParamValues  = null
 
 def generate_ctest_memtest_script(){
-    writeFile(file: 'memtest.cmake',
+    writeFile(file: 'memcheck.cmake',
               text: '''set(CTEST_SOURCE_DIRECTORY "$ENV{WORKSPACE}")
                        set(CTEST_BINARY_DIRECTORY build/cpp)
                        set(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE "suppression.txt")
