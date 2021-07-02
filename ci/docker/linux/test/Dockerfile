@@ -56,7 +56,14 @@ RUN conan install /tmp --build outdated --no-import  && \
     conan remove "*" -b --src -f && \
     conan remove --locks
 #==============================================================================
-
+FROM base_image as DR_MEMORY_BUILDER
+RUN apt update && apt install -y wget
+WORKDIR /drmemory
+RUN wget --no-verbose https://github.com/DynamoRIO/drmemory/releases/download/release_2.3.0/DrMemory-Linux-2.3.0-1.tar.gz && \
+    mkdir -p /opt/drmemory && tar xzf DrMemory-Linux-2.3.0-1.tar.gz -C /opt/drmemory --strip-components=1 && \
+    ln -s /opt/drmemory/bin64/drmemory /usr/local/bin/drmemory && \
+    drmemory -version
+#==============================================================================
 FROM base_image
 
 RUN apt update && apt install -y ninja-build clang-tidy cppcheck
@@ -79,6 +86,9 @@ RUN chmod -R 777 $SONAR_USER_HOME
 
 ENV SONAR_SCANNER_OPTS="-server"
 
+COPY --from=DR_MEMORY_BUILDER /opt/drmemory /opt/drmemory/
+RUN ln -s /opt/drmemory/bin64/drmemory /usr/local/bin/drmemory && \
+    drmemory -version
 
 COPY --from=wheel_builder /wheels /wheels/
 RUN chmod -R 777 /wheels

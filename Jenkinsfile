@@ -42,17 +42,6 @@ wheelStashes = []
 // ============================================================================
 // Helper functions.
 // ============================================================================
-// def check_dll_deps(path){
-//     if(!isUnix()){
-//         findFiles(glob: "${path}/**/*.pyd").each{
-//             bat(
-//                 label: "Checking Python extension for dependents",
-//                 script: "dumpbin /DEPENDENTS ${it.path}"
-//             )
-//         }
-//     }
-// }
-//
 
 def getMacDevpiName(pythonVersion, format){
     if(format == 'wheel'){
@@ -63,16 +52,37 @@ def getMacDevpiName(pythonVersion, format){
         error "unknown format ${format}"
     }
 }
-def get_sonarqube_unresolved_issues(report_task_file){
-    script{
 
-        def props = readProperties  file: '.scannerwork/report-task.txt'
-        def response = httpRequest url : props['serverUrl'] + '/api/issues/search?componentKeys=' + props['projectKey'] + '&resolved=no'
-        def outstandingIssues = readJSON text: response.content
-        return outstandingIssues
+def runToxTests(){
+    script{
+        def tox
+        node(){
+            checkout scm
+            tox = load('ci/jenkins/scripts/tox.groovy')
+        }
+        def windowsJobs = [:]
+        def linuxJobs = [:]
+        parallel(
+            'Linux':{
+                linuxJobs = tox.getToxTestsParallel(
+                            envNamePrefix: 'Tox Linux',
+                            label: 'linux && docker',
+                            dockerfile: 'ci/docker/linux/tox/Dockerfile',
+                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                        )
+            },
+            'Windows':{
+                windowsJobs = tox.getToxTestsParallel(
+                                envNamePrefix: 'Tox Windows',
+                                label: 'windows && docker',
+                                dockerfile: 'ci/docker/windows/tox/Dockerfile',
+                                dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
+                            )
+            }
+        )
+        parallel(windowsJobs + linuxJobs)
     }
 }
-
 
 def deploy_docs(pkgName, prefix){
     sshPublisher(
@@ -100,34 +110,6 @@ def deploy_docs(pkgName, prefix){
 }
 
 
-def sonarcloudSubmit(outputJson, sonarCredentials){
-    unstash 'DIST-INFO'
-
-    def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
-    withSonarQubeEnv(installationName:'sonarcloud', credentialsId: sonarCredentials) {
-        if (env.CHANGE_ID){
-            sh(
-                label: 'Running Sonar Scanner',
-                script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory"
-                )
-        } else {
-            sh(
-                label: 'Running Sonar Scanner',
-                script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory"
-                )
-        }
-    }
-     timeout(time: 1, unit: 'HOURS') {
-         def sonarqube_result = waitForQualityGate(abortPipeline: false)
-         if (sonarqube_result.status != 'OK') {
-             unstable "SonarQube quality gate: ${sonarqube_result.status}"
-         }
-         def outstandingIssues = get_sonarqube_unresolved_issues('.scannerwork/report-task.txt')
-         writeJSON file: outputJson, json: outstandingIssues
-     }
-}
-
-
 def startup(){
     parallel(
         [
@@ -145,7 +127,6 @@ def startup(){
                         devpi = load('ci/jenkins/scripts/devpi.groovy')
                         echo 'loading configurations'
                         defaultParamValues = readYaml(file: 'ci/jenkins/defaultParameters.yaml').parameters.defaults
-//                         configurations = load('ci/jenkins/scripts/configs.groovy').getConfigurations()
                     }
                 }
             },
@@ -225,7 +206,13 @@ pipeline {
                 description: 'Run checks on code'
             )
         booleanParam(
+            name: 'RUN_MEMCHECK',
+            defaultValue: false,
+            description: 'Run Memcheck. NOTE: This can be very slow.'
+            )
+        booleanParam(
                 name: 'USE_SONARQUBE',
+//                 defaultValue: false,
                 defaultValue: defaultParamValues.USE_SONARQUBE,
                 description: 'Send data test data to SonarQube'
             )
@@ -321,13 +308,6 @@ pipeline {
                     stages{
                         stage('Testing') {
                             stages{
-//                                 stage('Setting up Test Env'){
-//                                     steps{
-//                                         sh '''mkdir -p build
-//                                               mkdir -p logs
-//                                               '''
-//                                     }
-//                                 }
                                 stage('Building Project for Testing'){
                                     parallel{
                                         stage('Building Extension for Python with coverage data'){
@@ -342,7 +322,8 @@ pipeline {
                                                 tee('logs/cmake-build.log'){
                                                     sh(label: 'Building C++ Code',
                                                        script: '''conan install . -if build/cpp/
-                                                                  cmake -B build/cpp/ -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -Dpyexiv2bind_generate_python_bindings:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
+                                                                  touch suppression.txt
+                                                                  cmake -B build/cpp/ -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -Dpyexiv2bind_generate_python_bindings:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra" -DCMAKE_BUILD_TYPE=Debug -DCTEST_MEMORYCHECK_SUPPRESSIONS_FILE=suppression.txt
                                                                   '''
                                                     )
                                                 }
@@ -373,6 +354,36 @@ pipeline {
                                                 always {
                                                     recordIssues(
                                                         tools: [clangTidy(pattern: 'logs/clang-tidy.log')]
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        stage('Memcheck'){
+                                            when{
+                                                equals expected: true, actual: params.RUN_MEMCHECK
+                                            }
+                                            steps{
+                                                writeFile( file: 'suppression.txt',
+                                                           text: '''UNINITIALIZED READ
+                                                                    libpthread.so.0!__pthread_initialize_minimal_internal
+                                                                    ''')
+                                                timeout(30){
+                                                    sh( label: 'Running memcheck',
+                                                        script: 'ctest --test-dir build/cpp -T memcheck -j $(grep -c ^processor /proc/cpuinfo)'
+                                                        )
+                                                }
+                                            }
+                                            post{
+                                                always{
+                                                    recordIssues(
+                                                        filters: [
+                                                            excludeFile('build/cpp/_deps/*'),
+//                                                             excludeFile('/drmemory_package/common/*'),
+//                                                             excludeFile('-:0')
+                                                        ],
+                                                        tools: [
+                                                            drMemory(pattern: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt')
+                                                            ]
                                                     )
                                                 }
                                             }
@@ -546,8 +557,9 @@ pipeline {
                 //                 unstash 'BANDIT_REPORT'
 //                                 unstash 'PYLINT_REPORT'
 //                                 unstash 'FLAKE8_REPORT'
-
-                                sonarcloudSubmit('reports/sonar-report.json', 'sonarcloud-py3exiv2bind')
+                                script{
+                                    load('ci/jenkins/scripts/sonarqube.groovy').sonarcloudSubmit('reports/sonar-report.json', 'sonarcloud-py3exiv2bind')
+                                }
                             }
                             post {
                                 always{
@@ -589,34 +601,7 @@ pipeline {
                        beforeAgent true
                     }
                     steps {
-                        script{
-                            def tox
-                            node(){
-                                checkout scm
-                                tox = load('ci/jenkins/scripts/tox.groovy')
-                            }
-                            def windowsJobs = [:]
-                            def linuxJobs = [:]
-                            parallel(
-                                'Linux':{
-                                    linuxJobs = tox.getToxTestsParallel(
-                                                envNamePrefix: 'Tox Linux',
-                                                label: 'linux && docker',
-                                                dockerfile: 'ci/docker/linux/tox/Dockerfile',
-                                                dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
-                                            )
-                                },
-                                'Windows':{
-                                    windowsJobs = tox.getToxTestsParallel(
-                                                    envNamePrefix: 'Tox Windows',
-                                                    label: 'windows && docker',
-                                                    dockerfile: 'ci/docker/windows/tox/Dockerfile',
-                                                    dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
-                                                )
-                                }
-                            )
-                            parallel(windowsJobs + linuxJobs)
-                        }
+                        runToxTests()
                     }
                 }
             }
@@ -1384,14 +1369,13 @@ pipeline {
                             wheelStashes.each{
                                 unstash it
                             }
-                            def pypi = fileLoader.fromGit(
+                            fileLoader.fromGit(
                                     'pypi',
                                     'https://github.com/UIUCLibrary/jenkins_helper_scripts.git',
                                     '1',
                                     null,
                                     ''
-                                )
-                            pypi.pypiUpload(
+                                ).pypiUpload(
                                 credentialsId: 'jenkins-nexus',
                                 repositoryUrl: SERVER_URL,
                                 glob: 'dist/*'
