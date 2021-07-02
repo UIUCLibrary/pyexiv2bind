@@ -8,7 +8,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-
+// PyBind11 library generates warnings for clang-tidy that I can't do anything about
+// NOLINTNEXTLINE
 PYBIND11_MODULE(core, m) {
     pybind11::options options;
     options.enable_function_signatures();
