@@ -367,9 +367,11 @@ pipeline {
                                                            text: '''UNINITIALIZED READ
                                                                     libpthread.so.0!__pthread_initialize_minimal_internal
                                                                     ''')
-                                                sh( label: 'Running memcheck',
-                                                    script: 'ctest --test-dir build/cpp -T memcheck -j $(grep -c ^processor /proc/cpuinfo)'
-                                                    )
+                                                timeout(30){
+                                                    sh( label: 'Running memcheck',
+                                                        script: 'ctest --test-dir build/cpp -T memcheck -j $(grep -c ^processor /proc/cpuinfo)'
+                                                        )
+                                                }
                                             }
                                             post{
                                                 always{
