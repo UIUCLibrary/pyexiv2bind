@@ -322,7 +322,6 @@ pipeline {
                                                 tee('logs/cmake-build.log'){
                                                     sh(label: 'Building C++ Code',
                                                        script: '''conan install . -if build/cpp/
-                                                                  touch suppression.txt
                                                                   cmake -B build/cpp/ -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -Dpyexiv2bind_generate_python_bindings:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra" -DCMAKE_BUILD_TYPE=Debug -DCTEST_MEMORYCHECK_SUPPRESSIONS_FILE:FILEPATH=suppression.txt
                                                                   '''
                                                     )
@@ -367,9 +366,17 @@ pipeline {
                                                            text: '''UNINITIALIZED READ: reading register rcx
                                                                     libpthread.so.0!__pthread_initialize_minimal_internal
                                                                     ''')
+                                                writeFile( file: 'memtest.cmake',
+                                                           text: """set(CTEST_SOURCE_DIRECTORY '${WORKSPACE}')
+                                                                    set(CTEST_BINARY_DIRECTORY build/cpp)
+                                                                    set(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE "suppression.txt")
+                                                                    ctest_start("Experimental")
+                                                                    ctest_memcheck()
+                                                                    """)
                                                 timeout(30){
                                                     sh( label: 'Running memcheck',
-                                                        script: 'ctest --test-dir build/cpp -T memcheck --verbose -j $(grep -c ^processor /proc/cpuinfo)'
+                                                        script: 'ctest -S memcheck.cmake --verbose -j $(grep -c ^processor /proc/cpuinfo)'
+//                                                         script: 'ctest --test-dir build/cpp -T memcheck --verbose -j $(grep -c ^processor /proc/cpuinfo)'
                                                         )
                                                 }
                                             }
