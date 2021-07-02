@@ -13,11 +13,15 @@
 // defaultParamValues  = null
 
 def generate_ctest_memtest_script(scriptName){
+    writeFile( file: 'suppression.txt',
+               text: '''UNINITIALIZED READ: reading register rcx
+                        libpthread.so.0!__pthread_initialize_minimal_internal
+                        ''')
     writeFile(file: scriptName,
               text: '''set(CTEST_SOURCE_DIRECTORY "$ENV{WORKSPACE}")
                        set(CTEST_BINARY_DIRECTORY build/cpp)
                        set(CTEST_MEMORYCHECK_COMMAND /usr/local/bin/drmemory)
-                       set(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE "suppression.txt")
+                       set(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE "$ENV{WORKSPACE}/suppression.txt")
                        ctest_start("Experimental")
                        ctest_memcheck()
                        ''')
@@ -217,13 +221,14 @@ pipeline {
             )
         booleanParam(
             name: 'RUN_MEMCHECK',
-            defaultValue: false,
+//             defaultValue: false,
+            defaultValue: true,
             description: 'Run Memcheck. NOTE: This can be very slow.'
             )
         booleanParam(
                 name: 'USE_SONARQUBE',
-//                 defaultValue: false,
-                defaultValue: defaultParamValues.USE_SONARQUBE,
+                defaultValue: false,
+//                 defaultValue: defaultParamValues.USE_SONARQUBE,
                 description: 'Send data test data to SonarQube'
             )
         booleanParam(
@@ -372,10 +377,7 @@ pipeline {
                                                 equals expected: true, actual: params.RUN_MEMCHECK
                                             }
                                             steps{
-                                                writeFile( file: 'suppression.txt',
-                                                           text: '''UNINITIALIZED READ: reading register rcx
-                                                                    libpthread.so.0!__pthread_initialize_minimal_internal
-                                                                    ''')
+
                                                 generate_ctest_memtest_script('memcheck.cmake')
 //                                                                                                 writeFile( file: 'memtest.cmake',
 //                                                                                                            text: '''set(CTEST_SOURCE_DIRECTORY "$ENV{WORKSPACE}")
@@ -393,6 +395,7 @@ pipeline {
                                             }
                                             post{
                                                 always{
+                                                    sh 'ls -la'
                                                     recordIssues(
                                                         filters: [
                                                             excludeFile('build/cpp/_deps/*'),
