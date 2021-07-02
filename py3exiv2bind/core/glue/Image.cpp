@@ -95,7 +95,6 @@ bool Image::is_good() const {
 }
 
 std::string Image::get_icc_profile() const {
-    std::string profile;
     std::stringstream data;
     if (!image->iccProfileDefined()) {
         throw NoIccError();
