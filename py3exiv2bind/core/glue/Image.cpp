@@ -2,15 +2,15 @@
 // Created by hborcher on 10/11/2017.
 //
 
-#include <string>
-#include <sstream>
-#include <cassert>
 #include "Image.h"
+#include "MetadataProcessor.h"
 #include "glue.h"
 #include "glue_execeptions.h"
-#include "MetadataProcessor.h"
+#include <cassert>
 #include <exiv2/error.hpp>
 #include <iostream>
+#include <sstream>
+#include <string>
 
 std::ostringstream warning_log;
 std::ostringstream error_log;

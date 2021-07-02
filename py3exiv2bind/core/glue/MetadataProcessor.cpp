@@ -3,8 +3,8 @@
 //
 
 #include "MetadataProcessor.h"
-#include "IPTC_Strategy.h"
 #include "ExifStrategy.h"
+#include "IPTC_Strategy.h"
 #include "XmpStrategy.h"
 
 const std::unordered_map<std::string, std::string> &MetadataProcessor::getMetadata() const {
