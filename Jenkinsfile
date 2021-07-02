@@ -331,7 +331,7 @@ pipeline {
                                                 tee('logs/cmake-build.log'){
                                                     sh(label: 'Building C++ Code',
                                                        script: '''conan install . -if build/cpp/
-                                                                  cmake -B build/cpp/ -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -Dpyexiv2bind_generate_python_bindings:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra" -DCMAKE_BUILD_TYPE=Debug -DCTEST_MEMORYCHECK_SUPPRESSIONS_FILE:FILEPATH=suppression.txt
+                                                                  cmake -B build/cpp/ -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -Dpyexiv2bind_generate_python_bindings:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra" -DCMAKE_BUILD_TYPE=Debug
                                                                   '''
                                                     )
                                                 }
