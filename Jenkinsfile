@@ -364,7 +364,7 @@ pipeline {
                                             }
                                             steps{
                                                 writeFile( file: 'suppression.txt',
-                                                           text: '''UNINITIALIZED READ
+                                                           text: '''UNINITIALIZED READ: reading register rcx
                                                                     libpthread.so.0!__pthread_initialize_minimal_internal
                                                                     ''')
                                                 timeout(30){
@@ -379,7 +379,7 @@ pipeline {
                                                         filters: [
                                                             excludeFile('build/cpp/_deps/*'),
 //                                                             excludeFile('/drmemory_package/common/*'),
-                                                            excludeFile('-:0')
+//                                                             excludeFile('-:0')
                                                         ],
                                                         tools: [
                                                             drMemory(pattern: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt')
