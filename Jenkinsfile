@@ -379,7 +379,7 @@ pipeline {
                                                         filters: [
                                                             excludeFile('build/cpp/_deps/*'),
 //                                                             excludeFile('/drmemory_package/common/*'),
-//                                                             excludeFile('-:0')
+                                                            excludeFile('-:0')
                                                         ],
                                                         tools: [
                                                             drMemory(pattern: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt')
