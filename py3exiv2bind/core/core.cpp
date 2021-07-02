@@ -2,11 +2,11 @@
 // Created by hborcher on 9/15/2017.
 //
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 #include "glue/glue.h"
 #include "glue/Image.h"
 #include "glue/glue_execeptions.h"
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 
 PYBIND11_MODULE(core, m) {
