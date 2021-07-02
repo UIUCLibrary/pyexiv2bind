@@ -398,19 +398,19 @@ pipeline {
                                             post{
                                                 always{
                                                     xunit(
-//                                                         testTimeMargin: '3000',
-//                                                         thresholdMode: 1,
-//                                                         thresholds: [
-//                                                             failed(),
-//                                                             skipped()
-//                                                         ],
+                                                        testTimeMargin: '3000',
+                                                        thresholdMode: 1,
+                                                        thresholds: [
+                                                            failed(),
+                                                            skipped()
+                                                        ],
                                                         tools: [
                                                             CTest(
-//                                                                 deleteOutputFiles: true,
-//                                                                 failIfNotNew: true,
+                                                                deleteOutputFiles: true,
+                                                                failIfNotNew: true,
                                                                 pattern: 'build/Testing/**/*.xml',
-//                                                                 skipNoTestFiles: true,
-//                                                                 stopProcessingIfError: true
+                                                                skipNoTestFiles: true,
+                                                                stopProcessingIfError: true
                                                             )
                                                         ]
                                                    )
