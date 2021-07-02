@@ -546,8 +546,9 @@ pipeline {
                 //                 unstash 'BANDIT_REPORT'
 //                                 unstash 'PYLINT_REPORT'
 //                                 unstash 'FLAKE8_REPORT'
-
-                                sonarcloudSubmit('reports/sonar-report.json', 'sonarcloud-py3exiv2bind')
+                                script{
+                                    sonarcloudSubmit('reports/sonar-report.json', 'sonarcloud-py3exiv2bind')
+                                }
                             }
                             post {
                                 always{
