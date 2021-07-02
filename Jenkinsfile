@@ -225,6 +225,11 @@ pipeline {
                 description: 'Run checks on code'
             )
         booleanParam(
+            name: 'RUN_MEMCHECK',
+            defaultValue: false,
+            description: 'Run Memcheck. NOTE: This can be very slow.'
+            )
+        booleanParam(
                 name: 'USE_SONARQUBE',
                 defaultValue: defaultParamValues.USE_SONARQUBE,
                 description: 'Send data test data to SonarQube'
@@ -342,7 +347,8 @@ pipeline {
                                                 tee('logs/cmake-build.log'){
                                                     sh(label: 'Building C++ Code',
                                                        script: '''conan install . -if build/cpp/
-                                                                  cmake -B build/cpp/ -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -Dpyexiv2bind_generate_python_bindings:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
+                                                                  touch suppression.txt
+                                                                  cmake -B build/cpp/ -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -Dpyexiv2bind_generate_python_bindings:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra" -DCMAKE_BUILD_TYPE=Debug -DCTEST_MEMORYCHECK_SUPPRESSIONS_FILE=suppression.txt
                                                                   '''
                                                     )
                                                 }
@@ -373,6 +379,34 @@ pipeline {
                                                 always {
                                                     recordIssues(
                                                         tools: [clangTidy(pattern: 'logs/clang-tidy.log')]
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        stage('Memcheck'){
+                                            when{
+                                                equals expected: true, actual: params.RUN_MEMCHECK
+                                            }
+                                            steps{
+                                                writeFile( file: 'suppression.txt',
+                                                           text: '''UNINITIALIZED READ
+                                                                    libpthread.so.0!__pthread_initialize_minimal_internal
+                                                                    ''')
+                                                sh( label: 'Running memcheck',
+                                                    script: 'ctest --test-dir build/cpp -T memcheck -j $(grep -c ^processor /proc/cpuinfo)'
+                                                    )
+                                            }
+                                            post{
+                                                always{
+                                                    recordIssues(
+                                                        filters: [
+                                                            excludeFile('build/cpp/_deps/*'),
+//                                                             excludeFile('/drmemory_package/common/*'),
+//                                                             excludeFile('-:0')
+                                                        ],
+                                                        tools: [
+                                                            drMemory(pattern: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt')
+                                                            ]
                                                     )
                                                 }
                                             }
