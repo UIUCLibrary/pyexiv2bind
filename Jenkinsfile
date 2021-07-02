@@ -225,7 +225,13 @@ pipeline {
                 description: 'Run checks on code'
             )
         booleanParam(
+            name: 'RUN_MEMCHECK',
+            defaultValue: true,
+            description: 'Run Memcheck. NOTE: This can be very slow.'
+            )
+        booleanParam(
                 name: 'USE_SONARQUBE',
+//                 defaultValue: false,
                 defaultValue: defaultParamValues.USE_SONARQUBE,
                 description: 'Send data test data to SonarQube'
             )
@@ -375,6 +381,16 @@ pipeline {
                                                         tools: [clangTidy(pattern: 'logs/clang-tidy.log')]
                                                     )
                                                 }
+                                            }
+                                        }
+                                        stage('Memcheck'){
+                                            when{
+                                                equals expected: true, actual: params.RUN_MEMCHECK
+                                            }
+                                            steps{
+                                                sh( label: 'Running memcheck',
+                                                    script: 'ctest --test-dir build/cpp -T memcheck -j $(grep -c ^processor /proc/cpuinfo)'
+                                                    )
                                             }
                                         }
                                         stage('CPP Check'){
