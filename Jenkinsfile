@@ -12,6 +12,20 @@
 // configurations      = null
 // defaultParamValues  = null
 
+def generate_ctest_memtest_script(scriptName){
+    writeFile( file: 'suppression.txt',
+               text: '''UNINITIALIZED READ: reading register rcx
+                        libpthread.so.0!__pthread_initialize_minimal_internal
+                        ''')
+    writeFile(file: scriptName,
+              text: '''set(CTEST_SOURCE_DIRECTORY "$ENV{WORKSPACE}")
+                       set(CTEST_BINARY_DIRECTORY build/cpp)
+                       set(CTEST_MEMORYCHECK_COMMAND /usr/local/bin/drmemory)
+                       set(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE "$ENV{WORKSPACE}/suppression.txt")
+                       ctest_start("Experimental")
+                       ctest_memcheck()
+                       ''')
+}
 
 def getDevPiStagingIndex(){
 
@@ -212,7 +226,6 @@ pipeline {
             )
         booleanParam(
                 name: 'USE_SONARQUBE',
-//                 defaultValue: false,
                 defaultValue: defaultParamValues.USE_SONARQUBE,
                 description: 'Send data test data to SonarQube'
             )
@@ -322,8 +335,7 @@ pipeline {
                                                 tee('logs/cmake-build.log'){
                                                     sh(label: 'Building C++ Code',
                                                        script: '''conan install . -if build/cpp/
-                                                                  touch suppression.txt
-                                                                  cmake -B build/cpp/ -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -Dpyexiv2bind_generate_python_bindings:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra" -DCMAKE_BUILD_TYPE=Debug -DCTEST_MEMORYCHECK_SUPPRESSIONS_FILE=suppression.txt
+                                                                  cmake -B build/cpp/ -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -Dpyexiv2bind_generate_python_bindings:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra" -DCMAKE_BUILD_TYPE=Debug
                                                                   '''
                                                     )
                                                 }
@@ -363,18 +375,25 @@ pipeline {
                                                 equals expected: true, actual: params.RUN_MEMCHECK
                                             }
                                             steps{
-                                                writeFile( file: 'suppression.txt',
-                                                           text: '''UNINITIALIZED READ
-                                                                    libpthread.so.0!__pthread_initialize_minimal_internal
-                                                                    ''')
+
+                                                generate_ctest_memtest_script('memcheck.cmake')
+//                                                                                                 writeFile( file: 'memtest.cmake',
+//                                                                                                            text: '''set(CTEST_SOURCE_DIRECTORY "$ENV{WORKSPACE}")
+//                                                                                                                     set(CTEST_BINARY_DIRECTORY build/cpp)
+//                                                                                                                     set(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE "suppression.txt")
+//                                                                                                                     ctest_start("Experimental")
+//                                                                                                                     ctest_memcheck()
+//                                                                                                                     ''')
                                                 timeout(30){
                                                     sh( label: 'Running memcheck',
-                                                        script: 'ctest --test-dir build/cpp -T memcheck -j $(grep -c ^processor /proc/cpuinfo)'
+                                                        script: 'ctest -S memcheck.cmake --verbose -j $(grep -c ^processor /proc/cpuinfo)'
+//                                                         script: 'ctest --test-dir build/cpp -T memcheck --verbose -j $(grep -c ^processor /proc/cpuinfo)'
                                                         )
                                                 }
                                             }
                                             post{
                                                 always{
+                                                    sh 'ls -la'
                                                     recordIssues(
                                                         filters: [
                                                             excludeFile('build/cpp/_deps/*'),
