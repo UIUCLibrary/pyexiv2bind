@@ -221,14 +221,12 @@ pipeline {
             )
         booleanParam(
             name: 'RUN_MEMCHECK',
-//             defaultValue: false,
-            defaultValue: true,
+            defaultValue: false,
             description: 'Run Memcheck. NOTE: This can be very slow.'
             )
         booleanParam(
                 name: 'USE_SONARQUBE',
-                defaultValue: false,
-//                 defaultValue: defaultParamValues.USE_SONARQUBE,
+                defaultValue: defaultParamValues.USE_SONARQUBE,
                 description: 'Send data test data to SonarQube'
             )
         booleanParam(
