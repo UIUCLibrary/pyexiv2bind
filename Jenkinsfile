@@ -42,7 +42,6 @@ def DEVPI_CONFIG = [
     credentialsId: 'DS_devpi',
 ]
 PYPI_SERVERS = [
-    'https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python/',
     'https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_public/',
     'https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_testing/'
     ]
