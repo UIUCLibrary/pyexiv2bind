@@ -948,6 +948,7 @@ setup(
     tests_require=['pytest'],
     libraries=[exiv2],
     ext_modules=[exiv2_extension],
+    package_data={"py3exiv2bind": ["py.typed"]},
     cmdclass={
         "build_ext": BuildPybind11Extension,
         "build_clib": BuildExiv2,
