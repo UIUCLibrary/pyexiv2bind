@@ -144,6 +144,19 @@ RUN py -m pip install --upgrade pip && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
 
+# ==============================================================================
+FROM BASE_BUILDER as WHEEL_BUilDER_PY310
+SHELL ["cmd", "/S", "/C" ]
+COPY requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extra.txt c:/requirements/
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+ENV PY_PYTHON=3.10
+RUN py -m pip install --upgrade pip && `
+    py -m pip install wheel build && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
+
 
 # ==============================================================================
 FROM BASE_BUILDER as CONAN_BUILDER
@@ -175,6 +188,8 @@ COPY --from=WHEEL_BUilDER_PY38 c:/wheels/ c:/wheels/
 RUN py -3.8 -m pip install pip --upgrade ; py -3.8 -m pip install wheel --upgrade ; py -3.8 -m pip install tox conan wheel build
 COPY --from=WHEEL_BUilDER_PY39 c:/wheels/ c:/wheels/
 RUN py -3.9 -m pip install pip --upgrade ; py -3.9 -m pip install wheel --upgrade ; py -3.9 -m pip install tox conan wheel build
+COPY --from=WHEEL_BUilDER_PY310 c:/wheels/ c:/wheels/
+RUN py -3.10 -m pip install pip --upgrade ; py -3.10 -m pip install wheel --upgrade ; py -3.10 -m pip install tox conan wheel build
 
 
 RUN python -m pip install pip --upgrade ; pip install tox conan wheel build
