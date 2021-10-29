@@ -517,7 +517,7 @@ pipeline {
                                         }
                                         stage('Task Scanner'){
                                             steps{
-                                                recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'py3exiv2bind/**/*.py', normalTags: 'TODO')])
+                                                recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'py3exiv2bind/**/*.py, py3exiv2bind/**/*.cpp', normalTags: 'TODO')])
                                             }
                                         }
                                         stage('Memcheck'){
