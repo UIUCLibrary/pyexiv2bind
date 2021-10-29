@@ -369,6 +369,11 @@ pipeline {
                                                 }
                                             }
                                         }
+                                        stage('Task Scanner'){
+                                            steps{
+                                                recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'py3exiv2bind/**/*.py', normalTags: 'TODO')])
+                                            }
+                                        }
                                         stage('Memcheck'){
                                             when{
                                                 equals expected: true, actual: params.RUN_MEMCHECK
