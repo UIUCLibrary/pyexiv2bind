@@ -397,7 +397,6 @@ pipeline {
                                             }
                                             post{
                                                 always{
-                                                    sh 'ls -la'
                                                     recordIssues(
                                                         filters: [
                                                             excludeFile('build/cpp/_deps/*'),
