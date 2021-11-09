@@ -90,6 +90,7 @@ RUN $PYTHON_VERSIONS = @(${Env:PYTHON_36_VERSION}, ${Env:PYTHON_37_VERSION}, ${E
     py -3.7 --version ; `
     py -3.8 --version ; `
     py -3.9 --version ; `
+    py -3.10 --version ; `
     Write-Host "Installing Python with Chocolatey - Done"
 
 # ==============================================================================
