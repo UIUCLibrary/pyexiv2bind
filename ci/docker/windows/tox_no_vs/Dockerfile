@@ -38,9 +38,11 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
 
 ARG PYTHON_36_VERSION=3.6.8
 ARG PYTHON_37_VERSION=3.7.9
-ARG PYTHON_38_VERSION=3.8.5
-ARG PYTHON_39_VERSION=3.9.0
-RUN $PYTHON_VERSIONS = @(${Env:PYTHON_36_VERSION}, ${Env:PYTHON_37_VERSION}, ${Env:PYTHON_38_VERSION}, ${Env:PYTHON_39_VERSION}) ; `
+ARG PYTHON_38_VERSION=3.8.10
+ARG PYTHON_39_VERSION=3.9.7
+ARG PYTHON_310_VERSION=3.10.0
+
+RUN $PYTHON_VERSIONS = @(${Env:PYTHON_36_VERSION}, ${Env:PYTHON_37_VERSION}, ${Env:PYTHON_38_VERSION}, ${Env:PYTHON_39_VERSION} , ${Env:PYTHON_310_VERSION}) ; `
     foreach( $PYTHON_VERSION in $PYTHON_VERSIONS ){ `
         Write-Host "Installing Python $PYTHON_VERSION with Chocolatey" ; `
         $process = start-process -NoNewWindow -PassThru -FilePath C:\ProgramData\chocolatey\bin\choco.exe -ArgumentList 'install -y --stoponfirstfailure --no-progress --verbose python3', "--version=$PYTHON_VERSION", "-my" -Wait ;`
@@ -58,6 +60,7 @@ RUN $PYTHON_VERSIONS = @(${Env:PYTHON_36_VERSION}, ${Env:PYTHON_37_VERSION}, ${E
     py -3.7 --version ; `
     py -3.8 --version ; `
     py -3.9 --version ; `
+    py -3.10 --version ; `
     Write-Host "Installing Python with Chocolatey - Done"
 COPY --from=certsgen c:/roots.sst roots.sst
 RUN certutil -addstore -f root roots.sst ; `
@@ -117,11 +120,25 @@ RUN py -m pip install --upgrade pip && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-dev.txt
 
 # ==============================================================================
+FROM CHOCOLATEY_BASE as WHEEL_BUILDER_PY310
+SHELL ["cmd", "/S", "/C" ]
+COPY ci/docker/shared/python/requirements-ci.txt requirements-dev.txt c:/requirements/
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+ENV PY_PYTHON=3.10
+ENV PIP_NO_CACHE_DIR=off
+RUN py -m pip install --upgrade pip && `
+    py -m pip install wheel && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-dev.txt
+
+# ==============================================================================
 FROM CHOCOLATEY_BASE
 COPY --from=WHEEL_BUILDER_PY36 C:/wheels/ c:/wheels/
 COPY --from=WHEEL_BUILDER_PY37 C:/wheels/ c:/wheels/
 COPY --from=WHEEL_BUILDER_PY38 C:/wheels/ c:/wheels/
 COPY --from=WHEEL_BUILDER_PY39 C:/wheels/ c:/wheels/
+COPY --from=WHEEL_BUILDER_PY310 C:/wheels/ c:/wheels/
 RUN python -m pip install pip --upgrade ; pip install tox devpi_client
 ENV PIP_FIND_LINKS=c:\wheels
 WORKDIR C:/src
