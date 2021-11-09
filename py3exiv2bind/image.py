@@ -17,7 +17,7 @@ class Image(core.Image):
     def __init__(self, *args, **kwargs):
         """Load the file to get information about it."""
         if not os.path.exists(args[0]):
-            raise FileNotFoundError("Unable to locate {}.".format(args[0]))
+            raise FileNotFoundError(f"Unable to locate {args[0]}.")
         super().__init__(*args, **kwargs)
         for warning in self.warnings_logs:  # pylint: disable=not-an-iterable
             warnings.warn(warning.strip(), Warning)
