@@ -326,9 +326,10 @@ class BuildConan(setuptools.Command):
 
         # TODO: replace any library called by an extension with the libraries produced by conanbuildinfojson
         #
+
         for extension in build_ext_cmd.extensions:
-            if any(map(lambda s: s in conan_lib_metadata.deps(), extension.libraries)):
-                update_extension2(extension, text_md)
+            # if any(map(lambda s: s in conan_lib_metadata.deps(), extension.libraries)):
+            update_extension2(extension, text_md)
                 # update_extension(extension, conan_lib_metadata)
 
 
