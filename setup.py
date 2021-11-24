@@ -949,7 +949,7 @@ exiv2_extension = Extension(
 
 )
 cmd_class['build_clib'] = BuildExiv2
-# cmd_class['build_conan'] =BuildConan
+cmd_class['build_conan'] =BuildConan
 cmd_class["build_ext"] =  BuildPybind11Extension
 setup(
     packages=['py3exiv2bind'],
