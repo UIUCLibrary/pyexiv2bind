@@ -44,7 +44,7 @@ class BuildPybind11Extension(build_ext):
             ext.extra_compile_args.append(f"-std=c++{self.cxx_standard}")
         else:
             ext.extra_compile_args.append(f"/std:c++{self.cxx_standard}")
-
+        ext.include_dirs.append(self.get_pybind11_include_path())
         super().build_extension(ext)
 
     def get_pybind11_include_path(self) -> str:

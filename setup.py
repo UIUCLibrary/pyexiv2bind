@@ -23,6 +23,10 @@ cmd_class = {}
 try:
     from builders.conan_libs import BuildConan
     cmd_class["build_conan"] = BuildConan
+    from builders.pybind11_builder import BuildPybind11Extension
+    # cmd_class["build_conan"] = BuildPybind11Extension
+    cmd_class["build_ext"] = BuildPybind11Extension
+
 except ImportError:
     pass
 
@@ -798,135 +802,135 @@ class DllHandlerStrategy(AbsSoHandler):
         return dlls
 
 
-class BuildPybind11Extension(build_ext):
-
-    def initialize_options(self):
-        super().initialize_options()
-
-    def finalize_options(self):
-        super().finalize_options()
-
-    def run(self):
-        self.include_dirs.insert(
-            0, os.path.abspath(os.path.join(self.build_temp, "include"))
-        )
-
-        lib_dir = os.path.abspath(os.path.join(self.build_temp, "lib"))
-        if os.path.exists(lib_dir):
-            self.library_dirs.insert(0, lib_dir)
-        lib64_dir = os.path.abspath(os.path.join(self.build_temp, "lib64"))
-        if os.path.exists(lib64_dir):
-            self.library_dirs.insert(0, lib64_dir)
-
-        import pybind11
-        self.include_dirs.insert(0, pybind11.get_include())
-        super().run()
-
-        for e in self.extensions:
-            dll_name = \
-                os.path.join(self.build_lib, self.get_ext_filename(e.name))
-            search_dirs = self.get_library_paths()
-            search_dirs.insert(0, self.build_temp)
-            self.resolve_shared_library(dll_name, search_dirs)
-
-    def get_library_paths(self):
-        search_paths = []
-        library_search_paths = \
-            self.compiler.library_dirs + \
-            self.compiler.runtime_library_dirs + \
-            self.library_dirs + \
-            self._get_path_dirs()
-
-        for lib_path in library_search_paths:
-            if not os.path.exists(lib_path):
-                continue
-            if lib_path in search_paths:
-                continue
-            search_paths.append(lib_path)
-
-        return search_paths
-
-    def _get_path_dirs(self):
-        if platform.system() == "Windows":
-            paths = os.environ['path'].split(";")
-        else:
-            paths = os.environ['PATH'].split(":")
-        return [path for path in paths if os.path.exists(path)]
-
-    def resolve_shared_library(self, dll_name, search_paths=None):
-        dll_dumper = get_so_handler(dll_name, self)
-        dll_dumper.set_compiler(self.compiler)
-        try:
-            dll_dumper.resolve(search_paths)
-        except FileNotFoundError:
-            if search_paths is not None:
-                self.announce(
-                    "Error: Not all required shared libraries were resolved. "
-                    "Searched:\n{}".format('\n'.join(search_paths)), 5
-                )
-            raise
-
-    def find_missing_libraries(self, ext):
-        missing_libs = []
-        for lib in ext.libraries:
-            if self.compiler.find_library_file(self.library_dirs, lib) is None:
-                missing_libs.append(lib)
-        return missing_libs
-
-    def build_extension(self, ext):
-        missing = self.find_missing_libraries(ext)
-        if self.compiler.compiler_type == "unix":
-            ext.extra_compile_args.append("-std=c++14")
-        else:
-            ext.extra_compile_args.append("/std:c++14")
-
-        if len(missing) > 0:
-            self.announce(f"missing required deps [{', '.join(missing)}]. "
-                          f"Trying to build them", 5)
-            self.run_command("build_clib")
-            build_clib_cmd = self.get_finalized_command("build_clib")
-
-            ext.include_dirs.append(os.path.abspath(
-                os.path.join(build_clib_cmd.build_clib, "include"))
-            )
-
-        build_clib_cmd = self.get_finalized_command("build_clib")
-
-        new_libs = []
-        for lib in ext.libraries:
-            if self.compiler.compiler_type != "unix":
-                if self.debug is None:
-                    build_configuration = "Release"
-                else:
-                    build_configuration = "Debug"
-                lib_path = self.compiler.find_library_file(
-                    [
-                        os.path.abspath(build_clib_cmd.build_clib),
-                        os.path.abspath(
-                            os.path.join(build_clib_cmd.build_clib, "lib")
-                        ),
-                    ],
-                    lib
-                )
-                if lib_path is not None:
-                    ext.library_dirs.append(os.path.dirname(lib_path))
-
-            else:
-                build_configuration = None
-            t = build_clib_cmd.find_target(lib, build_configuration)
-
-            res = build_clib_cmd.find_dep_libs_from_cmake(
-                ext, t, remove_prefix=self.compiler.compiler_type == "unix")
-
-            if res is not None:
-                deps, flags = res
-                if deps is not None:
-                    if lib in deps:
-                        deps.remove(lib)
-                    new_libs += deps
-        ext.libraries += new_libs
-
-        super().build_extension(ext)
+# class BuildPybind11Extension(build_ext):
+#
+#     def initialize_options(self):
+#         super().initialize_options()
+#
+#     def finalize_options(self):
+#         super().finalize_options()
+#
+#     def run(self):
+#         self.include_dirs.insert(
+#             0, os.path.abspath(os.path.join(self.build_temp, "include"))
+#         )
+#
+#         lib_dir = os.path.abspath(os.path.join(self.build_temp, "lib"))
+#         if os.path.exists(lib_dir):
+#             self.library_dirs.insert(0, lib_dir)
+#         lib64_dir = os.path.abspath(os.path.join(self.build_temp, "lib64"))
+#         if os.path.exists(lib64_dir):
+#             self.library_dirs.insert(0, lib64_dir)
+#
+#         import pybind11
+#         self.include_dirs.insert(0, pybind11.get_include())
+#         super().run()
+#
+#         for e in self.extensions:
+#             dll_name = \
+#                 os.path.join(self.build_lib, self.get_ext_filename(e.name))
+#             search_dirs = self.get_library_paths()
+#             search_dirs.insert(0, self.build_temp)
+#             self.resolve_shared_library(dll_name, search_dirs)
+#
+#     def get_library_paths(self):
+#         search_paths = []
+#         library_search_paths = \
+#             self.compiler.library_dirs + \
+#             self.compiler.runtime_library_dirs + \
+#             self.library_dirs + \
+#             self._get_path_dirs()
+#
+#         for lib_path in library_search_paths:
+#             if not os.path.exists(lib_path):
+#                 continue
+#             if lib_path in search_paths:
+#                 continue
+#             search_paths.append(lib_path)
+#
+#         return search_paths
+#
+#     def _get_path_dirs(self):
+#         if platform.system() == "Windows":
+#             paths = os.environ['path'].split(";")
+#         else:
+#             paths = os.environ['PATH'].split(":")
+#         return [path for path in paths if os.path.exists(path)]
+#
+#     def resolve_shared_library(self, dll_name, search_paths=None):
+#         dll_dumper = get_so_handler(dll_name, self)
+#         dll_dumper.set_compiler(self.compiler)
+#         try:
+#             dll_dumper.resolve(search_paths)
+#         except FileNotFoundError:
+#             if search_paths is not None:
+#                 self.announce(
+#                     "Error: Not all required shared libraries were resolved. "
+#                     "Searched:\n{}".format('\n'.join(search_paths)), 5
+#                 )
+#             raise
+#
+#     def find_missing_libraries(self, ext):
+#         missing_libs = []
+#         for lib in ext.libraries:
+#             if self.compiler.find_library_file(self.library_dirs, lib) is None:
+#                 missing_libs.append(lib)
+#         return missing_libs
+#
+#     def build_extension(self, ext):
+#         missing = self.find_missing_libraries(ext)
+#         if self.compiler.compiler_type == "unix":
+#             ext.extra_compile_args.append("-std=c++14")
+#         else:
+#             ext.extra_compile_args.append("/std:c++14")
+#
+#         if len(missing) > 0:
+#             self.announce(f"missing required deps [{', '.join(missing)}]. "
+#                           f"Trying to build them", 5)
+#             self.run_command("build_clib")
+#             build_clib_cmd = self.get_finalized_command("build_clib")
+#
+#             ext.include_dirs.append(os.path.abspath(
+#                 os.path.join(build_clib_cmd.build_clib, "include"))
+#             )
+#
+#         build_clib_cmd = self.get_finalized_command("build_clib")
+#
+#         new_libs = []
+#         for lib in ext.libraries:
+#             if self.compiler.compiler_type != "unix":
+#                 if self.debug is None:
+#                     build_configuration = "Release"
+#                 else:
+#                     build_configuration = "Debug"
+#                 lib_path = self.compiler.find_library_file(
+#                     [
+#                         os.path.abspath(build_clib_cmd.build_clib),
+#                         os.path.abspath(
+#                             os.path.join(build_clib_cmd.build_clib, "lib")
+#                         ),
+#                     ],
+#                     lib
+#                 )
+#                 if lib_path is not None:
+#                     ext.library_dirs.append(os.path.dirname(lib_path))
+#
+#             else:
+#                 build_configuration = None
+#             t = build_clib_cmd.find_target(lib, build_configuration)
+#
+#             res = build_clib_cmd.find_dep_libs_from_cmake(
+#                 ext, t, remove_prefix=self.compiler.compiler_type == "unix")
+#
+#             if res is not None:
+#                 deps, flags = res
+#                 if deps is not None:
+#                     if lib in deps:
+#                         deps.remove(lib)
+#                     new_libs += deps
+#         ext.libraries += new_libs
+#
+#         super().build_extension(ext)
 
 exiv2_extension = Extension(
     "py3exiv2bind.core",
@@ -943,14 +947,14 @@ exiv2_extension = Extension(
         "exiv2",
     ],
     include_dirs=[
-        "py3exiv2bind/core/glue"
+        "py3exiv2bind/core/glue",
     ],
     language='c++',
 
 )
 cmd_class['build_clib'] = BuildExiv2
 cmd_class['build_conan'] =BuildConan
-cmd_class["build_ext"] =  BuildPybind11Extension
+# cmd_class["build_ext"] =  BuildPybind11Extension
 setup(
     packages=['py3exiv2bind'],
     python_requires=">=3.6",
