@@ -1,3 +1,5 @@
 [build-system]
 requires = ["setuptools>=40.8.0", "wheel", "cmake", "ninja", "conan","pybind11", 'macholib; platform_system == "Darwin"']
-build-backend = "setuptools.build_meta"
+#build-backend = "setuptools.build_meta"
+build-backend = "local_backend"
+backend-path = ["builders"]

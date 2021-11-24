@@ -1,0 +1,51 @@
+import pybind11
+from setuptools.command.build_ext import build_ext
+import os
+
+
+class BuildPybind11Extension(build_ext):
+    user_options = build_ext.user_options + [
+        ('cxx-standard=', None, "C++ version to use. Default:11")
+    ]
+
+    def initialize_options(self):
+        super().initialize_options()
+        self.cxx_standard = None
+
+    def finalize_options(self):
+
+        self.cxx_standard = self.cxx_standard or "14"
+        super().finalize_options()
+
+    def find_deps(self, lib, search_paths=None):
+        search_paths = search_paths or os.environ['path'].split(";")
+
+        search_paths.append(
+            self.get_finalized_command("build_clib").build_temp
+        )
+
+        for path in search_paths:
+            if not os.path.exists(path):
+                self.announce(f"Skipping invalid path: {path}", 5)
+                continue
+            for f in os.scandir(path):
+                if f.name.lower() == lib.lower():
+                    return f.path
+
+    def find_missing_libraries(self, ext):
+        missing_libs = []
+        for lib in ext.libraries:
+            if self.compiler.find_library_file(self.library_dirs + ext.library_dirs, lib) is None:
+                missing_libs.append(lib)
+        return missing_libs
+
+    def build_extension(self, ext):
+        if self.compiler.compiler_type == "unix":
+            ext.extra_compile_args.append(f"-std=c++{self.cxx_standard}")
+        else:
+            ext.extra_compile_args.append(f"/std:c++{self.cxx_standard}")
+
+        super().build_extension(ext)
+
+    def get_pybind11_include_path(self) -> str:
+        return pybind11.get_include()

@@ -16,6 +16,16 @@ import subprocess
 from setuptools.command.build_clib import build_clib
 from distutils.sysconfig import customize_compiler
 from functools import reduce
+
+sys.path.insert(0, os.path.dirname(__file__))
+from builders.deps import get_win_deps
+cmd_class = {}
+try:
+    from builders.conan_libs import BuildConan
+    cmd_class["build_conan"] = BuildConan
+except ImportError:
+    pass
+
 PACKAGE_NAME = "py3exiv2bind"
 
 
@@ -536,20 +546,17 @@ class BuildExiv2(BuildCMakeLib):
     def run(self):
         conan_cmd = self.get_finalized_command("build_conan")
         conan_cmd.run()
-        conan_paths = conan_cmd.find_conan_paths_cmake()
-        if conan_paths is None:
+        build_ext_cmd = self.get_finalized_command("build_ext")
+
+
+        cmake_toolchain = os.path.join(build_ext_cmd.build_temp, "conan_paths.cmake")
+        if not os.path.exists(cmake_toolchain):
             raise FileNotFoundError("Missing toolchain file conan_paths.cmake")
-
         self.extra_cmake_options.append(
-            f'-DCMAKE_TOOLCHAIN_FILE={conan_paths}'
+            f'-DCMAKE_TOOLCHAIN_FILE={cmake_toolchain}'
         )
-        super().run()
 
-        ext_command = self.get_finalized_command("build_ext")
-        ext_command.ext_map['py3exiv2bind.core'].libraries.append("xmp")
-        ext_command.ext_map['py3exiv2bind.core'].library_dirs.insert(
-            0, os.path.join(self.build_temp, "lib")
-        )
+        super().run()
 
 
 exiv2 = ("exiv2", {
@@ -935,7 +942,9 @@ exiv2_extension = Extension(
     language='c++',
 
 )
-
+cmd_class['build_clib'] = BuildExiv2
+# cmd_class['build_conan'] =BuildConan
+cmd_class["build_ext"] =  BuildPybind11Extension
 setup(
     packages=['py3exiv2bind'],
     python_requires=">=3.6",
@@ -949,10 +958,11 @@ setup(
     libraries=[exiv2],
     ext_modules=[exiv2_extension],
     package_data={"py3exiv2bind": ["py.typed"]},
-    cmdclass={
-        "build_ext": BuildPybind11Extension,
-        "build_clib": BuildExiv2,
-        "build_conan": BuildConan
-    },
+    cmdclass=cmd_class
+    # cmdclass={
+    #     "build_ext": BuildPybind11Extension,
+    #     "build_clib": BuildExiv2,
+    #     "build_conan": BuildConan
+    # },
 
 )
