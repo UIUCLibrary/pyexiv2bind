@@ -384,14 +384,16 @@ class BuildConan(setuptools.Command):
         assert os.path.exists(conanbuildinfotext)
         from builders.conan_libs import ConanBuildInfoTXT
         text_md = ConanBuildInfoTXT().parse(conanbuildinfotext)
+        print(text_md, file=sys.stderr)
         for path in text_md['bin_paths']:
             if path not in build_ext_cmd.library_dirs:
                 build_ext_cmd.library_dirs.insert(0, path)
 
         for extension in build_ext_cmd.extensions:
-            for path in text_md['lib_paths']:
-                if path not in extension.library_dirs:
-                    extension.library_dirs.insert(0, path)
+            for definition in text_md['definitions']:
+                definition_macro = (definition,)
+                if definition_macro not in extension.define_macros:
+                    extension.define_macros.append(definition_macro)
 
             for path in text_md['lib_paths']:
                 if path not in extension.library_dirs:
