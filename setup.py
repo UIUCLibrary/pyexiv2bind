@@ -1,16 +1,10 @@
-import abc
 import json
 import os
-import re
 import sys
 import shutil
-import tempfile
-from typing import List, Optional, Tuple, Iterable, Dict, Any, Union
-# import ninja
-import setuptools
+from typing import Optional, Tuple
 
 from setuptools import setup, Extension
-from setuptools.command.build_ext import build_ext
 import platform
 import subprocess
 from setuptools.command.build_clib import build_clib
@@ -18,14 +12,12 @@ from distutils.sysconfig import customize_compiler
 from functools import reduce
 
 sys.path.insert(0, os.path.dirname(__file__))
-from builders.deps import get_win_deps
 cmd_class = {}
 extension_modules = []
 try:
     from builders.conan_libs import BuildConan
     cmd_class["build_conan"] = BuildConan
     from builders.pybind11_builder import BuildPybind11Extension
-    # cmd_class["build_conan"] = BuildPybind11Extension
     cmd_class["build_ext"] = BuildPybind11Extension
     exiv2_extension = Extension(
         "py3exiv2bind.core",
@@ -342,222 +334,6 @@ class BuildCMakeLib(build_clib):
             self.compiler.spawn(install_command)
 
 
-class ConanBuildInfoParser:
-    def __init__(self, fp):
-        self._fp = fp
-
-    def parse(self) -> Dict[str, List[str]]:
-        data = dict()
-        for subject_chunk in self.iter_subject_chunk():
-            subject_title = subject_chunk[0][1:-1]
-
-            data[subject_title] = subject_chunk[1:]
-        return data
-
-    def iter_subject_chunk(self) -> Iterable[Any]:
-        buffer = []
-        for line in self._fp:
-            line = line.strip()
-            if len(line) == 0:
-                continue
-            if line.startswith("[") and line.endswith("]") and len(buffer) > 0:
-                yield buffer
-                buffer.clear()
-            buffer.append(line)
-        yield buffer
-        buffer.clear()
-
-
-class ConanImportManifestParser:
-    def __init__(self, fp):
-        self._fp = fp
-
-    def parse(self) -> List[str]:
-        libs = set()
-        for line in self._fp:
-            t = line.split()[0].strip(":\n")
-            if os.path.exists(t):
-                libs.add(t)
-        return list(libs)
-
-
-class BuildConan(setuptools.Command):
-    user_options = [
-        ('conan-exec=', "c", 'conan executable')
-    ]
-
-    description = "Get the required dependencies from a Conan package manager"
-
-    def get_from_txt(self, conanbuildinfo_file):
-        definitions = []
-        include_paths = []
-        lib_paths = []
-        bin_paths = []
-        libs = []
-
-        with open(conanbuildinfo_file, "r") as f:
-            parser = ConanBuildInfoParser(f)
-            data = parser.parse()
-            definitions = data['defines']
-            include_paths = data['includedirs']
-            lib_paths = data['libdirs']
-            bin_paths = data['bindirs']
-            libs = data['libs']
-
-        return {
-            "definitions": definitions,
-            "include_paths": list(include_paths),
-            "lib_paths": list(lib_paths),
-            "bin_paths": list(bin_paths),
-            "libs": list(libs),
-
-        }
-
-    def initialize_options(self):
-        self.conan_exec = None
-        self.conan_cache = None
-
-    def finalize_options(self):
-        if self.conan_exec is None:
-            self.conan_exec = shutil.which("conan")
-            if self.conan_exec is None:
-                raise Exception("missing conan_exec")
-        if self.conan_cache is None:
-            build_ext_cmd = self.get_finalized_command("build_ext")
-            build_dir = build_ext_cmd.build_temp
-
-            self.conan_cache = \
-                os.path.join(
-                    os.environ.get("CONAN_USER_HOME", build_dir),
-                    ".conan"
-                )
-
-    def getConanBuildInfo(self, root_dir):
-        for root, dirs, files in os.walk(root_dir):
-            for f in files:
-                if f == "conanbuildinfo.json":
-                    return os.path.join(root, f)
-        return None
-
-    def run(self):
-        build_ext_cmd = self.get_finalized_command("build_ext")
-        build_dir = build_ext_cmd.build_temp
-
-        build_dir_full_path = os.path.abspath(build_dir)
-        conan_cache = self.conan_cache
-        if not os.path.exists(conan_cache):
-            self.mkpath(conan_cache)
-            self.mkpath(build_dir_full_path)
-            self.mkpath(os.path.join(build_dir_full_path, "lib"))
-
-        from conans.client import conan_api
-        conan = conan_api.Conan(cache_folder=os.path.abspath(conan_cache))
-        conan_options = []
-
-        conan.install(
-            options=conan_options,
-            cwd=build_dir,
-            build=['missing'],
-            path=os.path.abspath(os.path.dirname(__file__)),
-            install_folder=build_dir_full_path
-        )
-
-        conanbuildinfotext = os.path.join(build_dir, "conanbuildinfo.txt")
-        assert os.path.exists(conanbuildinfotext)
-
-        text_md = self.get_from_txt(conanbuildinfotext)
-        for path in text_md['bin_paths']:
-            if path not in build_ext_cmd.library_dirs:
-                build_ext_cmd.library_dirs.insert(0, path)
-
-        for extension in build_ext_cmd.extensions:
-            for path in text_md['lib_paths']:
-                if path not in extension.library_dirs:
-                    extension.library_dirs.insert(0, path)
-
-            for path in text_md['lib_paths']:
-                if path not in extension.library_dirs:
-                    extension.library_dirs.insert(0, path)
-
-        extension_deps = set()
-        all_libs = [lib.libraries for lib in build_ext_cmd.ext_map.values()]
-        for library_deps in all_libs:
-            extension_deps = extension_deps.union(library_deps)
-
-        for lib in text_md['libs']:
-            if lib in build_ext_cmd.libraries:
-                continue
-
-            if lib in extension_deps:
-                continue
-
-            build_ext_cmd.libraries.insert(0, lib)
-
-    def find_conan_paths_cmake(self) -> Optional[str]:
-        search_dirs = []
-        build_ext_cmd = self.get_finalized_command("build_ext")
-        search_dirs.append(build_ext_cmd.build_temp)
-        for f in search_dirs:
-            potential = os.path.join(f, "conan_paths.cmake")
-            if os.path.exists(potential):
-                return potential
-        return None
-    # conan_paths = os.path.join(self.build_temp, "conan_paths.cmake")
-
-    def get_import_paths_from_import_manifest(self, manifest_file) -> \
-            List[str]:
-
-        lib_dirs = set()
-        for lib in self.get_libraries_from_import_manifest(manifest_file):
-            lib_dirs.add(os.path.dirname(lib))
-        return list(lib_dirs)
-
-    def get_libraries_from_import_manifest(self, manifest_file) -> List[str]:
-        with open(manifest_file, "r") as f:
-            parser = ConanImportManifestParser(f)
-            return parser.parse()
-
-    def get_from_json(self, conanbuildinfo_file) -> \
-            Dict[str, List[Union[str, Tuple[str, Optional[str]]]]]:
-
-        if conanbuildinfo_file is None:
-            raise FileNotFoundError("Unable to locate conanbuildinfo.json")
-        self.announce(f"Reading from {conanbuildinfo_file}", 5)
-        with open(conanbuildinfo_file) as f:
-            conan_build_info = json.loads(f.read())
-
-        def reduce_dups(a, b, key):
-
-            if isinstance(a, set):
-                collection = a
-            else:
-                collection = set(a[key])
-            collection = collection.union(b[key])
-            return collection
-
-        libs = reduce(lambda a, b: reduce_dups(a, b, key="libs"),
-                      conan_build_info['dependencies'])
-        include_paths = reduce(
-            lambda a, b: reduce_dups(a, b, key="include_paths"),
-            conan_build_info['dependencies'])
-        self.announce(f"Adding [{','.join(include_paths)}] to include path", 4)
-        lib_paths = reduce(lambda a, b: reduce_dups(a, b, key="lib_paths"),
-                           conan_build_info['dependencies'])
-        self.announce(
-            f"Adding [{', '.join(lib_paths)}] to library search path", 4)
-
-        definitions = list()
-        for dep in conan_build_info['dependencies']:
-            definitions += [(d,) for d in dep['defines']]
-
-        return {
-            "definitions": definitions,
-            "include_paths": list(include_paths),
-            "lib_paths": list(lib_paths),
-            "libs": list(libs)
-        }
-
-
 class BuildExiv2(BuildCMakeLib):
 
     def __init__(self, dist):
@@ -595,7 +371,6 @@ exiv2 = ("exiv2", {
 })
 
 cmd_class['build_clib'] = BuildExiv2
-cmd_class['build_conan'] = BuildConan
 setup(
     packages=['py3exiv2bind'],
     python_requires=">=3.6",
