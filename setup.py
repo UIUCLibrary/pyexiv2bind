@@ -336,87 +336,6 @@ class BuildCMakeLib(build_clib):
             self.compiler.spawn(install_command)
 
 
-class BuildConan(setuptools.Command):
-    user_options = [
-        ('conan-exec=', "c", 'conan executable')
-    ]
-
-    description = "Get the required dependencies from a Conan package manager"
-
-    def initialize_options(self):
-        self.conan_cache = None
-
-    def finalize_options(self):
-        if self.conan_cache is None:
-            build_ext_cmd = self.get_finalized_command("build_ext")
-            build_dir = build_ext_cmd.build_temp
-
-            self.conan_cache = \
-                os.path.join(
-                    os.environ.get("CONAN_USER_HOME", build_dir),
-                    ".conan"
-                )
-
-    def run(self):
-        build_ext_cmd = self.get_finalized_command("build_ext")
-        build_dir = build_ext_cmd.build_temp
-
-        build_dir_full_path = os.path.abspath(build_dir)
-        conan_cache = self.conan_cache
-        if not os.path.exists(conan_cache):
-            self.mkpath(conan_cache)
-            self.mkpath(build_dir_full_path)
-            self.mkpath(os.path.join(build_dir_full_path, "lib"))
-
-        from conans.client import conan_api
-        conan = conan_api.Conan(cache_folder=os.path.abspath(conan_cache))
-        conan_options = []
-
-        conan.install(
-            options=conan_options,
-            cwd=build_dir,
-            build=['missing'],
-            path=os.path.abspath(os.path.dirname(__file__)),
-            install_folder=build_dir_full_path
-        )
-
-        conanbuildinfotext = os.path.join(build_dir, "conanbuildinfo.txt")
-        assert os.path.exists(conanbuildinfotext)
-        from builders.conan_libs import ConanBuildInfoTXT
-        text_md = ConanBuildInfoTXT().parse(conanbuildinfotext)
-        print(text_md, file=sys.stderr)
-        for path in text_md['bin_paths']:
-            if path not in build_ext_cmd.library_dirs:
-                build_ext_cmd.library_dirs.insert(0, path)
-
-        definition_macro = [(d, None) for d in text_md.get('definitions', [])]
-        if build_ext_cmd.define is None:
-            build_ext_cmd.define = definition_macro
-        else:
-            build_ext_cmd.define += definition_macro
-        for extension in build_ext_cmd.extensions:
-            if definition_macro not in extension.define_macros:
-                extension.define_macros += definition_macro
-
-            for path in text_md['lib_paths']:
-                if path not in extension.library_dirs:
-                    extension.library_dirs.insert(0, path)
-
-        extension_deps = set()
-        all_libs = [lib.libraries for lib in build_ext_cmd.ext_map.values()]
-        for library_deps in all_libs:
-            extension_deps = extension_deps.union(library_deps)
-
-        for lib in text_md['libs']:
-            if lib in build_ext_cmd.libraries:
-                continue
-
-            if lib in extension_deps:
-                continue
-
-            build_ext_cmd.libraries.insert(0, lib)
-
-
 class BuildExiv2(BuildCMakeLib):
 
     def __init__(self, dist):
@@ -463,7 +382,6 @@ exiv2 = ("exiv2", {
 
 
 cmd_class['build_clib'] = BuildExiv2
-# cmd_class['build_conan'] = BuildConan
 
 exiv2_extension = Extension(
     "py3exiv2bind.core",
