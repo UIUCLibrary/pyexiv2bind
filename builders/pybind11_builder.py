@@ -42,7 +42,6 @@ class BuildPybind11Extension(build_ext):
         return missing_libs
 
     def build_extension(self, ext):
-        self.announce("adsfadsf", level=3)
         if self.compiler.compiler_type == "unix":
             ext.extra_compile_args.append(f"-std=c++{self.cxx_standard}")
         else:
