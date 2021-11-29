@@ -389,11 +389,14 @@ class BuildConan(setuptools.Command):
             if path not in build_ext_cmd.library_dirs:
                 build_ext_cmd.library_dirs.insert(0, path)
 
+        definition_macro = [(d, None) for d in text_md.get('definitions', [])]
+        if build_ext_cmd.define is None:
+            build_ext_cmd.define = definition_macro
+        else:
+            build_ext_cmd.define += definition_macro
         for extension in build_ext_cmd.extensions:
-            for definition in text_md['definitions']:
-                definition_macro = (definition,)
-                if definition_macro not in extension.define_macros:
-                    extension.define_macros.append(definition_macro)
+            if definition_macro not in extension.define_macros:
+                extension.define_macros += definition_macro
 
             for path in text_md['lib_paths']:
                 if path not in extension.library_dirs:
