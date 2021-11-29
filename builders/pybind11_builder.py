@@ -2,10 +2,12 @@ import pybind11
 from setuptools.command.build_ext import build_ext
 import os
 
+DEFAULT_CPP_STANDARD = "14"
+
 
 class BuildPybind11Extension(build_ext):
     user_options = build_ext.user_options + [
-        ('cxx-standard=', None, "C++ version to use. Default:11")
+        ('cxx-standard=', None, f"C++ version to use. Default: {DEFAULT_CPP_STANDARD}")
     ]
 
     def initialize_options(self):
@@ -14,7 +16,7 @@ class BuildPybind11Extension(build_ext):
 
     def finalize_options(self):
 
-        self.cxx_standard = self.cxx_standard or "14"
+        self.cxx_standard = self.cxx_standard or DEFAULT_CPP_STANDARD
         super().finalize_options()
 
     def find_deps(self, lib, search_paths=None):
@@ -40,6 +42,7 @@ class BuildPybind11Extension(build_ext):
         return missing_libs
 
     def build_extension(self, ext):
+        self.announce("adsfadsf", level=3)
         if self.compiler.compiler_type == "unix":
             ext.extra_compile_args.append(f"-std=c++{self.cxx_standard}")
         else:
