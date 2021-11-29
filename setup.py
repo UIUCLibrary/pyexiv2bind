@@ -463,7 +463,7 @@ exiv2 = ("exiv2", {
 
 
 cmd_class['build_clib'] = BuildExiv2
-cmd_class['build_conan'] = BuildConan
+# cmd_class['build_conan'] = BuildConan
 
 exiv2_extension = Extension(
     "py3exiv2bind.core",

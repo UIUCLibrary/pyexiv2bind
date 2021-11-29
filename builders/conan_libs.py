@@ -229,6 +229,7 @@ class BuildConan(setuptools.Command):
             os.path.join(os.path.dirname(__file__), "..")
         )
 
+
         build_dir_full_path = os.path.abspath(build_dir)
         conan.install(
             options=conan_options,
@@ -298,55 +299,116 @@ class BuildConan(setuptools.Command):
     #         compiler.spawn([tesseract, '--version'])
 
     def run(self):
-        # self.reinitialize_command("build_ext")
-        build_clib = self.get_finalized_command("build_clib")
-
-        build_dir = build_clib.build_temp
+        build_ext_cmd = self.get_finalized_command("build_ext")
+        build_dir = build_ext_cmd.build_temp
 
         build_dir_full_path = os.path.abspath(build_dir)
         conan_cache = self.conan_cache
-        self.mkpath(conan_cache)
-        self.mkpath(build_dir_full_path)
-        self.mkpath(os.path.join(build_dir_full_path, "lib"))
-        self.announce(f"Using {conan_cache} for conan cache", 5)
+        if not os.path.exists(conan_cache):
+            self.mkpath(conan_cache)
+            self.mkpath(build_dir_full_path)
+            self.mkpath(os.path.join(build_dir_full_path, "lib"))
 
-        self._get_deps(conan_cache=conan_cache)
-        conaninfotext = os.path.join(build_dir, "conaninfo.txt")
-        if os.path.exists(conaninfotext):
-            with open(conaninfotext) as r:
-                self.announce(r.read(), 5)
+        from conans.client import conan_api
+        conan = conan_api.Conan(cache_folder=os.path.abspath(conan_cache))
+        conan_options = []
+
+        conanfile_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..")
+        )
+
+        conan.install(
+            options=conan_options,
+            cwd=build_dir,
+            build=['missing'],
+            path=conanfile_path,
+            install_folder=build_dir_full_path
+        )
 
         conanbuildinfotext = os.path.join(build_dir, "conanbuildinfo.txt")
         assert os.path.exists(conanbuildinfotext)
-        # self.test_tesseract(build_file=conanbuildinfotext)
-        metadata_strategy = ConanBuildInfoTXT()
-        text_md = metadata_strategy.parse(conanbuildinfotext)
-        build_ext_cmd = self.get_finalized_command("build_ext")
-        conanbuildinfojson = os.path.join(build_dir, 'conanbuildinfo.json')
-        conan_lib_metadata = ConanBuildMetadata(conanbuildinfojson)
-
-        # TODO: replace any library called by an extension with the libraries produced by conanbuildinfojson
-
-        build_ext_cmd = self.get_finalized_command("build_ext")
+        text_md = ConanBuildInfoTXT().parse(conanbuildinfotext)
+        print(text_md, file=sys.stderr)
         for path in text_md['bin_paths']:
             if path not in build_ext_cmd.library_dirs:
                 build_ext_cmd.library_dirs.insert(0, path)
-        #
-    # for extension in build_ext_cmd.extensions:
-    #     for path in text_md['lib_paths']:
-    #         if path not in extension.library_dirs:
-    #             extension.library_dirs.insert(0, path)
-    #
-    #     for path in text_md['lib_paths']:
-    #         if path not in extension.library_dirs:
-    #             extension.library_dirs.insert(0, path)
 
-
+        definition_macro = [(d, None) for d in text_md.get('definitions', [])]
+        if build_ext_cmd.define is None:
+            build_ext_cmd.define = definition_macro
+        else:
+            build_ext_cmd.define += definition_macro
         for extension in build_ext_cmd.extensions:
-            # if any(map(lambda s: s in conan_lib_metadata.deps(), extension.libraries)):
-            # update_extension2(extension, text_md)
-            update_extension3(extension, text_md)
-                # update_extension(extension, conan_lib_metadata)
+            if definition_macro not in extension.define_macros:
+                extension.define_macros += definition_macro
+
+            for path in text_md['lib_paths']:
+                if path not in extension.library_dirs:
+                    extension.library_dirs.insert(0, path)
+
+        extension_deps = set()
+        all_libs = [lib.libraries for lib in build_ext_cmd.ext_map.values()]
+        for library_deps in all_libs:
+            extension_deps = extension_deps.union(library_deps)
+
+        for lib in text_md['libs']:
+            if lib in build_ext_cmd.libraries:
+                continue
+
+            if lib in extension_deps:
+                continue
+
+            build_ext_cmd.libraries.insert(0, lib)
+    #         ============================================
+    #     # self.reinitialize_command("build_ext")
+    #     build_clib = self.get_finalized_command("build_clib")
+    #
+    #     build_dir = build_clib.build_temp
+    #
+    #     build_dir_full_path = os.path.abspath(build_dir)
+    #     conan_cache = self.conan_cache
+    #     self.mkpath(conan_cache)
+    #     self.mkpath(build_dir_full_path)
+    #     self.mkpath(os.path.join(build_dir_full_path, "lib"))
+    #     self.announce(f"Using {conan_cache} for conan cache", 5)
+    #
+    #     self._get_deps(conan_cache=conan_cache)
+    #     conaninfotext = os.path.join(build_dir, "conaninfo.txt")
+    #     if os.path.exists(conaninfotext):
+    #         with open(conaninfotext) as r:
+    #             self.announce(r.read(), 5)
+    #
+    #     conanbuildinfotext = os.path.join(build_dir, "conanbuildinfo.txt")
+    #     assert os.path.exists(conanbuildinfotext)
+    #     # self.test_tesseract(build_file=conanbuildinfotext)
+    #     metadata_strategy = ConanBuildInfoTXT()
+    #     text_md = metadata_strategy.parse(conanbuildinfotext)
+    #     build_ext_cmd = self.get_finalized_command("build_ext")
+    #     conanbuildinfojson = os.path.join(build_dir, 'conanbuildinfo.json')
+    #     conan_lib_metadata = ConanBuildMetadata(conanbuildinfojson)
+    #
+    #     # TODO: replace any library called by an extension with the libraries produced by conanbuildinfojson
+    #
+    #     build_ext_cmd = self.get_finalized_command("build_ext")
+    #     for path in text_md['bin_paths']:
+    #         if path not in build_ext_cmd.library_dirs:
+    #             build_ext_cmd.library_dirs.insert(0, path)
+    #     #
+    # # for extension in build_ext_cmd.extensions:
+    # #     for path in text_md['lib_paths']:
+    # #         if path not in extension.library_dirs:
+    # #             extension.library_dirs.insert(0, path)
+    # #
+    # #     for path in text_md['lib_paths']:
+    # #         if path not in extension.library_dirs:
+    # #             extension.library_dirs.insert(0, path)
+    #
+    #
+    #     for extension in build_ext_cmd.extensions:
+    #         # if any(map(lambda s: s in conan_lib_metadata.deps(), extension.libraries)):
+    #         # update_extension2(extension, text_md)
+    #         update_extension3(extension, text_md)
+    #             # update_extension(extension, conan_lib_metadata)
 
 def update_extension3(extension, text_md):
     for path in text_md['lib_paths']:
