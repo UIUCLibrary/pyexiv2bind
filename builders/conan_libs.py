@@ -182,7 +182,7 @@ class BuildConan(setuptools.Command):
 
     def __init__(self, dist, **kw):
         super().__init__(dist, **kw)
-        self.output_library_name = "tesseract"
+        self.output_library_name = "exiv2"
 
     def finalize_options(self):
         if self.conan_cache is None:
@@ -195,7 +195,8 @@ class BuildConan(setuptools.Command):
                     ".conan"
                 )
 
-    def getConanBuildInfo(self, root_dir):
+    @staticmethod
+    def getConanBuildInfo(root_dir):
         for root, dirs, files in os.walk(root_dir):
             for f in files:
                 if f == "conanbuildinfo.json":
@@ -325,12 +326,36 @@ class BuildConan(setuptools.Command):
         conan_lib_metadata = ConanBuildMetadata(conanbuildinfojson)
 
         # TODO: replace any library called by an extension with the libraries produced by conanbuildinfojson
+
+        build_ext_cmd = self.get_finalized_command("build_ext")
+        for path in text_md['bin_paths']:
+            if path not in build_ext_cmd.library_dirs:
+                build_ext_cmd.library_dirs.insert(0, path)
         #
+    # for extension in build_ext_cmd.extensions:
+    #     for path in text_md['lib_paths']:
+    #         if path not in extension.library_dirs:
+    #             extension.library_dirs.insert(0, path)
+    #
+    #     for path in text_md['lib_paths']:
+    #         if path not in extension.library_dirs:
+    #             extension.library_dirs.insert(0, path)
+
 
         for extension in build_ext_cmd.extensions:
             # if any(map(lambda s: s in conan_lib_metadata.deps(), extension.libraries)):
-            update_extension2(extension, text_md)
+            # update_extension2(extension, text_md)
+            update_extension3(extension, text_md)
                 # update_extension(extension, conan_lib_metadata)
+
+def update_extension3(extension, text_md):
+    for path in text_md['lib_paths']:
+        if path not in extension.library_dirs:
+            extension.library_dirs.insert(0, path)
+
+    for path in text_md['lib_paths']:
+        if path not in extension.library_dirs:
+            extension.library_dirs.insert(0, path)
 
 
 class ConanBuildMetadata:
