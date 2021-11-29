@@ -437,7 +437,11 @@ class BuildExiv2(BuildCMakeLib):
 
         super().run()
         ext_command = self.get_finalized_command("build_ext")
-        ext_command.ext_map['py3exiv2bind.core'].include_dirs.append(build_ext_cmd.build_temp)
+
+        ext_command.ext_map['py3exiv2bind.core'].include_dirs.append(
+            os.path.join(self.build_temp, "include")
+        )
+
         ext_command.ext_map['py3exiv2bind.core'].libraries.append("xmp")
         ext_command.ext_map['py3exiv2bind.core'].library_dirs.insert(
             0, os.path.join(self.build_temp, "lib")
