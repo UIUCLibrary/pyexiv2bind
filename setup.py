@@ -1,17 +1,15 @@
-import json
+import abc
 import os
 
-import setuptools
 import sys
 import shutil
-from typing import Optional, Tuple, Dict, List, Iterable, Any, Union
+from typing import Optional, List
 
-from setuptools import setup, Extension
-import platform
-import subprocess
-from setuptools.command.build_clib import build_clib
 from distutils.sysconfig import customize_compiler
-from functools import reduce
+import subprocess
+import platform
+from setuptools import setup, Extension
+from setuptools.command.build_clib import build_clib
 
 sys.path.insert(0, os.path.dirname(__file__))
 cmd_class = {}
@@ -56,6 +54,53 @@ class CMakeExtension(Extension):
                          language=language)
 
 
+class AbsCMakePlatform(abc.ABC):
+
+    def __init__(self, clib_builder) -> None:
+        super().__init__()
+        self.clib_builder = clib_builder
+
+    @abc.abstractmethod
+    def platform_specific_configs(self) -> List[str]:
+        """Get cmake arguments specifically for a given platform"""
+
+
+class WinCMakelib(AbsCMakePlatform):
+
+    def platform_specific_configs(self) -> List[str]:
+        return ['-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=ON']
+
+
+class UnixCMakePlatform(AbsCMakePlatform):
+    def platform_specific_configs(self) -> List[str]:
+        return ['-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON']
+
+
+class OSXCMakelib(UnixCMakePlatform):
+    def platform_specific_configs(self):
+        configs: List[str] = super().platform_specific_configs()
+        sys_root = self.get_cmake_osx_sysroot()
+        if sys_root is not None:
+            configs.append(sys_root)
+        configs.append('-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=ON')
+        return configs
+
+    @staticmethod
+    def get_cmake_osx_sysroot() -> Optional[str]:
+        if os.getenv('HOMEBREW_SDKROOT'):
+            return f"-DCMAKE_OSX_SYSROOT={os.getenv('HOMEBREW_SDKROOT')}"
+        return None
+
+
+class LinuxCMakePlatform(UnixCMakePlatform):
+
+    def platform_specific_configs(self) -> List[str]:
+        configs: List[str] = super().platform_specific_configs()
+        if platform.system() == "Linux":
+            configs.append('-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=OFF')
+        return configs
+
+
 class BuildCMakeLib(build_clib):
     user_options = [
         (
@@ -78,6 +123,12 @@ class BuildCMakeLib(build_clib):
         super().__init__(dist)
         self.extra_cmake_options = []
         self.cmake_api_dir = None
+
+        self._cmake_platform: AbsCMakePlatform = {
+            "Windows": WinCMakelib,
+            "Darwin": OSXCMakelib,
+            "Linux": LinuxCMakePlatform
+        }[platform.system()](self)
 
     def finalize_options(self):
         super().finalize_options()
@@ -149,26 +200,9 @@ class BuildCMakeLib(build_clib):
             f"-DCMAKE_TOOLCHAIN_FILE={dep_build_path}/conan_paths.cmake",
             f'-DCMAKE_BUILD_TYPE={build_configuration_name}',
             f'-DCMAKE_INSTALL_PREFIX={os.path.abspath(self.build_clib)}',
-            '-Dpyexiv2bind_generate_python_bindings:BOOL=NO',
-            '-DEXIV2_ENABLE_NLS:BOOL=NO',
-            '-DEXIV2_ENABLE_VIDEO:BOOL=OFF',
-            '-DEXIV2_ENABLE_PNG:BOOL=OFF'
         ]
-        if os.getenv('HOMEBREW_SDKROOT'):
-            configure_command.append(
-                f"-DCMAKE_OSX_SYSROOT={os.getenv('HOMEBREW_SDKROOT')}",
-            )
-
-        if platform.system() == "Linux":
-            configure_command.append('-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=OFF')
-        else:
-            configure_command.append('-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=ON')
-
-        if self.compiler.compiler_type == "unix":
-            configure_command.append(
-                '-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON'
-            )
-
+        configure_command += extension[1].get('CMAKE_CONFIG', [])
+        configure_command += self._cmake_platform.platform_specific_configs()
         configure_command += self.extra_cmake_options
 
         if sys.gettrace():
@@ -188,61 +222,11 @@ class BuildCMakeLib(build_clib):
 
         return None
 
-    def find_dep_libs_from_cmake(self, ext, target_json,
-                                 remove_prefix) -> Optional[Tuple[list, list]]:
-
-        if target_json is not None:
-            with open(target_json) as f:
-                t = json.load(f)
-                link = t.get("link")
-                if link is not None:
-                    cf = link['commandFragments']
-                    flags = reduce(
-                        lambda a, b: {**b, **a},
-                        filter(lambda fragment: fragment['role'] == "flags", cf)
-                    )['fragment'].split()
-
-                    deps = map(lambda i: os.path.split(i)[-1],
-                               map(lambda z: z['fragment'],
-                                   filter(lambda fragment: fragment['role'] == "libraries", cf)
-                                   )
-                               )
-
-                    splitted = []
-                    for d in deps:
-                        splitted += d.split(" ")
-
-                    prefix_removed = []
-                    for d in splitted:
-                        if d in ext.libraries:
-                            continue
-
-                        for l in ext.libraries:
-                            if d.startswith(l):
-                                continue
-
-                        if d.startswith("-Wl"):
-                            ext.extra_link_args.append(d)
-                            continue
-                        if d == "-l:":
-                            continue
-                        if d.startswith("-l"):
-                            prefix_removed.append(d.replace("-l", ""))
-                        else:
-                            prefix_removed.append(d)
-                    deps = map(lambda i: os.path.splitext(i)[0], prefix_removed)
-                    if remove_prefix:
-                        return list(map(lambda i: i.replace("lib", "") if i.startswith("lib") else i, deps)), flags
-                    return list(deps), flags
-            return [], []
-        return None
-
     def build_cmake(self, extension: Extension):
         dep_build_path = os.path.join(self.build_temp, "deps")
         build_command = [
             self.cmake_exec,
             "--build", dep_build_path,
-            # "--target", "exiv2lib"
         ]
         if self.verbose == 1:
             build_command.append("--verbose")
@@ -285,9 +269,6 @@ class BuildCMakeLib(build_clib):
         if build_ext_cmd.parallel:
             install_command.extend(["-j", str(build_ext_cmd.parallel)])
 
-        # if "Visual Studio" in self.get_build_generator_name():
-        #     install_command += ["--", "/NOLOGO", "/verbosity:quiet"]
-
         build_ext_cmd.include_dirs.insert(
             0,
             os.path.abspath(
@@ -322,8 +303,9 @@ class BuildExiv2(BuildCMakeLib):
         conan_cmd.run()
         build_ext_cmd = self.get_finalized_command("build_ext")
 
+        cmake_toolchain = \
+            os.path.join(build_ext_cmd.build_temp, "conan_paths.cmake")
 
-        cmake_toolchain = os.path.join(build_ext_cmd.build_temp, "conan_paths.cmake")
         if not os.path.exists(cmake_toolchain):
             raise FileNotFoundError("Missing toolchain file conan_paths.cmake")
         self.extra_cmake_options.append(
@@ -333,26 +315,28 @@ class BuildExiv2(BuildCMakeLib):
         super().run()
         ext_command = self.get_finalized_command("build_ext")
 
-        ext_command.ext_map['py3exiv2bind.core'].include_dirs.append(
-            os.path.join(self.build_temp, "include")
-        )
-
+        core_ext = ext_command.ext_map['py3exiv2bind.core']
+        core_ext.include_dirs.append(os.path.join(self.build_temp, "include"))
         if os.name == 'nt':
-            ext_command.ext_map['py3exiv2bind.core'].libraries.append("shell32")
+            core_ext.libraries.append("shell32")
 
-        ext_command.ext_map['py3exiv2bind.core'].libraries.append("xmp")
+        core_ext.libraries.append("xmp")
 
         temp_lib_dir = os.path.join(self.build_temp, "lib")
 
-        if temp_lib_dir not in ext_command.ext_map['py3exiv2bind.core'].library_dirs:
-            ext_command.ext_map['py3exiv2bind.core'].library_dirs.insert(
-                0, temp_lib_dir
-            )
+        if temp_lib_dir not in core_ext.library_dirs:
+            core_ext.library_dirs.insert(0, temp_lib_dir)
 
 
 exiv2 = ("exiv2", {
     "sources": [],
-    "CMAKE_SOURCE_DIR": os.path.dirname(__file__)
+    "CMAKE_SOURCE_DIR": os.path.dirname(__file__),
+    "CMAKE_CONFIG": [
+        '-Dpyexiv2bind_generate_python_bindings:BOOL=NO',
+        '-DEXIV2_ENABLE_NLS:BOOL=NO',
+        '-DEXIV2_ENABLE_VIDEO:BOOL=OFF',
+        '-DEXIV2_ENABLE_PNG:BOOL=OFF'
+    ]
 })
 
 
