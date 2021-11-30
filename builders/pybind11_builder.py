@@ -1,3 +1,4 @@
+import typing
 from typing import List, Iterable
 
 import pybind11
@@ -26,7 +27,7 @@ class BuildPybind11Extension(build_ext):
         self.cxx_standard = self.cxx_standard or DEFAULT_CPP_STANDARD
         super().finalize_options()
 
-    def find_deps(self, lib, search_paths=None):
+    def find_deps(self, lib, search_paths=None) -> typing.Optional[str]:
         search_paths = search_paths or os.environ['path'].split(";")
 
         search_paths.append(
@@ -40,7 +41,7 @@ class BuildPybind11Extension(build_ext):
             for f in os.scandir(path):
                 if f.name.lower() == lib.lower():
                     return f.path
-
+        return None
     def _get_path_dirs(self):
         if platform.system() == "Windows":
             paths = os.environ['path'].split(";")
@@ -164,6 +165,11 @@ class NullHandlerStrategy(AbsSoHandler):
 class MacholibStrategy(AbsSoHandler):
     _system_files = []
 
+    system_libs = [
+        "CoreFoundation",
+        "Kerberos",
+    ]
+
     @classmethod
     def get_system_files(cls):
         if len(cls._system_files) == 0:
@@ -175,7 +181,9 @@ class MacholibStrategy(AbsSoHandler):
         libs = set()
         for header in MachO.MachO(self.library_file).headers:
             for _idx, _name, other in header.walkRelocatables():
-                libs.add(os.path.split(other)[-1])
+                lib = os.path.split(other)[-1]
+                if lib not in self.system_libs:
+                    libs.add(lib)
         return list(libs)
 
     @classmethod
@@ -203,6 +211,8 @@ class MacholibStrategy(AbsSoHandler):
             if self.is_system_file(dep):
                 continue
             found_dep = self.context.find_deps(dep, search_path)
+            if found_dep is None:
+                raise FileNotFoundError(f"{dep} not found")
             c_dep = d.copy_dylib(found_dep)
             dep_file = d.mm.locate(c_dep)
             if dep_file is None:
