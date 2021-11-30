@@ -370,9 +370,13 @@ class BuildExiv2(BuildCMakeLib):
             ext_command.ext_map['py3exiv2bind.core'].libraries.append("shell32")
 
         ext_command.ext_map['py3exiv2bind.core'].libraries.append("xmp")
-        ext_command.ext_map['py3exiv2bind.core'].library_dirs.insert(
-            0, os.path.join(self.build_temp, "lib")
-        )
+
+        temp_lib_dir = os.path.join(self.build_temp, "lib")
+
+        if temp_lib_dir not in ext_command.ext_map['py3exiv2bind.core'].library_dirs:
+            ext_command.ext_map['py3exiv2bind.core'].library_dirs.insert(
+                0, temp_lib_dir
+            )
 
 
 exiv2 = ("exiv2", {

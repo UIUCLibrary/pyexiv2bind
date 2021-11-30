@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Iterable
 
 import pybind11
 from setuptools.command.build_ext import build_ext
@@ -65,13 +65,18 @@ class BuildPybind11Extension(build_ext):
 
         return search_paths
 
-    def run(self):
+    def extra_lib_dirs(self) -> Iterable[str]:
         lib_dir = os.path.abspath(os.path.join(self.build_temp, "lib"))
-        if os.path.exists(lib_dir):
-            self.library_dirs.insert(0, lib_dir)
+        if os.path.exists(lib_dir) and lib_dir not in self.library_dirs:
+            yield lib_dir
+
         lib64_dir = os.path.abspath(os.path.join(self.build_temp, "lib64"))
-        if os.path.exists(lib64_dir):
-            self.library_dirs.insert(0, lib64_dir)
+        if os.path.exists(lib64_dir) and lib64_dir not in self.library_dirs:
+            yield lib64_dir
+
+    def run(self):
+        for lib_dir in self.extra_lib_dirs():
+            self.library_dirs.insert(0, lib_dir)
 
         super().run()
         for e in self.extensions:
@@ -106,11 +111,8 @@ class BuildPybind11Extension(build_ext):
             ext.extra_compile_args.append(f"-std=c++{self.cxx_standard}")
         else:
             ext.extra_compile_args.append(f"/std:c++{self.cxx_standard}")
-        ext.include_dirs.append(self.get_pybind11_include_path())
+        ext.include_dirs.append(pybind11.get_include())
         super().build_extension(ext)
-
-    def get_pybind11_include_path(self) -> str:
-        return pybind11.get_include()
 
 
 class AbsSoHandler(abc.ABC):
@@ -153,11 +155,11 @@ class AbsSoHandler(abc.ABC):
                 type(self)(dll, self.context).resolve(search_paths)
 
 
-
 class NullHandlerStrategy(AbsSoHandler):
 
     def get_deps(self) -> List[str]:
         return []
+
 
 class MacholibStrategy(AbsSoHandler):
     _system_files = []
@@ -308,6 +310,7 @@ class DllHandlerStrategy(AbsSoHandler):
                 ]
             )
             return DllHandlerStrategy.parse_dumpbin_deps(file=output_file)
+
     def resolve_shared_library(self, dll_name, search_paths=None):
         dll_dumper = get_so_handler(dll_name, self)
         dll_dumper.set_compiler(self.compiler)
@@ -320,6 +323,7 @@ class DllHandlerStrategy(AbsSoHandler):
                     "Searched:\n{}".format('\n'.join(search_paths)), 5
                 )
             raise
+
     @classmethod
     def parse_dumpbin_deps(cls, file) -> List[str]:
 
@@ -334,6 +338,7 @@ class DllHandlerStrategy(AbsSoHandler):
                 dll = x.strip()
                 dlls.append(dll)
         return dlls
+
 
 def get_so_handler(shared_library: str, context,
                    system_name: str = None) -> AbsSoHandler:

@@ -140,36 +140,6 @@ class CompilerInfoAdder:
                 self._place_to_add.compiler.include_dirs.insert(0, path)
 
 
-def update_extension(extension, metadata):
-    updated_libs = []
-    include_dirs = []
-    library_dirs = []
-    define_macros = []
-    for extension_lib in extension.libraries:
-        if extension_lib in metadata.deps():
-            dep_metadata = metadata.dep(extension_lib)
-            updated_libs += dep_metadata.get('libs', [])
-            include_dirs += dep_metadata.get('include_paths', [])
-            library_dirs += dep_metadata.get('lib_paths', [])
-            define_macros += [(d, None) for d in dep_metadata.get('definitions', [])]
-        else:
-            updated_libs.append(extension_lib)
-    extension.libraries = updated_libs
-    extension.include_dirs = include_dirs + extension.include_dirs
-    extension.library_dirs = library_dirs + extension.library_dirs
-    extension.define_macros = define_macros + extension.define_macros
-
-
-def update_extension2(extension, text_md):
-    include_dirs = text_md['include_paths']
-    library_dirs = text_md['lib_paths']
-    define_macros = [(d, None) for d in text_md.get('definitions', [])]
-    extension.libraries = text_md['libs']
-    extension.include_dirs = include_dirs + extension.include_dirs
-    extension.library_dirs = library_dirs + extension.library_dirs
-    extension.define_macros = define_macros + extension.define_macros
-
-
 class BuildConan(setuptools.Command):
     user_options = [
         ('conan-cache=', None, 'conan cache directory')
