@@ -75,6 +75,7 @@ TEST_CASE("Try tiff Image", "[glue][tiff]"){
 
     SECTION("Get Exif metadata"){
         auto exif = i.get_exif_metadata();
-        REQUIRE(exif["Exif.Image.Artist"] == "University of Illinois Library");
+        std::vector<std::string> keys;
+        REQUIRE(exif["Exif.Image.ImageWidth"] == "2703");
     }
 }

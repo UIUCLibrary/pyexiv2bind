@@ -44,7 +44,7 @@ endfunction()
 
 FetchContent_Declare(
         libexiv2
-        URL https://github.com/Exiv2/exiv2/archive/0.27.tar.gz
+        URL https://github.com/Exiv2/exiv2/archive/refs/tags/v0.27.5.tar.gz
 #            GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
 #            GIT_TAG ${EXIV2_VERSION_TAG}
 #        PATCH_COMMAND
