@@ -9,3 +9,4 @@ recursive-include tests *.py *.cpp
 recursive-include docs/source *.*
 include docs/make.bat docs/Makefile
 recursive-include py3exiv2bind *.py *.cpp *.h CMakeLists.txt
+recursive-include builders *.py
