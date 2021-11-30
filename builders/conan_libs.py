@@ -211,63 +211,6 @@ class BuildConan(setuptools.Command):
             # profile_build=profile
         )
 
-    def add_deps_to_compiler(self, metadata) -> None:
-        build_ext_cmd = self.get_finalized_command("build_ext")
-        compiler_adder = CompilerInfoAdder(build_ext_cmd)
-
-        include_dirs = metadata['include_paths']
-        compiler_adder.add_include_dirs(include_dirs)
-        self.announce(
-            f"Added the following paths to include path {', '.join(include_dirs)} ",
-            5)
-
-        lib_paths = metadata['lib_paths']
-
-        compiler_adder.add_lib_dirs(lib_paths)
-        self.announce(
-            f"Added the following paths to library path {', '.join(metadata['lib_paths'])} ",
-            5)
-
-        libs = []
-        if self.output_library_name in libs:
-            libs.remove(self.output_library_name)
-
-        for extension in build_ext_cmd.extensions:
-            # fixme
-            if sys.platform == "win32":
-                if self.output_library_name in extension.libraries:
-                    extension.libraries.remove(self.output_library_name)
-            for lib in metadata['libs']:
-                if lib == self.output_library_name:
-                    continue
-                if lib not in extension.libraries:
-                    extension.libraries.append(lib)
-
-    # def test_tesseract(self, build_file):
-    #     with open(build_file, "r") as f:
-    #         parser = ConanBuildInfoParser(f)
-    #         data = parser.parse()
-    #         path = data['bindirs_tesseract']
-    #         tesseract = shutil.which("tesseract", path=path[0])
-    #
-    #         tester = {
-    #             'darwin': MacResultTester,
-    #             'linux': LinuxResultTester,
-    #             'win32': WindowsResultTester
-    #         }.get(sys.platform)
-    #
-    #         if tester is None:
-    #             self.announce(f"unable to test for platform {sys.platform}", 5)
-    #             return
-    #
-    #         compiler = ccompiler.new_compiler()
-    #         tester = tester(compiler)
-    #         libs_dirs = data['libdirs']
-    #         for libs_dir in libs_dirs:
-    #             tester.test_shared_libs(libs_dir)
-    #         tester.test_binary_dependents(Path(tesseract))
-    #         compiler.spawn([tesseract, '--version'])
-
     def run(self):
         build_ext_cmd = self.get_finalized_command("build_ext")
         build_dir = build_ext_cmd.build_temp
