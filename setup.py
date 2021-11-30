@@ -87,35 +87,6 @@ class BuildCMakeLib(build_clib):
         self.cmake_api_dir = \
             os.path.join(self.build_temp, "deps", ".cmake", "api", "v1")
 
-    @staticmethod
-    def get_build_generator_name():
-        python_compiler = platform.python_compiler()
-
-        if "GCC" in python_compiler:
-            python_compiler = "GCC"
-
-        if "Clang" in python_compiler:
-            python_compiler = "Clang"
-
-        cmake_build_systems_lut = {
-            'MSC v.1900 64 bit (AMD64)': "Visual Studio 14 2015 Win64",
-            'MSC v.1900 32 bit (Intel)': "Visual Studio 14 2015",
-            'MSC v.1915 64 bit (AMD64)': "Visual Studio 14 2015 Win64",
-            'MSC v.1915 32 bit (Intel)': "Visual Studio 14 2015",
-            'MSC v.1916 64 bit (AMD64)': "Visual Studio 14 2015 Win64",
-            'MSC v.1916 32 bit (Intel)': "Visual Studio 14 2015",
-            'MSC v.1924 64 bit (AMD64)': "Visual Studio 14 2015 Win64",
-            'MSC v.1924 32 bit (Intel)': "Visual Studio 14 2015",
-            'MSC v.1925 64 bit (AMD64)': "Visual Studio 14 2015 Win64",
-            'MSC v.1925 32 bit (Intel)': "Visual Studio 14 2015",
-            'MSC v.1927 64 bit (AMD64)': "Visual Studio 14 2015 Win64",
-            'MSC v.1927 32 bit (Intel)': "Visual Studio 14 2015",
-            'GCC': "Unix Makefiles",
-            'Clang': "Unix Makefiles",
-        }
-
-        return cmake_build_systems_lut[python_compiler]
-
     def run(self):
 
         if not self.libraries:
