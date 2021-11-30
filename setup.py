@@ -312,7 +312,7 @@ class BuildExiv2(BuildCMakeLib):
         if os.name == 'nt':
             core_ext.libraries.append("shell32")
 
-        core_ext.libraries.append("xmp")
+        core_ext.libraries.append("exiv2-xmp")
 
         temp_lib_dir = os.path.join(self.build_temp, "lib")
 
