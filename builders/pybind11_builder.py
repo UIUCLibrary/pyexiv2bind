@@ -66,6 +66,13 @@ class BuildPybind11Extension(build_ext):
         return search_paths
 
     def run(self):
+        lib_dir = os.path.abspath(os.path.join(self.build_temp, "lib"))
+        if os.path.exists(lib_dir):
+            self.library_dirs.insert(0, lib_dir)
+        lib64_dir = os.path.abspath(os.path.join(self.build_temp, "lib64"))
+        if os.path.exists(lib64_dir):
+            self.library_dirs.insert(0, lib64_dir)
+
         super().run()
         for e in self.extensions:
             dll_name = \
