@@ -10,11 +10,12 @@ RUN python -m pip install pip --upgrade && \
     pip install wheel && \
     pip install setuptools --upgrade
 
-ADD requirements.txt ci/docker/shared/python/requirements-ci.txt /requirements/
+ADD requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt /requirements/
 
 RUN pip wheel --wheel-dir=/wheels \
     -r /requirements/requirements-ci.txt \
-    -r /requirements/requirements.txt && \
+    -r /requirements/requirements.txt \
+    -r /requirements/requirements-dev.txt && \
     rm -rf  /root/.cache
 #==============================================================================
 
@@ -94,12 +95,13 @@ COPY --from=wheel_builder /wheels /wheels/
 RUN chmod -R 777 /wheels
 ARG PIP_EXTRA_INDEX_URL
 ENV PIP_NO_CACHE_DIR=1
-ADD requirements.txt ci/docker/shared/python/requirements-ci.txt /requirements/
+ADD requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt /requirements/
 RUN python -m pip install pip --upgrade && \
     pip install wheel && \
     pip install setuptools --upgrade && \
     pip install --no-index --find-links=/wheels/ \
          -r /requirements/requirements.txt \
+         -r /requirements/requirements-dev.txt \
          -r /requirements/requirements-ci.txt
 
 ENV CONAN_USER_HOME=/conan
