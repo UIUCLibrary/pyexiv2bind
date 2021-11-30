@@ -7,6 +7,7 @@ from typing import Optional, List
 
 from distutils.sysconfig import customize_compiler
 import subprocess
+import pathlib
 import platform
 from setuptools import setup, Extension
 from setuptools.command.build_clib import build_clib
@@ -14,6 +15,7 @@ from setuptools.command.build_clib import build_clib
 sys.path.insert(0, os.path.dirname(__file__))
 cmd_class = {}
 extension_modules = []
+
 try:
     from builders.conan_libs import BuildConan
     cmd_class["build_conan"] = BuildConan
@@ -44,14 +46,6 @@ except ImportError:
     pass
 
 PACKAGE_NAME = "py3exiv2bind"
-
-
-class CMakeExtension(Extension):
-    def __init__(self, name, sources=None, language=None):
-        # don't invoke the original build_ext for this special extension
-        super().__init__(name,
-                         sources=sources if sources is not None else [],
-                         language=language)
 
 
 class AbsCMakePlatform(abc.ABC):
@@ -189,9 +183,7 @@ class BuildCMakeLib(build_clib):
 
         codemodel_file = \
             os.path.join(self.cmake_api_dir, "query", "codemodel-v2")
-
-        with open(codemodel_file, "w"):
-            pass
+        pathlib.Path(codemodel_file).touch()
 
         configure_command = [
             self.cmake_exec, f'-S{source_dir}',
