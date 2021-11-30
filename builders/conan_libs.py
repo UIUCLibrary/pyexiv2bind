@@ -338,13 +338,9 @@ class BuildConan(setuptools.Command):
             build_ext_cmd.define = definition_macro
         else:
             build_ext_cmd.define += definition_macro
-        for extension in build_ext_cmd.extensions:
-            if definition_macro not in extension.define_macros:
-                extension.define_macros += definition_macro
 
-            for path in text_md['lib_paths']:
-                if path not in extension.library_dirs:
-                    extension.library_dirs.insert(0, path)
+        for extension in build_ext_cmd.extensions:
+            update_extension4(extension, text_md)
 
         extension_deps = set()
         all_libs = [lib.libraries for lib in build_ext_cmd.ext_map.values()]
@@ -359,56 +355,17 @@ class BuildConan(setuptools.Command):
                 continue
 
             build_ext_cmd.libraries.insert(0, lib)
-    #         ============================================
-    #     # self.reinitialize_command("build_ext")
-    #     build_clib = self.get_finalized_command("build_clib")
-    #
-    #     build_dir = build_clib.build_temp
-    #
-    #     build_dir_full_path = os.path.abspath(build_dir)
-    #     conan_cache = self.conan_cache
-    #     self.mkpath(conan_cache)
-    #     self.mkpath(build_dir_full_path)
-    #     self.mkpath(os.path.join(build_dir_full_path, "lib"))
-    #     self.announce(f"Using {conan_cache} for conan cache", 5)
-    #
-    #     self._get_deps(conan_cache=conan_cache)
-    #     conaninfotext = os.path.join(build_dir, "conaninfo.txt")
-    #     if os.path.exists(conaninfotext):
-    #         with open(conaninfotext) as r:
-    #             self.announce(r.read(), 5)
-    #
-    #     conanbuildinfotext = os.path.join(build_dir, "conanbuildinfo.txt")
-    #     assert os.path.exists(conanbuildinfotext)
-    #     # self.test_tesseract(build_file=conanbuildinfotext)
-    #     metadata_strategy = ConanBuildInfoTXT()
-    #     text_md = metadata_strategy.parse(conanbuildinfotext)
-    #     build_ext_cmd = self.get_finalized_command("build_ext")
-    #     conanbuildinfojson = os.path.join(build_dir, 'conanbuildinfo.json')
-    #     conan_lib_metadata = ConanBuildMetadata(conanbuildinfojson)
-    #
-    #     # TODO: replace any library called by an extension with the libraries produced by conanbuildinfojson
-    #
-    #     build_ext_cmd = self.get_finalized_command("build_ext")
-    #     for path in text_md['bin_paths']:
-    #         if path not in build_ext_cmd.library_dirs:
-    #             build_ext_cmd.library_dirs.insert(0, path)
-    #     #
-    # # for extension in build_ext_cmd.extensions:
-    # #     for path in text_md['lib_paths']:
-    # #         if path not in extension.library_dirs:
-    # #             extension.library_dirs.insert(0, path)
-    # #
-    # #     for path in text_md['lib_paths']:
-    # #         if path not in extension.library_dirs:
-    # #             extension.library_dirs.insert(0, path)
-    #
-    #
-    #     for extension in build_ext_cmd.extensions:
-    #         # if any(map(lambda s: s in conan_lib_metadata.deps(), extension.libraries)):
-    #         # update_extension2(extension, text_md)
-    #         update_extension3(extension, text_md)
-    #             # update_extension(extension, conan_lib_metadata)
+
+
+def update_extension4(extension, text_md):
+    definition_macro = [(d, None) for d in text_md.get('definitions', [])]
+    if definition_macro not in extension.define_macros:
+        extension.define_macros += definition_macro
+
+    for path in text_md['lib_paths']:
+        if path not in extension.library_dirs:
+            extension.library_dirs.insert(0, path)
+
 
 def update_extension3(extension, text_md):
     for path in text_md['lib_paths']:
