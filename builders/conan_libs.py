@@ -298,7 +298,6 @@ class BuildConan(setuptools.Command):
         conanbuildinfotext = os.path.join(build_dir, "conanbuildinfo.txt")
         assert os.path.exists(conanbuildinfotext)
         text_md = ConanBuildInfoTXT().parse(conanbuildinfotext)
-        print(text_md, file=sys.stderr)
         for path in text_md['bin_paths']:
             if path not in build_ext_cmd.library_dirs:
                 build_ext_cmd.library_dirs.insert(0, path)
