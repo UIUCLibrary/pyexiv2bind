@@ -312,6 +312,7 @@ class BuildExiv2(BuildCMakeLib):
         if os.name == 'nt':
             core_ext.libraries.append("shell32")
             core_ext.libraries.append("psapi")
+            core_ext.libraries.append("Ws2_32")
 
         core_ext.libraries.append("exiv2-xmp")
 
