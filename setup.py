@@ -311,6 +311,7 @@ class BuildExiv2(BuildCMakeLib):
         core_ext.include_dirs.append(os.path.join(self.build_temp, "include"))
         if os.name == 'nt':
             core_ext.libraries.append("shell32")
+            core_ext.libraries.append("psapi")
 
         core_ext.libraries.append("exiv2-xmp")
 
