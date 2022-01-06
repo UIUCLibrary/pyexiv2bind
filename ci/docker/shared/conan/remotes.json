@@ -2,7 +2,7 @@
  "remotes": [
   {
    "name": "conan-center",
-   "url": "https://conan.bintray.com",
+   "url": "https://center.conan.io",
    "verify_ssl": true
   },
   {
