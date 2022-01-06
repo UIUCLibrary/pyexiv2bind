@@ -15,7 +15,7 @@ class pyexiv2bind(ConanFile):
         # if self.settings.os == "Windows":
         #     self.requires("Expat/2.2.9@pix4d/stable")
         # else:
-        self.requires("expat/2.2.9")
+        self.requires("expat/2.4.2")
         self.requires("zlib/1.2.11")
     def imports(self):
         self.copy("*.dll", dst="bin", src="bin") # From bin to bin
