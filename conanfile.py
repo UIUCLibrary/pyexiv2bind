@@ -6,16 +6,16 @@ from conans import ConanFile, CMake
 class pyexiv2bind(ConanFile):
     settings = "os", "arch", "compiler", "build_type"
 
-    generators = ["cmake_paths", "json"]
+    generators = ["cmake_find_package", "cmake_paths", "json"]
     default_options = {
         "expat:shared": False
     }
 
     def requirements(self):
-        if self.settings.os == "Windows":
-            self.requires("Expat/2.2.9@pix4d/stable")
-        else:
-            self.requires("expat/2.2.9")
+        # if self.settings.os == "Windows":
+        #     self.requires("Expat/2.2.9@pix4d/stable")
+        # else:
+        self.requires("expat/2.4.2")
         self.requires("zlib/1.2.11")
     def imports(self):
         self.copy("*.dll", dst="bin", src="bin") # From bin to bin

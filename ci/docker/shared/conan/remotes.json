@@ -2,12 +2,12 @@
  "remotes": [
   {
    "name": "conan-center",
-   "url": "https://conan.bintray.com",
+   "url": "https://center.conan.io",
    "verify_ssl": true
   },
   {
    "name": "bincrafters",
-   "url": "https://api.bintray.com/conan/bincrafters/public-conan",
+   "url": "https://bincrafters.jfrog.io/artifactory/api/conan/public-conan",
    "verify_ssl": true
   }
  ]

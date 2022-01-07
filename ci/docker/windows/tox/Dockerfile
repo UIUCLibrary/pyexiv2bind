@@ -104,8 +104,8 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
 ARG PYTHON_36_VERSION=3.6.8
 ARG PYTHON_37_VERSION=3.7.9
 ARG PYTHON_38_VERSION=3.8.10
-ARG PYTHON_39_VERSION=3.9.7
-ARG PYTHON_310_VERSION=3.10.0
+ARG PYTHON_39_VERSION=3.9.9
+ARG PYTHON_310_VERSION=3.10.1
 
 RUN $PYTHON_VERSIONS = @(${Env:PYTHON_36_VERSION}, ${Env:PYTHON_37_VERSION}, ${Env:PYTHON_38_VERSION}, ${Env:PYTHON_39_VERSION}, ${Env:PYTHON_310_VERSION}) ; `
     foreach( $PYTHON_VERSION in $PYTHON_VERSIONS ){ `
@@ -203,10 +203,15 @@ RUN python -m pip install --upgrade pip ; `
     pip install conan cmake
 COPY conanfile.py c:/temp/conanfile.py
 COPY ci/docker/shared/conan/remotes.json  C:/Users/ContainerAdministrator/.conan/remotes.json
-COPY ci/docker/windows/shared/conan/profile.ini  C:/Users/ContainerAdministrator/.conan/profiles/default
+COPY ci/docker/windows/tox/conan/profile.ini  C:/Users/ContainerAdministrator/.conan/profiles/default
 SHELL ["cmd", "/S", "/C" ]
 RUN conan config home
-RUN conan install c:/temp/ --build missing --no-import  && `
+
+RUN conan config init && ; `
+    conan config set general.revisions_enabled=1
+
+ENV CONAN_CMAKE_GENERATOR=Ninja
+RUN conan install c:/temp/ --build --no-import  && `
     conan remove "*" -b --src -f && `
     conan remove --lock
 
@@ -236,6 +241,10 @@ COPY --from=CONAN_BUILDER C:/Users/ContainerAdministrator/.conan/ C:/Users/Conta
 ENV CONAN_USER_HOME=C:/Users/ContainerAdministrator
 COPY conanfile.py c:/temp/conanfile.py
 RUN conan config home
+
+RUN conan config init ; `
+    conan config set general.revisions_enabled=1
+
 RUN conan install c:/temp/ --build outdated --no-import  ; `
     conan remove "*" -b --src -f ; `
     conan remove --locks
