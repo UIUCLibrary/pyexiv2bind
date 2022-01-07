@@ -203,10 +203,15 @@ RUN python -m pip install --upgrade pip ; `
     pip install conan cmake
 COPY conanfile.py c:/temp/conanfile.py
 COPY ci/docker/shared/conan/remotes.json  C:/Users/ContainerAdministrator/.conan/remotes.json
-COPY ci/docker/windows/shared/conan/profile.ini  C:/Users/ContainerAdministrator/.conan/profiles/default
+COPY ci/docker/windows/tox/conan/profile.ini  C:/Users/ContainerAdministrator/.conan/profiles/default
 SHELL ["cmd", "/S", "/C" ]
 RUN conan config home
-RUN conan install c:/temp/ --build missing --no-import  && `
+
+RUN conan config init && ; `
+    conan config set general.revisions_enabled=1
+
+ENV CONAN_CMAKE_GENERATOR=Ninja
+RUN conan install c:/temp/ --build --no-import  && `
     conan remove "*" -b --src -f && `
     conan remove --lock
 
@@ -236,6 +241,10 @@ COPY --from=CONAN_BUILDER C:/Users/ContainerAdministrator/.conan/ C:/Users/Conta
 ENV CONAN_USER_HOME=C:/Users/ContainerAdministrator
 COPY conanfile.py c:/temp/conanfile.py
 RUN conan config home
+
+RUN conan config init ; `
+    conan config set general.revisions_enabled=1
+
 RUN conan install c:/temp/ --build outdated --no-import  ; `
     conan remove "*" -b --src -f ; `
     conan remove --locks
