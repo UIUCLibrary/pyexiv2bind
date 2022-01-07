@@ -6,7 +6,7 @@ from conans import ConanFile, CMake
 class pyexiv2bind(ConanFile):
     settings = "os", "arch", "compiler", "build_type"
 
-    generators = ["cmake_paths", "json"]
+    generators = ["cmake_find_package", "cmake_paths", "json"]
     default_options = {
         "expat:shared": False
     }
