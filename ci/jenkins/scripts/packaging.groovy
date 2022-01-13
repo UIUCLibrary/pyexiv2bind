@@ -104,16 +104,19 @@ def testPkg2(args = [:]){
     def failure = args['post']['failure'] ? args['post']['failure']: {}
     def dockerImageName = args['dockerImageName'] ? args['dockerImageName']:  "${currentBuild.fullProjectName}_${getToxEnv(args)}_build".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
     def agentRunner = getAgent(args, dockerImageName)
-    agentRunner {
-        setup()
-        try{
-            testCommand()
-            successful()
-        } catch(e){
-            failure()
-            throw e
-        } finally{
-            cleanup()
+    def retries = args.containsKey('retry') ? args.retry : 1
+    retry(retries){
+        agentRunner {
+            setup()
+            try{
+                testCommand()
+                successful()
+            } catch(e){
+                failure()
+                throw e
+            } finally{
+                cleanup()
+            }
         }
     }
 }
