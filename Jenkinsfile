@@ -97,32 +97,6 @@ def runToxTests(){
     }
 }
 
-def deploy_docs(pkgName, prefix){
-    sshPublisher(
-        publishers: [
-            sshPublisherDesc(
-                configName: 'apache-ns - lib-dccuser-updater',
-                sshLabel: [label: 'Linux'],
-                transfers: [sshTransfer(excludes: '',
-                execCommand: '',
-                execTimeout: 120000,
-                flatten: false,
-                makeEmptyDirs: false,
-                noDefaultExcludes: false,
-                patternSeparator: '[, ]+',
-                remoteDirectory: pkgName,
-                remoteDirectorySDF: false,
-                removePrefix: prefix,
-                sourceFiles: "${prefix}/**")],
-            usePromotionTimestamp: false,
-            useWorkspaceInPromotion: false,
-            verbose: true
-            )
-        ]
-    )
-}
-
-
 def startup(){
     parallel(
         [
@@ -1534,23 +1508,59 @@ pipeline {
                     }
                 }
                 stage('Deploy Online Documentation') {
-                    agent any
                     when{
                         equals expected: true, actual: params.DEPLOY_DOCS
                         beforeAgent true
                         beforeInput true
                     }
-                    options{
-                        timeout(30)
+                    agent {
+                        dockerfile {
+                            filename 'ci/docker/python/linux/jenkins/Dockerfile'
+                            label 'linux && docker'
+                        }
                     }
-                    input{
+                    options{
+                        timeout(time: 1, unit: 'DAYS')
+                    }
+                    input {
                         message 'Update project documentation?'
                     }
                     steps{
                         unstash 'DOCS_ARCHIVE'
-                        deploy_docs(props.Name, 'build/docs/html')
+                        withCredentials([usernamePassword(credentialsId: 'dccdocs-server', passwordVariable: 'docsPassword', usernameVariable: 'docsUsername')]) {
+                            sh 'python utilities/upload_docs.py --username=$docsUsername --password=$docsPassword --subroute=py3exiv2bind build/docs/html apache-ns.library.illinois.edu'
+                        }
+                    }
+                    post{
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                    [pattern: 'build/', type: 'INCLUDE'],
+                                    [pattern: 'dist/', type: 'INCLUDE'],
+                                ]
+                            )
+                        }
                     }
                 }
+//                 stage('Deploy Online Documentation') {
+//                     agent any
+//                     when{
+//                         equals expected: true, actual: params.DEPLOY_DOCS
+//                         beforeAgent true
+//                         beforeInput true
+//                     }
+//                     options{
+//                         timeout(30)
+//                     }
+//                     input{
+//                         message 'Update project documentation?'
+//                     }
+//                     steps{
+//                         unstash 'DOCS_ARCHIVE'
+//                         deploy_docs(props.Name, 'build/docs/html')
+//                     }
+//                 }
             }
         }
     }
