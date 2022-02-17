@@ -910,6 +910,7 @@ pipeline {
                                             checkout scm
                                             unstash "python${pythonVersion} mac wheel"
                                         },
+                                        retry: 3,
                                         testCommand: {
                                             findFiles(glob: 'dist/*.whl').each{
                                                 sh(label: 'Running Tox',
@@ -947,6 +948,7 @@ pipeline {
                                             checkout scm
                                             unstash 'sdist'
                                         },
+                                        retry: 3,
                                         testCommand: {
                                             findFiles(glob: 'dist/*.tar.gz').each{
                                                 sh(label: 'Running Tox',
@@ -985,6 +987,7 @@ pipeline {
                                             ]
                                         ],
                                         dockerImageName: "${currentBuild.fullProjectName}_test_no_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
+                                        retry: 3,
                                         testSetup: {
                                              checkout scm
                                              unstash "python${pythonVersion} windows wheel"
@@ -1028,6 +1031,7 @@ pipeline {
                                             checkout scm
                                             unstash 'sdist'
                                         },
+                                        retry: 3,
                                         testCommand: {
                                             findFiles(glob: 'dist/*.tar.gz').each{
                                                 timeout(60){
@@ -1061,6 +1065,7 @@ pipeline {
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                                             ]
                                         ],
+                                        retry: 3,
                                         testSetup: {
                                             checkout scm
                                             unstash "python${pythonVersion} linux wheel"
@@ -1101,6 +1106,7 @@ pipeline {
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                                             ]
                                         ],
+                                        retry: 3,
                                         testSetup: {
                                             checkout scm
                                             unstash 'sdist'
