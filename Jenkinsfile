@@ -1278,6 +1278,7 @@ pipeline {
                                             ]
                                         ],
                                         dockerImageName:  "${currentBuild.fullProjectName}_devpi_with_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
+                                        retryTimes: 3,
                                         devpi: [
                                             index: DEVPI_CONFIG.stagingIndex,
                                             server: DEVPI_CONFIG.server,
@@ -1302,6 +1303,7 @@ pipeline {
                                                 label: 'windows && docker'
                                             ]
                                         ],
+                                        retryTimes: 3,
                                         devpi: [
                                             index: DEVPI_CONFIG.stagingIndex,
                                             server: DEVPI_CONFIG.server,
@@ -1354,6 +1356,7 @@ pipeline {
                                                 label: 'linux && docker'
                                             ]
                                         ],
+                                        retryTimes: 3,
                                         devpi: [
                                             index: DEVPI_CONFIG.stagingIndex,
                                             server: DEVPI_CONFIG.server,
