@@ -21,7 +21,6 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
         choco source remove -n=chocolatey ;`
     }; `
     choco feature disable --name="showDownloadProgress" ; `
-    Remove-Item C:\ProgramData\chocolatey\bin\cpack.exe ; `
     Remove-Item -Force -Recurse ${Env:TEMP}\*
 
 ADD ci/docker/shared/chocolatey/packages.config choco/packages.config
