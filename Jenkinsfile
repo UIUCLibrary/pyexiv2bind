@@ -79,7 +79,7 @@ def runToxTests(){
             'Linux':{
                 linuxJobs = tox.getToxTestsParallel(
                             envNamePrefix: 'Tox Linux',
-                            label: 'linux && docker',
+                            label: 'linux && docker && x86',
                             dockerfile: 'ci/docker/linux/tox/Dockerfile',
                             dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
                         )
@@ -87,7 +87,7 @@ def runToxTests(){
             'Windows':{
                 windowsJobs = tox.getToxTestsParallel(
                                 envNamePrefix: 'Tox Windows',
-                                label: 'windows && docker',
+                                label: 'windows && docker && x86',
                                 dockerfile: 'ci/docker/windows/tox/Dockerfile',
                                 dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
                             )
