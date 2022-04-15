@@ -23,7 +23,7 @@ FROM base_image as SONAR_BUILDER
 RUN apt-get update && \
     apt-get install -y unzip
 
-ENV SONAR_SCANNER_VERSION=4.6.2.2472
+ENV SONAR_SCANNER_VERSION=4.7.0.2747
 ARG SONAR_SCANNER_HOME=/opt/sonar/${SONAR_SCANNER_VERSION}-linux
 ENV SONAR_USER_HOME=/opt/sonar/.sonar
 
