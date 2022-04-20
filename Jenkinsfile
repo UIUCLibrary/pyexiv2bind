@@ -300,7 +300,7 @@ def create_packages(){
                         },
                         success: {
                             stash includes: 'dist/*manylinux*.*whl', name: "python${pythonVersion} linux-x86 wheel"
-                            wheelStashes << "python${pythonVersion} linux wheel"
+                            wheelStashes << "python${pythonVersion} linux-x86 wheel"
                         }
                     ]
                 )
@@ -1492,7 +1492,7 @@ pipeline {
                                         package:[
                                             name: props.Name,
                                             version: props.Version,
-                                            selector: "(${pythonVersion.replace('.','')}).*(manylinux).*(\\.whl)"
+                                            selector: "(${pythonVersion.replace('.','')}).+(manylinux).+x86"
                                         ],
                                         test:[
                                             toxEnv: "py${pythonVersion}".replace('.',''),
