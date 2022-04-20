@@ -299,7 +299,7 @@ def create_packages(){
                             )
                         },
                         success: {
-                            stash includes: 'dist/*manylinux*.*whl', name: "python${pythonVersion} linux wheel"
+                            stash includes: 'dist/*manylinux*.*whl', name: "python${pythonVersion} linux-x86 wheel"
                             wheelStashes << "python${pythonVersion} linux wheel"
                         }
                     ]
@@ -1096,7 +1096,7 @@ pipeline {
                             }
                             def linuxTestStages = [:]
                             SUPPORTED_LINUX_VERSIONS.each{ pythonVersion ->
-                                linuxTestStages["Linux - Python ${pythonVersion}: wheel"] = {
+                                linuxTestStages["Linux - Python ${pythonVersion} - x86: wheel"] = {
                                     packages.testPkg2(
                                         agent: [
                                             dockerfile: [
@@ -1108,7 +1108,7 @@ pipeline {
                                         retry: 3,
                                         testSetup: {
                                             checkout scm
-                                            unstash "python${pythonVersion} linux wheel"
+                                            unstash "python${pythonVersion} linux-x86 wheel"
                                         },
                                         testCommand: {
                                             findFiles(glob: 'dist/*.whl').each{
@@ -1137,7 +1137,7 @@ pipeline {
                                         ]
                                     )
                                 }
-                                linuxTestStages["Linux - Python ${pythonVersion}: sdist"] = {
+                                linuxTestStages["Linux - Python ${pythonVersion} - x86: sdist"] = {
                                     packages.testPkg2(
                                         agent: [
                                             dockerfile: [
@@ -1173,9 +1173,84 @@ pipeline {
                                         ]
                                     )
                                 }
-
+                                linuxTestStages["Linux - Python ${pythonVersion} - ARM64: wheel"] = {
+                                    packages.testPkg2(
+                                        agent: [
+                                            dockerfile: [
+                                                label: 'linux && docker && arm',
+                                                filename: 'ci/docker/linux/tox/Dockerfile',
+                                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                            ]
+                                        ],
+                                        retry: 3,
+                                        testSetup: {
+                                            checkout scm
+                                            unstash "python${pythonVersion} linux-arm64 wheel"
+                                        },
+                                        testCommand: {
+                                            findFiles(glob: 'dist/*.whl').each{
+                                                timeout(5){
+                                                    sh(
+                                                        label: 'Running Tox',
+                                                        script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
+                                                        )
+                                                }
+                                            }
+                                        },
+                                        post:[
+                                            cleanup: {
+                                                cleanWs(
+                                                    patterns: [
+                                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                        ],
+                                                    notFailBuild: true,
+                                                    deleteDirs: true
+                                                )
+                                            },
+                                            success: {
+                                                archiveArtifacts artifacts: 'dist/*.whl'
+                                            },
+                                        ]
+                                    )
+                                }
+                                linuxTestStages["Linux - Python ${pythonVersion} - ARM64: sdist"] = {
+                                    packages.testPkg2(
+                                        agent: [
+                                            dockerfile: [
+                                                label: 'linux && docker && arm',
+                                                filename: 'ci/docker/linux/tox/Dockerfile',
+                                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                            ]
+                                        ],
+                                        retry: 3,
+                                        testSetup: {
+                                            checkout scm
+                                            unstash 'sdist'
+                                        },
+                                        testCommand: {
+                                            findFiles(glob: 'dist/*.tar.gz').each{
+                                                sh(
+                                                    label: 'Running Tox',
+                                                    script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
+                                                    )
+                                            }
+                                        },
+                                        post:[
+                                            cleanup: {
+                                                cleanWs(
+                                                    patterns: [
+                                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                        ],
+                                                    notFailBuild: true,
+                                                    deleteDirs: true
+                                                )
+                                            },
+                                        ]
+                                    )
+                                }
                             }
-
                             def testingStages = windowsTestStages + linuxTestStages
                             if(params.BUILD_MAC_PACKAGES == true){
                                 testingStages = testingStages + macTestStages
