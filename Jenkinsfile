@@ -271,7 +271,7 @@ def create_packages(){
         ]
         def linuxBuildStages = [:]
         SUPPORTED_LINUX_VERSIONS.each{ pythonVersion ->
-            linuxBuildStages["Linux - Python ${pythonVersion}: wheel"] = {
+            linuxBuildStages["Linux - Python ${pythonVersion} - x86: wheel"] = {
                 packages.buildPkg(
                     agent: [
                         dockerfile: [
@@ -301,6 +301,40 @@ def create_packages(){
                         success: {
                             stash includes: 'dist/*manylinux*.*whl', name: "python${pythonVersion} linux wheel"
                             wheelStashes << "python${pythonVersion} linux wheel"
+                        }
+                    ]
+                )
+            }
+            linuxBuildStages["Linux - Python ${pythonVersion} - ARM64: wheel "] = {
+                packages.buildPkg(
+                    agent: [
+                        dockerfile: [
+                            label: 'linux && docker && arm',
+                            filename: 'ci/docker/linux/package/Dockerfile',
+                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg manylinux_image=quay.io/pypa/manylinux2014_aarch64'
+                        ]
+                    ],
+                    buildCmd: {
+                        sh(label: 'Building python wheel',
+                           script:"""python${pythonVersion} -m build --wheel
+                                     auditwheel repair ./dist/*.whl -w ./dist
+                                     """
+                           )
+                    },
+                    post:[
+                        cleanup: {
+                            cleanWs(
+                                patterns: [
+                                        [pattern: 'dist/', type: 'INCLUDE'],
+                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                    ],
+                                notFailBuild: true,
+                                deleteDirs: true
+                            )
+                        },
+                        success: {
+                            stash includes: 'dist/*manylinux*.*whl', name: "python${pythonVersion} linux-arm64 wheel"
+                            wheelStashes << "python${pythonVersion} linux-arm64 wheel"
                         }
                     ]
                 )
