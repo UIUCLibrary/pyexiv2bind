@@ -100,13 +100,12 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     $env:Path = [System.Environment]::GetEnvironmentVariable(\"Path\",\"Machine\") + \";\" + [System.Environment]::GetEnvironmentVariable(\"Path\",\"User\") ; `
     ./verifyenv.ps1
 
-ARG PYTHON_36_VERSION=3.6.8
 ARG PYTHON_37_VERSION=3.7.9
 ARG PYTHON_38_VERSION=3.8.10
-ARG PYTHON_39_VERSION=3.9.9
-ARG PYTHON_310_VERSION=3.10.1
+ARG PYTHON_39_VERSION=3.9.12
+ARG PYTHON_310_VERSION=3.10.4
 
-RUN $PYTHON_VERSIONS = @(${Env:PYTHON_36_VERSION}, ${Env:PYTHON_37_VERSION}, ${Env:PYTHON_38_VERSION}, ${Env:PYTHON_39_VERSION}, ${Env:PYTHON_310_VERSION}) ; `
+RUN $PYTHON_VERSIONS = @(${Env:PYTHON_37_VERSION}, ${Env:PYTHON_38_VERSION}, ${Env:PYTHON_39_VERSION}, ${Env:PYTHON_310_VERSION}) ; `
     foreach( $PYTHON_VERSION in $PYTHON_VERSIONS ){ `
         Write-Host "Installing Python $PYTHON_VERSION with Chocolatey" ; `
         $process = start-process -NoNewWindow -PassThru -FilePath C:\ProgramData\chocolatey\bin\choco.exe -ArgumentList 'install -y --stoponfirstfailure --no-progress --verbose python3', "--version=$PYTHON_VERSION", "-my" -Wait ;`
@@ -120,25 +119,12 @@ RUN $PYTHON_VERSIONS = @(${Env:PYTHON_36_VERSION}, ${Env:PYTHON_37_VERSION}, ${E
     Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse ; `
     Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
     py --list ;`
-    py -3.6 --version ; `
     py -3.7 --version ; `
     py -3.8 --version ; `
     py -3.9 --version ; `
     py -3.10 --version ; `
     Write-Host "Installing Python with Chocolatey - Done"
 
-# ==============================================================================
-FROM BASE_BUILDER as WHEEL_BUilDER_PY36
-SHELL ["cmd", "/S", "/C" ]
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-COPY requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extra.txt c:/requirements/
-ENV PY_PYTHON=3.6
-RUN py -m pip install --upgrade pip && `
-    py -m pip install wheel build && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
 
 # ==============================================================================
 FROM BASE_BUILDER as WHEEL_BUilDER_PY37
@@ -220,8 +206,6 @@ RUN certutil -addstore -f root roots.sst ; `
     del roots.sst
 
 ENV PIP_FIND_LINKS=c:\wheels
-COPY --from=WHEEL_BUilDER_PY36 c:/wheels/ c:/wheels/
-RUN py -3.6 -m pip install pip --upgrade ; py -3.6 -m pip install wheel --upgrade ; py -3.6 -m pip install tox conan wheel build
 COPY --from=WHEEL_BUilDER_PY37 c:/wheels/ c:/wheels/
 RUN py -3.7 -m pip install pip --upgrade ; py -3.7 -m pip install wheel --upgrade ; py -3.7 -m pip install tox conan wheel build
 COPY --from=WHEEL_BUilDER_PY38 c:/wheels/ c:/wheels/
