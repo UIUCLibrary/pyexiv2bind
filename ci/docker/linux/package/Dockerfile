@@ -1,4 +1,5 @@
-FROM quay.io/pypa/manylinux2014_x86_64 as base_python
+ARG manylinux_image=quay.io/pypa/manylinux2014_x86_64
+FROM ${manylinux_image} as base_python
 ENV PATH=/opt/python/cp39-cp39/bin:/opt/python/cp38-cp38/bin:/opt/python/cp37-cp37m/bin:/opt/python/cp36-cp36m/bin:/opt/python/cp35-cp35m/bin:$PATH
 RUN mkdir -p /.cache/pip && \
     chmod -R 777 /.cache

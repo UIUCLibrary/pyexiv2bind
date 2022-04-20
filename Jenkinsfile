@@ -277,7 +277,7 @@ def create_packages(){
                         dockerfile: [
                             label: 'linux && docker && x86',
                             filename: 'ci/docker/linux/package/Dockerfile',
-                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg manylinux_image=quay.io/pypa/manylinux2014_x86_64'
                         ]
                     ],
                     buildCmd: {
