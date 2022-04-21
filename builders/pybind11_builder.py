@@ -189,7 +189,9 @@ class MacholibStrategy(AbsSoHandler):
     @classmethod
     def is_system_file(cls, filename) -> bool:
         if filename in [
-            "libsystem_malloc.dylib"
+            "libsystem_malloc.dylib",
+            "libc++.1.dylib",
+            "libSystem.B.dylib"
         ]:
             return True
 
