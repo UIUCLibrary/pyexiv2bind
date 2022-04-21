@@ -17,6 +17,8 @@ class pyexiv2bind(ConanFile):
         # else:
         self.requires("expat/2.4.2")
         self.requires("zlib/1.2.11")
+        if self.settings.os == "Macos":
+            self.requires("libiconv/1.16")
     def imports(self):
         self.copy("*.dll", dst="bin", src="bin") # From bin to bin
     #     self.copy("*.dylib*", dst="bin", src="lib") # From lib to bin
