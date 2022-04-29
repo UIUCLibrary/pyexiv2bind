@@ -15,6 +15,9 @@ test-command = [
 build-frontend = "build"
 skip = ["*-win32", "*-manylinux_i686", "*-musllinux_i686"]
 
+[tool.cibuildwheel.macos]
+skip = ["pp*-*"]
+
 [tool.cibuildwheel.windows]
 before-all = [
     "pip install conan",
