@@ -13,7 +13,17 @@ test-command = [
     "pytest {package}/tests"
 ]
 build-frontend = "build"
-manylinux-x86_64-image = "manylinux2014"
 
-build = "cp310-*"
+[tool.cibuildwheel.windows]
+before-all = [
+    "pip install conan",
+    "conan install {project} --build --no-import"
+]
+
+[tool.cibuildwheel.linux]
+manylinux-x86_64-image = "manylinux2014"
+before-all = [
+    "pip install conan",
+    "conan install {project} --build --no-import -s compiler.version=10.2"
+]
 skip = ["*-win32", "*-manylinux_i686", "*-musllinux_i686"]
