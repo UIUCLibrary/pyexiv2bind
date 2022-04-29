@@ -23,7 +23,3 @@ before-all = [
 
 [tool.cibuildwheel.linux]
 manylinux-x86_64-image = "manylinux2014"
-before-all = [
-    "pip install conan",
-    "conan install {project} --build --no-import -s compiler.version=10.2"
-]
