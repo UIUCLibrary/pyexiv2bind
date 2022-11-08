@@ -11,7 +11,7 @@ jobs:
         os: [
           ubuntu-20.04,
           windows-2019,
-          macos-10.2
+          macos-11
         ]
         include:
           - os: macOS-11
