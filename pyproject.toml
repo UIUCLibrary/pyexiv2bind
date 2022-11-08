@@ -22,7 +22,7 @@ skip = [
     "*-musllinux*",
     "*-manylinux_i686"
 ]
-environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_USER_HOME"]
+#environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_USER_HOME"]
 
 [tool.cibuildwheel.macos]
 
