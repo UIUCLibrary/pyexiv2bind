@@ -130,8 +130,8 @@ def startup(){
                                                   PIP_NO_CACHE_DIR=off python setup.py dist_info
                                                '''
                                     )
-                                    stash includes: 'py3exiv2bind.dist-info/**', name: 'DIST-INFO'
-                                    archiveArtifacts artifacts: 'py3exiv2bind.dist-info/**'
+                                    stash includes: '*.dist-info/**', name: 'DIST-INFO'
+                                    archiveArtifacts artifacts: '*.dist-info/**'
                                 }
                             }
                         } finally{
