@@ -22,6 +22,7 @@ skip = [
     "*-musllinux*",
     "*-manylinux_i686"
 ]
+environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_USER_HOME"]
 
 [tool.cibuildwheel.macos]
 
@@ -39,9 +40,14 @@ CONAN_BUILD_INFO_DIR="/tmp/conan/build/"
 
 [tool.cibuildwheel.windows]
 before-all = [
-    "pip install conan",
-    "conan install {project} --build --no-import"
+    "pip install wheel",
+    "pip install conan cmake ninja",
+    "conan profile new default --detect --force",
+    "conan profile update settings.compiler.version=%CONAN_COMPILER_VERSION% default",
+    "conan install ./ --build missing",
 ]
+[tool.cibuildwheel.windows.environment]
+CONAN_USER_HOME="$TEMP/conan"
 
 [tool.cibuildwheel.linux]
 manylinux-x86_64-image = "manylinux2014"
