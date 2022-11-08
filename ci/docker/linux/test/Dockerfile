@@ -3,13 +3,21 @@ ARG PYTHON_VERSION=3.8
 FROM python:${PYTHON_VERSION} as base_image
 RUN mkdir -p /.cache/pip && \
     chmod -R 777 /.cache
+
+RUN python -m pip install pip --upgrade && \
+    pip install wheel && \
+    pip install setuptools --upgrade
+
+RUN pip install conan
+
+COPY ci/docker/shared/conan/remotes.json /conan/.conan/remotes.json
+COPY ci/docker/linux/test/conan/profile.ini  /conan/.conan/profiles/default
+RUN conan config init
+
 #==============================================================================
 
 FROM base_image as wheel_builder
 ARG PIP_EXTRA_INDEX_URL
-RUN python -m pip install pip --upgrade && \
-    pip install wheel && \
-    pip install setuptools --upgrade
 
 ADD requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt /requirements/
 
@@ -48,12 +56,8 @@ RUN curl --create-dirs -sSLo /tmp/build-wrapper-linux-x86.zip https://sonarcloud
 FROM base_image as conan_builder
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-RUN pip3 install conan
 ENV CONAN_USER_HOME=/conan
-COPY ci/docker/shared/conan/remotes.json /conan/.conan/remotes.json
-COPY ci/docker/linux/test/conan/profile.ini  /conan/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
-RUN conan config init
 RUN conan install /tmp --build outdated --no-import  && \
     conan install /tmp --build outdated --no-import  -s build_type=Debug && \
     conan remove "*" -b --src -f && \
@@ -108,11 +112,10 @@ RUN python -m pip install pip --upgrade && \
          -r /requirements/requirements-ci.txt
 
 ENV CONAN_USER_HOME=/conan
+ADD conanfile.py /tmp/conanfile.py
 COPY --from=conan_builder /conan/.conan/ /conan/.conan/
 COPY ci/docker/shared/conan/remotes.json /conan/.conan/remotes.json
 COPY ci/docker/linux/test/conan/profile.ini  /conan/.conan/profiles/default
-ADD conanfile.py /tmp/conanfile.py
-RUN conan config init
 RUN conan install /tmp --build  missing --no-import && \
     conan remove "*" -b --src -f && \
     conan remove --locks && \
