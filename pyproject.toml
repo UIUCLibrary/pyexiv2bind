@@ -27,6 +27,7 @@ environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_US
 [tool.cibuildwheel.macos]
 
 before-all = [
+    "pip3 install wheel",
     "pip3 install 'conan>=1.53' cmake ninja",
     "conan profile new $ENVTMPDIR/.conan/profiles/default --detect --force",
     "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
