@@ -374,10 +374,9 @@ class BuildExiv2(BuildCMakeLib):
         conan_cmd = self.get_finalized_command("build_conan")
         conan_cmd.run()
         build_ext_cmd = self.get_finalized_command("build_ext")
-
         toolchain_locations = [
-            build_ext_cmd.build_temp,
-            os.path.join(build_ext_cmd.build_temp, "Release")
+            self.build_temp,
+            os.path.join(self.build_temp, "Release")
         ]
         cmake_toolchain = locate_file("conan_paths.cmake", toolchain_locations)
         if cmake_toolchain is None:
