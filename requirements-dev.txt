@@ -8,4 +8,5 @@ pybind11
 pytest
 pytest-runner
 sphinx
+toml
 tox
