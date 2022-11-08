@@ -191,9 +191,11 @@ class BuildCMakeLib(build_clib):
             os.path.join(self.cmake_api_dir, "query", "codemodel-v2")
         pathlib.Path(codemodel_file).touch()
 
-        cmake_toolchain = \
-            os.path.join(self.build_temp,
-                         "conan_paths.cmake")
+        toolchain_locations = [
+            self.build_temp,
+            os.path.join(self.build_temp, "Release")
+        ]
+        cmake_toolchain = locate_file("conan_paths.cmake", toolchain_locations)
         if not os.path.exists(cmake_toolchain):
             raise FileNotFoundError("Missing toolchain file conan_paths.cmake")
 
@@ -351,6 +353,13 @@ class BuildCMakeLib(build_clib):
                     yield path
 
 
+def locate_file(file_name, search_locations):
+    for location in search_locations:
+        conanbuildinfo = os.path.join(location, file_name)
+        if os.path.exists(conanbuildinfo):
+            return conanbuildinfo
+
+
 class BuildExiv2(BuildCMakeLib):
 
     def __init__(self, dist):
@@ -366,9 +375,11 @@ class BuildExiv2(BuildCMakeLib):
         conan_cmd.run()
         build_ext_cmd = self.get_finalized_command("build_ext")
 
-        cmake_toolchain = \
-            os.path.join(build_ext_cmd.build_temp, "conan_paths.cmake")
-
+        toolchain_locations = [
+            build_ext_cmd.build_temp,
+            os.path.join(build_ext_cmd.build_temp, "Release")
+        ]
+        cmake_toolchain = locate_file("conan_paths.cmake", toolchain_locations)
         if not os.path.exists(cmake_toolchain):
             raise FileNotFoundError(f"Missing toolchain file {cmake_toolchain}")
         self.extra_cmake_options.append(
