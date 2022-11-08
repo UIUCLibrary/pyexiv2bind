@@ -33,8 +33,8 @@ jobs:
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           python -m cibuildwheel --output-dir wheelhouse
-          env:
-            CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
+        env:
+          CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
       - name: Build wheels
         run: python -m cibuildwheel --output-dir wheelhouse
         if: "!contains(matrix.os, 'windows')"
