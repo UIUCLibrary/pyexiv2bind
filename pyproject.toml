@@ -1,8 +1,8 @@
 [build-system]
-requires = ["setuptools>=40.8.0", "wheel", "cmake", "ninja", "conan","pybind11", 'macholib; platform_system == "Darwin"']
+requires = ["setuptools>=40.8.0", "wheel", "cmake", "ninja", "conan","pybind11", 'macholib; platform_system == "Darwin"', "ninja"]
 #build-backend = "setuptools.build_meta"
-build-backend = "local_backend"
-backend-path = ["builders"]
+build-backend = "builders.local_backend"
+backend-path = ["."]
 
 
 [tool.cibuildwheel]
@@ -13,10 +13,29 @@ test-command = [
     "pytest {package}/tests"
 ]
 build-frontend = "build"
-skip = ["*-win32", "*-manylinux_i686", "*-musllinux_i686"]
+skip = [
+    "cp36-*",
+    "cp37-macosx_*",
+    "cp311-*",
+    "pp*",
+    "*-win32",
+    "*-musllinux*",
+    "*-manylinux_i686"
+]
 
 [tool.cibuildwheel.macos]
-skip = ["pp*-*"]
+
+before-all = [
+    "pip3 install 'conan>=1.53' cmake ninja",
+    "conan profile new $ENVTMPDIR/.conan/profiles/default --detect --force",
+    "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
+    "conan install ./ --build missing --install-folder=$CONAN_BUILD_INFO_DIR"
+]
+[tool.cibuildwheel.macos.environment]
+ENVTMPDIR="/tmp/conan"
+CONAN_USER_HOME="/tmp/conan"
+CONAN_DEFAULT_PROFILE_PATH="/tmp/conan/.conan/profiles/default"
+CONAN_BUILD_INFO_DIR="/tmp/conan/build/"
 
 [tool.cibuildwheel.windows]
 before-all = [
