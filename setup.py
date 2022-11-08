@@ -355,9 +355,9 @@ class BuildCMakeLib(build_clib):
 
 def locate_file(file_name, search_locations):
     for location in search_locations:
-        conanbuildinfo = os.path.join(location, file_name)
-        if os.path.exists(conanbuildinfo):
-            return conanbuildinfo
+        file_candidate = os.path.join(location, file_name)
+        if os.path.exists(file_candidate):
+            return file_candidate
 
 
 class BuildExiv2(BuildCMakeLib):
@@ -381,7 +381,10 @@ class BuildExiv2(BuildCMakeLib):
         ]
         cmake_toolchain = locate_file("conan_paths.cmake", toolchain_locations)
         if cmake_toolchain is None:
-            raise FileNotFoundError(f"Missing toolchain file {cmake_toolchain}")
+            raise FileNotFoundError(
+                f"Missing toolchain file conan_paths.cmake. "
+                f"Searching in {toolchain_locations}",
+            )
         self.extra_cmake_options.append(
             f'-DCMAKE_TOOLCHAIN_FILE={cmake_toolchain}'
         )
