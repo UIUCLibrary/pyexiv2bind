@@ -13,9 +13,18 @@ jobs:
           windows-2019,
           macos-10.15
         ]
+        include:
+          - os: macOS-11
+            compiler_version: 13
+          - os: ubuntu-20.04
+            compiler_version: 10.2
+          - os: windows-2019
+            compiler_version: 16
 
     steps:
       - uses: actions/checkout@v2
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.5.0
+        env:
+           CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
