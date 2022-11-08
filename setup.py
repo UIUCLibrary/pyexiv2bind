@@ -373,7 +373,6 @@ class BuildExiv2(BuildCMakeLib):
     def run(self):
         conan_cmd = self.get_finalized_command("build_conan")
         conan_cmd.run()
-        build_ext_cmd = self.get_finalized_command("build_ext")
         toolchain_locations = [
             self.build_temp,
             os.path.join(self.build_temp, "Release")
