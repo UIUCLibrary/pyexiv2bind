@@ -45,3 +45,20 @@ before-all = [
 
 [tool.cibuildwheel.linux]
 manylinux-x86_64-image = "manylinux2014"
+repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
+before-all = [
+    "cc --version", "cc -dumpfullversion -dumpversion",
+    "pip3 install conan cmake ninja",
+    "conan profile new /tmp/conan/.conan/profiles/default --detect",
+    "if [ -z \"$CONAN_COMPILER_LIBCXX\" ]; then : ; else conan profile update settings.compiler.libcxx=$CONAN_COMPILER_LIBCXX default; fi",
+    "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
+    "conan profile show default",
+    "conan install ./ --build missing",
+
+]
+[tool.cibuildwheel.linux.environment]
+CONAN_USER_HOME="/tmp/conan"
+CONAN_DEFAULT_PROFILE_PATH="/tmp/conan/.conan/profiles/default"
+CONAN_BUILD_INFO_DIR="/tmp/conan/build/"
+PYTHONFAULTHANDLER="True"
+#
