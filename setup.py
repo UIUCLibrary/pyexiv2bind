@@ -196,7 +196,7 @@ class BuildCMakeLib(build_clib):
             os.path.join(self.build_temp, "Release")
         ]
         cmake_toolchain = locate_file("conan_paths.cmake", toolchain_locations)
-        if not os.path.exists(cmake_toolchain):
+        if cmake_toolchain is None:
             raise FileNotFoundError("Missing toolchain file conan_paths.cmake")
 
         configure_command = [
@@ -380,7 +380,7 @@ class BuildExiv2(BuildCMakeLib):
             os.path.join(build_ext_cmd.build_temp, "Release")
         ]
         cmake_toolchain = locate_file("conan_paths.cmake", toolchain_locations)
-        if not os.path.exists(cmake_toolchain):
+        if cmake_toolchain is None:
             raise FileNotFoundError(f"Missing toolchain file {cmake_toolchain}")
         self.extra_cmake_options.append(
             f'-DCMAKE_TOOLCHAIN_FILE={cmake_toolchain}'
