@@ -1,6 +1,7 @@
 import re
+import sys
 from typing import List
-
+import shutil
 DEPS_REGEX = \
     r'(?<=(Image has the following dependencies:(\n){2}))((?<=\s).*\.dll\n)*'
 
@@ -36,9 +37,14 @@ def remove_system_dlls(dlls):
 
 
 def get_win_deps(dll_name, output_file, compiler):
+    dumpbin_exe = shutil.which('dumpbin')
+    if dumpbin_exe is None:
+        dumpbin_exe = 'dumpbin'
+        print('Unable to locate dumpbin', file=sys.stderr)
+
     compiler.spawn(
         [
-            'dumpbin',
+            dumpbin_exe,
             '/dependents',
             dll_name,
             f'/out:{output_file}'

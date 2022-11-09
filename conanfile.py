@@ -8,7 +8,7 @@ class pyexiv2bind(ConanFile):
 
     generators = ["cmake_find_package", "cmake_paths", "json"]
     default_options = {
-        "expat:shared": False
+        "expat:shared": False,
     }
 
     def requirements(self):
@@ -21,7 +21,7 @@ class pyexiv2bind(ConanFile):
             self.requires("libiconv/1.16")
     def imports(self):
         self.copy("*.dll", dst="bin", src="bin") # From bin to bin
-    #     self.copy("*.dylib*", dst="bin", src="lib") # From lib to bin
+        self.copy("*.dylib*", dst=".", src="lib") # From lib to bin
     #
     # def configure(self):
     #

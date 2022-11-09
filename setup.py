@@ -9,7 +9,11 @@ from distutils.sysconfig import customize_compiler
 import subprocess
 import pathlib
 import platform
-from setuptools import setup, Extension
+from setuptools import setup
+try:
+    from pybind11.setup_helpers import Pybind11Extension
+except ImportError:
+    from setuptools import Extension as Pybind11Extension
 from setuptools.command.build_clib import build_clib
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -21,7 +25,7 @@ try:
     cmd_class["build_conan"] = BuildConan
     from builders.pybind11_builder import BuildPybind11Extension
     cmd_class["build_ext"] = BuildPybind11Extension
-    exiv2_extension = Extension(
+    exiv2_extension = Pybind11Extension(
         "py3exiv2bind.core",
         sources=[
             "py3exiv2bind/core/core.cpp",
@@ -34,6 +38,7 @@ try:
         ],
         libraries=[
             "exiv2",
+            # "expat"
         ],
         include_dirs=[
             "py3exiv2bind/core/glue",
@@ -167,7 +172,8 @@ class BuildCMakeLib(build_clib):
         self.build_cmake(ext)
         self.build_install_cmake(ext)
 
-    def configure_cmake(self, extension: Extension):
+
+    def configure_cmake(self, extension: Pybind11Extension):
         source_dir = os.path.abspath(os.path.dirname(__file__))
 
         self.announce("Configuring CMake Project", level=3)
@@ -185,13 +191,26 @@ class BuildCMakeLib(build_clib):
             os.path.join(self.cmake_api_dir, "query", "codemodel-v2")
         pathlib.Path(codemodel_file).touch()
 
+        toolchain_locations = [
+            self.build_temp,
+            os.path.join(self.build_temp, "Release")
+        ]
+        cmake_toolchain = locate_file("conan_paths.cmake", toolchain_locations)
+        if cmake_toolchain is None:
+            raise FileNotFoundError("Missing toolchain file conan_paths.cmake")
+
         configure_command = [
-            self.cmake_exec, f'-S{source_dir}',
-            "-G", "Ninja",
+            self.cmake_exec, f'-S{source_dir}'
+        ]
+        ninja = shutil.which("ninja")
+        if ninja:
+            configure_command += ["-G", "Ninja"]
+        configure_command += [
             f'-B{dep_build_path}',
-            f"-DCMAKE_TOOLCHAIN_FILE={dep_build_path}/conan_paths.cmake",
+            f"-DCMAKE_TOOLCHAIN_FILE={cmake_toolchain}",
             f'-DCMAKE_BUILD_TYPE={build_configuration_name}',
             f'-DCMAKE_INSTALL_PREFIX={os.path.abspath(self.build_clib)}',
+
         ]
         configure_command += extension[1].get('CMAKE_CONFIG', [])
         configure_command += self._cmake_platform.platform_specific_configs()
@@ -214,7 +233,7 @@ class BuildCMakeLib(build_clib):
 
         return None
 
-    def build_cmake(self, extension: Extension):
+    def build_cmake(self, extension: Pybind11Extension):
         dep_build_path = os.path.join(self.build_temp, "deps")
         build_command = [
             self.cmake_exec,
@@ -240,7 +259,7 @@ class BuildCMakeLib(build_clib):
         else:
             self.compiler.spawn(build_command)
 
-    def build_install_cmake(self, extension: Extension):
+    def build_install_cmake(self, extension: Pybind11Extension):
         dep_build_path = os.path.join(self.build_temp, "deps")
         install_command = [
             self.cmake_exec,
@@ -260,7 +279,15 @@ class BuildCMakeLib(build_clib):
 
         if build_ext_cmd.parallel:
             install_command.extend(["-j", str(build_ext_cmd.parallel)])
-
+        ext: Pybind11Extension
+        for ext in build_ext_cmd.extensions:
+            ext.library_dirs.insert(
+                0,
+                os.path.abspath(os.path.join(build_ext_cmd.build_lib, "py3exiv2bind"))
+            )
+            print(f"ext = {ext}: ext.library_dirs = {ext.library_dirs}")
+            print(f"ext = {ext}: ext.libraries = {ext.libraries}")
+        # raise Exception("ok")
         build_ext_cmd.include_dirs.insert(
             0,
             os.path.abspath(
@@ -279,6 +306,59 @@ class BuildCMakeLib(build_clib):
         else:
             self.compiler.spawn(install_command)
 
+        install_manifest = os.path.join(self.build_temp, "deps", "install_manifest.txt")
+        self.add_cmake_built_libraries(install_manifest)
+        lib_dirs = list(self.locate_cmake_installed_lib_dirs(install_manifest))
+        ext: Pybind11Extension
+        for ext in build_ext_cmd.extensions:
+            ext.library_dirs = lib_dirs + ext.library_dirs
+            if sys.platform == "darwin":
+                if "@loader_path" not in ext.runtime_library_dirs:
+                    ext.runtime_library_dirs.append("@loader_path")
+            elif sys.platform == "linux":
+                if "$ORIGIN" not in ext.runtime_library_dirs:
+                    ext.runtime_library_dirs.append("$ORIGIN")
+
+    def add_cmake_built_libraries(self, install_manifest):
+        if not os.path.exists(install_manifest):
+            raise FileNotFoundError(f"Missing {install_manifest}")
+        with open(install_manifest, "r", encoding="utf8") as f:
+            build_py = self.get_finalized_command("build_py")
+            install_dir = os.path.abspath(
+                os.path.join(
+                    build_py.build_lib,
+                    build_py.get_package_dir(build_py.packages[0]))
+            )
+            for line in f.readlines():
+                file_path = line.strip()
+                if ".dylib" not in file_path:
+                    continue
+                shutil.copy(file_path, install_dir, follow_symlinks=False)
+
+    def locate_cmake_installed_lib_dirs(self, install_manifest):
+        with open(install_manifest, "r", encoding="utf8") as f:
+            file_paths = set()
+            # don't return any dup paths
+            for line in f.readlines():
+                file_path = line.strip()
+                if platform.system() == "Windows":
+                    if ".lib" not in file_path:
+                        continue
+                else:
+                    if ".a" not in file_path:
+                        continue
+                path = str(pathlib.Path(file_path).parent)
+                if path not in file_paths:
+                    file_paths.add(path)
+                    yield path
+
+
+def locate_file(file_name, search_locations):
+    for location in search_locations:
+        file_candidate = os.path.join(location, file_name)
+        if os.path.exists(file_candidate):
+            return file_candidate
+
 
 class BuildExiv2(BuildCMakeLib):
 
@@ -293,13 +373,16 @@ class BuildExiv2(BuildCMakeLib):
     def run(self):
         conan_cmd = self.get_finalized_command("build_conan")
         conan_cmd.run()
-        build_ext_cmd = self.get_finalized_command("build_ext")
-
-        cmake_toolchain = \
-            os.path.join(build_ext_cmd.build_temp, "conan_paths.cmake")
-
-        if not os.path.exists(cmake_toolchain):
-            raise FileNotFoundError("Missing toolchain file conan_paths.cmake")
+        toolchain_locations = [
+            self.build_temp,
+            os.path.join(self.build_temp, "Release")
+        ]
+        cmake_toolchain = locate_file("conan_paths.cmake", toolchain_locations)
+        if cmake_toolchain is None:
+            raise FileNotFoundError(
+                f"Missing toolchain file conan_paths.cmake. "
+                f"Searching in {toolchain_locations}",
+            )
         self.extra_cmake_options.append(
             f'-DCMAKE_TOOLCHAIN_FILE={cmake_toolchain}'
         )
@@ -336,7 +419,7 @@ exiv2 = ("exiv2", {
 
 cmd_class['build_clib'] = BuildExiv2
 
-exiv2_extension = Extension(
+exiv2_extension = Pybind11Extension(
     "py3exiv2bind.core",
     sources=[
         "py3exiv2bind/core/core.cpp",
