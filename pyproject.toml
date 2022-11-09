@@ -22,16 +22,17 @@ skip = [
     "*-musllinux*",
     "*-manylinux_i686"
 ]
-#environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_USER_HOME"]
+environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_USER_HOME"]
 
 [tool.cibuildwheel.macos]
 
 before-all = [
-    "python3 -m pip install wheel",
-    "python3 -m pip install 'conan>=1.53' cmake ninja",
-    "conan profile new $ENVTMPDIR/.conan/profiles/default --detect --force",
-    "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
-    "conan install ./ --build missing --install-folder=$CONAN_BUILD_INFO_DIR"
+    "python3 -m venv /tmp/conan/venv",
+    "/tmp/conan/venv/bin/python -m pip install wheel",
+    "/tmp/conan/venv/bin/python -m pip install 'conan>=1.53' cmake",
+    "/tmp/conan/venv/bin/conan profile new $ENVTMPDIR/.conan/profiles/default --detect --force",
+    "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else /tmp/conan/venv/bin/conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
+    ". /tmp/conan/venv/bin/activate && conan install ./ --build missing --install-folder=$CONAN_BUILD_INFO_DIR"
 ]
 [tool.cibuildwheel.macos.environment]
 ENVTMPDIR="/tmp/conan"
