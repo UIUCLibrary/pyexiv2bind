@@ -1,0 +1,47 @@
+on: [push, pull_request]
+name: Tox Multi-platform Compatibility Test
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-2019]
+        python-version: ['3.7', '3.8' ,'3.9', '3.10']
+        include:
+          - os: macos-latest
+            compiler_version: 14
+            compiler_libcxx: libc++
+          - os: ubuntu-latest
+            compiler_version: 11.3
+            compiler_libcxx: libstdc++11
+          - os: windows-2019
+            compiler_version: 16
+      fail-fast: false
+    name: Python ${{ matrix.python-version }} ${{ matrix.os }} build
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: |
+          pip install wheel
+          pip install tox
+      - name: Run tox
+        if: contains(matrix.os, 'windows')
+        shell: cmd
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          pip install conan
+          conan profile new default --detect
+          conan install . --build  missing --no-import 
+          tox -e py
+        env:
+          CONAN_USER_HOME: "C:/Users/runneradmin"
+      - name: Run tox
+        if: "!contains(matrix.os, 'windows')"
+        run: cc --version &&  cc -dumpfullversion -dumpversion && tox -e py -vvv
+        env:
+          CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
+          CONAN_COMPILER_LIBCXX: ${{ matrix.compiler_libcxx }}
+
+          
