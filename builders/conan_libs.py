@@ -411,10 +411,10 @@ def build_deps_with_conan(
             os.path.join(os.path.dirname(__file__), "..")
         )
 
-        ninja = shutil.which("ninja")
         env = []
-        if ninja:
-            env.append(f"NINJA={ninja}")
+        # ninja = shutil.which("ninja")
+        # if ninja:
+        #     env.append(f"NINJA={ninja}")
         conan.install(
             options=conan_options,
             cwd=build_dir,

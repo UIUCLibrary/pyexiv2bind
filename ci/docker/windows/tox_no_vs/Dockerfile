@@ -123,7 +123,7 @@ COPY --from=WHEEL_BUILDER_PY37 C:/wheels/ c:/wheels/
 COPY --from=WHEEL_BUILDER_PY38 C:/wheels/ c:/wheels/
 COPY --from=WHEEL_BUILDER_PY39 C:/wheels/ c:/wheels/
 COPY --from=WHEEL_BUILDER_PY310 C:/wheels/ c:/wheels/
-RUN python -m pip install pip --upgrade ; pip install tox devpi_client
+RUN python -m pip install pip --upgrade ; pip install tox "devpi-client<6.0"
 ENV PIP_FIND_LINKS=c:\wheels
 WORKDIR C:/src
 CMD tox --workdir ${Env:TEMP}\tox\ -vv  --recreate

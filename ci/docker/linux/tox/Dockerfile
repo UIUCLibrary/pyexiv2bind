@@ -103,7 +103,7 @@ RUN python3.10 -m ensurepip --upgrade
 COPY --from=WHEEL_BUILDER_PY310 /wheels/* /wheels/
 RUN chmod -R 777 /wheels
 ENV PIP_FIND_LINKS=/wheels
-RUN pip3 install tox conan cmake devpi_client wheel
+RUN pip3 install tox conan cmake "devpi-client<6.0" build twine
 
 #USER user
 #WORKDIR /home/user
