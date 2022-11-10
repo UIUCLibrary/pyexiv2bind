@@ -21,9 +21,9 @@ cmd_class = {}
 extension_modules = []
 
 try:
-    from builders.conan_libs import BuildConan
+    from builders.conan_libs import BuildConan, locate_conanbuildinfo, ConanBuildInfoTXT
     cmd_class["build_conan"] = BuildConan
-    from builders.pybind11_builder import BuildPybind11Extension
+    from builders.pybind11_builder import BuildPybind11Extension, parse_conan_build_info
     cmd_class["build_ext"] = BuildPybind11Extension
     exiv2_extension = Pybind11Extension(
         "py3exiv2bind.core",
@@ -193,7 +193,9 @@ class BuildCMakeLib(build_clib):
 
         toolchain_locations = [
             self.build_temp,
-            os.path.join(self.build_temp, "Release")
+            os.path.join(self.build_temp, "conan"),
+            os.path.join(self.build_temp, "Release"),
+            os.path.join(self.build_temp, "Release", "conan"),
         ]
         cmake_toolchain = locate_file("conan_paths.cmake", toolchain_locations)
         if cmake_toolchain is None:
@@ -372,10 +374,13 @@ class BuildExiv2(BuildCMakeLib):
 
     def run(self):
         conan_cmd = self.get_finalized_command("build_conan")
+        build_clib = self.get_finalized_command("build_clib")
         conan_cmd.run()
         toolchain_locations = [
             self.build_temp,
-            os.path.join(self.build_temp, "Release")
+            os.path.join(self.build_temp, "conan"),
+            os.path.join(self.build_temp, "Release"),
+            os.path.join(self.build_temp, "Release", "conan"),
         ]
         cmake_toolchain = locate_file("conan_paths.cmake", toolchain_locations)
         if cmake_toolchain is None:
@@ -391,6 +396,20 @@ class BuildExiv2(BuildCMakeLib):
         ext_command = self.get_finalized_command("build_ext")
 
         core_ext = ext_command.ext_map['py3exiv2bind.core']
+        build_locations = [
+            build_clib.build_temp,
+            os.path.join(build_clib.build_temp, "conan"),
+            os.path.join(build_clib.build_temp, "conan", "Release"),
+            os.path.join(build_clib.build_temp, "Release"),
+        ]
+        conanbuildinfotext = locate_conanbuildinfo(build_locations)
+        metadata_strategy = ConanBuildInfoTXT()
+        text_md = metadata_strategy.parse(conanbuildinfotext)
+        for lib in text_md["libs"]:
+            core_ext.libraries.append(lib)
+        for path in text_md["lib_paths"]:
+            core_ext.library_dirs.append(path)
+
         core_ext.include_dirs.append(os.path.join(self.build_temp, "include"))
         if os.name == 'nt':
             core_ext.libraries.append("shell32")
@@ -413,7 +432,7 @@ exiv2 = ("exiv2", {
         '-DEXIV2_ENABLE_NLS:BOOL=NO',
         '-DEXIV2_ENABLE_VIDEO:BOOL=OFF',
         '-DEXIV2_ENABLE_PNG:BOOL=OFF'
-    ]
+    ],
 })
 
 

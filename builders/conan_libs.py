@@ -273,8 +273,7 @@ class BuildConan(setuptools.Command):
                 )
         else:
             install_dir = build_ext.build_temp
-        # build_dir = os.path.join(build_clib.build_temp, "conan")
-        build_dir = build_clib.build_temp
+        build_dir = os.path.join(build_clib.build_temp, "conan")
         build_dir_full_path = os.path.abspath(build_dir)
         conan_cache = self.conan_cache
         self.mkpath(conan_cache)
@@ -303,23 +302,15 @@ class BuildConan(setuptools.Command):
         metadata_strategy = ConanBuildInfoTXT()
         text_md = metadata_strategy.parse(conanbuildinfotext)
         build_ext_cmd = self.get_finalized_command("build_ext")
-
-        conanbuildinfojson = locate_conanbuildinfo_json(build_locations)
-        conan_lib_metadata = ConanBuildMetadata(conanbuildinfojson)
         for extension in build_ext_cmd.extensions:
             if build_ext._inplace:
                 extension.runtime_library_dirs.append(os.path.abspath(install_dir))
-            if any(
-                    map(
-                        lambda s: s in text_md.get("libs", []) or s in conan_lib_metadata.deps(), extension.libraries
-                    )
-            ):
+            if any(map(lambda s: s in text_md["libs"], extension.libraries)):
                 update_extension2(extension, text_md)
                 if sys.platform == "darwin":
                     extension.runtime_library_dirs.append("@loader_path")
                 elif sys.platform == "linux":
                     extension.runtime_library_dirs.append("$ORIGIN")
-
 
 def build_conan(wheel_directory, config_settings=None, metadata_directory=None, install_libs=True):
     dist = Distribution()
@@ -411,10 +402,10 @@ def build_deps_with_conan(
             os.path.join(os.path.dirname(__file__), "..")
         )
 
+        ninja = shutil.which("ninja")
         env = []
-        # ninja = shutil.which("ninja")
-        # if ninja:
-        #     env.append(f"NINJA={ninja}")
+        if ninja:
+            env.append(f"NINJA={ninja}")
         conan.install(
             options=conan_options,
             cwd=build_dir,
