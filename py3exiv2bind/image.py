@@ -37,8 +37,7 @@ class Image(core.Image):
         extension = os.path.splitext(self.filename)[1].lower()
         if extension in Image._INVALID_FORMATS_FOR_ICC:
             raise AttributeError(
-                "{} files not currently supported for ICC data".format(
-                    extension)
+                f"{extension} files not currently supported for ICC data"
             )
         unpacked = icc.unpack_binary(self.get_icc_profile_data())
 
