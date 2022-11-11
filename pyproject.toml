@@ -1,6 +1,5 @@
 [build-system]
 requires = ["setuptools>=40.8.0", "wheel", "cmake", "ninja", "conan","pybind11", 'macholib; platform_system == "Darwin"', "ninja"]
-#build-backend = "setuptools.build_meta"
 build-backend = "builders.local_backend"
 backend-path = ["."]
 
@@ -27,18 +26,18 @@ environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_US
 [tool.cibuildwheel.macos]
 
 before-all = [
-    "python3 -m venv /tmp/conan/venv",
-    "/tmp/conan/venv/bin/python -m pip install wheel",
-    "/tmp/conan/venv/bin/python -m pip install 'conan>=1.53' cmake",
-    "/tmp/conan/venv/bin/conan profile new $ENVTMPDIR/.conan/profiles/default --detect --force",
-    "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else /tmp/conan/venv/bin/conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
-    ". /tmp/conan/venv/bin/activate && conan install ./ --build missing --install-folder=$CONAN_BUILD_INFO_DIR"
+    "python3 -m venv /tmp/ciwheelbuilder/py3exiv2bind/venv",
+    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/python -m pip install wheel",
+    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/python -m pip install 'conan>=1.53' cmake",
+    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/conan profile new $ENVTMPDIR/.conan/profiles/default --detect --force",
+    "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else /tmp/ciwheelbuilder/py3exiv2bind/venv/bin/conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
+    ". /tmp/ciwheelbuilder/py3exiv2bind/venv/bin/activate && conan install ./ --build missing --install-folder=$CONAN_BUILD_INFO_DIR"
 ]
 [tool.cibuildwheel.macos.environment]
-ENVTMPDIR="/tmp/conan"
-CONAN_USER_HOME="/tmp/conan"
-CONAN_DEFAULT_PROFILE_PATH="/tmp/conan/.conan/profiles/default"
-CONAN_BUILD_INFO_DIR="/tmp/conan/build/"
+ENVTMPDIR="/tmp/ciwheelbuilder/py3exiv2bind"
+CONAN_USER_HOME="/tmp/ciwheelbuilder/py3exiv2bind"
+CONAN_DEFAULT_PROFILE_PATH="/tmp/ciwheelbuilder/py3exiv2bind/.conan/profiles/default"
+CONAN_BUILD_INFO_DIR="/tmp/ciwheelbuilder/py3exiv2bind/build/"
 
 [tool.cibuildwheel.windows]
 before-all = [
@@ -57,7 +56,7 @@ repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
 before-all = [
     "cc --version", "cc -dumpfullversion -dumpversion",
     "pip3 install conan cmake ninja",
-    "conan profile new /tmp/conan/.conan/profiles/default --detect",
+    "conan profile new /tmp/ciwheelbuilder/py3exiv2bind/.conan/profiles/default --detect",
     "if [ -z \"$CONAN_COMPILER_LIBCXX\" ]; then : ; else conan profile update settings.compiler.libcxx=$CONAN_COMPILER_LIBCXX default; fi",
     "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
     "conan profile show default",
@@ -65,8 +64,8 @@ before-all = [
 
 ]
 [tool.cibuildwheel.linux.environment]
-CONAN_USER_HOME="/tmp/conan"
-CONAN_DEFAULT_PROFILE_PATH="/tmp/conan/.conan/profiles/default"
-CONAN_BUILD_INFO_DIR="/tmp/conan/build/"
+CONAN_USER_HOME="/tmp/ciwheelbuilder/py3exiv2bind"
+CONAN_DEFAULT_PROFILE_PATH="/tmp/ciwheelbuilder/py3exiv2bind/.conan/profiles/default"
+CONAN_BUILD_INFO_DIR="/tmp/ciwheelbuilder/py3exiv2bind/build/"
 PYTHONFAULTHANDLER="True"
 #
