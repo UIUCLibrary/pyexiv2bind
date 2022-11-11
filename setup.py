@@ -206,13 +206,15 @@ class BuildCMakeLib(build_clib):
         ]
         ninja = shutil.which("ninja")
         if ninja:
-            configure_command += ["-G", "Ninja"]
+            configure_command += [
+                "-G", "Ninja",
+                f"-DCMAKE_MAKE_PROGRAM:FILEPATH={ninja}",
+            ]
         configure_command += [
             f'-B{dep_build_path}',
             f"-DCMAKE_TOOLCHAIN_FILE={cmake_toolchain}",
             f'-DCMAKE_BUILD_TYPE={build_configuration_name}',
             f'-DCMAKE_INSTALL_PREFIX={os.path.abspath(self.build_clib)}',
-
         ]
         configure_command += extension[1].get('CMAKE_CONFIG', [])
         configure_command += self._cmake_platform.platform_specific_configs()
