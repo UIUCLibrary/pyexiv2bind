@@ -440,6 +440,10 @@ def build_deps_with_conan(
         build=None
 ):
     from conans.client import conan_api, conf
+    if conan_cache:
+        print(f"Using {conan_cache} for conan conan cache")
+    else:
+        print(f"Using default conan conan cache")
     conan = conan_api.Conan(cache_folder=os.path.abspath(conan_cache))
     settings = []
     logger = logging.Logger(__name__)
