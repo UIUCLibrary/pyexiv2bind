@@ -1004,7 +1004,9 @@ pipeline {
             )
         booleanParam(
                 name: 'RUN_CHECKS',
-                defaultValue: defaultParamValues.RUN_CHECKS,
+                defaultValue: false,
+//                 todp: set this back to default
+//                 defaultValue: defaultParamValues.RUN_CHECKS,
                 description: 'Run checks on code'
             )
         booleanParam(
@@ -1019,7 +1021,9 @@ pipeline {
             )
         booleanParam(
                 name: 'BUILD_PACKAGES',
-                defaultValue: defaultParamValues.BUILD_PACKAGES,
+                defaultValue: true,
+//                 todp: set this back to default
+//                 defaultValue: defaultParamValues.BUILD_PACKAGES,
                 description: 'Build Python packages'
             )
         booleanParam(
@@ -1027,7 +1031,13 @@ pipeline {
                 defaultValue: defaultParamValues.BUILD_MAC_PACKAGES,
                 description: 'Test Python packages on Mac'
             )
-        booleanParam(name: 'INCLUDE_ARM', defaultValue: false, description: 'Include ARM architecture')
+        booleanParam(
+            name: 'INCLUDE_ARM',
+            defaultValue: true,
+//                 todp: set this back to true
+//             defaultValue: false,
+            description: 'Include ARM architecture'
+            )
         booleanParam(
                 name: 'TEST_PACKAGES',
                 defaultValue: defaultParamValues.TEST_PACKAGES,
