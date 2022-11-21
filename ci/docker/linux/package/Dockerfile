@@ -6,7 +6,8 @@ RUN mkdir -p /.cache/pip && \
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 RUN python3 --version && python3 -m pip install conan
-COPY ci/docker/linux/package/conan/profile.ini  /conan/.conan/profiles/default
+ARG TARGETARCH
+COPY ci/docker/linux/package/conan/$TARGETARCH/profile.ini  /conan/.conan/profiles/default
 COPY ci/docker/shared/conan/remotes.json  /conan/.conan/remotes.json
 ADD conanfile.py /tmp/conanfile.py
 ENV CONAN_USER_HOME=/conan
