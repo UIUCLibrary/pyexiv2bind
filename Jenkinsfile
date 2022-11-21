@@ -1056,258 +1056,321 @@ pipeline {
 
     }
     stages {
-        stage('Building Documentation'){
-            agent {
-                dockerfile {
-                    filename 'ci/docker/linux/test/Dockerfile'
-                    label 'linux && docker && x86'
-                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL'
-                }
-            }
-            steps {
-                sh(label: 'Running Sphinx',
-                   script: '''mkdir -p logs
-                              mkdir -p build/docs/html
-                              python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
-                              python -m sphinx docs/source build/docs/html -b html -d build/docs/.doctrees --no-color -w logs/build_sphinx.log
-                              '''
-                  )
-            }
-            post{
-                always {
-                    recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', id: 'sphinx_build')])
-                }
-                success{
-                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                    zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${props.Name}-${props.Version}.doc.zip"
-                    stash includes: 'dist/*.doc.zip,build/docs/html/**', name: 'DOCS_ARCHIVE'
-                }
-                cleanup{
-                    cleanWs(
-                        deleteDirs: true,
-                        patterns: [
-                            [pattern: 'build/', type: 'INCLUDE'],
-                            [pattern: 'logs/', type: 'INCLUDE'],
-                            [pattern: 'dist/', type: 'INCLUDE']
-                        ]
-                    )
-                }
-            }
-        }
-        stage('Checks'){
+        stage('Building and Testing'){
             when{
-                equals expected: true, actual: params.RUN_CHECKS
+                anyOf{
+                    equals expected: true, actual: params.RUN_CHECKS
+                    equals expected: true, actual: params.TEST_RUN_TOX
+                    equals expected: true, actual: params.DEPLOY_DEVPI
+                }
             }
             stages{
-                stage('Code Quality'){
+                stage('Building Documentation'){
                     agent {
                         dockerfile {
                             filename 'ci/docker/linux/test/Dockerfile'
                             label 'linux && docker && x86'
                             additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL'
-                            args '--mount source=sonar-cache-py3exiv2bind,target=/opt/sonar/.sonar/cache'
                         }
                     }
+                    steps {
+                        sh(label: 'Running Sphinx',
+                           script: '''mkdir -p logs
+                                      mkdir -p build/docs/html
+                                      python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
+                                      python -m sphinx docs/source build/docs/html -b html -d build/docs/.doctrees --no-color -w logs/build_sphinx.log
+                                      '''
+                          )
+                    }
+                    post{
+                        always {
+                            recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', id: 'sphinx_build')])
+                        }
+                        success{
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+                            zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${props.Name}-${props.Version}.doc.zip"
+                            stash includes: 'dist/*.doc.zip,build/docs/html/**', name: 'DOCS_ARCHIVE'
+                        }
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                    [pattern: 'build/', type: 'INCLUDE'],
+                                    [pattern: 'logs/', type: 'INCLUDE'],
+                                    [pattern: 'dist/', type: 'INCLUDE']
+                                ]
+                            )
+                        }
+                    }
+                }
+                stage('Checks'){
+                    when{
+                        equals expected: true, actual: params.RUN_CHECKS
+                    }
                     stages{
-                        stage('Testing') {
+                        stage('Code Quality'){
+                            agent {
+                                dockerfile {
+                                    filename 'ci/docker/linux/test/Dockerfile'
+                                    label 'linux && docker && x86'
+                                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL'
+                                    args '--mount source=sonar-cache-py3exiv2bind,target=/opt/sonar/.sonar/cache'
+                                }
+                            }
                             stages{
-                                stage('Building Project for Testing'){
-                                    parallel{
-                                        stage('Building Extension for Python with coverage data'){
-                                            steps{
-                                                sh(label: 'Building debug build with coverage data',
-                                                   script: 'mkdir -p build/build_wrapper_output_directory && CFLAGS="--coverage -fprofile-arcs -ftest-coverage" LFLAGS="-lgcov --coverage" build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory python setup.py build -b build/python --build-lib build/python/lib/ --build-temp build/python/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace'
-                                               )
+                                stage('Testing') {
+                                    stages{
+                                        stage('Building Project for Testing'){
+                                            parallel{
+                                                stage('Building Extension for Python with coverage data'){
+                                                    steps{
+                                                        sh(label: 'Building debug build with coverage data',
+                                                           script: 'mkdir -p build/build_wrapper_output_directory && CFLAGS="--coverage -fprofile-arcs -ftest-coverage" LFLAGS="-lgcov --coverage" build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory python setup.py build -b build/python --build-lib build/python/lib/ --build-temp build/python/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace'
+                                                       )
+                                                    }
+                                                }
+                                                stage('Building Extension code and C++ Tests with coverage data'){
+                                                    steps{
+                                                        tee('logs/cmake-build.log'){
+                                                            sh(label: 'Building C++ Code',
+                                                               script: '''conan install . -if build/cpp/
+                                                                          cmake -B build/cpp/ -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -Dpyexiv2bind_generate_python_bindings:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra" -DCMAKE_BUILD_TYPE=Debug
+                                                                          '''
+                                                            )
+                                                        }
+                                                        sh 'mkdir -p build/build_wrapper_output_directory && build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --target all '
+                                                    }
+                                                    post{
+                                                        always{
+                                                            recordIssues(
+                                                                filters: [excludeFile('build/cpp/_deps/*')],
+                                                                tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']]
+                                                            )
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
-                                        stage('Building Extension code and C++ Tests with coverage data'){
-                                            steps{
-                                                tee('logs/cmake-build.log'){
-                                                    sh(label: 'Building C++ Code',
-                                                       script: '''conan install . -if build/cpp/
-                                                                  cmake -B build/cpp/ -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -Dpyexiv2bind_generate_python_bindings:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra" -DCMAKE_BUILD_TYPE=Debug
-                                                                  '''
-                                                    )
+                                        stage('Running Tests'){
+                                            parallel {
+                                                stage('Clang Tidy Analysis') {
+                                                    steps{
+                                                        tee('logs/clang-tidy.log') {
+                                                            catchError(buildResult: 'SUCCESS', message: 'Clang-Tidy found issues', stageResult: 'UNSTABLE') {
+                                                                sh(label: 'Run Clang Tidy', script: 'run-clang-tidy -clang-tidy-binary clang-tidy -p ./build/cpp/ py3exiv2bind/')
+                                                            }
+                                                        }
+                                                    }
+                                                    post{
+                                                        always {
+                                                            recordIssues(
+                                                                tools: [clangTidy(pattern: 'logs/clang-tidy.log')]
+                                                            )
+                                                        }
+                                                    }
                                                 }
-                                                sh 'mkdir -p build/build_wrapper_output_directory && build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --target all '
-                                            }
-                                            post{
-                                                always{
-                                                    recordIssues(
-                                                        filters: [excludeFile('build/cpp/_deps/*')],
-                                                        tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']]
-                                                    )
+                                                stage('Task Scanner'){
+                                                    steps{
+                                                        recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'py3exiv2bind/**/*.py, py3exiv2bind/**/*.cpp, py3exiv2bind/**/*.h', normalTags: 'TODO')])
+                                                    }
+                                                }
+                                                stage('Memcheck'){
+                                                    when{
+                                                        equals expected: true, actual: params.RUN_MEMCHECK
+                                                    }
+                                                    steps{
+                                                        generate_ctest_memtest_script('memcheck.cmake')
+                                                        timeout(30){
+                                                            sh( label: 'Running memcheck',
+                                                                script: 'ctest -S memcheck.cmake --verbose -j $(grep -c ^processor /proc/cpuinfo)'
+                                                                )
+                                                        }
+                                                    }
+                                                    post{
+                                                        always{
+                                                            recordIssues(
+                                                                filters: [
+                                                                    excludeFile('build/cpp/_deps/*'),
+                                                                ],
+                                                                tools: [
+                                                                    drMemory(pattern: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt')
+                                                                    ]
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                                stage('CPP Check'){
+                                                    steps{
+                                                        catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
+                                                            sh(label: 'Running cppcheck',
+                                                               script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json -i$WORKSPACE/build/cpp/_deps --suppress=*:$WORKSPACE/build/cpp/_deps/* --enable=all  --xml --output-file=logs/cppcheck_debug.xml'
+                                                               )
+                                                        }
+                                                    }
+                                                    post{
+                                                        always {
+                                                            recordIssues(
+                                                                filters: [
+                                                                    excludeType('unmatchedSuppression'),
+                                                                    excludeType('missingIncludeSystem'),
+                                                                ],
+                                                                tools: [
+                                                                    cppCheck(pattern: 'logs/cppcheck_debug.xml')
+                                                                ]
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                                stage('CTest'){
+                                                    steps{
+                                                        sh(label: 'Running CTest',
+                                                           script: 'cd build/cpp && ctest --output-on-failure --no-compress-output -T Test'
+                                                        )
+                                                    }
+                                                    post{
+                                                        always{
+                                                            xunit(
+                                                                testTimeMargin: '3000',
+                                                                thresholdMode: 1,
+                                                                thresholds: [
+                                                                    failed(),
+                                                                    skipped()
+                                                                ],
+                                                                tools: [
+                                                                    CTest(
+                                                                        deleteOutputFiles: true,
+                                                                        failIfNotNew: true,
+                                                                        pattern: 'build/Testing/**/*.xml',
+                                                                        skipNoTestFiles: true,
+                                                                        stopProcessingIfError: true
+                                                                    )
+                                                                ]
+                                                           )
+                                                        }
+                                                    }
+                                                }
+                                                stage('Run Doctest Tests'){
+                                                    steps {
+                                                        sh 'sphinx-build docs/source reports/doctest -b doctest -d build/docs/.doctrees --no-color -w logs/doctest_warnings.log'
+                                                    }
+                                                    post{
+                                                        always {
+                                                            recordIssues(tools: [sphinxBuild(name: 'Doctest', pattern: 'logs/doctest_warnings.log', id: 'doctest')])
+                                                        }
+                                                    }
+                                                }
+                                                stage('MyPy Static Analysis') {
+                                                    steps{
+                                                        tee('logs/mypy.log'){
+                                                            sh(returnStatus: true,
+                                                               script: 'mypy -p py3exiv2bind --html-report reports/mypy/html'
+                                                              )
+                                                        }
+                                                    }
+                                                    post {
+                                                        always {
+                                                            recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
+                                                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                                        }
+                                                    }
+                                                }
+                                                stage('Run Pylint Static Analysis') {
+                                                    steps{
+                                                        catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
+                                                            sh(
+                                                                script: '''mkdir -p logs
+                                                                           mkdir -p reports
+                                                                           PYLINTHOME=. pylint py3exiv2bind -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
+                                                                           ''',
+                                                                label: 'Running pylint'
+                                                            )
+                                                        }
+                                                        sh(
+                                                            script: 'PYLINTHOME=. pylint  -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt',
+                                                            label: 'Running pylint for sonarqube',
+                                                            returnStatus: true
+                                                        )
+                                                    }
+                                                    post{
+                                                        always{
+                                                            stash includes: 'reports/pylint_issues.txt,reports/pylint.txt', name: 'PYLINT_REPORT'
+                                                            recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
+                                                        }
+                                                    }
+                                                }
+                                                stage('Flake8') {
+                                                  steps{
+                                                    sh returnStatus: true, script: 'flake8 py3exiv2bind --tee --output-file ./logs/flake8.log'
+                                                  }
+                                                  post {
+                                                    always {
+                                                        stash includes: 'logs/flake8.log', name: 'FLAKE8_REPORT'
+                                                        recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+                                                    }
+                                                  }
+                                                }
+                                                stage('Running Unit Tests'){
+                                                    steps{
+                                                        sh 'coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=./reports/pytest/junit-pytest.xml'
+                                                    }
+                                                    post{
+                                                        always{
+                                                            stash includes: 'reports/pytest/junit-pytest.xml', name: 'PYTEST_REPORT'
+                                                            junit 'reports/pytest/junit-pytest.xml'
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
                                     }
+                                    post{
+                                        always{
+                                            sh(label: 'combining coverage data',
+                                               script: '''mkdir -p reports/coverage
+                                                          coverage combine
+                                                          coverage xml -o ./reports/coverage/coverage-python.xml
+                                                          gcovr --root . --filter py3exiv2bind --exclude-directories build/python/temp/conan_cache --print-summary --keep --json -o reports/coverage/coverage-c-extension.json
+                                                          gcovr --root . --filter py3exiv2bind --print-summary --keep --json -o reports/coverage/coverage_cpp.json
+                                                          gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --keep --print-summary --xml -o reports/coverage/coverage_cpp.xml
+                                                          '''
+                                                  )
+                                            stash(includes: 'reports/coverage/*.xml,reports/coverage/*.json', name: 'PYTHON_COVERAGE_REPORT')
+                                            unstash 'PYTHON_COVERAGE_REPORT'
+                                            publishCoverage(
+                                                adapters: [
+                                                        coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
+                                                    ],
+                                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
+                                            )
+                                        }
+                                    }
                                 }
-                                stage('Running Tests'){
-                                    parallel {
-                                        stage('Clang Tidy Analysis') {
-                                            steps{
-                                                tee('logs/clang-tidy.log') {
-                                                    catchError(buildResult: 'SUCCESS', message: 'Clang-Tidy found issues', stageResult: 'UNSTABLE') {
-                                                        sh(label: 'Run Clang Tidy', script: 'run-clang-tidy -clang-tidy-binary clang-tidy -p ./build/cpp/ py3exiv2bind/')
-                                                    }
-                                                }
-                                            }
-                                            post{
-                                                always {
-                                                    recordIssues(
-                                                        tools: [clangTidy(pattern: 'logs/clang-tidy.log')]
-                                                    )
-                                                }
-                                            }
+                                stage('Sonarcloud Analysis'){
+                                    options{
+                                        lock('py3exiv2bind-sonarcloud')
+                                    }
+                                    when{
+                                        equals expected: true, actual: params.USE_SONARQUBE
+                                        beforeAgent true
+                                        beforeOptions true
+                                    }
+                                    steps{
+                                        sh(
+                                            label: 'Preparing c++ coverage data available for SonarQube',
+                                            script: """mkdir -p build/coverage
+                                            find ./build -name '*.gcno' -exec gcov {} -p --source-prefix=${WORKSPACE}/ \\;
+                                            mv *.gcov build/coverage/
+                                            """
+                                            )
+                                        script{
+                                            load('ci/jenkins/scripts/sonarqube.groovy').sonarcloudSubmit('reports/sonar-report.json', 'sonarcloud-py3exiv2bind')
                                         }
-                                        stage('Task Scanner'){
-                                            steps{
-                                                recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'py3exiv2bind/**/*.py, py3exiv2bind/**/*.cpp, py3exiv2bind/**/*.h', normalTags: 'TODO')])
-                                            }
-                                        }
-                                        stage('Memcheck'){
-                                            when{
-                                                equals expected: true, actual: params.RUN_MEMCHECK
-                                            }
-                                            steps{
-                                                generate_ctest_memtest_script('memcheck.cmake')
-                                                timeout(30){
-                                                    sh( label: 'Running memcheck',
-                                                        script: 'ctest -S memcheck.cmake --verbose -j $(grep -c ^processor /proc/cpuinfo)'
-                                                        )
-                                                }
-                                            }
-                                            post{
-                                                always{
-                                                    recordIssues(
-                                                        filters: [
-                                                            excludeFile('build/cpp/_deps/*'),
-                                                        ],
-                                                        tools: [
-                                                            drMemory(pattern: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt')
-                                                            ]
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        stage('CPP Check'){
-                                            steps{
-                                                catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
-                                                    sh(label: 'Running cppcheck',
-                                                       script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json -i$WORKSPACE/build/cpp/_deps --suppress=*:$WORKSPACE/build/cpp/_deps/* --enable=all  --xml --output-file=logs/cppcheck_debug.xml'
-                                                       )
-                                                }
-                                            }
-                                            post{
-                                                always {
-                                                    recordIssues(
-                                                        filters: [
-                                                            excludeType('unmatchedSuppression'),
-                                                            excludeType('missingIncludeSystem'),
-                                                        ],
-                                                        tools: [
-                                                            cppCheck(pattern: 'logs/cppcheck_debug.xml')
-                                                        ]
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        stage('CTest'){
-                                            steps{
-                                                sh(label: 'Running CTest',
-                                                   script: 'cd build/cpp && ctest --output-on-failure --no-compress-output -T Test'
-                                                )
-                                            }
-                                            post{
-                                                always{
-                                                    xunit(
-                                                        testTimeMargin: '3000',
-                                                        thresholdMode: 1,
-                                                        thresholds: [
-                                                            failed(),
-                                                            skipped()
-                                                        ],
-                                                        tools: [
-                                                            CTest(
-                                                                deleteOutputFiles: true,
-                                                                failIfNotNew: true,
-                                                                pattern: 'build/Testing/**/*.xml',
-                                                                skipNoTestFiles: true,
-                                                                stopProcessingIfError: true
-                                                            )
-                                                        ]
-                                                   )
-                                                }
-                                            }
-                                        }
-                                        stage('Run Doctest Tests'){
-                                            steps {
-                                                sh 'sphinx-build docs/source reports/doctest -b doctest -d build/docs/.doctrees --no-color -w logs/doctest_warnings.log'
-                                            }
-                                            post{
-                                                always {
-                                                    recordIssues(tools: [sphinxBuild(name: 'Doctest', pattern: 'logs/doctest_warnings.log', id: 'doctest')])
-                                                }
-                                            }
-                                        }
-                                        stage('MyPy Static Analysis') {
-                                            steps{
-                                                tee('logs/mypy.log'){
-                                                    sh(returnStatus: true,
-                                                       script: 'mypy -p py3exiv2bind --html-report reports/mypy/html'
-                                                      )
-                                                }
-                                            }
-                                            post {
-                                                always {
-                                                    recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
-                                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
-                                                }
-                                            }
-                                        }
-                                        stage('Run Pylint Static Analysis') {
-                                            steps{
-                                                catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
-                                                    sh(
-                                                        script: '''mkdir -p logs
-                                                                   mkdir -p reports
-                                                                   PYLINTHOME=. pylint py3exiv2bind -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
-                                                                   ''',
-                                                        label: 'Running pylint'
-                                                    )
-                                                }
-                                                sh(
-                                                    script: 'PYLINTHOME=. pylint  -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt',
-                                                    label: 'Running pylint for sonarqube',
-                                                    returnStatus: true
-                                                )
-                                            }
-                                            post{
-                                                always{
-                                                    stash includes: 'reports/pylint_issues.txt,reports/pylint.txt', name: 'PYLINT_REPORT'
-                                                    recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
-                                                }
-                                            }
-                                        }
-                                        stage('Flake8') {
-                                          steps{
-                                            sh returnStatus: true, script: 'flake8 py3exiv2bind --tee --output-file ./logs/flake8.log'
-                                          }
-                                          post {
-                                            always {
-                                                stash includes: 'logs/flake8.log', name: 'FLAKE8_REPORT'
-                                                recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-                                            }
-                                          }
-                                        }
-                                        stage('Running Unit Tests'){
-                                            steps{
-                                                sh 'coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=./reports/pytest/junit-pytest.xml'
-                                            }
-                                            post{
-                                                always{
-                                                    stash includes: 'reports/pytest/junit-pytest.xml', name: 'PYTEST_REPORT'
-                                                    junit 'reports/pytest/junit-pytest.xml'
+                                    }
+                                    post {
+                                        always{
+                                            script{
+                                                if(fileExists('reports/sonar-report.json')){
+                                                    recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
                                                 }
                                             }
                                         }
@@ -1315,89 +1378,37 @@ pipeline {
                                 }
                             }
                             post{
-                                always{
-                                    sh(label: 'combining coverage data',
-                                       script: '''mkdir -p reports/coverage
-                                                  coverage combine
-                                                  coverage xml -o ./reports/coverage/coverage-python.xml
-                                                  gcovr --root . --filter py3exiv2bind --exclude-directories build/python/temp/conan_cache --print-summary --keep --json -o reports/coverage/coverage-c-extension.json
-                                                  gcovr --root . --filter py3exiv2bind --print-summary --keep --json -o reports/coverage/coverage_cpp.json
-                                                  gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --keep --print-summary --xml -o reports/coverage/coverage_cpp.xml
-                                                  '''
-                                          )
-                                    stash(includes: 'reports/coverage/*.xml,reports/coverage/*.json', name: 'PYTHON_COVERAGE_REPORT')
-                                    unstash 'PYTHON_COVERAGE_REPORT'
-                                    publishCoverage(
-                                        adapters: [
-                                                coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
+                                cleanup{
+                                    cleanWs(
+                                        patterns: [
+                                                [pattern: '.coverage/', type: 'INCLUDE'],
+                                                [pattern: '.eggs/', type: 'INCLUDE'],
+                                                [pattern: '.mypy_cache/', type: 'INCLUDE'],
+                                                [pattern: '.pytest_cache/', type: 'INCLUDE'],
+                                                [pattern: 'dist/', type: 'INCLUDE'],
+                                                [pattern: 'build/', type: 'INCLUDE'],
+                                                [pattern: '*.dist-info/', type: 'INCLUDE'],
+                                                [pattern: 'logs/', type: 'INCLUDE'],
+                                                [pattern: 'reports/', type: 'INCLUDE'],
+                                                [pattern: 'generatedJUnitFiles/', type: 'INCLUDE'],
+                                                [pattern: 'py3exiv2bind/*.so', type: 'INCLUDE'],
+                                                [pattern: '**/__pycache__/', type: 'INCLUDE'],
                                             ],
-                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
+                                        notFailBuild: true,
+                                        deleteDirs: true
                                     )
                                 }
                             }
                         }
-                        stage('Sonarcloud Analysis'){
-                            options{
-                                lock('py3exiv2bind-sonarcloud')
+                        stage('Run Tox test') {
+                            when {
+                               equals expected: true, actual: params.TEST_RUN_TOX
+                               beforeAgent true
                             }
-                            when{
-                                equals expected: true, actual: params.USE_SONARQUBE
-                                beforeAgent true
-                                beforeOptions true
-                            }
-                            steps{
-                                sh(
-                                    label: 'Preparing c++ coverage data available for SonarQube',
-                                    script: """mkdir -p build/coverage
-                                    find ./build -name '*.gcno' -exec gcov {} -p --source-prefix=${WORKSPACE}/ \\;
-                                    mv *.gcov build/coverage/
-                                    """
-                                    )
-                                script{
-                                    load('ci/jenkins/scripts/sonarqube.groovy').sonarcloudSubmit('reports/sonar-report.json', 'sonarcloud-py3exiv2bind')
-                                }
-                            }
-                            post {
-                                always{
-                                    script{
-                                        if(fileExists('reports/sonar-report.json')){
-                                            recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
-                                        }
-                                    }
-                                }
+                            steps {
+                                runToxTests()
                             }
                         }
-                    }
-                    post{
-                        cleanup{
-                            cleanWs(
-                                patterns: [
-                                        [pattern: '.coverage/', type: 'INCLUDE'],
-                                        [pattern: '.eggs/', type: 'INCLUDE'],
-                                        [pattern: '.mypy_cache/', type: 'INCLUDE'],
-                                        [pattern: '.pytest_cache/', type: 'INCLUDE'],
-                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                        [pattern: 'build/', type: 'INCLUDE'],
-                                        [pattern: '*.dist-info/', type: 'INCLUDE'],
-                                        [pattern: 'logs/', type: 'INCLUDE'],
-                                        [pattern: 'reports/', type: 'INCLUDE'],
-                                        [pattern: 'generatedJUnitFiles/', type: 'INCLUDE'],
-                                        [pattern: 'py3exiv2bind/*.so', type: 'INCLUDE'],
-                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                    ],
-                                notFailBuild: true,
-                                deleteDirs: true
-                            )
-                        }
-                    }
-                }
-                stage('Run Tox test') {
-                    when {
-                       equals expected: true, actual: params.TEST_RUN_TOX
-                       beforeAgent true
-                    }
-                    steps {
-                        runToxTests()
                     }
                 }
             }
