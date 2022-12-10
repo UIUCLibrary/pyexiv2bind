@@ -92,11 +92,12 @@ def getMacDevpiTestStages(packageName, packageVersion, pythonVersions, devpiServ
                     ],
                     test:[
                         setup: {
+                            checkout scm
                             sh(
                                 label:'Installing Devpi client',
                                 script: '''python3 -m venv venv
                                             venv/bin/python -m pip install pip --upgrade
-                                            venv/bin/python -m pip install devpi_client tox
+                                            venv/bin/python -m pip install devpi_client -r requirements/requirements_tox.txt
                                             '''
                             )
                         },
@@ -127,11 +128,12 @@ def getMacDevpiTestStages(packageName, packageVersion, pythonVersions, devpiServ
                     ],
                     test:[
                         setup: {
+                            checkout scm
                             sh(
                                 label:'Installing Devpi client',
                                 script: '''python3 -m venv venv
                                             venv/bin/python -m pip install pip --upgrade
-                                            venv/bin/python -m pip install devpi_client tox
+                                            venv/bin/python -m pip install devpi_client -r requirements/requirements_tox.txt
                                             '''
                             )
                         },
@@ -162,11 +164,12 @@ def getMacDevpiTestStages(packageName, packageVersion, pythonVersions, devpiServ
                     ],
                     test:[
                         setup: {
+                            checkout scm
                             sh(
                                 label:'Installing Devpi client',
                                 script: '''python3 -m venv venv
                                             venv/bin/python -m pip install pip --upgrade
-                                            venv/bin/python -m pip install devpi_client tox
+                                            venv/bin/python -m pip install devpi_client -r requirements/requirements_tox.txt
                                             '''
                             )
                         },
@@ -197,11 +200,12 @@ def getMacDevpiTestStages(packageName, packageVersion, pythonVersions, devpiServ
                     ],
                     test:[
                         setup: {
+                            checkout scm
                             sh(
                                 label:'Installing Devpi client',
                                 script: '''python3 -m venv venv
                                             venv/bin/python -m pip install pip --upgrade
-                                            venv/bin/python -m pip install devpi_client tox
+                                            venv/bin/python -m pip install devpi_client -r requirements/requirements_tox.txt
                                             '''
                             )
                         },
@@ -337,7 +341,7 @@ def test_packages(){
                             sh(label: 'Running Tox',
                                script: """python${pythonVersion} -m venv venv
                                ./venv/bin/python -m pip install --upgrade pip
-                               ./venv/bin/pip install tox
+                               ./venv/bin/pip install -r requirements/requirements_tox.txt
                                ./venv/bin/tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
                             )
                         }
@@ -375,7 +379,7 @@ def test_packages(){
                             sh(label: 'Running Tox',
                                script: """python${pythonVersion} -m venv venv
                                ./venv/bin/python -m pip install --upgrade pip
-                               ./venv/bin/pip install tox
+                               ./venv/bin/pip install -r requirements/requirements_tox.txt
                                ./venv/bin/tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
                             )
                         }
@@ -413,7 +417,7 @@ def test_packages(){
                             sh(label: 'Running Tox',
                                script: """python${pythonVersion} -m venv venv
                                ./venv/bin/python -m pip install --upgrade pip
-                               ./venv/bin/pip install tox
+                               ./venv/bin/pip install -r requirements/requirements_tox.txt
                                ./venv/bin/tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
                             )
                         }
@@ -448,7 +452,7 @@ def test_packages(){
                             sh(label: 'Running Tox',
                                script: """python${pythonVersion} -m venv venv
                                ./venv/bin/python -m pip install --upgrade pip
-                               ./venv/bin/pip install tox
+                               ./venv/bin/pip install -r requirements/requirements_tox.txt
                                ./venv/bin/tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
                             )
                         }

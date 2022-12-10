@@ -9,4 +9,4 @@ pytest
 pytest-runner
 sphinx
 toml
-tox
+-r requirements/requirements_tox.txt
