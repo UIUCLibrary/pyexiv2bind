@@ -21,6 +21,7 @@ FROM base as wheel_builder_base
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extra.txt requirements.txt requirements-dev.txt /tmp/
+COPY requirements /tmp/requirements
 
 FROM wheel_builder_base as WHEEL_BUILDER_PY36
 RUN PYTHON=python3.6 && \
@@ -103,10 +104,9 @@ RUN python3.10 -m ensurepip --upgrade
 COPY --from=WHEEL_BUILDER_PY310 /wheels/* /wheels/
 RUN chmod -R 777 /wheels
 ENV PIP_FIND_LINKS=/wheels
-RUN pip3 install tox conan cmake "devpi-client<6.0" build twine
+COPY requirements/ /tmp/requirements
+RUN pip3 install -r /tmp/requirements/requirements_tox.txt conan cmake "devpi-client<6.0" build twine
 
-#USER user
-#WORKDIR /home/user
 COPY --from=conan_builder /home/user/.conan/ /conan/.conan/
 COPY ci/docker/linux/tox/conan/profile.ini  /conan/.conan/profiles/default
 COPY ci/docker/shared/conan/remotes.json  /conan/.conan/remotes.json

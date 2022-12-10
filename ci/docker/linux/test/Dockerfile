@@ -20,6 +20,7 @@ FROM base_image as wheel_builder
 ARG PIP_EXTRA_INDEX_URL
 
 ADD requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt /requirements/
+COPY requirements/ /requirements/requirements/
 
 RUN pip wheel --wheel-dir=/wheels \
     -r /requirements/requirements-ci.txt \
@@ -103,6 +104,7 @@ RUN chmod -R 777 /wheels
 ARG PIP_EXTRA_INDEX_URL
 ENV PIP_NO_CACHE_DIR=1
 ADD requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt /requirements/
+COPY requirements/ /requirements/requirements/
 RUN python -m pip install pip --upgrade && \
     pip install wheel && \
     pip install setuptools --upgrade && \

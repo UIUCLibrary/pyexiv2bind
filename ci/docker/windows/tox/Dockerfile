@@ -130,6 +130,7 @@ RUN $PYTHON_VERSIONS = @(${Env:PYTHON_37_VERSION}, ${Env:PYTHON_38_VERSION}, ${E
 FROM BASE_BUILDER as WHEEL_BUilDER_PY37
 SHELL ["cmd", "/S", "/C" ]
 COPY requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extra.txt c:/requirements/
+COPY requirements c:/requirements/requirements
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 ENV PY_PYTHON=3.7
@@ -143,6 +144,7 @@ RUN py -m pip install --upgrade pip && `
 FROM BASE_BUILDER as WHEEL_BUilDER_PY38
 SHELL ["cmd", "/S", "/C" ]
 COPY requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extra.txt c:/requirements/
+COPY requirements c:/requirements/requirements
 ARG PIP_EXTRA_INDEX_URL-
 ARG PIP_INDEX_URL
 ENV PY_PYTHON=3.8
@@ -156,6 +158,7 @@ RUN py -m pip install --upgrade pip && `
 FROM BASE_BUILDER as WHEEL_BUilDER_PY39
 SHELL ["cmd", "/S", "/C" ]
 COPY requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extra.txt c:/requirements/
+COPY requirements c:/requirements/requirements
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 ENV PY_PYTHON=3.9
@@ -169,6 +172,7 @@ RUN py -m pip install --upgrade pip && `
 FROM BASE_BUILDER as WHEEL_BUilDER_PY310
 SHELL ["cmd", "/S", "/C" ]
 COPY requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extra.txt c:/requirements/
+COPY requirements c:/requirements/requirements
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 ENV PY_PYTHON=3.10
@@ -206,17 +210,18 @@ RUN certutil -addstore -f root roots.sst ; `
     del roots.sst
 
 ENV PIP_FIND_LINKS=c:\wheels
+COPY requirements requirements
 COPY --from=WHEEL_BUilDER_PY37 c:/wheels/ c:/wheels/
-RUN py -3.7 -m pip install pip --upgrade ; py -3.7 -m pip install wheel --upgrade ; py -3.7 -m pip install tox conan wheel build
+RUN py -3.7 -m pip install pip --upgrade ; py -3.7 -m pip install wheel --upgrade ; py -3.7 -m pip install -r requirements/requirements_tox.txt conan wheel build
 COPY --from=WHEEL_BUilDER_PY38 c:/wheels/ c:/wheels/
-RUN py -3.8 -m pip install pip --upgrade ; py -3.8 -m pip install wheel --upgrade ; py -3.8 -m pip install tox conan wheel build
+RUN py -3.8 -m pip install pip --upgrade ; py -3.8 -m pip install wheel --upgrade ; py -3.8 -m pip install -r requirements/requirements_tox.txt conan wheel build
 COPY --from=WHEEL_BUilDER_PY39 c:/wheels/ c:/wheels/
-RUN py -3.9 -m pip install pip --upgrade ; py -3.9 -m pip install wheel --upgrade ; py -3.9 -m pip install tox conan wheel build
+RUN py -3.9 -m pip install pip --upgrade ; py -3.9 -m pip install wheel --upgrade ; py -3.9 -m pip install -r requirements/requirements_tox.txt conan wheel build
 COPY --from=WHEEL_BUilDER_PY310 c:/wheels/ c:/wheels/
-RUN py -3.10 -m pip install pip --upgrade ; py -3.10 -m pip install wheel --upgrade ; py -3.10 -m pip install tox conan wheel build
+RUN py -3.10 -m pip install pip --upgrade ; py -3.10 -m pip install wheel --upgrade ; py -3.10 -m pip install -r requirements/requirements_tox.txt conan wheel build
 
 
-RUN python -m pip install pip --upgrade ; pip install tox conan wheel build
+RUN python -m pip install pip --upgrade ; pip install -r requirements/requirements_tox.txt conan wheel build
 COPY --from=certsgen c:/roots.sst roots.sst
 RUN certutil -addstore -f root roots.sst ; `
     del roots.sst
@@ -232,6 +237,6 @@ RUN conan install c:/temp/ --build outdated --no-import  ; `
     conan remove "*" -b --src -f ; `
     conan remove --locks
 
-RUN python -m pip install pip --upgrade ; pip install tox devpi_client
+RUN python -m pip install pip --upgrade ; pip install pip install -r requirements/requirements_tox.txt devpi_client
 WORKDIR C:/src
 CMD tox --workdir ${Env:TEMP}\tox\ -vv  --recreate -p=auto
