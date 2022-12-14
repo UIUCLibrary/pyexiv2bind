@@ -371,10 +371,6 @@ class BuildConan(setuptools.Command):
             elif sys.platform == "linux":
                 if "$ORIGIN" not in extension.runtime_library_dirs:
                     extension.runtime_library_dirs.append("$ORIGIN")
-            # else:
-            #     pprint(text_md)
-            #     raise Exception(text_md)
-            # if sys.platform == "Windows":
 
 
 def build_conan(
@@ -388,19 +384,22 @@ def build_conan(
     command = BuildConan(dist)
     command.install_libs = install_libs
     build_ext_cmd = command.get_finalized_command("build_ext")
+    conan_cache = None
     if config_settings:
-        command.conan_cache = config_settings.get(
-            'conan_cache',
-            os.path.join(build_ext_cmd.build_temp, ".conan")
-        )
+        conan_cache = config_settings.get('conan_cache')
+        command.conan_cache = conan_cache
         command.compiler_libcxx = config_settings.get('conan_compiler_libcxx')
         command.compiler_version = config_settings.get(
             'conan_compiler_version',
             get_compiler_version()
         )
-    else:
-        command.conan_cache = \
-            os.path.join(build_ext_cmd.build_temp, ".conan")
+    if conan_cache is None:
+        conan_home = os.getenv('CONAN_USER_HOME')
+        if conan_home is not None:
+            conan_cache = os.path.join(conan_home, ".conan")
+
+    if conan_cache is None:
+        os.path.join(build_ext_cmd.build_temp, ".conan")
 
     command.finalize_options()
     command.run()
@@ -439,11 +438,8 @@ def build_deps_with_conan(
         install_libs=True,
         build=None
 ):
+
     from conans.client import conan_api, conf
-    if conan_cache:
-        print(f"Using {conan_cache} for conan conan cache")
-    else:
-        print(f"Using default conan conan cache")
     conan = conan_api.Conan(cache_folder=os.path.abspath(conan_cache))
     settings = []
     logger = logging.Logger(__name__)

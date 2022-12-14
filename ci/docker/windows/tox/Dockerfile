@@ -104,8 +104,9 @@ ARG PYTHON_37_VERSION=3.7.9
 ARG PYTHON_38_VERSION=3.8.10
 ARG PYTHON_39_VERSION=3.9.13
 ARG PYTHON_310_VERSION=3.10.8
+ARG PYTHON_311_VERSION=3.11.0
 
-RUN $PYTHON_VERSIONS = @(${Env:PYTHON_37_VERSION}, ${Env:PYTHON_38_VERSION}, ${Env:PYTHON_39_VERSION}, ${Env:PYTHON_310_VERSION}) ; `
+RUN $PYTHON_VERSIONS = @(${Env:PYTHON_37_VERSION}, ${Env:PYTHON_38_VERSION}, ${Env:PYTHON_39_VERSION}, ${Env:PYTHON_310_VERSION}, ${Env:PYTHON_311_VERSION}) ; `
     foreach( $PYTHON_VERSION in $PYTHON_VERSIONS ){ `
         Write-Host "Installing Python $PYTHON_VERSION with Chocolatey" ; `
         $process = start-process -NoNewWindow -PassThru -FilePath C:\ProgramData\chocolatey\bin\choco.exe -ArgumentList 'install -y --stoponfirstfailure --no-progress --verbose python3', "--version=$PYTHON_VERSION", "-my" -Wait ;`
@@ -123,6 +124,7 @@ RUN $PYTHON_VERSIONS = @(${Env:PYTHON_37_VERSION}, ${Env:PYTHON_38_VERSION}, ${E
     py -3.8 --version ; `
     py -3.9 --version ; `
     py -3.10 --version ; `
+    py -3.11 --version ; `
     Write-Host "Installing Python with Chocolatey - Done"
 
 
@@ -182,6 +184,20 @@ RUN py -m pip install --upgrade pip && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
     py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
 
+# ==============================================================================
+FROM BASE_BUILDER as WHEEL_BUilDER_PY311
+SHELL ["cmd", "/S", "/C" ]
+COPY requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extra.txt c:/requirements/
+COPY requirements c:/requirements/requirements
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+ENV PY_PYTHON=3.11
+RUN py -m pip install --upgrade pip && `
+    py -m pip install wheel build && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
+    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
+
 
 # ==============================================================================
 FROM BASE_BUILDER as CONAN_BUILDER
@@ -219,6 +235,8 @@ COPY --from=WHEEL_BUilDER_PY39 c:/wheels/ c:/wheels/
 RUN py -3.9 -m pip install pip --upgrade ; py -3.9 -m pip install wheel --upgrade ; py -3.9 -m pip install -r requirements/requirements_tox.txt conan wheel build
 COPY --from=WHEEL_BUilDER_PY310 c:/wheels/ c:/wheels/
 RUN py -3.10 -m pip install pip --upgrade ; py -3.10 -m pip install wheel --upgrade ; py -3.10 -m pip install -r requirements/requirements_tox.txt conan wheel build
+COPY --from=WHEEL_BUilDER_PY311 c:/wheels/ c:/wheels/
+RUN py -3.11 -m pip install pip --upgrade ; py -3.11 -m pip install wheel --upgrade ; py -3.11 -m pip install -r requirements/requirements_tox.txt conan wheel build
 
 
 RUN python -m pip install pip --upgrade ; pip install -r requirements/requirements_tox.txt conan wheel build

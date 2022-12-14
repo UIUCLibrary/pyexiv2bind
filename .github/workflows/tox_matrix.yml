@@ -6,7 +6,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-2019]
-        python-version: ['3.7', '3.8' ,'3.9', '3.10']
+        python-version: ['3.7', '3.8' ,'3.9', '3.10', '3.11']
         include:
           - os: macos-latest
             compiler_version: 14
@@ -25,13 +25,16 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: |
           pip install wheel
-          pip install tox
+          pip install -r requirements/requirements_tox.txt cmake
       - name: Run tox
         if: contains(matrix.os, 'windows')
         shell: cmd
         run: |
+          rmdir /S /Q C:\\Strawberry
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           pip install conan
+          conan config init
+          conan config set general.revisions_enabled=1
           conan profile new default --detect
           conan install . --build  missing --no-import 
           tox -e py
@@ -44,4 +47,4 @@ jobs:
           CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
           CONAN_COMPILER_LIBCXX: ${{ matrix.compiler_libcxx }}
 
-          
+
