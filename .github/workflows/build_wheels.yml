@@ -31,6 +31,7 @@ jobs:
         if: contains(matrix.os, 'windows')
         shell: cmd
         run: |
+          rmdir /S /Q C:\\Strawberry
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           python -m cibuildwheel --output-dir wheelhouse
         env:

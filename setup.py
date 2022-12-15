@@ -15,7 +15,7 @@ try:
 except ImportError:
     from setuptools import Extension as Pybind11Extension
 from setuptools.command.build_clib import build_clib
-
+from distutils.errors import DistutilsExecError
 sys.path.insert(0, os.path.dirname(__file__))
 cmd_class = {}
 extension_modules = []
@@ -245,7 +245,6 @@ class BuildCMakeLib(build_clib):
         ]
         if self.verbose == 1:
             build_command.append("--verbose")
-        self.announce("Building binaries", level=3)
 
         # Add config
         build_command.append("--config")
@@ -261,8 +260,11 @@ class BuildCMakeLib(build_clib):
         if sys.gettrace():
             subprocess.check_call(build_command)
         else:
-            self.compiler.spawn(build_command)
-
+            try:
+                self.compiler.spawn(build_command)
+            except DistutilsExecError:
+                print(f"Conan failed when running {build_command}", file=sys.stderr)
+                raise
     def build_install_cmake(self, extension: Pybind11Extension):
         dep_build_path = os.path.join(self.build_temp, "deps")
         install_command = [
@@ -377,7 +379,11 @@ class BuildExiv2(BuildCMakeLib):
     def run(self):
         conan_cmd = self.get_finalized_command("build_conan")
         build_clib = self.get_finalized_command("build_clib")
-        conan_cmd.run()
+        try:
+            conan_cmd.run()
+        except Exception:
+            self.announce("Building with conan failed.", level=3)
+            raise
         toolchain_locations = [
             self.build_temp,
             os.path.join(self.build_temp, "conan"),
