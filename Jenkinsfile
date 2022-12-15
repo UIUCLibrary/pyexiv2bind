@@ -1371,7 +1371,7 @@ pipeline {
                                             """
                                             )
                                         script{
-                                            load('ci/jenkins/scripts/sonarqube.groovy').sonarcloudSubmit('reports/sonar-report.json', 'sonarcloud-py3exiv2bind')
+                                            load('ci/jenkins/scripts/sonarqube.groovy').sonarcloudSubmit(props, 'sonarcloud-py3exiv2bind')
                                         }
                                     }
                                     post {

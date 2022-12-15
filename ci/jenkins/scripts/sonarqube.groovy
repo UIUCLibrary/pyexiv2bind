@@ -9,10 +9,8 @@ def get_sonarqube_unresolved_issues(report_task_file){
 }
 
 
-def sonarcloudSubmit(outputJson, sonarCredentials){
-    unstash 'DIST-INFO'
+def sonarcloudSubmit(props, sonarCredentials){
 
-    def props = readProperties interpolate: true, file: 'py3exiv2bind.dist-info/METADATA'
     withSonarQubeEnv(installationName:'sonarcloud', credentialsId: sonarCredentials) {
         if (env.CHANGE_ID){
             sh(
@@ -32,7 +30,7 @@ def sonarcloudSubmit(outputJson, sonarCredentials){
              unstable "SonarQube quality gate: ${sonarqube_result.status}"
          }
          def outstandingIssues = get_sonarqube_unresolved_issues('.scannerwork/report-task.txt')
-         writeJSON file: outputJson, json: outstandingIssues
+         writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
      }
 }
 
