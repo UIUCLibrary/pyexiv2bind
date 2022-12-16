@@ -18,3 +18,4 @@ pytest-runner
 sphinx
 -r requirements/requirements_tox.txt
 twine
+git+https://github.com/UIUCLibrary/uiucprescon_build.git@v0.1.0

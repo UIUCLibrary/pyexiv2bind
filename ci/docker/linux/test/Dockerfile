@@ -1,6 +1,9 @@
 ARG SONAR_SCANNER_VERSION=4.7.0.2747
 ARG PYTHON_VERSION=3.8
 FROM python:${PYTHON_VERSION} as base_image
+RUN apt-get update && \
+    apt-get install -y unzip git
+
 RUN mkdir -p /.cache/pip && \
     chmod -R 777 /.cache
 
@@ -30,9 +33,6 @@ RUN pip wheel --wheel-dir=/wheels \
 #==============================================================================
 
 FROM base_image as SONAR_BUILDER
-RUN apt-get update && \
-    apt-get install -y unzip
-
 
 ARG SONAR_SCANNER_VERSION
 ARG SONAR_SCANNER_HOME=/opt/sonar/${SONAR_SCANNER_VERSION}-linux

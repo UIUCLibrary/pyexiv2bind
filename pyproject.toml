@@ -1,8 +1,10 @@
 [build-system]
-requires = ["setuptools>=40.8.0", "wheel", "cmake", "ninja", "conan","pybind11", 'macholib; platform_system == "Darwin"', "ninja"]
-build-backend = "builders.local_backend"
-backend-path = ["."]
-
+requires = [
+    "setuptools>=40.8.0",
+    "wheel",
+    'uiucprescon.build @ git+https://github.com/UIUCLibrary/uiucprescon_build.git@v0.1.0'
+]
+build-backend = "uiucprescon.build"
 
 [tool.cibuildwheel]
 test-requires = [
@@ -15,7 +17,6 @@ build-frontend = "build"
 skip = [
     "cp36-*",
     "cp37-macosx_*",
-#    "cp311-*",
     "pp*",
     "*-win32",
     "*-musllinux*",
