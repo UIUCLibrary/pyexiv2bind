@@ -16,14 +16,16 @@ except ImportError:
     from setuptools import Extension as Pybind11Extension
 from setuptools.command.build_clib import build_clib
 from distutils.errors import DistutilsExecError
-sys.path.insert(0, os.path.dirname(__file__))
+# sys.path.insert(0, os.path.dirname(__file__))
 cmd_class = {}
 extension_modules = []
 
 try:
-    from builders.conan_libs import BuildConan, locate_conanbuildinfo, ConanBuildInfoTXT
+    from uiucprescon.build.conan_libs import BuildConan, locate_conanbuildinfo, ConanBuildInfoTXT
+    # from builders.conan_libs import BuildConan, locate_conanbuildinfo, ConanBuildInfoTXT
     cmd_class["build_conan"] = BuildConan
-    from builders.pybind11_builder import BuildPybind11Extension, parse_conan_build_info
+    # from builders.pybind11_builder import BuildPybind11Extension, parse_conan_build_info
+    from uiucprescon.build.pybind11_builder import BuildPybind11Extension, parse_conan_build_info
     cmd_class["build_ext"] = BuildPybind11Extension
     exiv2_extension = Pybind11Extension(
         "py3exiv2bind.core",
@@ -44,6 +46,7 @@ try:
             "py3exiv2bind/core/glue",
         ],
         language='c++',
+        cxx_std=14
 
     )
     extension_modules.append(exiv2_extension)

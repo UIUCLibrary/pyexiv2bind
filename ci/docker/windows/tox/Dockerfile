@@ -1,5 +1,6 @@
 # escape=`
-
+ARG CONAN_USER_HOME=C:/Users/ContainerAdministrator
+ARG VS_INSTALL_PATH="C:\BuildTools\"
 ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019
 FROM ${FROM_IMAGE} as certsgen
 RUN certutil -generateSSTFromWU roots.sst
@@ -7,20 +8,21 @@ RUN certutil -generateSSTFromWU roots.sst
 FROM ${FROM_IMAGE} as BASE_BUILDER
 
 COPY ci/docker/shared/startup.bat c:/startup/startup.bat
+ARG VS_INSTALL_PATH
 RUN Invoke-WebRequest https://aka.ms/vs/17/release/vs_buildtools.exe -OutFile vs_buildtools.exe ; `
-    $VS_INSTALL_PATH = \"c:\BuildTools\" ; `
-    Write-Host \"Installing Visual Studio Build Tools to ${VS_INSTALL_PATH}\" ; `
+    Write-Host \"Installing Visual Studio Build Tools to ${Env:VS_INSTALL_PATH}\" ; `
     $ARGS_LIST = @(`
         '--quiet', `
         '--wait', `
         '--norestart', `
         '--nocache', `
         '--installPath', `
-         ${VS_INSTALL_PATH},`
+         ${Env:VS_INSTALL_PATH},`
         '--add Microsoft.VisualStudio.Workload.VCTools', `
         '--add Microsoft.VisualStudio.Component.VC.CLI.Support', `
         '--add Microsoft.VisualStudio.Component.VC.CoreBuildTools', `
         '--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64', `
+        '--add Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64', `
         '--add Microsoft.VisualStudio.Component.Windows10SDK.18362', `
         '--remove Microsoft.VisualStudio.Component.Windows10SDK.10240',`
         '--remove Microsoft.VisualStudio.Component.Windows10SDK.10586', `
@@ -37,14 +39,14 @@ RUN Invoke-WebRequest https://aka.ms/vs/17/release/vs_buildtools.exe -OutFile vs
     { `
         Get-ChildItem c:\\ ; `
         Get-ChildItem ${Env:ProgramFiles(x86)} ; `
-        Get-ChildItem ${VS_INSTALL_PATH} ; `
-        Get-ChildItem ${VS_INSTALL_PATH}\\Common7\\Tools ; `
+        Get-ChildItem ${Env:VS_INSTALL_PATH} ; `
+        Get-ChildItem ${Env:VS_INSTALL_PATH}\\Common7\\Tools ; `
         $message = \"Installing Visual Studio Build Tools exited with code $($process.ExitCode) \"; `
         Write-Host $message ;  `
         throw 'unable to continue' ; `
     } ; `
     Write-Host 'Testing for VsDevCmd.bat' ; `
-    if (! (Test-Path 'C:\BuildTools\Common7\Tools\VsDevCmd.bat')) `
+    if (! (Test-Path "${Env:VS_INSTALL_PATH}\Common7\Tools\VsDevCmd.bat")) `
     { `
         Write-Host 'Testing for VsDevCmd.bat - Failed' ; `
         Start-Process -NoNewWindow -FilePath $Env:TEMP\\collect.exe -ArgumentList '-nologo -zip:${Env:TEMP}\\vslogs.zip' -Wait; `
@@ -138,9 +140,11 @@ ARG PIP_INDEX_URL
 ENV PY_PYTHON=3.7
 RUN py -m pip install --upgrade pip && `
     py -m pip install wheel build && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
+    py -m pip wheel -w c:\wheels\ --no-cache-dir `
+      -r c:/requirements/requirements-ci.txt `
+    -r c:/requirements/requirements-extra.txt `
+    -r c:/requirements/requirements.txt `
+    -r c:/requirements/requirements-dev.txt
 
 # ==============================================================================
 FROM BASE_BUILDER as WHEEL_BUilDER_PY38
@@ -152,10 +156,11 @@ ARG PIP_INDEX_URL
 ENV PY_PYTHON=3.8
 RUN py -m pip install --upgrade pip && `
     py -m pip install wheel build && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
-
+    py -m pip wheel -w c:\wheels\ --no-cache-dir `
+      -r c:/requirements/requirements-ci.txt `
+    -r c:/requirements/requirements-extra.txt `
+    -r c:/requirements/requirements.txt `
+    -r c:/requirements/requirements-dev.txt
 # ==============================================================================
 FROM BASE_BUILDER as WHEEL_BUilDER_PY39
 SHELL ["cmd", "/S", "/C" ]
@@ -166,9 +171,11 @@ ARG PIP_INDEX_URL
 ENV PY_PYTHON=3.9
 RUN py -m pip install --upgrade pip && `
     py -m pip install wheel build && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
+    py -m pip wheel -w c:\wheels\ --no-cache-dir `
+      -r c:/requirements/requirements-ci.txt `
+    -r c:/requirements/requirements-extra.txt `
+    -r c:/requirements/requirements.txt `
+    -r c:/requirements/requirements-dev.txt
 
 # ==============================================================================
 FROM BASE_BUILDER as WHEEL_BUilDER_PY310
@@ -180,9 +187,11 @@ ARG PIP_INDEX_URL
 ENV PY_PYTHON=3.10
 RUN py -m pip install --upgrade pip && `
     py -m pip install wheel build && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
+    py -m pip wheel -w c:\wheels\ --no-cache-dir `
+      -r c:/requirements/requirements-ci.txt `
+    -r c:/requirements/requirements-extra.txt `
+    -r c:/requirements/requirements.txt `
+    -r c:/requirements/requirements-dev.txt
 
 # ==============================================================================
 FROM BASE_BUILDER as WHEEL_BUilDER_PY311
@@ -194,21 +203,24 @@ ARG PIP_INDEX_URL
 ENV PY_PYTHON=3.11
 RUN py -m pip install --upgrade pip && `
     py -m pip install wheel build && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-ci.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements-extra.txt && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir -r c:/requirements/requirements.txt -r c:/requirements/requirements-dev.txt
-
+    py -m pip wheel -w c:\wheels\ --no-cache-dir `
+      -r c:/requirements/requirements-ci.txt `
+    -r c:/requirements/requirements-extra.txt `
+    -r c:/requirements/requirements.txt `
+    -r c:/requirements/requirements-dev.txt
 
 # ==============================================================================
 FROM BASE_BUILDER as CONAN_BUILDER
+ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 RUN python -m pip install --upgrade pip ; `
     pip install wheel ; `
     pip install conan cmake
+
 COPY conanfile.py c:/temp/conanfile.py
-COPY ci/docker/shared/conan/remotes.json  C:/Users/ContainerAdministrator/.conan/remotes.json
-COPY ci/docker/windows/tox/conan/profile.ini  C:/Users/ContainerAdministrator/.conan/profiles/default
+COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
+COPY ci/docker/windows/tox/conan/profile.ini  ${CONAN_USER_HOME}/.conan/profiles/default
 SHELL ["cmd", "/S", "/C" ]
 RUN conan config home
 
@@ -243,8 +255,9 @@ RUN python -m pip install pip --upgrade ; pip install -r requirements/requiremen
 COPY --from=certsgen c:/roots.sst roots.sst
 RUN certutil -addstore -f root roots.sst ; `
     del roots.sst
-COPY --from=CONAN_BUILDER C:/Users/ContainerAdministrator/.conan/ C:/Users/ContainerAdministrator/.conan/
-ENV CONAN_USER_HOME=C:/Users/ContainerAdministrator
+ARG CONAN_USER_HOME
+COPY --from=CONAN_BUILDER ${CONAN_USER_HOME}/.conan/ ${CONAN_USER_HOME}/.conan/
+ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 COPY conanfile.py c:/temp/conanfile.py
 RUN conan config home
 
