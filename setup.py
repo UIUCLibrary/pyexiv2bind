@@ -16,15 +16,12 @@ except ImportError:
     from setuptools import Extension as Pybind11Extension
 from setuptools.command.build_clib import build_clib
 from distutils.errors import DistutilsExecError
-# sys.path.insert(0, os.path.dirname(__file__))
 cmd_class = {}
 extension_modules = []
 
 try:
     from uiucprescon.build.conan_libs import BuildConan, locate_conanbuildinfo, ConanBuildInfoTXT
-    # from builders.conan_libs import BuildConan, locate_conanbuildinfo, ConanBuildInfoTXT
     cmd_class["build_conan"] = BuildConan
-    # from builders.pybind11_builder import BuildPybind11Extension, parse_conan_build_info
     from uiucprescon.build.pybind11_builder import BuildPybind11Extension, parse_conan_build_info
     cmd_class["build_ext"] = BuildPybind11Extension
     exiv2_extension = Pybind11Extension(
@@ -40,7 +37,6 @@ try:
         ],
         libraries=[
             "exiv2",
-            # "expat"
         ],
         include_dirs=[
             "py3exiv2bind/core/glue",
@@ -268,6 +264,7 @@ class BuildCMakeLib(build_clib):
             except DistutilsExecError:
                 print(f"Conan failed when running {build_command}", file=sys.stderr)
                 raise
+
     def build_install_cmake(self, extension: Pybind11Extension):
         dep_build_path = os.path.join(self.build_temp, "deps")
         install_command = [
@@ -294,9 +291,6 @@ class BuildCMakeLib(build_clib):
                 0,
                 os.path.abspath(os.path.join(build_ext_cmd.build_lib, "py3exiv2bind"))
             )
-            print(f"ext = {ext}: ext.library_dirs = {ext.library_dirs}")
-            print(f"ext = {ext}: ext.libraries = {ext.libraries}")
-        # raise Exception("ok")
         build_ext_cmd.include_dirs.insert(
             0,
             os.path.abspath(
