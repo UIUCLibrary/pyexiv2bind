@@ -1412,15 +1412,15 @@ pipeline {
                                 }
                             }
                         }
-                        stage('Run Tox test') {
-                            when {
-                               equals expected: true, actual: params.TEST_RUN_TOX
-                               beforeAgent true
-                            }
-                            steps {
-                                runToxTests()
-                            }
-                        }
+                    }
+                }
+                stage('Run Tox test') {
+                    when {
+                       equals expected: true, actual: params.TEST_RUN_TOX
+                       beforeAgent true
+                    }
+                    steps {
+                        runToxTests()
                     }
                 }
             }
