@@ -1,0 +1,4 @@
+build
+conan>=1.53,!=1.55.0
+cmake
+ninja
