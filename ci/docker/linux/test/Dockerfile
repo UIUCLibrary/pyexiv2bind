@@ -1,17 +1,18 @@
 ARG SONAR_SCANNER_VERSION=4.7.0.2747
-ARG PYTHON_VERSION=3.8
+ARG PYTHON_VERSION=3.11
 FROM python:${PYTHON_VERSION} as base_image
 RUN apt-get update && \
-    apt-get install -y unzip git
+    apt-get install -y unzip git && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /.cache/pip && \
+RUN python -m pip install --no-cache-dir pip --upgrade && \
+    pip install --no-cache-dir wheel && \
+    pip install --no-cache-dir setuptools --upgrade && \
+    pip install --no-cache-dir conan
+
+RUN mkdir -p /.cache/pip &&  \
     chmod -R 777 /.cache
-
-RUN python -m pip install pip --upgrade && \
-    pip install wheel && \
-    pip install setuptools --upgrade
-
-RUN pip install conan
 
 COPY ci/docker/shared/conan/remotes.json /conan/.conan/remotes.json
 COPY ci/docker/linux/test/conan/profile.ini  /conan/.conan/profiles/default
@@ -22,10 +23,10 @@ RUN conan config init
 FROM base_image as wheel_builder
 ARG PIP_EXTRA_INDEX_URL
 
-ADD requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt /requirements/
+COPY requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt /requirements/
 COPY requirements/ /requirements/requirements/
 
-RUN pip wheel --wheel-dir=/wheels \
+RUN pip wheel --no-cache-dir --wheel-dir=/wheels \
     -r /requirements/requirements-ci.txt \
     -r /requirements/requirements.txt \
     -r /requirements/requirements-dev.txt && \
@@ -103,7 +104,7 @@ COPY --from=wheel_builder /wheels /wheels/
 RUN chmod -R 777 /wheels
 ARG PIP_EXTRA_INDEX_URL
 ENV PIP_NO_CACHE_DIR=1
-ADD requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt /requirements/
+COPY requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt /requirements/
 COPY requirements/ /requirements/requirements/
 RUN python -m pip install pip --upgrade && \
     pip install wheel && \
@@ -114,7 +115,7 @@ RUN python -m pip install pip --upgrade && \
          -r /requirements/requirements-ci.txt
 
 ENV CONAN_USER_HOME=/conan
-ADD conanfile.py /tmp/conanfile.py
+COPY conanfile.py /tmp/conanfile.py
 COPY --from=conan_builder /conan/.conan/ /conan/.conan/
 COPY ci/docker/shared/conan/remotes.json /conan/.conan/remotes.json
 COPY ci/docker/linux/test/conan/profile.ini  /conan/.conan/profiles/default
