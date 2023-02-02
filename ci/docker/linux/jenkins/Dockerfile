@@ -60,8 +60,8 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 ENV CONAN_USER_HOME=/conan
 COPY conanfile.py /tmp/conanfile.py
-RUN conan install /tmp --build outdated --no-import  && \
-    conan install /tmp --build outdated --no-import  -s build_type=Debug && \
+RUN conan install /tmp -pr:b=default --build outdated --no-import  && \
+    conan install /tmp -pr:b=default --build outdated --no-import  -s build_type=Debug && \
     conan remove "*" -b --src -f && \
     conan remove --locks
 #==============================================================================
@@ -126,7 +126,7 @@ COPY conanfile.py /tmp/conanfile.py
 COPY --from=conan_builder /conan/.conan/ /conan/.conan/
 COPY ci/docker/shared/conan/remotes.json /conan/.conan/remotes.json
 COPY ci/docker/linux/jenkins/conan/profile.ini  /conan/.conan/profiles/default
-RUN conan install /tmp --build  missing --no-import && \
+RUN conan install /tmp -pr:b=default --build  missing --no-import && \
     conan remove "*" -b --src -f && \
     conan remove --locks && \
     chmod -R 777 /conan
