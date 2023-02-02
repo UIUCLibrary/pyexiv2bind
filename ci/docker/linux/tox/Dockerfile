@@ -120,7 +120,7 @@ COPY ci/docker/linux/tox/update_conan_compiler.py  /tmp/update_conan_compiler.py
 ARG COMPILER_VERSION_FOR_PREBUILD_CONAN_PACKAGES
 RUN python3 /tmp/update_conan_compiler.py ${CONAN_USER_HOME}/.conan/settings.yml gcc $COMPILER_VERSION_FOR_PREBUILD_CONAN_PACKAGES
 COPY conanfile.py /tmp/conanfile.py
-RUN conan install /tmp -pr:b=default --build outdated --build=openjpeg --no-import -s compiler.version=$COMPILER_VERSION_FOR_PREBUILD_CONAN_PACKAGES  && \
+RUN conan install /tmp -pr:b=default --build outdated --no-import -s compiler.version=$COMPILER_VERSION_FOR_PREBUILD_CONAN_PACKAGES  && \
     conan remove "*" -b --src -f && \
     conan remove --locks
 # ==============================================================================
