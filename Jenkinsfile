@@ -1080,7 +1080,7 @@ pipeline {
                 stage('Building Documentation'){
                     agent {
                         dockerfile {
-                            filename 'ci/docker/linux/test/Dockerfile'
+                            filename 'ci/docker/linux/jenkins/Dockerfile'
                             label 'linux && docker && x86'
                             additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL'
                         }
@@ -1123,7 +1123,7 @@ pipeline {
                         stage('Code Quality'){
                             agent {
                                 dockerfile {
-                                    filename 'ci/docker/linux/test/Dockerfile'
+                                    filename 'ci/docker/linux/jenkins/Dockerfile'
                                     label 'linux && docker && x86'
                                     additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL'
                                     args '--mount source=sonar-cache-py3exiv2bind,target=/opt/sonar/.sonar/cache'
@@ -1707,7 +1707,7 @@ pipeline {
                 stage('Deploy to pypi') {
                     agent {
                         dockerfile {
-                            filename 'ci/docker/linux/test/Dockerfile'
+                            filename 'ci/docker/linux/jenkins/Dockerfile'
                             label 'linux && docker && x86'
                             additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL'
                         }

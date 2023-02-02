@@ -15,7 +15,7 @@ RUN mkdir -p /.cache/pip &&  \
     chmod -R 777 /.cache
 
 COPY ci/docker/shared/conan/remotes.json /conan/.conan/remotes.json
-COPY ci/docker/linux/test/conan/profile.ini  /conan/.conan/profiles/default
+COPY ci/docker/linux/jenkins/conan/profile.ini  /conan/.conan/profiles/default
 RUN conan config init
 
 #==============================================================================
@@ -118,7 +118,7 @@ ENV CONAN_USER_HOME=/conan
 COPY conanfile.py /tmp/conanfile.py
 COPY --from=conan_builder /conan/.conan/ /conan/.conan/
 COPY ci/docker/shared/conan/remotes.json /conan/.conan/remotes.json
-COPY ci/docker/linux/test/conan/profile.ini  /conan/.conan/profiles/default
+COPY ci/docker/linux/jenkins/conan/profile.ini  /conan/.conan/profiles/default
 RUN conan install /tmp --build  missing --no-import && \
     conan remove "*" -b --src -f && \
     conan remove --locks && \
