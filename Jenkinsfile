@@ -10,7 +10,6 @@
 // Configurations loaded at start of pipeline
 // ============================================================================
 // configurations      = null
-// defaultParamValues  = null
 
 def generate_ctest_memtest_script(scriptName){
     writeFile( file: 'suppression.txt',
@@ -268,8 +267,6 @@ def startup(){
                     ws{
                         checkout scm
                         devpi = load('ci/jenkins/scripts/devpi.groovy')
-                        echo 'loading configurations'
-                        defaultParamValues = readYaml(file: 'ci/jenkins/defaultParameters.yaml').parameters.defaults
                     }
                 }
             },
@@ -1005,67 +1002,18 @@ props = get_props()
 pipeline {
     agent none
     parameters {
-        booleanParam(
-                name: 'TEST_RUN_TOX',
-                defaultValue: defaultParamValues.TEST_RUN_TOX,
-                description: 'Run Tox Tests'
-            )
-        booleanParam(
-                name: 'RUN_CHECKS',
-                defaultValue: true,
-                description: 'Run checks on code'
-            )
-        booleanParam(
-            name: 'RUN_MEMCHECK',
-            defaultValue: false,
-            description: 'Run Memcheck. NOTE: This can be very slow.'
-            )
-        booleanParam(
-                name: 'USE_SONARQUBE',
-                defaultValue: defaultParamValues.USE_SONARQUBE,
-                description: 'Send data test data to SonarQube'
-            )
-        booleanParam(
-                name: 'BUILD_PACKAGES',
-                defaultValue: defaultParamValues.BUILD_PACKAGES,
-                description: 'Build Python packages'
-            )
-        booleanParam(
-                name: 'BUILD_MAC_PACKAGES',
-                defaultValue: defaultParamValues.BUILD_MAC_PACKAGES,
-                description: 'Test Python packages on Mac'
-            )
-        booleanParam(
-            name: 'INCLUDE_ARM',
-            defaultValue: false,
-            description: 'Include ARM architecture'
-            )
-        booleanParam(
-                name: 'TEST_PACKAGES',
-                defaultValue: defaultParamValues.TEST_PACKAGES,
-                description: 'Test Python packages by installing them and running tests on the installed package'
-            )
-        booleanParam(
-                name: 'DEPLOY_DEVPI',
-                defaultValue: defaultParamValues.DEPLOY_DEVPI,
-                description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}"
-            )
-        booleanParam(
-                name: 'DEPLOY_DEVPI_PRODUCTION',
-                defaultValue: defaultParamValues.DEPLOY_DEVPI_PRODUCTION,
-                description: 'Deploy to https://devpi.library.illinois.edu/production/release'
-            )
-        booleanParam(
-                name: 'DEPLOY_PYPI',
-                defaultValue: false,
-                description: 'Deploy to pypi'
-            )
-        booleanParam(
-                name: 'DEPLOY_DOCS',
-                defaultValue: defaultParamValues.DEPLOY_DOCS,
-                description: 'Update online documentation'
-        )
-
+        booleanParam(name: 'TEST_RUN_TOX', defaultValue: false, description: 'Run Tox Tests')
+        booleanParam(name: 'RUN_CHECKS', defaultValue: true, description: 'Run checks on code')
+        booleanParam(name: 'RUN_MEMCHECK', defaultValue: false, description: 'Run Memcheck. NOTE: This can be very slow.')
+        booleanParam(name: 'USE_SONARQUBE', defaultValue: true, description: 'Send data test data to SonarQube')
+        booleanParam(name: 'BUILD_PACKAGES', defaultValue: false, description: 'Build Python packages')
+        booleanParam(name: 'BUILD_MAC_PACKAGES', defaultValue: false, description: 'Test Python packages on Mac')
+        booleanParam(name: 'INCLUDE_ARM', defaultValue: false, description: 'Include ARM architecture')
+        booleanParam(name: 'TEST_PACKAGES', defaultValue: true, description: 'Test Python packages by installing them and running tests on the installed package')
+        booleanParam(name: 'DEPLOY_DEVPI', defaultValue: false, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
+        booleanParam(name: 'DEPLOY_DEVPI_PRODUCTION', defaultValue: false, description: 'Deploy to https://devpi.library.illinois.edu/production/release')
+        booleanParam(name: 'DEPLOY_PYPI', defaultValue: false, description: 'Deploy to pypi')
+        booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: 'Update online documentation')
     }
     stages {
         stage('Building and Testing'){
