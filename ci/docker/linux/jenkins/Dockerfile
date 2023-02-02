@@ -2,7 +2,7 @@ ARG SONAR_SCANNER_VERSION=4.7.0.2747
 ARG PYTHON_VERSION=3.11
 FROM python:${PYTHON_VERSION} as base_image
 RUN apt-get update && \
-    apt-get install -y unzip git && \
+    apt-get install -y --no-install-recommends unzip git && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -66,7 +66,10 @@ RUN conan install /tmp --build outdated --no-import  && \
     conan remove --locks
 #==============================================================================
 FROM base_image as DR_MEMORY_BUILDER
-RUN apt update && apt install -y wget
+RUN apt-get update &&  \
+    apt-get install -y --no-install-recommends wget && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 WORKDIR /drmemory
 RUN wget --no-verbose https://github.com/DynamoRIO/drmemory/releases/download/release_2.3.0/DrMemory-Linux-2.3.0-1.tar.gz && \
     mkdir -p /opt/drmemory && tar xzf DrMemory-Linux-2.3.0-1.tar.gz -C /opt/drmemory --strip-components=1 && \
@@ -75,7 +78,11 @@ RUN wget --no-verbose https://github.com/DynamoRIO/drmemory/releases/download/re
 #==============================================================================
 FROM base_image
 
-RUN apt update && apt install -y ninja-build clang-tidy cppcheck
+RUN apt-get update &&  \
+    apt-get install -y --no-install-recommends ninja-build clang-tidy cppcheck && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY --from=SONAR_BUILDER /opt/sonar /opt/sonar/
 COPY --from=SONAR_BUILDER /opt/build-wrapper-linux-x86 /opt/build-wrapper-linux-x86/
 #ENV SONAR_SCANNER_VERSION=4.6.2.2472
