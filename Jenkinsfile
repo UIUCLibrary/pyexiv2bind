@@ -228,7 +228,7 @@ def runToxTests(){
         def tox = fileLoader.fromGit(
             'tox',
             'https://github.com/UIUCLibrary/jenkins_helper_scripts.git',
-            '4',
+            '8',
             null,
             ''
         )
