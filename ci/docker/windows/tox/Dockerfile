@@ -199,9 +199,10 @@ FROM BASE_BUILDER as CONAN_BUILDER
 ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
+COPY requirements requirements
 RUN python -m pip install --upgrade pip ; `
     pip install wheel ; `
-    pip install conan cmake
+    pip install -r requirements/requirements_conan.txt cmake
 
 COPY conanfile.py c:/temp/conanfile.py
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
@@ -236,7 +237,7 @@ COPY --from=WHEEL_BUilDER_PY311 c:/wheels/ c:/wheels/
 RUN py -3.11 -m pip install pip --upgrade ; py -3.11 -m pip install wheel --upgrade ; py -3.11 -m pip install -r requirements/requirements_tox.txt conan wheel build
 
 
-RUN python -m pip install pip --upgrade ; pip install -r requirements/requirements_tox.txt conan wheel build
+RUN python -m pip install pip --upgrade ; pip install -r requirements/requirements_tox.txt  -r requirements/requirements_conan.txt wheel build
 COPY --from=certsgen c:/roots.sst roots.sst
 RUN certutil -addstore -f root roots.sst ; `
     del roots.sst

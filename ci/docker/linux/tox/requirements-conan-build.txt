@@ -1,4 +1,4 @@
 build
-conan>=1.53,!=1.55.0
+-r requirements/requirements_conan.txt
 cmake
 ninja

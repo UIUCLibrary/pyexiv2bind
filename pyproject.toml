@@ -29,7 +29,7 @@ environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_US
 before-all = [
     "python3 -m venv /tmp/ciwheelbuilder/py3exiv2bind/venv",
     "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/python -m pip install wheel",
-    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/python -m pip install 'conan>=1.53' cmake",
+    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/python -m pip install -r requirements/requirements_conan.txt cmake",
     "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/conan profile new $ENVTMPDIR/.conan/profiles/default --detect --force",
     "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else /tmp/ciwheelbuilder/py3exiv2bind/venv/bin/conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
     ". /tmp/ciwheelbuilder/py3exiv2bind/venv/bin/activate && conan install ./ --build missing --install-folder=$CONAN_BUILD_INFO_DIR"
@@ -43,7 +43,7 @@ CONAN_BUILD_INFO_DIR="/tmp/ciwheelbuilder/py3exiv2bind/build/"
 [tool.cibuildwheel.windows]
 before-all = [
     "pip install wheel",
-    "pip install conan cmake ninja",
+    "pip install -r requirements/requirements_conan.txt cmake ninja",
     "conan profile new default --detect --force",
     "conan profile update settings.compiler.version=%CONAN_COMPILER_VERSION% default",
     "conan install ./ --build missing",
@@ -56,7 +56,7 @@ manylinux-x86_64-image = "manylinux2014"
 repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
 before-all = [
     "cc --version", "cc -dumpfullversion -dumpversion",
-    "pip3 install conan cmake ninja",
+    "pip3 install -r requirements/requirements_conan.txt cmake ninja",
     "conan profile new /tmp/ciwheelbuilder/py3exiv2bind/.conan/profiles/default --detect",
     "if [ -z \"$CONAN_COMPILER_LIBCXX\" ]; then : ; else conan profile update settings.compiler.libcxx=$CONAN_COMPILER_LIBCXX default; fi",
     "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",

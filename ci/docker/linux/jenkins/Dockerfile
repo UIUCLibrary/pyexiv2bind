@@ -6,10 +6,11 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+COPY requirements/ /requirements/requirements/
 RUN python -m pip install --no-cache-dir pip --upgrade && \
     pip install --no-cache-dir wheel && \
     pip install --no-cache-dir setuptools --upgrade && \
-    pip install --no-cache-dir conan
+    pip install --no-cache-dir -r /requirements/requirements/requirements_conan.txt
 
 RUN mkdir -p /.cache/pip &&  \
     chmod -R 777 /.cache
