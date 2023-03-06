@@ -5,6 +5,7 @@
 #include "glue/glue.h"
 #include "glue/Image.h"
 #include "glue/glue_execeptions.h"
+#include <exiv2/error.hpp>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -36,7 +37,7 @@ PYBIND11_MODULE(core, m) {
             .def("is_good",                  &Image::is_good,     "Check if a file is loaded.")
             ;
     pybind11::register_exception<NoIccError>(m, "NoICCError");
-
+    pybind11::register_exception<Exiv2::AnyError>(m, "Exiv2AnyError");
     m.def("set_dpi", &set_dpi,
             pybind11::arg("image"),
             pybind11::arg("x"),

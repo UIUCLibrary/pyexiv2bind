@@ -26,6 +26,7 @@ void set_dpi(const std::string &filename, int x, int y){
         metadata["Exif.Image.ResolutionUnit"] = 2;
         image->setExifData(metadata);
         image->writeMetadata();
+        image->readMetadata();
 
     }catch (const Exiv2::AnyError &e) {
         throw;
