@@ -2,7 +2,7 @@
 requires = [
     "setuptools>=40.8.0",
     "wheel",
-    'uiucprescon.build @ git+https://github.com/UIUCLibrary/uiucprescon_build.git@v0.1.0'
+    'uiucprescon.build @ git+https://github.com/UIUCLibrary/uiucprescon_build.git@v0.1.2'
 ]
 build-backend = "uiucprescon.build"
 
