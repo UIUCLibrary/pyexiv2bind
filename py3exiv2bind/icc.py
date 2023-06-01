@@ -6,24 +6,23 @@ from collections import namedtuple
 import struct
 import copy
 from typing import Optional, Any, Dict
+from dataclasses import dataclass
 
 
+@dataclass
 class ICC_data:
     """ICC data container."""
 
-    def __init__(self) -> None:
-        """Create a ICC data container."""
-        self.friendly_name: Optional[str] = None
-        self.value: Optional[Any] = None
-        self.raw_data: Optional[bytes] = None
+    friendly_name: Optional[str] = None
+    value: Optional[Any] = None
+    raw_data: Optional[bytes] = None
 
     def __str__(self) -> str:
         """Provide a friendly name keys if possible."""
         if self.friendly_name:
             return self.friendly_name
-        if self.value:
-            return str(self.value, encoding="ascii")
-        return str(self.raw_data)
+        return str(self.value, encoding="ascii") \
+            if self.value else str(self.raw_data)
 
 
 def build_ICC_data(
