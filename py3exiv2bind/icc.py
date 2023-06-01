@@ -5,7 +5,7 @@
 from collections import namedtuple
 import struct
 import copy
-from typing import Optional, Any
+from typing import Optional, Any, Dict
 
 
 class ICC_data:
@@ -13,7 +13,7 @@ class ICC_data:
 
     def __init__(self) -> None:
         """Create a ICC data container."""
-        self.friendly_name = None
+        self.friendly_name: Optional[str] = None
         self.value: Optional[Any] = None
         self.raw_data: Optional[bytes] = None
 
@@ -26,8 +26,11 @@ class ICC_data:
         return str(self.raw_data)
 
 
-def build_ICC_data(value: bytes, lookup_table: dict = None,
-                   restrict=False) -> ICC_data:
+def build_ICC_data(
+    value: bytes,
+    lookup_table: Optional[Dict[bytes, str]] = None,
+    restrict=False
+) -> ICC_data:
     """Build an ICC_data object."""
     new_value = ICC_data()
     new_value.value = value
@@ -36,7 +39,9 @@ def build_ICC_data(value: bytes, lookup_table: dict = None,
             new_value.friendly_name = lookup_table[value]
         else:
             if restrict:
-                raise LookupError(f"Invalid signature: {value}")
+                raise LookupError(
+                    f"Invalid signature: {value.decode('ascii')}"
+                )
     return new_value
 
 

@@ -476,6 +476,8 @@ setup(
     tests_require=['pytest'],
     libraries=[exiv2],
     ext_modules=extension_modules,
-    package_data={"py3exiv2bind": ["py.typed"]},
+    package_data={
+        "py3exiv2bind": ["py.typed", "core.pyi"],
+    },
     cmdclass=cmd_class
 )
