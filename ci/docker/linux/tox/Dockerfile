@@ -1,3 +1,4 @@
+ARG PIP_DOWNLOAD_CACHE=/.cache/pip
 ARG TARGETARCH=amd64
 ARG COMPILER_VERSION_FOR_PREBUILD_CONAN_PACKAGES=9.4
 ARG CONAN_USER_HOME=/conan
@@ -17,94 +18,9 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extra.txt requirements.txt requirements-dev.txt /tmp/
 COPY requirements /tmp/requirements
-
-# ==============================================================================
-FROM wheel_builder_base as WHEEL_BUILDER_PY37
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-ARG PIP_FIND_LINKS
-ENV PYTHON=python3.7
-RUN $PYTHON -m venv venv && \
-    . ./venv/bin/activate && \
-    python -m pip install --no-cache-dir pip --upgrade && \
-    python -m pip install --no-cache-dir wheel==0.37.1 && \
-    python -m pip wheel --no-cache-dir -w ${PIP_FIND_LINKS}  \
-        -r /tmp/requirements.txt \
-        -r /tmp/requirements-dev.txt  \
-        -r /tmp/requirements-ci.txt  \
-        -r /tmp/requirements-extra.txt && \
-    rm -rf venv
-# ==============================================================================
-FROM wheel_builder_base as WHEEL_BUILDER_PY38
-
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-ARG PIP_FIND_LINKS
-ENV PYTHON=python3.8
-RUN $PYTHON -m venv venv && \
-    . ./venv/bin/activate && \
-    python -m pip install --no-cache-dir pip --upgrade && \
-    python -m pip install --no-cache-dir wheel==0.37.1 && \
-    python -m pip wheel --no-cache-dir -w ${PIP_FIND_LINKS}  \
-        -r /tmp/requirements.txt \
-        -r /tmp/requirements-dev.txt  \
-        -r /tmp/requirements-ci.txt  \
-        -r /tmp/requirements-extra.txt && \
-    rm -rf venv
-
-# ==============================================================================#
-FROM wheel_builder_base as WHEEL_BUILDER_PY39
-
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-ARG PIP_FIND_LINKS
-ENV PYTHON=python3.9
-RUN $PYTHON -m venv venv && \
-    . ./venv/bin/activate && \
-    python -m pip install --no-cache-dir pip --upgrade && \
-    python -m pip install --no-cache-dir wheel==0.37.1 && \
-    python -m pip wheel --no-cache-dir -w ${PIP_FIND_LINKS}  \
-        -r /tmp/requirements.txt \
-        -r /tmp/requirements-dev.txt  \
-        -r /tmp/requirements-ci.txt  \
-        -r /tmp/requirements-extra.txt && \
-    rm -rf venv
-
-# ==============================================================================
-FROM wheel_builder_base as WHEEL_BUILDER_PY310
-
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-ARG PIP_FIND_LINKS
-ENV PYTHON=python3.10
-RUN $PYTHON -m ensurepip --upgrade && \
-    $PYTHON -m venv venv --upgrade-deps && \
-    . ./venv/bin/activate && \
-    python -m pip install --no-cache-dir wheel==0.37.1 && \
-    python -m pip wheel --no-cache-dir -w ${PIP_FIND_LINKS}  \
-        -r /tmp/requirements.txt \
-        -r /tmp/requirements-dev.txt  \
-        -r /tmp/requirements-ci.txt  \
-        -r /tmp/requirements-extra.txt && \
-    rm -rf venv
-
-# ==============================================================================
-FROM wheel_builder_base as WHEEL_BUILDER_PY311
-
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-ARG PIP_FIND_LINKS
-ENV PYTHON=python3.11
-RUN $PYTHON -m ensurepip --upgrade && \
-    $PYTHON -m venv venv --upgrade-deps && \
-    . ./venv/bin/activate && \
-    python -m pip install --no-cache-dir wheel==0.37.1 && \
-    python -m pip wheel --no-cache-dir -w ${PIP_FIND_LINKS}  \
-        -r /tmp/requirements.txt \
-        -r /tmp/requirements-dev.txt  \
-        -r /tmp/requirements-ci.txt  \
-        -r /tmp/requirements-extra.txt && \
-    rm -rf venv
+ARG PIP_DOWNLOAD_CACHE
+RUN mkdir -p ${PIP_DOWNLOAD_CACHE} && \
+    chmod -R 777 ${PIP_DOWNLOAD_CACHE}
 
 # ==============================================================================
 
@@ -128,17 +44,9 @@ RUN conan install /tmp -pr:b=default --build outdated --no-import -s compiler.ve
     conan remove --locks
 # ==============================================================================
 FROM base
-ARG PIP_FIND_LINKS
-COPY --from=WHEEL_BUILDER_PY37 ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
-COPY --from=WHEEL_BUILDER_PY38 ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
-COPY --from=WHEEL_BUILDER_PY39 ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
-RUN python3.10 -m ensurepip --upgrade
-COPY --from=WHEEL_BUILDER_PY310 ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
-COPY --from=WHEEL_BUILDER_PY311 ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
-RUN chmod -R 777 ${PIP_FIND_LINKS}
-ENV PIP_FIND_LINKS=${PIP_FIND_LINKS}
+
 COPY requirements/ /tmp/requirements
-RUN pip3 install --no-cache-dir -r /tmp/requirements/requirements_tox.txt -r /tmp/requirements/requirements_conan.txt cmake "devpi-client<6.0" build twine
+RUN pip3 install --no-cache-dir -r /tmp/requirements/requirements_tox.txt -r /tmp/requirements/requirements_conan.txt cmake "devpi-client" build twine
 ARG CONAN_USER_HOME
 COPY --from=conan_builder ${CONAN_USER_HOME}/.conan/ ${CONAN_USER_HOME}/.conan/
 ARG TARGETARCH

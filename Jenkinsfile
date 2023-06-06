@@ -240,7 +240,8 @@ def runToxTests(){
                             envNamePrefix: 'Tox Linux',
                             label: 'linux && docker && x86',
                             dockerfile: 'ci/docker/linux/tox/Dockerfile',
-                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
+                            dockerRunArgs: '-v pipcache_pyexiv2bind:/.cache/pip'
                         )
             },
             'Windows':{
@@ -248,7 +249,8 @@ def runToxTests(){
                                 envNamePrefix: 'Tox Windows',
                                 label: 'windows && docker && x86',
                                 dockerfile: 'ci/docker/windows/tox/Dockerfile',
-                                dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
+                                dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
+                                dockerRunArgs: '-v pipcache_pyexiv2bind:c:/users/containeradministrator/appdata/local/pip',
                             )
             }
         )
@@ -489,7 +491,8 @@ def test_packages(){
                             dockerfile: [
                                 label: 'windows && docker',
                                 filename: 'ci/docker/windows/tox_no_vs/Dockerfile',
-                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
+                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
+                                dockerRunArgs: '-v pipcache_pyexiv2bind:c:/users/containeradministrator/appdata/local/pip',
                             ]
                         ],
                         dockerImageName: "${currentBuild.fullProjectName}_test_no_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
@@ -529,7 +532,8 @@ def test_packages(){
                             dockerfile: [
                                 label: 'windows && docker',
                                 filename: 'ci/docker/windows/tox/Dockerfile',
-                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
+                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
+                                dockerRunArgs: '-v pipcache_pyexiv2bind:c:/users/containeradministrator/appdata/local/pip',
                             ]
                         ],
                         dockerImageName: "${currentBuild.fullProjectName}_test_with_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
@@ -570,7 +574,8 @@ def test_packages(){
                             dockerfile: [
                                 label: 'linux && docker && x86',
                                 filename: 'ci/docker/linux/tox/Dockerfile',
-                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
+                                args: '-v pipcache_pyexiv2bind:/.cache/pip'
                             ]
                         ],
                         retry: 3,
@@ -611,7 +616,8 @@ def test_packages(){
                             dockerfile: [
                                 label: 'linux && docker && x86',
                                 filename: 'ci/docker/linux/tox/Dockerfile',
-                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
+                                args: '-v pipcache_pyexiv2bind:/.cache/pip'
                             ]
                         ],
                         retry: 3,
@@ -649,7 +655,8 @@ def test_packages(){
                             dockerfile: [
                                 label: 'linux && docker && arm',
                                 filename: 'ci/docker/linux/tox/Dockerfile',
-                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
+                                args: '-v pipcache_pyexiv2bind:/.cache/pip'
                             ]
                         ],
                         retry: 3,
@@ -690,7 +697,8 @@ def test_packages(){
                             dockerfile: [
                                 label: 'linux && docker && arm',
                                 filename: 'ci/docker/linux/tox/Dockerfile',
-                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
+                                args: '-v pipcache_pyexiv2bind:/.cache/pip'
                             ]
                         ],
                         retry: 3,
@@ -1452,7 +1460,7 @@ pipeline {
                                     server: DEVPI_CONFIG.server,
                                     credentialsId: DEVPI_CONFIG.credentialsId,
                                     index: DEVPI_CONFIG.stagingIndex,
-                                    clientDir: '/tmp/devpi'
+                                    clientDir: './devpi'
                                 )
                             }
                         }
@@ -1508,6 +1516,7 @@ pipeline {
                                                     filename: 'ci/docker/windows/tox_no_vs/Dockerfile',
                                                     additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
                                                     label: 'windows && docker && x86 && devpi-access'
+
                                                 ]
                                             ],
                                             retryTimes: 3,
