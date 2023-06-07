@@ -1,5 +1,5 @@
 #!groovy
-// @Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
+
 // ============================================================================
 //  Groovy helper scripts loaded during start of pipeline
 // ============================================================================
@@ -25,25 +25,32 @@ def generate_ctest_memtest_script(scriptName){
                        ctest_memcheck()
                        ''')
 }
-
-def getDevPiStagingIndex(){
-
-    if (env.TAG_NAME?.trim()){
-        return 'tag_staging'
-    } else{
-        return "${env.BRANCH_NAME}_staging"
+def getPypiConfig() {
+    node(){
+        configFileProvider([configFile(fileId: 'pypi_config', variable: 'CONFIG_FILE')]) {
+            def config = readJSON( file: CONFIG_FILE)
+            return config['deployment']['indexes']
+        }
     }
 }
 
-def DEVPI_CONFIG = [
-    stagingIndex: getDevPiStagingIndex(),
-    server: 'https://devpi.library.illinois.edu',
-    credentialsId: 'DS_devpi',
-]
-PYPI_SERVERS = [
-    'https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_public/',
-    'https://jenkins.library.illinois.edu/nexus/repository/uiuc_prescon_python_testing/'
-    ]
+def getDevpiConfig() {
+    node(){
+        configFileProvider([configFile(fileId: 'devpi_config', variable: 'CONFIG_FILE')]) {
+            def configProperties = readProperties(file: CONFIG_FILE)
+            configProperties.stagingIndex = {
+                if (env.TAG_NAME?.trim()){
+                    return 'tag_staging'
+                } else{
+                    return "${env.BRANCH_NAME}_staging"
+                }
+            }()
+            return configProperties
+        }
+    }
+}
+def DEVPI_CONFIG = getDevpiConfig()
+
 SUPPORTED_MAC_VERSIONS = ['3.8', '3.9', '3.10', '3.11']
 SUPPORTED_LINUX_VERSIONS = ['3.7', '3.8', '3.9', '3.10', '3.11']
 SUPPORTED_WINDOWS_VERSIONS = ['3.7', '3.8', '3.9', '3.10', '3.11']
@@ -1039,8 +1046,8 @@ pipeline {
         booleanParam(name: 'INCLUDE_LINUX_X86_64', defaultValue: true, description: 'Include x86_64 architecture for Linux')
         booleanParam(name: 'INCLUDE_WINDOWS_X86_64', defaultValue: true, description: 'Include x86_64 architecture for Windows')
         booleanParam(name: 'TEST_PACKAGES', defaultValue: true, description: 'Test Python packages by installing them and running tests on the installed package')
-        booleanParam(name: 'DEPLOY_DEVPI', defaultValue: false, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
-        booleanParam(name: 'DEPLOY_DEVPI_PRODUCTION', defaultValue: false, description: 'Deploy to https://devpi.library.illinois.edu/production/release')
+        booleanParam(name: 'DEPLOY_DEVPI', defaultValue: false, description: "Deploy to DevPi on ${DEVPI_CONFIG.server}/DS_Jenkins/${env.BRANCH_NAME}")
+        booleanParam(name: 'DEPLOY_DEVPI_PRODUCTION', defaultValue: false, description: "Deploy to ${DEVPI_CONFIG.server}/production/release")
         booleanParam(name: 'DEPLOY_PYPI', defaultValue: false, description: 'Deploy to pypi')
         booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: 'Update online documentation')
     }
@@ -1704,7 +1711,7 @@ pipeline {
                         message 'Upload to pypi server?'
                         parameters {
                             choice(
-                                choices: PYPI_SERVERS,
+                                choices: getPypiConfig(),
                                 description: 'Url to the pypi index to upload python packages.',
                                 name: 'SERVER_URL'
                             )
