@@ -18,10 +18,6 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extra.txt requirements.txt requirements-dev.txt /tmp/
 COPY requirements /tmp/requirements
-ARG PIP_DOWNLOAD_CACHE
-RUN mkdir -p ${PIP_DOWNLOAD_CACHE} && \
-    chmod -R 777 ${PIP_DOWNLOAD_CACHE}
-
 # ==============================================================================
 
 FROM wheel_builder_base as conan_builder
@@ -64,6 +60,9 @@ RUN conan install /tmp --build  missing --no-import -pr:b=default -s compiler.ve
     chmod -R 777 ${CONAN_USER_HOME}
 
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
-
+ARG PIP_DOWNLOAD_CACHE
+RUN mkdir -p ${PIP_DOWNLOAD_CACHE} && \
+    chmod -R 777 ${PIP_DOWNLOAD_CACHE}
+ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
 WORKDIR /src
 CMD ["tox", "--workdir", "/tmp/tox", "--recreate", "-p=auto"]
