@@ -268,6 +268,12 @@ def startup(){
                     discoverGitReferenceBuild(latestBuildIfNotFound: true)
                 }
             },
+            'Enable Git Forensics': {
+                node(){
+                    checkout scm
+                    mineRepository()
+                }
+            },
             'Loading helper scripts and configs': {
                 node(){
                     ws{
