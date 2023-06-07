@@ -268,6 +268,12 @@ def startup(){
                     discoverGitReferenceBuild(latestBuildIfNotFound: true)
                 }
             },
+            'Enable Git Forensics': {
+                node(){
+                    checkout scm
+                    mineRepository()
+                }
+            },
             'Loading helper scripts and configs': {
                 node(){
                     ws{
@@ -1053,7 +1059,7 @@ pipeline {
                         dockerfile {
                             filename 'ci/docker/linux/jenkins/Dockerfile'
                             label 'linux && docker && x86'
-                            additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL'
+                            additionalBuildArgs '--build-arg PYTHON_VERSION=3.11  --build-arg PIP_EXTRA_INDEX_URL'
                         }
                     }
                     steps {
@@ -1096,7 +1102,7 @@ pipeline {
                                 dockerfile {
                                     filename 'ci/docker/linux/jenkins/Dockerfile'
                                     label 'linux && docker && x86'
-                                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL'
+                                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.11  --build-arg PIP_EXTRA_INDEX_URL'
                                     args '--mount source=sonar-cache-py3exiv2bind,target=/opt/sonar/.sonar/cache'
                                 }
                             }
@@ -1680,7 +1686,7 @@ pipeline {
                         dockerfile {
                             filename 'ci/docker/linux/jenkins/Dockerfile'
                             label 'linux && docker && x86'
-                            additionalBuildArgs '--build-arg PYTHON_VERSION=3.8  --build-arg PIP_EXTRA_INDEX_URL'
+                            additionalBuildArgs '--build-arg PYTHON_VERSION=3.11  --build-arg PIP_EXTRA_INDEX_URL'
                         }
                     }
                     when{
