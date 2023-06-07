@@ -42,7 +42,7 @@ RUN conan install /tmp -pr:b=default --build outdated --no-import -s compiler.ve
 FROM base
 
 COPY requirements/ /tmp/requirements
-RUN pip3 install --no-cache-dir -r /tmp/requirements/requirements_tox.txt -r /tmp/requirements/requirements_conan.txt cmake "devpi-client" build twine
+RUN pip3 install --no-cache-dir -r /tmp/requirements/requirements_conan.txt cmake
 ARG CONAN_USER_HOME
 COPY --from=conan_builder ${CONAN_USER_HOME}/.conan/ ${CONAN_USER_HOME}/.conan/
 ARG TARGETARCH
@@ -57,7 +57,10 @@ COPY conanfile.py /tmp/conanfile.py
 RUN conan install /tmp --build  missing --no-import -pr:b=default -s compiler.version=$COMPILER_VERSION_FOR_PREBUILD_CONAN_PACKAGES && \
     conan remove "*" -b --src -f && \
     conan remove --locks && \
-    chmod -R 777 ${CONAN_USER_HOME}
+    chmod -R 777 ${CONAN_USER_HOME} && \
+    pip3 uninstall conan packaging -y
+
+RUN pip3 install --no-cache-dir -r /tmp/requirements/requirements_tox.txt "devpi-client<6.0" "devpi-common<=3.7.0" build  twine
 
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 ARG PIP_DOWNLOAD_CACHE
