@@ -2,7 +2,7 @@ ARG SONAR_SCANNER_VERSION=4.7.0.2747
 ARG PYTHON_VERSION=3.11
 FROM python:${PYTHON_VERSION} as base_image
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends unzip=6.0-26+deb11u1 git && \
+    apt-get install -y --no-install-recommends unzip git && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
