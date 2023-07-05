@@ -17,7 +17,7 @@ test-command = [
 build-frontend = "build"
 skip = [
     "cp36-*",
-    "cp37-macosx_*",
+    "cp37-*",
     "pp*",
     "*-win32",
     "*-musllinux*",
