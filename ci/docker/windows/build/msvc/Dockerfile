@@ -12,18 +12,18 @@ SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 # First install Visual Studio Build Tools
 
 COPY ci/docker/shared/startup.bat c:\temp\startup.bat
-RUN Invoke-WebRequest https://aka.ms/vs/16/release/vs_buildtools.exe -OutFile ${Env:TEMP}\\vs_buildtools.exe ; `
-    Invoke-WebRequest https://aka.ms/vs/16/release/channel -OutFile ${Env:TEMP}\\VisualStudio.chman ; `
+RUN Invoke-WebRequest https://aka.ms/vs/17/release/vs_buildtools.exe -OutFile ${Env:TEMP}\\vs_buildtools.exe ; `
+    Invoke-WebRequest https://aka.ms/vs/17/release/channel -OutFile ${Env:TEMP}\\VisualStudio.chman ; `
     Invoke-WebRequest https://aka.ms/vscollect.exe  -OutFile ${Env:TEMP}\\collect.exe ; `
     Write-Host "Installing Visual Studio Build Tools" ; `
     Start-Process -NoNewWindow -FilePath $Env:TEMP\\vs_buildtools.exe -ArgumentList '--quiet  --installPath "C:\\BuildTools"  --wait --norestart --nocache --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.CLI.Support --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows10SDK.18362' -Wait  ; `
     Write-Host "Installing Visual Studio Build Tools - Done" ; `
     Write-Host "Testing for VsDevCmd.bat" ; `
-    if (! (Test-Path 'C:\BuildTools\Common7\Tools\VsDevCmd.bat')) `
+    if (! (Test-Path "C:\BuildTools\Common7\Tools\VsDevCmd.bat")) `
     { `
-        Start-Process -NoNewWindow -FilePath $Env:TEMP\\collect.exe -ArgumentList '-nologo -zip:${Env:TEMP}\\vslogs.zip' -Wait; `
-        Expand-Archive -Path vslogs.zip -DestinationPath $Env:TEMP\\logs\\ ; `
-        Get-Content -LiteralPath '$Env:TEMP\\logs\\[Content_Types].xml' ; `
+        Start-Process -NoNewWindow -FilePath $Env:TEMP\\collect.exe -ArgumentList \"-nologo -zip:${Env:TEMP}\\vslogs.zip\" -Wait; `
+        Expand-Archive -Path $Env:TEMP\\vslogs.zip -DestinationPath $Env:TEMP\\logs\\ ; `
+        Get-Content -LiteralPath \"${Env:TEMP}\\logs\\[Content_Types].xml\" ; `
         throw 'VsDevCmd.bat not found' ; `
     } ; `
     Write-Host "Testing for VsDevCmd.bat - Found" ; `

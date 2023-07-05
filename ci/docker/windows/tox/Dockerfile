@@ -108,28 +108,11 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no
     refreshenv ; `
     Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
     py --list ;`
-    py -3.7 --version ;  `
     py -3.8 --version ; `
     py -3.9 --version ; `
     py -3.10 --version ; `
     py -3.11 --version ; `
     Write-Host "Installing Python with Chocolatey - Done"
-
-# ==============================================================================
-FROM BASE_BUILDER as WHEEL_BUilDER_PY37
-SHELL ["cmd", "/S", "/C" ]
-COPY requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extra.txt c:/requirements/
-COPY requirements c:/requirements/requirements
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-ENV PY_PYTHON=3.7
-RUN py -m pip install --upgrade pip && `
-    py -m pip install wheel build && `
-    py -m pip wheel -w c:\wheels\ --no-cache-dir `
-      -r c:/requirements/requirements-ci.txt `
-    -r c:/requirements/requirements-extra.txt `
-    -r c:/requirements/requirements.txt `
-    -r c:/requirements/requirements-dev.txt
 
 # ==============================================================================
 FROM BASE_BUILDER as CONAN_BUILDER
@@ -162,7 +145,6 @@ RUN certutil -addstore -f root roots.sst ; `
 
 ENV PIP_FIND_LINKS=c:\wheels
 COPY requirements requirements
-RUN py -3.7 -m pip install pip --upgrade ; py -3.7 -m pip install wheel --upgrade ; py -3.7 -m pip install -r requirements/requirements_tox.txt conan wheel build
 RUN py -3.8 -m pip install pip --upgrade ; py -3.8 -m pip install wheel --upgrade ; py -3.8 -m pip install -r requirements/requirements_tox.txt conan wheel build
 RUN py -3.9 -m pip install pip --upgrade ; py -3.9 -m pip install wheel --upgrade ; py -3.9 -m pip install -r requirements/requirements_tox.txt conan wheel build
 RUN py -3.10 -m pip install pip --upgrade ; py -3.10 -m pip install wheel --upgrade ; py -3.10 -m pip install -r requirements/requirements_tox.txt conan wheel build
