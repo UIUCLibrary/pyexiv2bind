@@ -1499,7 +1499,7 @@ pipeline {
                                                 ]
                                             ],
                                             dockerImageName:  "${currentBuild.fullProjectName}_devpi_with_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
-                                            retryTimes: 3,
+                                            retries: 3,
                                             devpi: [
                                                 index: DEVPI_CONFIG.stagingIndex,
                                                 server: DEVPI_CONFIG.server,
@@ -1525,7 +1525,7 @@ pipeline {
 
                                                 ]
                                             ],
-                                            retryTimes: 3,
+                                            retries: 3,
                                             devpi: [
                                                 index: DEVPI_CONFIG.stagingIndex,
                                                 server: DEVPI_CONFIG.server,
@@ -1556,6 +1556,7 @@ pipeline {
                                                     label: 'linux && docker && x86 && devpi-access'
                                                 ]
                                             ],
+                                            retries: 3,
                                             devpi: [
                                                 index: DEVPI_CONFIG.stagingIndex,
                                                 server: DEVPI_CONFIG.server,
@@ -1580,7 +1581,7 @@ pipeline {
                                                     label: 'linux && docker && x86 && devpi-access'
                                                 ]
                                             ],
-                                            retryTimes: 3,
+                                            retries: 3,
                                             devpi: [
                                                 index: DEVPI_CONFIG.stagingIndex,
                                                 server: DEVPI_CONFIG.server,
