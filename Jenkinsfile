@@ -1370,7 +1370,7 @@ pipeline {
                                             """
                                             )
                                         script{
-                                            load('ci/jenkins/scripts/sonarqube.groovy').sonarcloudSubmit(props, params.USE_SONARQUBE)
+                                            load('ci/jenkins/scripts/sonarqube.groovy').sonarcloudSubmit(props, params.SONARCLOUD_TOKEN)
                                         }
                                     }
                                     post {
