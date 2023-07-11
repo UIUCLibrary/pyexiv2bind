@@ -1039,6 +1039,7 @@ pipeline {
         booleanParam(name: 'RUN_CHECKS', defaultValue: true, description: 'Run checks on code')
         booleanParam(name: 'RUN_MEMCHECK', defaultValue: false, description: 'Run Memcheck. NOTE: This can be very slow.')
         booleanParam(name: 'USE_SONARQUBE', defaultValue: true, description: 'Send data test data to SonarQube')
+        credentials(name: 'SONARCLOUD_TOKEN', credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl', defaultValue: 'sonarcloud_token', required: false)
         booleanParam(name: 'BUILD_PACKAGES', defaultValue: false, description: 'Build Python packages')
         booleanParam(name: 'INCLUDE_MACOS_ARM', defaultValue: false, description: 'Include ARM(m1) architecture for Mac')
         booleanParam(name: 'INCLUDE_MACOS_X86_64', defaultValue: false, description: 'Include x86_64 architecture for Mac')
@@ -1346,9 +1347,19 @@ pipeline {
                                         lock('py3exiv2bind-sonarcloud')
                                     }
                                     when{
-                                        equals expected: true, actual: params.USE_SONARQUBE
-                                        beforeAgent true
-                                        beforeOptions true
+                                        allOf{
+                                            equals expected: true, actual: params.USE_SONARQUBE
+                                            expression{
+                                                try{
+                                                    withCredentials([string(credentialsId: params.SONARCLOUD_TOKEN, variable: 'dddd')]) {
+                                                        echo 'Found credentials for sonarqube'
+                                                    }
+                                                } catch(e){
+                                                    return false
+                                                }
+                                                return true
+                                            }
+                                        }
                                     }
                                     steps{
                                         sh(
@@ -1359,7 +1370,7 @@ pipeline {
                                             """
                                             )
                                         script{
-                                            load('ci/jenkins/scripts/sonarqube.groovy').sonarcloudSubmit(props, 'sonarcloud-py3exiv2bind')
+                                            load('ci/jenkins/scripts/sonarqube.groovy').sonarcloudSubmit(props, params.USE_SONARQUBE)
                                         }
                                     }
                                     post {
