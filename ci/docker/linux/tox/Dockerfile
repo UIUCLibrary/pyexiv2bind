@@ -60,7 +60,7 @@ RUN conan install /tmp --build  missing --no-import -pr:b=default -s compiler.ve
     chmod -R 777 ${CONAN_USER_HOME} && \
     pip3 uninstall conan packaging -y
 
-RUN pip3 install --no-cache-dir -r /tmp/requirements/requirements_tox.txt "devpi-client<6.0" "devpi-common<=3.7.0" build  twine
+RUN pip3 install --no-cache-dir -r /tmp/requirements/requirements_tox.txt devpi-client build  twine
 
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 ARG PIP_DOWNLOAD_CACHE
