@@ -1,11 +1,14 @@
 # escape=`
 ARG CONAN_USER_HOME=C:/Users/ContainerAdministrator
+ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
 ARG VS_INSTALL_PATH="C:\BuildTools\"
 ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019
-FROM ${FROM_IMAGE} as certsgen
+
+FROM ${FROM_IMAGE} AS base_image
+FROM base_image AS certsgen
 RUN certutil -generateSSTFromWU roots.sst
 
-FROM ${FROM_IMAGE} as BASE_BUILDER
+FROM base_image AS BASE_BUILDER
 
 COPY ci/docker/shared/startup.bat c:/startup/startup.bat
 ARG VS_INSTALL_PATH
@@ -71,9 +74,9 @@ RUN Invoke-WebRequest https://aka.ms/vs/17/release/vs_buildtools.exe -OutFile vs
 
 ARG CHOCOLATEY_SOURCE=https://chocolatey.org/api/v2
 ARG ChocolateyEnvironmentDebug=false
-ADD ci/docker/shared/chocolatey/install_choco.ps1 choco/install_choco.ps1
+COPY ci/docker/shared/chocolatey/install_choco.ps1 c:/choco/install_choco.ps1
 RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
-    ./choco/install_choco.ps1 -packageRepo $env:CHOCOLATEY_SOURCE ; `
+    c:/choco/install_choco.ps1 -packageRepo $env:CHOCOLATEY_SOURCE ; `
     if( -not ([string]::IsNullOrEmpty($Env:CHOCOLATEY_SOURCE ))) `
     { `
         Write-Host "Adding $env:CHOCOLATEY_SOURCE to chocolatey sources" ; `
@@ -86,10 +89,10 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
 
 
 
-ADD ci/docker/shared/chocolatey/packages.config choco/packages.config
-ADD ci/docker/shared/chocolatey/verifyenv.ps1 verifyenv.ps1
+COPY ci/docker/shared/chocolatey/packages.config c:/choco/packages.config
+COPY ci/docker/shared/chocolatey/verifyenv.ps1 c:/verifyenv.ps1
 RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
-    C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress --verbose choco/packages.config ;`
+    C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress c:/choco/packages.config ;`
     Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse ; `
     refreshenv ; `
     Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
@@ -100,10 +103,10 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     Write-Host "Finished install packages with Chocolatey" ;`
     Write-Host "Verifying installed packages" ;`
     $env:Path = [System.Environment]::GetEnvironmentVariable(\"Path\",\"Machine\") + \";\" + [System.Environment]::GetEnvironmentVariable(\"Path\",\"User\") ; `
-    ./verifyenv.ps1
+    c:/verifyenv.ps1
 
-ADD ci/docker/shared/chocolatey/python.xml choco/python.config
-RUN C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress --verbose choco/python.config ;`
+COPY ci/docker/shared/chocolatey/python.xml c:/choco/python.config
+RUN C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress --verbose c:/choco/python.config ;`
     Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse ; `
     refreshenv ; `
     Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
@@ -119,55 +122,57 @@ FROM BASE_BUILDER as CONAN_BUILDER
 ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-COPY requirements requirements
-RUN python -m pip install --upgrade pip ; `
-    pip install wheel ; `
-    pip install -r requirements/requirements_conan.txt cmake
+COPY requirements c:/requirements
+RUN python -m pip install --no-cache-dir --upgrade pip ; `
+    pip install --no-cache-dir -r c:/requirements/requirements_conan.txt
 
 COPY conanfile.py c:/temp/conanfile.py
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
 COPY ci/docker/windows/tox/conan/profile.ini  ${CONAN_USER_HOME}/.conan/profiles/default
 SHELL ["cmd", "/S", "/C" ]
-RUN conan config home
-
-RUN conan config init && ; `
+RUN conan config home && `
+    conan config init && `
     conan config set general.revisions_enabled=1
 
 ENV CONAN_CMAKE_GENERATOR=Ninja
-RUN conan install c:/temp/ --build --no-import  && `
+RUN conan install c:/temp/ --build --no-import -pr:b=default && `
     conan remove "*" -b --src -f && `
     conan remove --lock
 
 FROM BASE_BUILDER
-COPY --from=certsgen c:/roots.sst roots.sst
-RUN certutil -addstore -f root roots.sst ; `
-    del roots.sst
+COPY --from=certsgen c:/roots.sst c:/roots.sst
+RUN certutil -addstore -f root c:/roots.sst ; `
+    del c:/roots.sst
 
-ENV PIP_FIND_LINKS=c:\wheels
-COPY requirements requirements
-RUN py -3.8 -m pip install pip --upgrade ; py -3.8 -m pip install wheel --upgrade ; py -3.8 -m pip install -r requirements/requirements_tox.txt conan wheel build
-RUN py -3.9 -m pip install pip --upgrade ; py -3.9 -m pip install wheel --upgrade ; py -3.9 -m pip install -r requirements/requirements_tox.txt conan wheel build
-RUN py -3.10 -m pip install pip --upgrade ; py -3.10 -m pip install wheel --upgrade ; py -3.10 -m pip install -r requirements/requirements_tox.txt conan wheel build
-RUN py -3.11 -m pip install pip --upgrade ; py -3.11 -m pip install wheel --upgrade ; py -3.11 -m pip install -r requirements/requirements_tox.txt conan wheel build
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+COPY requirements-ci.txt c:/python_requirments/
+COPY requirements/ c:/python_requirments/requirements
+RUN py -3.8 -m pip install --no-cache-dir pip --upgrade ; `
+    py -3.8 -m pip install --no-cache-dir build ; `
+    py -3.9 -m pip install --no-cache-dir pip --upgrade ;  `
+    py -3.9 -m pip install --no-cache-dir build; `
+    py -3.10 -m pip install --no-cache-dir pip --upgrade ;  `
+    py -3.10 -m pip install --no-cache-dir build; `
+    py -3.11 -m pip install --no-cache-dir pip --upgrade ;  `
+    py -3.11 -m pip install --no-cache-dir build ; `
+    python -m pip install --no-cache-dir pip --upgrade ; pip install --no-cache-dir -r c:/python_requirments/requirements-ci.txt
 
 
-RUN python -m pip install pip --upgrade ; pip install -r requirements/requirements_tox.txt  -r requirements/requirements_conan.txt wheel build
-COPY --from=certsgen c:/roots.sst roots.sst
-RUN certutil -addstore -f root roots.sst ; `
-    del roots.sst
+ARG PIP_DOWNLOAD_CACHE
+RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force
+ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
+
 ARG CONAN_USER_HOME
 COPY --from=CONAN_BUILDER ${CONAN_USER_HOME}/.conan/ ${CONAN_USER_HOME}/.conan/
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 COPY conanfile.py c:/temp/conanfile.py
-RUN conan config home
-
-RUN conan config init ; `
-    conan config set general.revisions_enabled=1
-
-RUN conan install c:/temp/ --build outdated --no-import  ; `
+RUN conan config home ; `
+    conan config init ; `
+    conan config set general.revisions_enabled=1 ; `
+    conan install c:/temp/ --build outdated --no-import -pr:b=default ; `
     conan remove "*" -b --src -f ; `
     conan remove --locks
 
-RUN python -m pip install pip --upgrade ; pip install pip install -r requirements/requirements_tox.txt devpi_client
 WORKDIR C:/src
-CMD tox --workdir ${Env:TEMP}\tox\ -vv  --recreate -p=auto
+CMD ["tox", "--workdir", "${Env:TEMP}\tox\\", "-vv",  "--recreate", "-p=auto"]
