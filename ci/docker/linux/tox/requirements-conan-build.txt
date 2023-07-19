@@ -1,4 +1,0 @@
-build
--r requirements/requirements_conan.txt
-cmake
-ninja

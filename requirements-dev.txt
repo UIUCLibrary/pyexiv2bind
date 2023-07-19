@@ -1,12 +1,1 @@
-cmake
-flake8
-lxml
-mypy
-macholib ; sys_platform == 'darwin'
-pybind11
-pytest
-pytest-runner
-sphinx
-toml
--r requirements/requirements_conan.txt
--r requirements/requirements_tox.txt
+-r requirements/requirements-dev.txt

@@ -13,17 +13,12 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-FROM base as wheel_builder_base
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-COPY ci/docker/shared/python/requirements-ci.txt ci/docker/shared/python/requirements-extra.txt requirements.txt requirements-dev.txt /tmp/
-COPY requirements /tmp/requirements
 # ==============================================================================
 
-FROM wheel_builder_base as conan_builder
+FROM base as conan_builder
 ARG CONAN_USER_HOME
-COPY ci/docker/linux/tox/requirements-conan-build.txt /tmp/
-RUN pip3 install --no-cache-dir -r /tmp/requirements-conan-build.txt
+COPY requirements/requirements_conan.txt /tmp/python_requirements/
+RUN pip3 install --no-cache-dir -r /tmp/python_requirements/requirements_conan.txt
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
 ARG TARGETARCH
 COPY ci/docker/linux/tox/conan/$TARGETARCH/profile.ini  ${CONAN_USER_HOME}/profiles/default
@@ -40,9 +35,13 @@ RUN conan install /tmp -pr:b=default --build outdated --no-import -s compiler.ve
     conan remove --locks
 # ==============================================================================
 FROM base
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+COPY requirements/ /tmp/python_requirements/requirements/
+COPY requirements-ci.txt /tmp/python_requirements
+RUN python3 -m pip install --upgrade pip && \
+    python3 -m pip install -r /tmp/python_requirements/requirements-ci.txt
 
-COPY requirements/ /tmp/requirements
-RUN pip3 install --no-cache-dir -r /tmp/requirements/requirements_conan.txt cmake
 ARG CONAN_USER_HOME
 COPY --from=conan_builder ${CONAN_USER_HOME}/.conan/ ${CONAN_USER_HOME}/.conan/
 ARG TARGETARCH
@@ -57,10 +56,7 @@ COPY conanfile.py /tmp/conanfile.py
 RUN conan install /tmp --build  missing --no-import -pr:b=default -s compiler.version=$COMPILER_VERSION_FOR_PREBUILD_CONAN_PACKAGES && \
     conan remove "*" -b --src -f && \
     conan remove --locks && \
-    chmod -R 777 ${CONAN_USER_HOME} && \
-    pip3 uninstall conan packaging -y
-
-RUN pip3 install --no-cache-dir -r /tmp/requirements/requirements_tox.txt devpi-client build  twine
+    chmod -R 777 ${CONAN_USER_HOME}
 
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 ARG PIP_DOWNLOAD_CACHE
@@ -68,4 +64,5 @@ RUN mkdir -p ${PIP_DOWNLOAD_CACHE} && \
     chmod -R 777 ${PIP_DOWNLOAD_CACHE}
 ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
 WORKDIR /src
+
 CMD ["tox", "--workdir", "/tmp/tox", "--recreate", "-p=auto"]

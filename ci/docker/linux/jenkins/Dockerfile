@@ -1,3 +1,4 @@
+ARG PIP_FIND_LINKS=/wheels/
 ARG SONAR_SCANNER_VERSION=4.7.0.2747
 ARG PYTHON_VERSION=3.11
 FROM python:${PYTHON_VERSION} as base_image
@@ -24,14 +25,13 @@ RUN conan config init
 FROM base_image as wheel_builder
 ARG PIP_EXTRA_INDEX_URL
 
-COPY requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt /requirements/
+COPY requirements-ci.txt /requirements/
 COPY requirements/ /requirements/requirements/
-
-RUN pip wheel --no-cache-dir --wheel-dir=/wheels \
-    -r /requirements/requirements-ci.txt \
-    -r /requirements/requirements.txt \
-    -r /requirements/requirements-dev.txt && \
-    rm -rf  /root/.cache
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+ARG PIP_FIND_LINKS
+RUN mkdir -p ${PIP_FIND_LINKS} &&  \
+    pip wheel --wheel-dir=${PIP_FIND_LINKS} --no-cache-dir -r /requirements/requirements-ci.txt
 #==============================================================================
 
 FROM base_image as SONAR_BUILDER
@@ -61,8 +61,8 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 ENV CONAN_USER_HOME=/conan
 COPY conanfile.py /tmp/conanfile.py
-RUN conan install /tmp -pr:b=default --build outdated --no-import  && \
-    conan install /tmp -pr:b=default --build outdated --no-import  -s build_type=Debug && \
+RUN conan install /tmp -pr:b=default --build outdated --no-import -pr:b=default && \
+    conan install /tmp -pr:b=default --build outdated --no-import -pr:b=default -s build_type=Debug && \
     conan remove "*" -b --src -f && \
     conan remove --locks
 #==============================================================================
@@ -108,20 +108,16 @@ COPY --from=DR_MEMORY_BUILDER /opt/drmemory /opt/drmemory/
 RUN ln -s /opt/drmemory/bin64/drmemory /usr/local/bin/drmemory && \
     drmemory -version
 
-COPY --from=wheel_builder /wheels /wheels/
-RUN chmod -R 777 /wheels
-ARG PIP_EXTRA_INDEX_URL
 ENV PIP_NO_CACHE_DIR=1
-COPY requirements.txt requirements-dev.txt ci/docker/shared/python/requirements-ci.txt /requirements/
-COPY requirements/ /requirements/requirements/
-RUN python -m pip install pip --upgrade && \
-    pip install wheel && \
-    pip install setuptools --upgrade && \
-    pip install --no-index --find-links=/wheels/ \
-         -r /requirements/requirements.txt \
-         -r /requirements/requirements-dev.txt \
-         -r /requirements/requirements-ci.txt
+ARG PIP_FIND_LINKS
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_TRUSTED_HOST
+COPY --from=wheel_builder ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
+COPY --from=wheel_builder requirements/ /requirements
+RUN pip install --no-index --no-cache-dir --find-links=${PIP_FIND_LINKS} \
+    -r /requirements/requirements-ci.txt
 
+ENV PIP_FIND_LINKS=${PIP_FIND_LINKS}
 ENV CONAN_USER_HOME=/conan
 COPY conanfile.py /tmp/conanfile.py
 COPY --from=conan_builder /conan/.conan/ /conan/.conan/

@@ -1,0 +1,3 @@
+-r requirements/requirements-ci.txt
+-r requirements/requirements-ci-freeze.txt
+-r requirements/requirements_tox.txt
