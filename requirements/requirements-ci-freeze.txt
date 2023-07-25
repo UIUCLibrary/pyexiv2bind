@@ -5,18 +5,18 @@ bcrypt==4.0.1
 bleach==6.0.0
 bottle==0.12.25
 build==0.10.0
-certifi==2023.5.7
+certifi==2023.7.22
 cffi==1.15.1
 charset-normalizer==3.2.0
 check-manifest==0.49
-cmake==3.26.4
+cmake==3.27.0
 colorama==0.4.6
 conan==1.60.1
 coverage==7.2.7
 cryptography==41.0.2
-devpi-client==5.2.3
+devpi-client==6.0.5
 devpi-common==3.7.2
-dill==0.3.6
+dill==0.3.7
 distlib==0.3.7
 docutils==0.20.1
 exceptiongroup==1.1.2
@@ -41,7 +41,7 @@ markdown-it-py==3.0.0
 MarkupSafe==2.1.3
 mccabe==0.7.0
 mdurl==0.1.2
-more-itertools==9.1.0
+more-itertools==10.0.0
 mypy==1.4.1
 mypy-extensions==1.0.0
 ninja==1.11.1
@@ -51,6 +51,7 @@ paramiko==3.2.0
 parse==1.19.1
 parse-type==0.6.2
 patch-ng==1.17.4
+pep517==0.13.0
 pkginfo==1.9.6
 platformdirs==3.9.1
 pluggy==1.2.0
@@ -80,7 +81,7 @@ rfc3986==2.0.0
 rich==13.4.2
 six==1.16.0
 snowballstemmer==2.2.0
-Sphinx==7.0.1
+Sphinx==7.1.0
 sphinxcontrib-applehelp==1.0.4
 sphinxcontrib-devhelp==1.0.2
 sphinxcontrib-htmlhelp==2.0.1
@@ -94,9 +95,9 @@ tox==3.28.0
 tqdm==4.65.0
 twine==4.0.2
 typing_extensions==4.7.1
-git+https://github.com/UIUCLibrary/uiucprescon_build.git@v0.1.0
+uiucprescon.build @ git+https://github.com/UIUCLibrary/uiucprescon_build.git@v0.1.0
 urllib3==1.26.16
-virtualenv==20.24.0
+virtualenv==20.24.2
 webencodings==0.5.1
 wrapt==1.15.0
 zipp==3.16.2
