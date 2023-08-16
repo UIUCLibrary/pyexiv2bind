@@ -11,11 +11,14 @@ jobs:
           - os: macos-latest
             compiler_version: 14
             compiler_libcxx: libc++
+            conan_user_home: "/Users/runner"
           - os: ubuntu-latest
-            compiler_version: 11.3
+            compiler_version: 11.4
             compiler_libcxx: libstdc++11
+            conan_user_home: "/home/runner"
           - os: windows-2019
             compiler_version: 16
+            conan_user_home: 'C:/Users/runneradmin'
       fail-fast: false
     name: Python ${{ matrix.python-version }} ${{ matrix.os }} build
     steps:
@@ -27,6 +30,27 @@ jobs:
       - run: |
           pip install wheel
           pip install -r requirements/requirements_tox.txt cmake
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: "${{ matrix.conan_user_home }}/.conan"
+          key: ${{ runner.os }}-${{ hashFiles('**/conanfile.py') }}
+
+      - name: Build conan packages on Non-Windows Operating Systems
+        if: ${{ !contains(matrix.os, 'windows') && steps.cache.outputs.cache-hit != 'true' }}
+        run: |
+          cc --version &&  cc -dumpfullversion -dumpversion 
+          pip install -r requirements/requirements_conan.txt
+          if conan profile show default; then echo 'profile exists'; else conan profile new default --detect; fi
+          conan config init
+          python3 ci/docker/shared/conan/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml ${{matrix.compiler_version}}
+          conan config set general.revisions_enabled=1
+          if [[ -z "$CONAN_COMPILER_LIBCXX" ]]; then echo 'CONAN_COMPILER_LIBCXX is not defined'; else conan profile update settings.compiler.libcxx=$CONAN_COMPILER_LIBCXX default; fi
+          conan install  . --build missing --build openjpeg --no-import -pr:b=default
+        env:
+          CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
+          CONAN_COMPILER_LIBCXX: ${{ matrix.compiler_libcxx }}
+          CONAN_USER_HOME: ${{ matrix.conan_user_home }}
       - name: Run tox
         if: contains(matrix.os, 'windows')
         shell: cmd
@@ -47,5 +71,5 @@ jobs:
         env:
           CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
           CONAN_COMPILER_LIBCXX: ${{ matrix.compiler_libcxx }}
-
+          CONAN_USER_HOME: ${{ matrix.conan_user_home }}
 

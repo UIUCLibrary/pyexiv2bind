@@ -22,7 +22,7 @@ RUN conan config init
 
 #==============================================================================
 
-FROM base_image as wheel_builder
+FROM base_image AS wheel_builder
 ARG PIP_EXTRA_INDEX_URL
 
 COPY requirements-ci.txt /requirements/
@@ -34,7 +34,7 @@ RUN mkdir -p ${PIP_FIND_LINKS} &&  \
     pip wheel --wheel-dir=${PIP_FIND_LINKS} --no-cache-dir -r /requirements/requirements-ci.txt
 #==============================================================================
 
-FROM base_image as SONAR_BUILDER
+FROM base_image AS SONAR_BUILDER
 
 ARG SONAR_SCANNER_VERSION
 ARG SONAR_SCANNER_HOME=/opt/sonar/${SONAR_SCANNER_VERSION}-linux
@@ -66,7 +66,7 @@ RUN conan install /tmp -pr:b=default --build outdated --no-import -pr:b=default 
     conan remove "*" -b --src -f && \
     conan remove --locks
 #==============================================================================
-FROM base_image as DR_MEMORY_BUILDER
+FROM base_image AS DR_MEMORY_BUILDER
 RUN apt-get update &&  \
     apt-get install -y --no-install-recommends wget && \
     apt-get clean && \

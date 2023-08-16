@@ -1,21 +1,21 @@
 ARG PIP_DOWNLOAD_CACHE=/.cache/pip
 ARG TARGETARCH=amd64
-ARG COMPILER_VERSION_FOR_PREBUILD_CONAN_PACKAGES=9.4
+ARG COMPILER_VERSION_FOR_PREBUILD_CONAN_PACKAGES=11.4
 ARG CONAN_USER_HOME=/conan
 ARG PIP_FIND_LINKS=/wheels
-FROM ubuntu:20.04 as base
+FROM ubuntu:22.04 AS base
 COPY ci/docker/linux/tox/apt-packages.txt /tmp/
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends software-properties-common && \
+    apt-get install -y software-properties-common gpg-agent --no-install-recommends && \
     add-apt-repository ppa:deadsnakes/ppa && \
+    DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y install tzdata && \
     apt-get update && \
-    < /tmp/apt-packages.txt xargs apt-get install -y && \
+     < /tmp/apt-packages.txt xargs apt-get install -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-
 # ==============================================================================
 
-FROM base as conan_builder
+FROM base AS conan_builder
 ARG CONAN_USER_HOME
 COPY requirements/requirements_conan.txt /tmp/python_requirements/
 RUN pip3 install --no-cache-dir -r /tmp/python_requirements/requirements_conan.txt
