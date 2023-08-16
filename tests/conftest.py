@@ -32,7 +32,7 @@ def sample_images_readonly(tmpdir_factory):
 
     else:
         print("Downloading sample images")
-        download_images(url="https://jenkins.library.illinois.edu/userContent/sample_images.tar.gz",
+        download_images(url="https://nexus.library.illinois.edu/repository/sample-data/images/sample_images.tar.gz",
                         destination=test_path,
                         download_path=download_path)
 

@@ -2,7 +2,7 @@ include(FetchContent)
 if (BUILD_TESTING)
 
     FetchContent_Declare(test_images
-            URL https://jenkins.library.illinois.edu/userContent/sample_images.tar.gz
+            URL https://nexus.library.illinois.edu/repository/sample-data/images/sample_images.tar.gz
             SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/sample_images
             )
     FetchContent_GetProperties(test_images)
