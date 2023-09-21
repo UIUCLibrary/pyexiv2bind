@@ -13,7 +13,7 @@ cmake==3.27.2
 colorama==0.4.6
 conan==1.60.2
 coverage==7.3.0
-cryptography==41.0.3
+cryptography==41.0.4
 devpi-client==6.0.5
 devpi-common==3.7.2
 dill==0.3.7
