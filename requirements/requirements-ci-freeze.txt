@@ -94,7 +94,7 @@ tqdm==4.66.1
 twine==4.0.2
 typing_extensions==4.7.1
 uiucprescon.build @ git+https://github.com/UIUCLibrary/uiucprescon_build.git@v0.1.0
-urllib3==1.26.16
+urllib3==1.26.18
 virtualenv==20.24.3
 webencodings==0.5.1
 wrapt==1.15.0
