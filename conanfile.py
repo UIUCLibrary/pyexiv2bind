@@ -12,26 +12,11 @@ class pyexiv2bind(ConanFile):
     }
 
     def requirements(self):
-        # if self.settings.os == "Windows":
-        #     self.requires("Expat/2.2.9@pix4d/stable")
-        # else:
-        self.requires("expat/2.4.2")
+        self.requires("brotli/1.0.9")
+        self.requires("expat/2.5.0")
         self.requires("zlib/1.2.11")
-        if self.settings.os == "Macos":
-            self.requires("libiconv/1.16")
+        if self.settings.os in ["Macos", "Linux"]:
+            self.requires("libiconv/1.17")
     def imports(self):
         self.copy("*.dll", dst="bin", src="bin") # From bin to bin
         self.copy("*.dylib*", dst=".", src="lib") # From lib to bin
-    #
-    # def configure(self):
-    #
-    # #         self.options["ffmpeg"].vorbis = False
-    #
-    # def build(self):
-    #     cmake = CMake(self)
-    #     cmake_toolchain_file = os.path.join(self.build_folder, "conan_paths.cmake")
-    #     assert os.path.exists(cmake_toolchain_file)
-    #     cmake.definitions["CMAKE_TOOLCHAIN_FILE"] = cmake_toolchain_file
-    #     cmake.configure()
-    #     cmake.build()
-

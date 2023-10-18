@@ -802,8 +802,8 @@ def create_packages(){
                         ],
                         buildCmd: {
                             withEnv([
-                                '_PYTHON_HOST_PLATFORM=macosx-10.9-x86_64',
-                                'MACOSX_DEPLOYMENT_TARGET=10.9',
+                                '_PYTHON_HOST_PLATFORM=macosx-10.15-x86_64',
+                                'MACOSX_DEPLOYMENT_TARGET=10.15',
                                 'ARCHFLAGS=-arch x86_64'
                             ]){
                                  sh(label: 'Building wheel',
@@ -1195,7 +1195,7 @@ pipeline {
                                                     steps{
                                                         tee('logs/clang-tidy.log') {
                                                             catchError(buildResult: 'SUCCESS', message: 'Clang-Tidy found issues', stageResult: 'UNSTABLE') {
-                                                                sh(label: 'Run Clang Tidy', script: 'run-clang-tidy -clang-tidy-binary clang-tidy -p ./build/cpp/ py3exiv2bind/')
+                                                                sh(label: 'Run Clang Tidy', script: 'run-clang-tidy -clang-tidy-binary clang-tidy -p ./build/cpp/ src/py3exiv2bind/')
                                                             }
                                                         }
                                                     }
@@ -1209,7 +1209,7 @@ pipeline {
                                                 }
                                                 stage('Task Scanner'){
                                                     steps{
-                                                        recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'py3exiv2bind/**/*.py, py3exiv2bind/**/*.cpp, py3exiv2bind/**/*.h', normalTags: 'TODO')])
+                                                        recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'src/py3exiv2bind/**/*.py, src/py3exiv2bind/**/*.cpp, src/py3exiv2bind/**/*.h', normalTags: 'TODO')])
                                                     }
                                                 }
                                                 stage('Memcheck'){
@@ -1318,7 +1318,7 @@ pipeline {
                                                             sh(
                                                                 script: '''mkdir -p logs
                                                                            mkdir -p reports
-                                                                           PYLINTHOME=. pylint py3exiv2bind -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
+                                                                           PYLINTHOME=. pylint src/py3exiv2bind -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
                                                                            ''',
                                                                 label: 'Running pylint'
                                                             )
@@ -1338,7 +1338,7 @@ pipeline {
                                                 }
                                                 stage('Flake8') {
                                                   steps{
-                                                    sh returnStatus: true, script: 'flake8 py3exiv2bind --tee --output-file ./logs/flake8.log'
+                                                    sh returnStatus: true, script: 'flake8 src/py3exiv2bind --tee --output-file ./logs/flake8.log'
                                                   }
                                                   post {
                                                     always {
@@ -1349,7 +1349,7 @@ pipeline {
                                                 }
                                                 stage('Running Unit Tests'){
                                                     steps{
-                                                        sh 'coverage run --parallel-mode --source=py3exiv2bind -m pytest --junitxml=./reports/pytest/junit-pytest.xml'
+                                                        sh 'coverage run --parallel-mode --source=src/py3exiv2bind -m pytest --junitxml=./reports/pytest/junit-pytest.xml'
                                                     }
                                                     post{
                                                         always{
@@ -1367,8 +1367,8 @@ pipeline {
                                                script: '''mkdir -p reports/coverage
                                                           coverage combine
                                                           coverage xml -o ./reports/coverage/coverage-python.xml
-                                                          gcovr --root . --filter py3exiv2bind --exclude-directories build/python/temp/conan_cache --print-summary --keep --json -o reports/coverage/coverage-c-extension.json
-                                                          gcovr --root . --filter py3exiv2bind --print-summary --keep --json -o reports/coverage/coverage_cpp.json
+                                                          gcovr --root . --filter src/py3exiv2bind --exclude-directories build/python/temp/conan_cache --print-summary --keep --json -o reports/coverage/coverage-c-extension.json
+                                                          gcovr --root . --filter src/py3exiv2bind --print-summary --keep --json -o reports/coverage/coverage_cpp.json
                                                           gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --keep --print-summary --xml -o reports/coverage/coverage_cpp.xml
                                                           '''
                                                   )

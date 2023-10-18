@@ -37,7 +37,7 @@ PYBIND11_MODULE(core, m) {
             .def("is_good",                  &Image::is_good,     "Check if a file is loaded.")
             ;
     pybind11::register_exception<NoIccError>(m, "NoICCError");
-    pybind11::register_exception<Exiv2::AnyError>(m, "Exiv2AnyError");
+    pybind11::register_exception<Exiv2::Error>(m, "Exiv2Error");
     m.def("set_dpi", &set_dpi,
             pybind11::arg("image"),
             pybind11::arg("x"),
