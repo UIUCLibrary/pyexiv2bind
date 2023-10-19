@@ -1,4 +1,5 @@
 # escape=`
+ARG PIPX_HOME=c:\pipx
 ARG CONAN_USER_HOME=C:/Users/ContainerAdministrator
 ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
 ARG VS_INSTALL_PATH="C:\BuildTools\"
@@ -118,7 +119,7 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no
     Write-Host "Installing Python with Chocolatey - Done"
 
 # ==============================================================================
-FROM BASE_BUILDER as CONAN_BUILDER
+FROM BASE_BUILDER AS CONAN_BUILDER
 ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
@@ -173,6 +174,15 @@ RUN conan config home ; `
     conan install c:/temp/ --build outdated --no-import -pr:b=default ; `
     conan remove "*" -b --src -f ; `
     conan remove --locks
+
+ARG PIPX_HOME
+ENV PIPX_HOME=${PIPX_HOME}
+ENV PIPX_BIN_DIR=${PIPX_HOME}\bin
+
+RUN py -3 -m pip install --no-cache-dir pipx ; `
+    py -3 -m pipx ensurepath
+RUN py -3 -m pipx install 'devpi-client<7.0'
+
 
 WORKDIR C:/src
 CMD ["tox", "--workdir", "${Env:TEMP}\tox\\", "-vv",  "--recreate", "-p=auto"]
