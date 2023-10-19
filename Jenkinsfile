@@ -1110,13 +1110,15 @@ pipeline {
                         }
                     }
                     steps {
-                        sh(label: 'Running Sphinx',
-                           script: '''mkdir -p logs
-                                      mkdir -p build/docs/html
-                                      python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
-                                      python -m sphinx docs/source build/docs/html -b html -d build/docs/.doctrees --no-color -w logs/build_sphinx.log
-                                      '''
-                          )
+                        catchError(buildResult: 'UNSTABLE', message: 'Building Sphinx documentation has issues', stageResult: 'UNSTABLE') {
+                            sh(label: 'Running Sphinx',
+                               script: '''mkdir -p logs
+                                          mkdir -p build/docs/html
+                                          python setup.py build -b build --build-lib build/lib/ --build-temp build/temp build_ext -j $(grep -c ^processor /proc/cpuinfo) --inplace
+                                          python -m sphinx docs/source build/docs/html -b html -d build/docs/.doctrees --no-color -w logs/build_sphinx.log -W --keep-going
+                                          '''
+                              )
+                        }
                     }
                     post{
                         always {
