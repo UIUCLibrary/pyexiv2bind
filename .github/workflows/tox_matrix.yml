@@ -57,7 +57,7 @@ jobs:
         run: |
           rmdir /S /Q C:\\Strawberry
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          pip install conan
+          pip install -r requirements/requirements_conan.txt
           conan config init
           conan config set general.revisions_enabled=1
           conan profile new default --detect
