@@ -21,21 +21,14 @@ void set_dpi(const std::string &filename, int x, int y){
 
         Exiv2::ExifData metadata = image->exifData();
 
-        metadata["Exif.Image.XResolution"] = create_DPI_string(x);
-        metadata["Exif.Image.YResolution"] = create_DPI_string(y);
+        metadata["Exif.Image.XResolution"] = Exiv2::URational(x, 1);
+        metadata["Exif.Image.YResolution"] = Exiv2::URational(y, 1);
         metadata["Exif.Image.ResolutionUnit"] = 2;
         image->setExifData(metadata);
         image->writeMetadata();
         image->readMetadata();
 
-    }catch (const Exiv2::AnyError &e) {
+    }catch (const Exiv2::Error &e) {
         throw;
     }
-}
-
-std::string create_DPI_string(int value){
-    std::ostringstream response;
-    response << value;
-    response << "/1";
-    return response.str();
 }

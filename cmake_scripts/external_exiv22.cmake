@@ -21,9 +21,9 @@ function(patch_exiv2_cmake root)
 endfunction()
 
 function(patch_tiff_resolution root)
-    list(APPEND LINES_TO_BE_REMOVED "{ 0x011a, ifd0Id }, // Exif.Image.XResolution")
-    list(APPEND LINES_TO_BE_REMOVED "{ 0x011b, ifd0Id }, // Exif.Image.YResolution")
-    list(APPEND LINES_TO_BE_REMOVED "{ 0x0128, ifd0Id }, // Exif.Image.ResolutionUnit")
+    list(APPEND LINES_TO_BE_REMOVED "case 0x011a:  // Exif.Image.XResolution")
+    list(APPEND LINES_TO_BE_REMOVED "case 0x011b:  // Exif.Image.YResolution")
+    list(APPEND LINES_TO_BE_REMOVED "case 0x0128:  // Exif.Image.ResolutionUnit")
 
     find_file(
         tiffimage_int
@@ -37,14 +37,17 @@ function(patch_tiff_resolution root)
     file(READ "${tiffimage_int}" data)
     foreach(line ${LINES_TO_BE_REMOVED})
         string(REPLACE "${line}" "" data "${data}")
+        message(STATUS "Removing line \"${line}\" from tiffimage_int.cpp")
     endforeach()
     file(WRITE  "${libexiv2_BINARY_DIR}/tiffimage_int.cpp" "${data}")
+    message(STATUS "Modified the following source file to allow editing of Exif.Image.XResolution, Exif.Image.YResolution, and Exif.Image.ResolutionUnit:  ${tiffimage_int}")
     execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different "${libexiv2_BINARY_DIR}/tiffimage_int.cpp" "${tiffimage_int}")
 endfunction()
 
 FetchContent_Declare(
         libexiv2
-        URL https://github.com/Exiv2/exiv2/archive/refs/tags/v0.27.6.tar.gz
+        URL https://github.com/Exiv2/exiv2/archive/refs/tags/v0.28.0.tar.gz
+        URL_HASH SHA256=04c0675caf4338bb96cd09982f1246d588bcbfe8648c0f5a30b56c7c496f1a0b
 #            GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
 #            GIT_TAG ${EXIV2_VERSION_TAG}
 #        PATCH_COMMAND
@@ -56,13 +59,16 @@ if (NOT libexiv2_POPULATED)
     FetchContent_Populate(libexiv2)
     patch_tiff_resolution("${libexiv2_SOURCE_DIR}")
     patch_exiv2_cmake("${libexiv2_SOURCE_DIR}")
+    option(EXIV2_ENABLE_INIH "" OFF)
+    option(EXIV2_BUILD_EXIV2_COMMAND "" OFF)
+    set(EXIV2_BUILD_EXIV2_COMMAND OFF CACHE BOOL "")
     set(EXIV2_BUILD_SAMPLES OFF CACHE BOOL "")
     option(EXIV2_BUILD_SAMPLES "" OFF)
     if(MSVC)
         option(EXIV2_ENABLE_DYNAMIC_RUNTIME "" ON)
     endif()
 
+    list(APPEND CMAKE_MODULE_PATH "${libexiv2_SOURCE_DIR}/cmake")
     include_directories(${libexiv2_BINARY_DIR})
     add_subdirectory(${libexiv2_SOURCE_DIR} ${libexiv2_BINARY_DIR})
 endif ()
-

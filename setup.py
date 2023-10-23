@@ -3,19 +3,22 @@ import os
 
 import sys
 import shutil
-from typing import Optional, List
-
+from typing import Optional, List, Dict
+import contextlib
 from distutils.sysconfig import customize_compiler
-import subprocess
 import pathlib
 import platform
-from setuptools import setup
+from setuptools import setup, errors
+
 try:
     from pybind11.setup_helpers import Pybind11Extension
 except ImportError:
     from setuptools import Extension as Pybind11Extension
 from setuptools.command.build_clib import build_clib
-from distutils.errors import DistutilsExecError
+
+
+MIN_MACOSX_DEPLOYMENT_TARGET = '10.15'
+
 cmd_class = {}
 extension_modules = []
 
@@ -27,22 +30,22 @@ try:
     exiv2_extension = Pybind11Extension(
         "py3exiv2bind.core",
         sources=[
-            "py3exiv2bind/core/core.cpp",
-            "py3exiv2bind/core/glue/ExifStrategy.cpp",
-            "py3exiv2bind/core/glue/glue.cpp",
-            "py3exiv2bind/core/glue/Image.cpp",
-            "py3exiv2bind/core/glue/IPTC_Strategy.cpp",
-            "py3exiv2bind/core/glue/XmpStrategy.cpp",
-            "py3exiv2bind/core/glue/MetadataProcessor.cpp",
+            "src/py3exiv2bind/core/core.cpp",
+            "src/py3exiv2bind/core/glue/ExifStrategy.cpp",
+            "src/py3exiv2bind/core/glue/glue.cpp",
+            "src/py3exiv2bind/core/glue/Image.cpp",
+            "src/py3exiv2bind/core/glue/IPTC_Strategy.cpp",
+            "src/py3exiv2bind/core/glue/XmpStrategy.cpp",
+            "src/py3exiv2bind/core/glue/MetadataProcessor.cpp",
         ],
         libraries=[
             "exiv2",
         ],
         include_dirs=[
-            "py3exiv2bind/core/glue",
+            "src/py3exiv2bind/core/glue",
         ],
         language='c++',
-        cxx_std=14
+        cxx_std=17
 
     )
     extension_modules.append(exiv2_extension)
@@ -66,12 +69,19 @@ class AbsCMakePlatform(abc.ABC):
 class WinCMakelib(AbsCMakePlatform):
 
     def platform_specific_configs(self) -> List[str]:
-        return ['-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=ON']
+        return []
 
 
 class UnixCMakePlatform(AbsCMakePlatform):
     def platform_specific_configs(self) -> List[str]:
         return ['-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON']
+
+@contextlib.contextmanager
+def set_compiler_env(envvars: Dict[str, str]):
+    og_env = os.environ.copy()
+    os.environ = {**os.environ, **envvars}
+    yield
+    os.environ = og_env
 
 
 class OSXCMakelib(UnixCMakePlatform):
@@ -80,7 +90,6 @@ class OSXCMakelib(UnixCMakePlatform):
         sys_root = self.get_cmake_osx_sysroot()
         if sys_root is not None:
             configs.append(sys_root)
-        configs.append('-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=ON')
         return configs
 
     @staticmethod
@@ -219,11 +228,25 @@ class BuildCMakeLib(build_clib):
         configure_command += self._cmake_platform.platform_specific_configs()
         configure_command += self.extra_cmake_options
 
-        if sys.gettrace():
-            print("Running as a debug", file=sys.stderr)
-            subprocess.check_call(configure_command)
+        if platform.system() == "Darwin":
+            env_vars = {
+                'MACOSX_DEPLOYMENT_TARGET':
+                    os.environ.get(
+                        'MACOSX_DEPLOYMENT_TARGET',
+                        MIN_MACOSX_DEPLOYMENT_TARGET
+                    )
+            }
         else:
-            self.compiler.spawn(configure_command)
+            env_vars = {}
+        if platform.system() == "Windows":
+            if not self.compiler.initialized:
+                self.compiler.initialize()
+        with set_compiler_env(env_vars):
+            try:
+                self.compiler.spawn(configure_command)
+            except errors.ExecError:
+                print("Failed at CMake config time", file=sys.stderr)
+                raise
 
     def find_target(self, target_name: str, build_type=None) -> Optional[str]:
         for f in os.scandir(os.path.join(self.cmake_api_dir, "reply")):
@@ -256,14 +279,22 @@ class BuildCMakeLib(build_clib):
         if build_ext_cmd.parallel:
             build_command.extend(["-j", str(build_ext_cmd.parallel)])
 
-        if sys.gettrace():
-            subprocess.check_call(build_command)
-        else:
-            try:
+        try:
+            if platform.system() == "Darwin":
+                env_vars = {
+                    'MACOSX_DEPLOYMENT_TARGET':
+                        os.environ.get(
+                            'MACOSX_DEPLOYMENT_TARGET',
+                            MIN_MACOSX_DEPLOYMENT_TARGET
+                        )
+                }
+            else:
+                env_vars = {}
+            with set_compiler_env(env_vars):
                 self.compiler.spawn(build_command)
-            except DistutilsExecError:
-                print(f"Conan failed when running {build_command}", file=sys.stderr)
-                raise
+        except errors.ExecError:
+            print(f"Conan failed when running {build_command}", file=sys.stderr)
+            raise
 
     def build_install_cmake(self, extension: Pybind11Extension):
         dep_build_path = os.path.join(self.build_temp, "deps")
@@ -289,7 +320,7 @@ class BuildCMakeLib(build_clib):
         for ext in build_ext_cmd.extensions:
             ext.library_dirs.insert(
                 0,
-                os.path.abspath(os.path.join(build_ext_cmd.build_lib, "py3exiv2bind"))
+                os.path.abspath(os.path.join(build_ext_cmd.build_lib, "src/py3exiv2bind"))
             )
         build_ext_cmd.include_dirs.insert(
             0,
@@ -303,18 +334,20 @@ class BuildCMakeLib(build_clib):
         )
 
         self.mkpath(os.path.join(self.build_clib, "bin"))
-        if sys.gettrace():
-            print("Running as a debug", file=sys.stderr)
-            subprocess.check_call(install_command)
-        else:
+        try:
             self.compiler.spawn(install_command)
+        except errors.ExecError:
+            print("CMake failed at install time")
+            raise
 
         install_manifest = os.path.join(self.build_temp, "deps", "install_manifest.txt")
         self.add_cmake_built_libraries(install_manifest)
         lib_dirs = list(self.locate_cmake_installed_lib_dirs(install_manifest))
         ext: Pybind11Extension
         for ext in build_ext_cmd.extensions:
-            ext.library_dirs = lib_dirs + ext.library_dirs
+            ext.library_dirs = lib_dirs + [
+                dir_ for dir_ in ext.library_dirs if os.path.exists(dir_)
+            ]
             if sys.platform == "darwin":
                 if "@loader_path" not in ext.runtime_library_dirs:
                     ext.runtime_library_dirs.append("@loader_path")
@@ -411,23 +444,22 @@ class BuildExiv2(BuildCMakeLib):
         metadata_strategy = ConanBuildInfoTXT()
         text_md = metadata_strategy.parse(conanbuildinfotext)
         for lib in text_md["libs"]:
-            core_ext.libraries.append(lib)
-        for path in text_md["lib_paths"]:
-            core_ext.library_dirs.append(path)
+            if lib not in core_ext.libraries:
+                core_ext.libraries.append(lib)
+        for path in reversed(text_md["lib_paths"]):
+            if path not in core_ext.library_dirs:
+                core_ext.library_dirs.insert(0, path)
 
-        core_ext.include_dirs.append(os.path.join(self.build_temp, "include"))
+        core_ext.include_dirs.insert(0, os.path.join(self.build_temp, "include"))
         if os.name == 'nt':
             core_ext.libraries.append("shell32")
             core_ext.libraries.append("psapi")
             core_ext.libraries.append("Ws2_32")
 
-        core_ext.libraries.append("exiv2-xmp")
-
         temp_lib_dir = os.path.join(self.build_temp, "lib")
 
         if temp_lib_dir not in core_ext.library_dirs:
             core_ext.library_dirs.insert(0, temp_lib_dir)
-
 
 exiv2 = ("exiv2", {
     "sources": [],
@@ -436,7 +468,9 @@ exiv2 = ("exiv2", {
         '-Dpyexiv2bind_generate_python_bindings:BOOL=NO',
         '-DEXIV2_ENABLE_NLS:BOOL=NO',
         '-DEXIV2_ENABLE_VIDEO:BOOL=OFF',
-        '-DEXIV2_ENABLE_PNG:BOOL=OFF'
+        '-DEXIV2_ENABLE_PNG:BOOL=OFF',
+        '-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=OFF',
+        "-DCMAKE_CXX_STANDARD=17"
     ],
 })
 
@@ -446,19 +480,19 @@ cmd_class['build_clib'] = BuildExiv2
 exiv2_extension = Pybind11Extension(
     "py3exiv2bind.core",
     sources=[
-        "py3exiv2bind/core/core.cpp",
-        "py3exiv2bind/core/glue/ExifStrategy.cpp",
-        "py3exiv2bind/core/glue/glue.cpp",
-        "py3exiv2bind/core/glue/Image.cpp",
-        "py3exiv2bind/core/glue/IPTC_Strategy.cpp",
-        "py3exiv2bind/core/glue/XmpStrategy.cpp",
-        "py3exiv2bind/core/glue/MetadataProcessor.cpp",
+        "src/py3exiv2bind/core/core.cpp",
+        "src/py3exiv2bind/core/glue/ExifStrategy.cpp",
+        "src/py3exiv2bind/core/glue/glue.cpp",
+        "src/py3exiv2bind/core/glue/Image.cpp",
+        "src/py3exiv2bind/core/glue/IPTC_Strategy.cpp",
+        "src/py3exiv2bind/core/glue/XmpStrategy.cpp",
+        "src/py3exiv2bind/core/glue/MetadataProcessor.cpp",
     ],
     libraries=[
         "exiv2",
     ],
     include_dirs=[
-        "py3exiv2bind/core/glue"
+        "src/py3exiv2bind/core/glue"
     ],
     language='c++',
 
@@ -479,5 +513,6 @@ setup(
     package_data={
         "py3exiv2bind": ["py.typed", "core.pyi"],
     },
+    package_dir={"py3exiv2bind": "src/py3exiv2bind"},
     cmdclass=cmd_class
 )

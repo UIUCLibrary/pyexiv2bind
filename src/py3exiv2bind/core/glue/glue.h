@@ -7,7 +7,6 @@
 
 #include <string>
 #include <map>
-//#include "glue_export.h"
 
 struct metadata_chunk {
 
@@ -22,5 +21,4 @@ std::string exiv2_version();
 
 void set_dpi(const std::string &filename, int x, int y);
 
-std::string create_DPI_string(int value);
 #endif //SUPERBUILD_GLUE_H

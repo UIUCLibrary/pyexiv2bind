@@ -1,7 +1,7 @@
 # Include the license file
 include tox.ini CHANGELOG.rst README.rst CMakeLists.txt tests/CMakeLists.txt requirements.txt requirements-dev.txt
 include conanfile.py
-include py3exiv2bind/core.pyi
+include src/py3exiv2bind/core.pyi
 include patches/*.patch
 include patches/*.cmake
 include pyproject.toml
@@ -9,4 +9,4 @@ recursive-include cmake_scripts *.cmake
 recursive-include tests *.py *.cpp
 recursive-include docs/source *.*
 include docs/make.bat docs/Makefile
-recursive-include py3exiv2bind *.py *.cpp *.h CMakeLists.txt
+recursive-include src/py3exiv2bind *.py *.cpp *.h CMakeLists.txt

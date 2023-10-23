@@ -1,5 +1,4 @@
 import os
-from pprint import pprint
 import pytest
 from py3exiv2bind import Image, core
 

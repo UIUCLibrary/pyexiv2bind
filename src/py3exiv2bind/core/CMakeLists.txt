@@ -15,7 +15,7 @@ if (pyexiv2bind_generate_python_bindings)
         python_extension_module(core)
     endif()
     set_target_properties(core PROPERTIES
-            CXX_STANDARD 11
+            CXX_STANDARD 17
             LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/py3exiv2bind
             RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/py3exiv2bind
             PREFIX "${PYTHON_MODULE_PREFIX}"

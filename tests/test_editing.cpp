@@ -5,6 +5,7 @@
 #include <catch2/catch.hpp>
 #include <exiv2/exiv2.hpp>
 #include <cassert>
+#include <iostream>
 
 void exifPrint(const Exiv2::ExifData& exifData);
 
