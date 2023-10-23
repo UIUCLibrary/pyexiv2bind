@@ -1,7 +1,9 @@
 ARG PIP_FIND_LINKS=/wheels/
+ARG CONAN_USER_HOME=/conan
 ARG SONAR_SCANNER_VERSION=4.7.0.2747
 ARG PYTHON_VERSION=3.11
-FROM python:${PYTHON_VERSION} as base_image
+
+FROM python:${PYTHON_VERSION} AS base_image
 RUN apt-get update && \
     apt-get install -y --no-install-recommends unzip git && \
     apt-get clean && \
@@ -15,10 +17,6 @@ RUN python -m pip install --no-cache-dir pip --upgrade && \
 
 RUN mkdir -p /.cache/pip &&  \
     chmod -R 777 /.cache
-
-COPY ci/docker/shared/conan/remotes.json /conan/.conan/remotes.json
-COPY ci/docker/linux/jenkins/conan/profile.ini  /conan/.conan/profiles/default
-RUN conan config init
 
 #==============================================================================
 
@@ -56,12 +54,17 @@ RUN curl --create-dirs -sSLo /tmp/build-wrapper-linux-x86.zip https://sonarcloud
     which build-wrapper-linux-x86-64
 
 # ==============================================================================
-FROM base_image as conan_builder
+FROM base_image AS conan_builder
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-ENV CONAN_USER_HOME=/conan
+ARG CONAN_USER_HOME
+COPY requirements/requirements_conan.txt /tmp/requirements_conan.txt
+RUN pip install --no-cache-dir -r /requirements/requirements/requirements_conan.txt
+COPY ci/docker/shared/conan/remotes.json ${CONAN_USER_HOME}/.conan/remotes.json
+COPY ci/docker/linux/jenkins/conan/profile.ini  ${CONAN_USER_HOME}/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
-RUN conan install /tmp -pr:b=default --build outdated --no-import -pr:b=default && \
+RUN conan config init && \
+    conan install /tmp -pr:b=default --build outdated --no-import -pr:b=default && \
     conan install /tmp -pr:b=default --build outdated --no-import -pr:b=default -s build_type=Debug && \
     conan remove "*" -b --src -f && \
     conan remove --locks
@@ -118,14 +121,14 @@ RUN pip install --no-index --no-cache-dir --find-links=${PIP_FIND_LINKS} \
     -r /requirements/requirements-ci.txt
 
 ENV PIP_FIND_LINKS=${PIP_FIND_LINKS}
-ENV CONAN_USER_HOME=/conan
+
+ARG CONAN_USER_HOME
+ENV CONAN_USER_HOME=${CONAN_USER_HOME}
+COPY --from=conan_builder ${CONAN_USER_HOME}/.conan/ ${CONAN_USER_HOME}/.conan/
 COPY conanfile.py /tmp/conanfile.py
-COPY --from=conan_builder /conan/.conan/ /conan/.conan/
-COPY ci/docker/shared/conan/remotes.json /conan/.conan/remotes.json
-COPY ci/docker/linux/jenkins/conan/profile.ini  /conan/.conan/profiles/default
 RUN conan install /tmp -pr:b=default --build  missing --no-import && \
     conan remove "*" -b --src -f && \
     conan remove --locks && \
-    chmod -R 777 /conan
+    chmod -R 777 ${CONAN_USER_HOME}
 
-ENV PIP_FIND_LINKS=/wheels/
+ENV PIP_FIND_LINKS=${PIP_FIND_LINKS}

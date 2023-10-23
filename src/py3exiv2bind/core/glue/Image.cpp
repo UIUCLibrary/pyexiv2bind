@@ -39,7 +39,7 @@ Image::Image(const std::string &filename) : filename(filename) {
         image = std::unique_ptr<Exiv2::Image>(Exiv2::ImageFactory::open(filename));
         assert(image); // Make sure it's able to read the file
         image->readMetadata();
-    } catch (const Exiv2::AnyError &e) {
+    } catch (const Exiv2::Error &e) {
         std::cerr << e.what() << std::endl;
         throw std::runtime_error(e.what());
     }
@@ -99,10 +99,11 @@ std::string Image::get_icc_profile() const {
     if (!image->iccProfileDefined()) {
         throw NoIccError();
     }
-    const Exiv2::DataBuf *f = image->iccProfile();
-    for(int i = 0; i < f->size_; i++){
-        data << f->pData_[i];
+    Exiv2::DataBuf buffer = image->iccProfile();
+    for( auto const & byte: buffer){
+        data << byte;
     }
+
     data << std::endl;
     return data.str();
 

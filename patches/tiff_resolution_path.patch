@@ -1,22 +1,22 @@
 diff --git a/src/tiffimage_int.cpp b/src/tiffimage_int.cpp
-index 7cd6656d..f31272ae 100644
+index e62c5228e..a9db0c673 100644
 --- a/src/tiffimage_int.cpp
 +++ b/src/tiffimage_int.cpp
-@@ -1828,14 +1828,14 @@ namespace Exiv2 {
-             { 0x0115, ifd0Id }, // Exif.Image.SamplesPerPixel
-             { 0x0116, ifd0Id }, // Exif.Image.RowsPerStrip
-             { 0x0117, ifd0Id }, // Exif.Image.StripByteCounts
--            { 0x011a, ifd0Id }, // Exif.Image.XResolution
--            { 0x011b, ifd0Id }, // Exif.Image.YResolution
-+//            { 0x011a, ifd0Id }, // Exif.Image.XResolution
-+//            { 0x011b, ifd0Id }, // Exif.Image.YResolution
-             { 0x011c, ifd0Id }, // Exif.Image.PlanarConfiguration
-             { 0x0122, ifd0Id }, // Exif.Image.GrayResponseUnit
-             { 0x0123, ifd0Id }, // Exif.Image.GrayResponseCurve
-             { 0x0124, ifd0Id }, // Exif.Image.T4Options
-             { 0x0125, ifd0Id }, // Exif.Image.T6Options
--            { 0x0128, ifd0Id }, // Exif.Image.ResolutionUnit
-+//            { 0x0128, ifd0Id }, // Exif.Image.ResolutionUnit
-             { 0x0129, ifd0Id }, // Exif.Image.PageNumber
-             { 0x012d, ifd0Id }, // Exif.Image.TransferFunction
-             { 0x013d, ifd0Id }, // Exif.Image.Predictor
+@@ -2237,14 +2237,14 @@ static bool isTiffImageTagLookup(uint16_t tag, IfdId group) {
+     case 0x0115:  // Exif.Image.SamplesPerPixel
+     case 0x0116:  // Exif.Image.RowsPerStrip
+     case 0x0117:  // Exif.Image.StripByteCounts
+-    case 0x011a:  // Exif.Image.XResolution
+-    case 0x011b:  // Exif.Image.YResolution
++//    case 0x011a:  // Exif.Image.XResolution
++//    case 0x011b:  // Exif.Image.YResolution
+     case 0x011c:  // Exif.Image.PlanarConfiguration
+     case 0x0122:  // Exif.Image.GrayResponseUnit
+     case 0x0123:  // Exif.Image.GrayResponseCurve
+     case 0x0124:  // Exif.Image.T4Options
+     case 0x0125:  // Exif.Image.T6Options
+-    case 0x0128:  // Exif.Image.ResolutionUnit
++//    case 0x0128:  // Exif.Image.ResolutionUnit
+     case 0x0129:  // Exif.Image.PageNumber
+     case 0x012d:  // Exif.Image.TransferFunction
+     case 0x013d:  // Exif.Image.Predictor

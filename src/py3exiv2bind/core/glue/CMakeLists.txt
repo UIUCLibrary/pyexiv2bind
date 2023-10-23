@@ -21,6 +21,6 @@ target_include_directories(glue PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRE
         $<TARGET_PROPERTY:exiv2lib,INCLUDE_DIRECTORIES>
         )
 set_target_properties(glue PROPERTIES
-        CXX_STANDARD 14
+        CXX_STANDARD 17
         )
 target_link_libraries(glue PRIVATE exiv2lib)

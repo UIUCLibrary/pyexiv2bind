@@ -10,7 +10,7 @@ std::unordered_map<std::string, std::string> XmpStrategy::load(const Exiv2::Imag
     try{
         return make_dictionary(image.xmpData());
 
-    }catch (const Exiv2::AnyError &e){
+    }catch (const Exiv2::Error &e){
 //        TODO: Handle errors
         std::cerr << e.what() <<std::endl;
         throw;

@@ -7,12 +7,21 @@ requires = [
 ]
 build-backend = "uiucprescon.build"
 
+[tool.pytest.ini_options]
+pythonpath = "src"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+mypy_path = "src"
+
 [tool.cibuildwheel]
 test-requires = [
     "pytest",
 ]
 test-command = [
-    "pytest {package}/tests"
+    "pytest {package}/tests -o pythonpath="
 ]
 build-frontend = "build"
 skip = [
@@ -40,6 +49,7 @@ ENVTMPDIR="/tmp/ciwheelbuilder/py3exiv2bind"
 CONAN_USER_HOME="/tmp/ciwheelbuilder/py3exiv2bind"
 CONAN_DEFAULT_PROFILE_PATH="/tmp/ciwheelbuilder/py3exiv2bind/.conan/profiles/default"
 CONAN_BUILD_INFO_DIR="/tmp/ciwheelbuilder/py3exiv2bind/build/"
+MACOSX_DEPLOYMENT_TARGET="10.15"
 
 [tool.cibuildwheel.windows]
 before-all = [
