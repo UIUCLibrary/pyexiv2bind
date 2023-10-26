@@ -64,7 +64,8 @@ if (BUILD_TESTING)
             $<TARGET_OBJECTS:glue>
 #            test_metadata_processor.cpp
 #            test_editing.cpp
-            test_make_dictionary.cpp)
+            test_make_dictionary.cpp
+            test-core.cpp)
     target_compile_definitions(cpp_tests PRIVATE TEST_IMAGE_PATH="${TEST_IMAGE_PATH}")
     set_target_properties(cpp_tests PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
