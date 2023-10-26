@@ -1376,12 +1376,7 @@ pipeline {
                                                   )
                                             stash(includes: 'reports/coverage/*.xml,reports/coverage/*.json', name: 'PYTHON_COVERAGE_REPORT')
                                             unstash 'PYTHON_COVERAGE_REPORT'
-                                            publishCoverage(
-                                                adapters: [
-                                                        coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
-                                                    ],
-                                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
-                                            )
+                                            recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage/*.xml']])
                                         }
                                     }
                                 }
