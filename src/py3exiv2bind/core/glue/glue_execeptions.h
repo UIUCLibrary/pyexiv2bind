@@ -9,7 +9,7 @@
 
 class NoIccError: public std::exception{
 public:
-    virtual const char *what() const throw(){
+    const char *what() const throw () final{
         return "No ICC profile found";
     }
 };
