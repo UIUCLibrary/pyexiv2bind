@@ -1241,7 +1241,7 @@ pipeline {
                                                     steps{
                                                         catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
                                                             sh(label: 'Running cppcheck',
-                                                               script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json -i$WORKSPACE/build/cpp/_deps --suppress=*:$WORKSPACE/build/cpp/_deps/* --enable=all  --xml --output-file=logs/cppcheck_debug.xml'
+                                                               script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json -i$WORKSPACE/build/cpp/_deps --suppress=*:build/cpp/_deps/* --enable=all  --xml --output-file=logs/cppcheck_debug.xml'
                                                                )
                                                         }
                                                     }
