@@ -3,6 +3,7 @@
 #include <catch2/catch.hpp>
 #include "glue/glue.h"
 #include "glue/Image.h"
+#include <regex>
 
 const std::string IMAGE_TEST_PATH(TEST_IMAGE_PATH);
 
@@ -29,4 +30,8 @@ TEST_CASE("TIFF files can edit their dpi"){
 TEST_CASE("invalid file with set_dpi raises"){
     const std::string no_such_file = IMAGE_TEST_PATH + "invalid_file.tif";
     REQUIRE_THROWS_AS(set_dpi(no_such_file, 100, 100), Exiv2::Error);
+}
+
+TEST_CASE("exiv2_version uses a semantic versioning scheme"){
+    REQUIRE(std::regex_match(exiv2_version(), std::regex("^([0-9]+)\\.([0-9]+)\\.([0-9]+)$")));
 }

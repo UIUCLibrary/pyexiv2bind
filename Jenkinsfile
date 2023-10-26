@@ -1241,7 +1241,7 @@ pipeline {
                                                     steps{
                                                         catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
                                                             sh(label: 'Running cppcheck',
-                                                               script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json -i$WORKSPACE/build/cpp/_deps --suppress=*:build/cpp/_deps/* --enable=all  --xml --output-file=logs/cppcheck_debug.xml'
+                                                               script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json -i_deps --enable=all --suppressions-list=cppcheck_suppression_file.txt -rp=$PWD/build/cpp  --xml --output-file=logs/cppcheck_debug.xml'
                                                                )
                                                         }
                                                     }
@@ -1251,6 +1251,8 @@ pipeline {
                                                                 filters: [
                                                                     excludeType('unmatchedSuppression'),
                                                                     excludeType('missingIncludeSystem'),
+                                                                    excludeFile('catch.hpp'),
+                                                                    excludeFile('value.hpp'),
                                                                 ],
                                                                 tools: [
                                                                     cppCheck(pattern: 'logs/cppcheck_debug.xml')
@@ -1367,19 +1369,14 @@ pipeline {
                                                script: '''mkdir -p reports/coverage
                                                           coverage combine
                                                           coverage xml -o ./reports/coverage/coverage-python.xml
-                                                          gcovr --root . --filter src/py3exiv2bind --exclude-directories build/python/temp/conan_cache --print-summary --keep --json -o reports/coverage/coverage-c-extension.json
-                                                          gcovr --root . --filter src/py3exiv2bind --print-summary --keep --json -o reports/coverage/coverage_cpp.json
+                                                          gcovr --root . --filter src/py3exiv2bind --exclude-directories build/python/temp/conan_cache --exclude-throw-branches --print-summary --keep --json -o reports/coverage/coverage-c-extension.json
+                                                          gcovr --root . --filter src/py3exiv2bind --exclude-throw-branches --print-summary --keep --json -o reports/coverage/coverage_cpp.json
                                                           gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --keep --print-summary --xml -o reports/coverage/coverage_cpp.xml
                                                           '''
                                                   )
                                             stash(includes: 'reports/coverage/*.xml,reports/coverage/*.json', name: 'PYTHON_COVERAGE_REPORT')
                                             unstash 'PYTHON_COVERAGE_REPORT'
-                                            publishCoverage(
-                                                adapters: [
-                                                        coberturaAdapter(mergeToOneReport: true, path: 'reports/coverage/*.xml')
-                                                    ],
-                                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
-                                            )
+                                            recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage/*.xml']])
                                         }
                                     }
                                 }
