@@ -1369,8 +1369,8 @@ pipeline {
                                                script: '''mkdir -p reports/coverage
                                                           coverage combine
                                                           coverage xml -o ./reports/coverage/coverage-python.xml
-                                                          gcovr --root . --filter src/py3exiv2bind --exclude-directories build/python/temp/conan_cache --exclude-throw-branches --print-summary --keep --json -o reports/coverage/coverage-c-extension.json
-                                                          gcovr --root . --filter src/py3exiv2bind --exclude-throw-branches --print-summary --keep --json -o reports/coverage/coverage_cpp.json
+                                                          gcovr --root . --filter src/py3exiv2bind --exclude-directories build/python/temp/conan_cache --exclude-unreachable-branches --exclude-throw-branches --print-summary --keep --json -o reports/coverage/coverage-c-extension.json
+                                                          gcovr --root . --filter src/py3exiv2bind --exclude-throw-branches --exclude-unreachable-branches --print-summary --keep --json -o reports/coverage/coverage_cpp.json
                                                           gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --keep --print-summary --xml -o reports/coverage/coverage_cpp.xml
                                                           '''
                                                   )
