@@ -1,4 +1,6 @@
 #include <filesystem>
+#include <iostream>
+#include <fstream>
 #include <string>
 #include <catch2/catch.hpp>
 #include "glue/glue.h"
@@ -27,9 +29,16 @@ TEST_CASE("TIFF files can edit their dpi"){
     fs::remove(test_file);
 }
 
-TEST_CASE("invalid file with set_dpi raises"){
-    const std::string no_such_file = IMAGE_TEST_PATH + "invalid_file.tif";
+TEST_CASE("missing file with set_dpi raises"){
+    const std::string no_such_file = IMAGE_TEST_PATH + "missing.tif";
     REQUIRE_THROWS_AS(set_dpi(no_such_file, 100, 100), Exiv2::Error);
+}
+TEST_CASE("empty file with set_dpi raises"){
+    const std::string bad_file = IMAGE_TEST_PATH + "empty.tif";
+    std::ofstream invalidFile;
+    invalidFile.open(bad_file);
+    invalidFile.close();
+    REQUIRE_THROWS_AS(set_dpi(bad_file, 100, 100), Exiv2::Error);
 }
 
 TEST_CASE("exiv2_version uses a semantic versioning scheme"){
