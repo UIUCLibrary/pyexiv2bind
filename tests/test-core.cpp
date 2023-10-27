@@ -2,7 +2,9 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
+#include <catch2/matchers/catch_matchers_all.hpp>
 #include "glue/glue.h"
 #include "glue/Image.h"
 #include <regex>

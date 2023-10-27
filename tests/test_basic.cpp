@@ -1,7 +1,7 @@
 //
 // Created by hborcher on 10/6/2017.
 //
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <glue/glue.h>
 #include <glue/Image.h>
 #include <iostream>
