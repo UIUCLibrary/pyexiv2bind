@@ -55,12 +55,9 @@ if (BUILD_TESTING)
 
     FetchContent_MakeAvailable(libcatch2)
     FetchContent_GetProperties(libcatch2)
-    list(APPEND CMAKE_MODULE_PATH ${libcatch2_SOURCE_DIR}/contrib/)
-    include(${libcatch2_SOURCE_DIR}/contrib/Catch.cmake)
-    target_include_directories(Catch2 INTERFACE ${libcatch2_SOURCE_DIR}/single_include/catch2)
+    target_include_directories(Catch2 INTERFACE ${libcatch2_SOURCE_DIR}/src)
     add_executable(cpp_tests
             test_basic.cpp
-            tests-main.cpp
             $<TARGET_OBJECTS:glue>
 #            test_metadata_processor.cpp
 #            test_editing.cpp
@@ -73,20 +70,20 @@ if (BUILD_TESTING)
             CXX_STANDARD 17
             )
     target_include_directories(cpp_tests PRIVATE ${PROJECT_SOURCE_DIR}/src/py3exiv2bind/core)
-    target_link_libraries(cpp_tests PRIVATE Catch2::Catch2 exiv2lib)
+    target_link_libraries(cpp_tests PRIVATE Catch2::Catch2WithMain exiv2lib)
+    include(Catch)
 
     catch_discover_tests(cpp_tests TEST_PREFIX ${PROJECT_NAME}::test-pyexiv2::)
     add_executable(test_editing
             test_editing.cpp
 #            test_simple_edit.cpp
-            tests-main.cpp
             )
 
     set_target_properties(test_editing PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
             CXX_STANDARD 17
             )
-    target_link_libraries(test_editing PRIVATE exiv2lib Catch2::Catch2)
+    target_link_libraries(test_editing PRIVATE exiv2lib Catch2::Catch2WithMain)
     target_compile_definitions(test_editing PRIVATE TEST_IMAGE_PATH="${TEST_IMAGE_PATH}")
 
 endif ()

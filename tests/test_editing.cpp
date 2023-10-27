@@ -2,7 +2,7 @@
 // Created by hborcher on 10/4/2018.
 //
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <exiv2/exiv2.hpp>
 #include <cassert>
 #include <iostream>

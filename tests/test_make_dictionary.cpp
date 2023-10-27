@@ -1,7 +1,7 @@
 //
 // Created by Borchers, Henry Samuel on 7/1/21.
 //
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <exiv2/exif.hpp>
 #include <map>
 #include <glue/make_dictionary.h>

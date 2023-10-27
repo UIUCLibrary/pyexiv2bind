@@ -1369,13 +1369,11 @@ pipeline {
                                                script: '''mkdir -p reports/coverage
                                                           coverage combine
                                                           coverage xml -o ./reports/coverage/coverage-python.xml
-                                                          gcovr --root . --filter src/py3exiv2bind --exclude-directories build/python/temp/conan_cache --exclude-unreachable-branches --exclude-throw-branches --print-summary --keep --json -o reports/coverage/coverage-c-extension.json
-                                                          gcovr --root . --filter src/py3exiv2bind --exclude-throw-branches --exclude-unreachable-branches --print-summary --keep --json -o reports/coverage/coverage_cpp.json
-                                                          gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --keep --print-summary --xml -o reports/coverage/coverage_cpp.xml
+                                                          gcovr --root . --filter src/py3exiv2bind --exclude-directories build/cpp/_deps/libcatch2-build --exclude-directories build/python/temp/conan_cache --exclude-throw-branches --exclude-unreachable-branches --print-summary --keep --json -o reports/coverage/coverage-c-extension.json
+                                                          gcovr --root . --filter src/py3exiv2bind --exclude-directories build/cpp/_deps/libcatch2-build --exclude-throw-branches --exclude-unreachable-branches --print-summary --keep --json -o reports/coverage/coverage_cpp.json
+                                                          gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --keep --print-summary --xml -o reports/coverage/coverage_cpp.xml --sonarqube -o reports/coverage/coverage_cpp_sonar.xml
                                                           '''
                                                   )
-                                            stash(includes: 'reports/coverage/*.xml,reports/coverage/*.json', name: 'PYTHON_COVERAGE_REPORT')
-                                            unstash 'PYTHON_COVERAGE_REPORT'
                                             recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage/*.xml']])
                                         }
                                     }
@@ -1400,13 +1398,6 @@ pipeline {
                                         }
                                     }
                                     steps{
-                                        sh(
-                                            label: 'Preparing c++ coverage data available for SonarQube',
-                                            script: """mkdir -p build/coverage
-                                            find ./build -name '*.gcno' -exec gcov {} -p --source-prefix=${WORKSPACE}/ \\;
-                                            mv *.gcov build/coverage/
-                                            """
-                                            )
                                         script{
                                             load('ci/jenkins/scripts/sonarqube.groovy').sonarcloudSubmit(props, params.SONARCLOUD_TOKEN)
                                         }
