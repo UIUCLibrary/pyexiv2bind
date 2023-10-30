@@ -2,6 +2,9 @@
 
 Change Log
 ==========
+0.1.12
+++++++
++ Updated to use Exiv2 version 0.28.0
 
 0.1.4
 +++++
