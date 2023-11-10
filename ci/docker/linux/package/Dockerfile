@@ -1,5 +1,5 @@
 ARG manylinux_image=quay.io/pypa/manylinux2014_x86_64
-FROM ${manylinux_image} as base_python
+FROM ${manylinux_image} AS base_python
 ENV PATH=/opt/python/cp39-cp39/bin:/opt/python/cp38-cp38/bin:/opt/python/cp37-cp37m/bin:/opt/python/cp36-cp36m/bin:/opt/python/cp35-cp35m/bin:$PATH
 RUN mkdir -p /.cache/pip && \
     chmod -R 777 /.cache
@@ -18,4 +18,8 @@ RUN conan install /tmp --build  missing --no-import  && \
     conan remove --locks && \
     chmod -R 777 /conan
 
-RUN python3 -m pip install --no-cache-dir build
+RUN python3 -m pip install --no-cache-dir build && \
+    python3.8 -m pip install --no-cache-dir build && \
+    python3.9 -m pip install --no-cache-dir build && \
+    python3.10 -m pip install --no-cache-dir build && \
+    python3.11 -m pip install --no-cache-dir build
