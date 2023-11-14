@@ -116,6 +116,7 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no
     py -3.9 --version ; `
     py -3.10 --version ; `
     py -3.11 --version ; `
+    py -3.12 --version ; `
     Write-Host "Installing Python with Chocolatey - Done"
 
 # ==============================================================================
@@ -157,6 +158,7 @@ RUN py -3.8 -m pip install --no-cache-dir pip --upgrade ; `
     py -3.10 -m pip install --no-cache-dir build; `
     py -3.11 -m pip install --no-cache-dir pip --upgrade ;  `
     py -3.11 -m pip install --no-cache-dir build ; `
+    py -3.12 -m pip install --no-cache-dir build ; `
     python -m pip install --no-cache-dir pip --upgrade ; pip install --no-cache-dir -r c:/python_requirments/requirements-ci.txt
 
 

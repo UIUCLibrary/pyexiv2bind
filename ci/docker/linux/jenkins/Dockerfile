@@ -61,9 +61,10 @@ ARG CONAN_USER_HOME
 COPY requirements/requirements_conan.txt /tmp/requirements_conan.txt
 RUN pip install --no-cache-dir -r /requirements/requirements/requirements_conan.txt
 COPY ci/docker/shared/conan/remotes.json ${CONAN_USER_HOME}/.conan/remotes.json
-COPY ci/docker/linux/jenkins/conan/profile.ini  ${CONAN_USER_HOME}/.conan/profiles/default
 COPY conanfile.py /tmp/conanfile.py
 RUN conan config init && \
+    conan config set general.revisions_enabled=1 && \
+    conan profile update settings.compiler.version=$(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)") default && \
     conan install /tmp -pr:b=default --build outdated --no-import -pr:b=default && \
     conan install /tmp -pr:b=default --build outdated --no-import -pr:b=default -s build_type=Debug && \
     conan remove "*" -b --src -f && \
