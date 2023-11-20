@@ -51,9 +51,9 @@ def getDevpiConfig() {
 }
 def DEVPI_CONFIG = getDevpiConfig()
 
-SUPPORTED_MAC_VERSIONS = ['3.8', '3.9', '3.10', '3.11']
-SUPPORTED_LINUX_VERSIONS = ['3.8', '3.9', '3.10', '3.11']
-SUPPORTED_WINDOWS_VERSIONS = ['3.8', '3.9', '3.10', '3.11']
+SUPPORTED_MAC_VERSIONS = ['3.8', '3.9', '3.10', '3.11', '3.12']
+SUPPORTED_LINUX_VERSIONS = ['3.8', '3.9', '3.10', '3.11', '3.12']
+SUPPORTED_WINDOWS_VERSIONS = ['3.8', '3.9', '3.10', '3.11', '3.12']
 // ============================================================================
 //  Dynamic variables. Used to help manage state
 wheelStashes = []
@@ -565,15 +565,21 @@ def linux_wheels(){
                                         dockerfile: [
                                             label: 'linux && docker && x86',
                                             filename: 'ci/docker/linux/package/Dockerfile',
-                                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg manylinux_image=quay.io/pypa/manylinux2014_x86_64'
+                                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg manylinux_image=quay.io/pypa/manylinux_2_28_x86_64'
                                         ]
                                     ],
                                     buildCmd: {
-                                        sh(label: 'Building python wheel',
-                                           script:"""python${pythonVersion} -m build --wheel
-                                                     auditwheel repair ./dist/*.whl -w ./dist
-                                                     """
-                                           )
+                                        try{
+                                            sh(label: 'Building python wheel',
+                                               script:"""python${pythonVersion} -m build --wheel
+                                                         auditwheel repair ./dist/*.whl -w ./dist
+                                                         """
+                                               )
+                                        } catch(e) {
+                                            sh "python${pythonVersion} -m pip list"
+                                            raise e
+                                        }
+
                                     },
                                     post:[
                                         cleanup: {
@@ -649,7 +655,7 @@ def linux_wheels(){
                                         dockerfile: [
                                             label: 'linux && docker && arm',
                                             filename: 'ci/docker/linux/package/Dockerfile',
-                                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg manylinux_image=quay.io/pypa/manylinux2014_aarch64'
+                                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg manylinux_image=quay.io/pypa/manylinux_2_28_aarch64'
                                         ]
                                     ],
                                     buildCmd: {

@@ -8,18 +8,25 @@ ARG PIP_INDEX_URL
 COPY requirements/requirements_conan.txt /tmp/requirements_conan.txt
 RUN python3 --version && python3 -m pip install --no-cache-dir -r /tmp/requirements_conan.txt
 ARG TARGETARCH
-COPY ci/docker/linux/package/conan/$TARGETARCH/profile.ini  /conan/.conan/profiles/default
-COPY ci/docker/shared/conan/remotes.json  /conan/.conan/remotes.json
 COPY conanfile.py /tmp/conanfile.py
 ENV CONAN_USER_HOME=/conan
-RUN conan config home
-RUN conan install /tmp --build  missing --no-import  && \
+RUN conan config init && \
+    conan config set general.revisions_enabled=1 && \
+    conan profile update settings.compiler.version=$(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)") default && \
+    conan install /tmp --build  missing --no-import  && \
     conan remove "*" -b --src -f && \
     conan remove --locks && \
     chmod -R 777 /conan
 
 RUN python3 -m pip install --no-cache-dir build && \
+    python3 -m build --version && \
     python3.8 -m pip install --no-cache-dir build && \
+    python3.8 -m build --version && \
     python3.9 -m pip install --no-cache-dir build && \
+    python3.9 -m build --version && \
     python3.10 -m pip install --no-cache-dir build && \
-    python3.11 -m pip install --no-cache-dir build
+    python3.10 -m build --version && \
+    python3.11 -m pip install --no-cache-dir build && \
+    python3.11 -m build --version && \
+    python3.12 -m pip install --no-cache-dir build && \
+    python3.12 -m build --version
