@@ -178,12 +178,28 @@ def getAgent(args){
                 ws{
                     checkout scm
                     def dockerImage
-                    def dockerImageName = "${currentBuild.fullProjectName}_devpi".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
+                    def dockerImageName = "${currentBuild.fullProjectName}_devpi_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
                     lock("docker build-${env.NODE_NAME}"){
                         dockerImage = docker.build(dockerImageName, "-f ${args.agent.dockerfile.filename} ${args.agent.dockerfile.additionalBuildArgs} .")
                     }
-                    dockerImage.inside(runArgs){
-                        inner()
+                    try{
+                        dockerImage.inside(runArgs){
+                            inner()
+                        }
+                    } finally {
+                        if(isUnix()){
+                                sh(
+                                    label: "Untagging Docker Image used",
+                                    script: "docker image rm --no-prune ${dockerImage.imageName()}",
+                                    returnStatus: true
+                                )
+                        } else {
+                            powershell(
+                                label: "Untagging Docker Image used",
+                                script: "docker image rm --no-prune ${dockerImage.imageName()}",
+                                returnStatus: true
+                            )
+                        }
                     }
                 }
             }
@@ -223,6 +239,29 @@ def logIntoDevpiServer(devpiExec, serverUrl, credentialsId, clientDir){
     }
 }
 
+def runDevpiTest(devpiExec, devpiIndex, pkgName, pkgVersion, pkgSelector, clientDir, toxEnv){
+    withEnv([
+            "DEVPI=${devpiExec}",
+            "_DEVPI_INDEX=${devpiIndex}",
+            "CLIENT_DIR=${clientDir}",
+            "PACKAGE_NAME=${pkgName}",
+            "PACKAGE_VERSION=${pkgVersion}",
+            "TOX_ENV=${toxEnv}",
+            "TOX_PACKAGE_SELECTOR=${pkgSelector}",
+            ]){
+        if(isUnix()){
+            sh(
+                label: 'Running tests on Packages on DevPi',
+                script: '$DEVPI test --index $_DEVPI_INDEX $PACKAGE_NAME==$PACKAGE_VERSION -s $TOX_PACKAGE_SELECTOR --clientdir $CLIENT_DIR -e $TOX_ENV -v'
+            )
+        } else{
+            bat(
+                label: 'Running tests on Packages on DevPi',
+                script: '%DEVPI% test --index %_DEVPI_INDEX% %PACKAGE_NAME%==%PACKAGE_VERSION% -s %TOX_PACKAGE_SELECTOR% --clientdir %CLIENT_DIR% -e %TOX_ENV% -v'
+            )
+        }
+    }
+}
 
 def getToxEnvName(args){
     try{
@@ -244,29 +283,6 @@ def testDevpiPackage2(args=[:]){
     def pkgVersion = args.package.version
     def pkgSelector = args.package.selector
     def toxEnv = args.test.toxEnv
-    def testCmd = args.test['testCommands'] ? args.test['testCommands'] : {
-        withEnv([
-            "DEVPI=${devpiExec}",
-            "_DEVPI_INDEX=${devpiIndex}",
-            "CLIENT_DIR=${clientDir}",
-            "PACKAGE_NAME=${pkgName}",
-            "PACKAGE_VERSION=${pkgVersion}",
-            "TOX_ENV=${toxEnv}",
-            "TOX_PACKAGE_SELECTOR=${pkgSelector}",
-            ]){
-                if(isUnix()){
-                    sh(
-                        label: 'Running tests on Packages on DevPi',
-                        script: 'devpi test --index $_DEVPI_INDEX $PACKAGE_NAME==$PACKAGE_VERSION -s $TOX_PACKAGE_SELECTOR --clientdir $CLIENT_DIR -e $TOX_ENV -v'
-                    )
-                } else{
-                    bat(
-                        label: 'Running tests on Packages on DevPi',
-                        script: '%DEVPI% test --index %_DEVPI_INDEX% %PACKAGE_NAME%==%PACKAGE_VERSION% -s %TOX_PACKAGE_SELECTOR% --clientdir %CLIENT_DIR% -e %TOX_ENV% -v'
-                    )
-                }
-        }
-    }
     def testSetup = args.test['setup'] ? args.test['setup'] : {}
     def testTeardown = args.test['teardown'] ? args.test['teardown'] : {}
     def retries = args['retries'] ? args['retries'] : 1
@@ -276,7 +292,7 @@ def testDevpiPackage2(args=[:]){
             testSetup()
             try{
                 logIntoDevpiServer(devpiExec, devpiServerUrl, credentialsId, clientDir)
-                testCmd()
+                runDevpiTest(devpiExec, devpiIndex, pkgName, pkgVersion, pkgSelector, clientDir, toxEnv)
             } catch(Exception e){
                 if (attempt < retries) {
                     echo 'Waiting 5 seconds'
