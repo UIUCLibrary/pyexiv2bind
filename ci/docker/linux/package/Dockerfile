@@ -18,15 +18,24 @@ RUN conan config init && \
     conan remove --locks && \
     chmod -R 777 /conan
 
-RUN python3 -m pip install --no-cache-dir build && \
-    python3 -m build --version && \
-    python3.8 -m pip install --no-cache-dir build && \
+
+RUN /opt/python/cp38-cp38/bin/python -m pip install --no-cache-dir --upgrade pip && \
+    /opt/python/cp38-cp38/bin/python -m pip install --no-cache-dir --upgrade wheel && \
+    /opt/python/cp38-cp38/bin/python -m pip install --no-cache-dir --upgrade build &&  \
     python3.8 -m build --version && \
-    python3.9 -m pip install --no-cache-dir build && \
+    /opt/python/cp39-cp39/bin/python -m pip install --no-cache-dir --upgrade pip && \
+    /opt/python/cp39-cp39/bin/python -m pip install --no-cache-dir --upgrade wheel && \
+    /opt/python/cp39-cp39/bin/python -m pip install --no-cache-dir --upgrade build &&  \
     python3.9 -m build --version && \
-    python3.10 -m pip install --no-cache-dir build && \
+    /opt/python/cp310-cp310/bin/python -m pip install --no-cache-dir --upgrade pip && \
+    /opt/python/cp310-cp310/bin/python -m pip install --no-cache-dir --upgrade wheel && \
+    /opt/python/cp310-cp310/bin/python -m pip install --no-cache-dir --upgrade build &&  \
     python3.10 -m build --version && \
-    python3.11 -m pip install --no-cache-dir build && \
+    /opt/python/cp311-cp311/bin/python -m pip install --no-cache-dir --upgrade pip && \
+    /opt/python/cp311-cp311/bin/python -m pip install --no-cache-dir --upgrade wheel && \
+    /opt/python/cp311-cp311/bin/python -m pip install --no-cache-dir --upgrade build &&  \
     python3.11 -m build --version && \
-    python3.12 -m pip install --no-cache-dir build && \
+    /opt/python/cp312-cp312/bin/python -m pip install --no-cache-dir --upgrade pip && \
+    /opt/python/cp312-cp312/bin/python -m pip install --no-cache-dir --upgrade wheel && \
+    /opt/python/cp312-cp312/bin/python -m pip install --no-cache-dir --upgrade build &&  \
     python3.12 -m build --version

@@ -505,7 +505,7 @@ def windows_wheels(){
                     }
                     stage("Test Wheel (${pythonVersion} Windows)"){
                         retry(2){
-                            packages.testPkg2(
+                            packages.testPkg(
                                 agent: [
                                     dockerfile: [
                                         label: 'windows && docker',
@@ -603,7 +603,7 @@ def linux_wheels(){
                             if(params.TEST_PACKAGES == true){
                                 stage("Test Wheel (${pythonVersion} Linux x86_64)"){
                                     retry(2){
-                                        packages.testPkg2(
+                                        packages.testPkg(
                                             agent: [
                                                 dockerfile: [
                                                     label: 'linux && docker && x86',
@@ -687,7 +687,7 @@ def linux_wheels(){
                             if(params.TEST_PACKAGES == true){
                                 stage("Test Wheel (${pythonVersion} Linux ARM64)"){
                                     retry(2){
-                                        packages.testPkg2(
+                                        packages.testPkg(
                                             agent: [
                                                 dockerfile: [
                                                     label: 'linux && docker && arm',
@@ -799,7 +799,7 @@ def mac_wheels(){
                             if(params.TEST_PACKAGES == true){
                                 stage("Test Wheel (${pythonVersion} MacOS x86_64)"){
                                     retry(2){
-                                        packages.testPkg2(
+                                        packages.testPkg(
                                             agent: [
                                                 label: "mac && python${pythonVersion} && x86",
                                             ],
@@ -891,7 +891,7 @@ def mac_wheels(){
                             }
                             stage("Test Wheel (${pythonVersion} MacOS m1)"){
                                 retry(2){
-                                    packages.testPkg2(
+                                    packages.testPkg(
                                         agent: [
                                             label: "mac && python${pythonVersion} && m1",
                                         ],
@@ -980,7 +980,7 @@ def mac_wheels(){
                             parallel(
                                 "Test Python ${pythonVersion} universal2 Wheel on x86_64 mac": {
                                     stage("Test Python ${pythonVersion} universal2 Wheel on x86_64 mac"){
-                                        packages.testPkg2(
+                                        packages.testPkg(
                                             agent: [
                                                 label: "mac && python${pythonVersion} && x86_64",
                                             ],
@@ -1022,7 +1022,7 @@ def mac_wheels(){
                                 },
                                 "Test Python ${pythonVersion} universal2 Wheel on M1 Mac": {
                                     stage("Test Python ${pythonVersion} universal2 Wheel on M1 Mac"){
-                                        packages.testPkg2(
+                                        packages.testPkg(
                                             agent: [
                                                 label: "mac && python${pythonVersion} && m1",
                                             ],
@@ -1585,7 +1585,7 @@ pipeline {
                                         arches.each{arch ->
                                             testSdistStages["Test sdist (MacOS ${arch} - Python ${pythonVersion})"] = {
                                                 stage("Test sdist (MacOS ${arch} - Python ${pythonVersion})"){
-                                                    packages.testPkg2(
+                                                    packages.testPkg(
                                                         agent: [
                                                             label: "mac && python${pythonVersion} && x86_64",
                                                         ],
@@ -1625,7 +1625,7 @@ pipeline {
                                     SUPPORTED_WINDOWS_VERSIONS.each{ pythonVersion ->
                                         if(params.INCLUDE_WINDOWS_X86_64 == true){
                                             testSdistStages["Test sdist (Windows x86_64 - Python ${pythonVersion})"] = {
-                                                packages.testPkg2(
+                                                packages.testPkg(
                                                     agent: [
                                                         dockerfile: [
                                                             label: 'windows && docker',
@@ -1666,7 +1666,7 @@ pipeline {
                                     SUPPORTED_LINUX_VERSIONS.each{pythonVersion ->
                                         if(params.INCLUDE_LINUX_X86_64 == true){
                                             testSdistStages["Test sdist (Linux x86_64 - Python ${pythonVersion})"] = {
-                                                packages.testPkg2(
+                                                packages.testPkg(
                                                     agent: [
                                                         dockerfile: [
                                                             label: 'linux && docker && x86',
@@ -1706,7 +1706,7 @@ pipeline {
                                         if(params.INCLUDE_LINUX_ARM == true){
                                             testSdistStages["Test sdist (Linux ARM64 - Python ${pythonVersion})"] = {
                                                 stage("Test sdist (Linux ARM64 - Python ${pythonVersion})"){
-                                                    packages.testPkg2(
+                                                    packages.testPkg(
                                                         agent: [
                                                             dockerfile: [
                                                                 label: 'linux && docker && arm',
@@ -1974,7 +1974,8 @@ pipeline {
                     node('linux && docker && devpi-access') {
                         script{
                             if (!env.TAG_NAME?.trim()){
-                                docker.build('py3exiv2bind:devpi','-f ./ci/docker/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL .').inside{
+                                def dockerImage = docker.build('py3exiv2bind:devpi','-f ./ci/docker/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL .')
+                                dockerImage.inside{
                                     devpi.pushPackageToIndex(
                                         pkgName: props.Name,
                                         pkgVersion: props.Version,
@@ -1984,6 +1985,7 @@ pipeline {
                                         credentialsId: DEVPI_CONFIG.credentialsId
                                     )
                                 }
+                                sh script: "docker image rm --no-prune ${dockerImage.imageName()}"
                             }
                         }
                     }
@@ -1991,7 +1993,8 @@ pipeline {
                 cleanup{
                     node('linux && docker && devpi-access') {
                         script{
-                            docker.build('py3exiv2bind:devpi','-f ./ci/docker/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL .').inside{
+                            def dockerImage = docker.build('py3exiv2bind:devpi','-f ./ci/docker/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL .')
+                            dockerImage.inside{
                                 devpi.removePackage(
                                     pkgName: props.Name,
                                     pkgVersion: props.Version,
@@ -2001,6 +2004,7 @@ pipeline {
 
                                 )
                             }
+                            sh script: "docker image rm --no-prune ${dockerImage.imageName()}"
                         }
                     }
                 }
