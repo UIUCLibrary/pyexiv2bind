@@ -1,9 +1,21 @@
+build
 cmake
+conan
+coverage
 flake8
+gcovr
+importlib-metadata>=0.12; python_version < "3.8"
 lxml
-mypy
 macholib ; sys_platform == 'darwin'
+mypy
+ninja
+paramiko
 pybind11
 pytest
+pylint
+pytest
+pytest-bdd
 sphinx
 toml
+twine
+git+https://github.com/UIUCLibrary/uiucprescon_build.git@v0.1.0

@@ -148,7 +148,7 @@ RUN certutil -addstore -f root c:/roots.sst ; `
 
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-COPY requirements-ci.txt c:/python_requirments/
+COPY requirements-dev.txt c:/python_requirments/
 COPY requirements/ c:/python_requirments/requirements
 RUN py -3.8 -m pip install --no-cache-dir pip --upgrade ; `
     py -3.8 -m pip install --no-cache-dir build ; `
@@ -159,7 +159,7 @@ RUN py -3.8 -m pip install --no-cache-dir pip --upgrade ; `
     py -3.11 -m pip install --no-cache-dir pip --upgrade ;  `
     py -3.11 -m pip install --no-cache-dir build ; `
     py -3.12 -m pip install --no-cache-dir build ; `
-    python -m pip install --no-cache-dir pip --upgrade ; pip install --no-cache-dir -r c:/python_requirments/requirements-ci.txt
+    python -m pip install --no-cache-dir pip --upgrade ; pip install --no-cache-dir -r c:/python_requirments/requirements-dev.txt
 
 
 ARG PIP_DOWNLOAD_CACHE
