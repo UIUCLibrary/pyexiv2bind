@@ -105,7 +105,7 @@ def getMacDevpiTestStages(packageName, packageVersion, pythonVersions, devpiServ
                                     script: '''python3 -m venv venv
                                                . ./venv/bin/activate
                                                python -m pip install pip --upgrade
-                                               python -m pip install devpi_client -r requirements/requirements_tox.txt
+                                               python -m pip install 'devpi_client<7' -r requirements/requirements_tox.txt
                                                '''
                                 )
                             },
@@ -199,7 +199,7 @@ def getMacDevpiTestStages(packageName, packageVersion, pythonVersions, devpiServ
                                     label:'Installing Devpi client',
                                     script: '''python3 -m venv venv
                                                 venv/bin/python -m pip install pip --upgrade
-                                                venv/bin/python -m pip install devpi_client -r requirements/requirements_tox.txt
+                                                venv/bin/python -m pip install 'devpi-client<7.0' -r requirements/requirements_tox.txt
                                                 '''
                                 )
                             },
