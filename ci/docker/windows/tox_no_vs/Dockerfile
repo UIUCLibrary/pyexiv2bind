@@ -61,9 +61,9 @@ FROM CHOCOLATEY_BASE
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 
-COPY requirements-ci.txt c:/python_requirments/
+COPY requirements-dev.txt c:/python_requirments/
 COPY requirements/ c:/python_requirments/requirements
-RUN python -m pip install --no-cache-dir pip --upgrade ; pip install --no-cache-dir -r c:/python_requirments/requirements-ci.txt
+RUN python -m pip install --no-cache-dir pip --upgrade ; pip install --no-cache-dir -r c:/python_requirments/requirements-dev.txt
 
 
 ARG PIP_DOWNLOAD_CACHE
