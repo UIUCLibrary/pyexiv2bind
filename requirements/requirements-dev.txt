@@ -5,6 +5,5 @@ mypy
 macholib ; sys_platform == 'darwin'
 pybind11
 pytest
-pytest-runner
 sphinx
 toml

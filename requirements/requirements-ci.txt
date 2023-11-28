@@ -12,8 +12,6 @@ paramiko
 pytest
 pylint
 pytest-bdd
-pytest-cov
-pytest-runner
 sphinx
 twine
 git+https://github.com/UIUCLibrary/uiucprescon_build.git@v0.1.0
