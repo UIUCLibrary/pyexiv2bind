@@ -99,23 +99,25 @@ def testPkg(args = [:]){
     def successful = args['post']['success'] ? args['post']['success']: {}
     def failure = args['post']['failure'] ? args['post']['failure']: {}
     def dockerImageName = args['dockerImageName'] ? args['dockerImageName']:  "${currentBuild.fullProjectName}_${getToxEnv(args)}_build".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
-    def agentRunner = getAgent(args)
-    agentRunner {
-        setup()
-        try{
-            testCommand()
-            successful()
-        } catch(e){
-            failure()
-            throw e
-        } finally{
-            cleanup()
+    def retries = args['retry'] ? args['retry'] : 1
+    retry(retries){
+        def agentRunner = getAgent(args)
+        agentRunner {
+            setup()
+            try{
+                testCommand()
+                successful()
+            } catch(e){
+                failure()
+                throw e
+            } finally{
+                cleanup()
+            }
         }
     }
 }
 
 def buildPkg(args = [:]){
-    def agentRunner = getAgent(args)
     def setup = args['buildSetup'] ? args['buildSetup']: {
         checkout scm
     }
@@ -129,16 +131,20 @@ def buildPkg(args = [:]){
             bat "py -m pip wheel --no-deps -w ./dist ."
         }
     }
-    agentRunner {
-        setup()
-        try{
-            buildCmd()
-            successful()
-        } catch(e){
-            failure()
-            throw e
-        } finally{
-            cleanup()
+    def retries = args['retries'] ? args['retries'] : 1
+    retry(retries){
+        def agentRunner = getAgent(args)
+        agentRunner {
+            setup()
+            try{
+                buildCmd()
+                successful()
+            } catch(e){
+                failure()
+                throw e
+            } finally{
+                cleanup()
+            }
         }
     }
 }
