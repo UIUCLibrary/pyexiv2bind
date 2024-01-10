@@ -30,6 +30,25 @@ TEST_CASE("TIFF files can edit their dpi"){
     }
     fs::remove(test_file);
 }
+TEST_CASE("jp2 files can edit their dpi"){
+    const std::string source = IMAGE_TEST_PATH + "dummy.jp2";
+    const std::string test_file = IMAGE_TEST_PATH + "current.jp2";
+    SECTION("Copy test file"){
+        fs::copy(source, test_file);
+        SECTION("Edit DPI"){
+            auto new_dpi_x_value = GENERATE(100, 200, 400);
+            auto new_dpi_y_value = GENERATE(100, 200, 400);
+            DYNAMIC_SECTION("Set DPI to " << new_dpi_x_value << " dots per inch x and " << new_dpi_y_value << " dots per inch y"){
+                set_dpi(test_file, new_dpi_x_value, new_dpi_y_value);
+                const Image image(test_file);
+                REQUIRE(image.get_exif_metadata()["Exif.Image.XResolution"] == std::to_string(new_dpi_x_value) + "/1");
+                REQUIRE(image.get_exif_metadata()["Exif.Image.YResolution"] == std::to_string(new_dpi_y_value) + "/1");
+            }
+        }
+    }
+    fs::remove(test_file);
+}
+
 
 TEST_CASE("missing file with set_dpi raises"){
     const std::string no_such_file = IMAGE_TEST_PATH + "missing.tif";
@@ -67,4 +86,23 @@ TEST_CASE("bad tiff file with set_dpi raises"){
 
 TEST_CASE("exiv2_version uses a semantic versioning scheme"){
     REQUIRE(std::regex_match(exiv2_version(), std::regex("^([0-9]+)\\.([0-9]+)\\.([0-9]+)$")));
+}
+
+
+TEST_CASE("setting dpi for jp2 does not remove existing xmp metadata"){
+    const std::string source = IMAGE_TEST_PATH + "dummy.jp2";
+    const std::string test_file = IMAGE_TEST_PATH + "current.jp2";
+    SECTION("Copy test file"){
+        fs::copy(source, test_file);
+        SECTION("Edit DPI"){
+            {
+                const Image originalImage(test_file);
+                REQUIRE(originalImage.get_xmp_metadata()["Xmp.iptc.CreatorContactInfo/Iptc4xmpCore:CiAdrCity"] == "Urbana");
+            }
+            set_dpi(test_file, 200, 200);
+            const Image image(test_file);
+            REQUIRE(image.get_xmp_metadata()["Xmp.iptc.CreatorContactInfo/Iptc4xmpCore:CiAdrCity"] == "Urbana");
+        }
+    }
+    fs::remove(test_file);
 }
