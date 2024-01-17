@@ -84,6 +84,7 @@ def getMacDevpiTestStages(packageName, packageVersion, pythonVersions, devpiServ
                             credentialsId: devpiCredentialsId,
                             devpiExec: 'venv/bin/devpi'
                         ],
+                        retries: 3,
                         package:[
                             name: packageName,
                             version: packageVersion,
@@ -135,6 +136,7 @@ def getMacDevpiTestStages(packageName, packageVersion, pythonVersions, devpiServ
                         agent: [
                             label: "mac && python${pythonVersion} && x86 && devpi-access"
                         ],
+                        retries: 3,
                         devpi: [
                             index: devpiIndex,
                             server: devpiServer,
