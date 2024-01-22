@@ -356,7 +356,8 @@ def runToxTests(){
                             label: 'linux && docker && x86',
                             dockerfile: 'ci/docker/linux/tox/Dockerfile',
                             dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
-                            dockerRunArgs: '-v pipcache_pyexiv2bind:/.cache/pip'
+                            dockerRunArgs: '-v pipcache_pyexiv2bind:/.cache/pip',
+                            retry: 3,
                         )
             },
             'Windows':{
@@ -366,6 +367,7 @@ def runToxTests(){
                                 dockerfile: 'ci/docker/windows/tox/Dockerfile',
                                 dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
                                 dockerRunArgs: '-v pipcache_pyexiv2bind:c:/users/containeradministrator/appdata/local/pip',
+                                retry: 3,
                             )
             }
         )
