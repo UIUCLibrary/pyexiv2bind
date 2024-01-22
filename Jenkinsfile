@@ -1111,6 +1111,9 @@ pipeline {
                     equals expected: true, actual: params.DEPLOY_DEVPI
                 }
             }
+            options{
+                retry(3)
+            }
             stages{
                 stage('Building Documentation'){
                     agent {
