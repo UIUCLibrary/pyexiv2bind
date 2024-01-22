@@ -84,6 +84,7 @@ def getMacDevpiTestStages(packageName, packageVersion, pythonVersions, devpiServ
                             credentialsId: devpiCredentialsId,
                             devpiExec: 'venv/bin/devpi'
                         ],
+                        retries: 3,
                         package:[
                             name: packageName,
                             version: packageVersion,
@@ -135,6 +136,7 @@ def getMacDevpiTestStages(packageName, packageVersion, pythonVersions, devpiServ
                         agent: [
                             label: "mac && python${pythonVersion} && x86 && devpi-access"
                         ],
+                        retries: 3,
                         devpi: [
                             index: devpiIndex,
                             server: devpiServer,
@@ -354,7 +356,8 @@ def runToxTests(){
                             label: 'linux && docker && x86',
                             dockerfile: 'ci/docker/linux/tox/Dockerfile',
                             dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
-                            dockerRunArgs: '-v pipcache_pyexiv2bind:/.cache/pip'
+                            dockerRunArgs: '-v pipcache_pyexiv2bind:/.cache/pip',
+                            retry: 3,
                         )
             },
             'Windows':{
@@ -364,6 +367,7 @@ def runToxTests(){
                                 dockerfile: 'ci/docker/windows/tox/Dockerfile',
                                 dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
                                 dockerRunArgs: '-v pipcache_pyexiv2bind:c:/users/containeradministrator/appdata/local/pip',
+                                retry: 3,
                             )
             }
         )
@@ -1106,6 +1110,9 @@ pipeline {
                     equals expected: true, actual: params.TEST_RUN_TOX
                     equals expected: true, actual: params.DEPLOY_DEVPI
                 }
+            }
+            options{
+                retry(3)
             }
             stages{
                 stage('Building Documentation'){
