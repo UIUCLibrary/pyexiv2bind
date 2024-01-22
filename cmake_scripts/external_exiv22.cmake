@@ -46,11 +46,14 @@ endfunction()
 
 FetchContent_Declare(
         libexiv2
-        URL https://github.com/Exiv2/exiv2/archive/refs/tags/v0.28.0.tar.gz
-        URL_HASH SHA256=04c0675caf4338bb96cd09982f1246d588bcbfe8648c0f5a30b56c7c496f1a0b
-#            GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
+#        URL https://github.com/Exiv2/exiv2/archive/refs/tags/v0.28.1.tar.gz
+#        URL_HASH SHA256=3078651f995cb6313b1041f07f4dd1bf0e9e4d394d6e2adc6e92ad0b621291fa
+            GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
+            GIT_TAG v0.28.1
+        #            GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
 #            GIT_TAG ${EXIV2_VERSION_TAG}
-#        PATCH_COMMAND
+        PATCH_COMMAND
+            COMMAND git cherry-pick 71bb2b193aad369c4d6ed9cab813c2042f626afe --no-commit
 #            COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/tiff_resolution_path.patch
 )
 

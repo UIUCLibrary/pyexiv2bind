@@ -2,10 +2,17 @@
 // Created by hborcher on 10/4/2018.
 //
 
+#include <filesystem>
 #include <catch2/catch_test_macros.hpp>
 #include <exiv2/exiv2.hpp>
 #include <cassert>
 #include <iostream>
+
+#include "../src/py3exiv2bind/core/glue/Image.h"
+#include "catch2/generators/catch_generators.hpp"
+//#include "glue/Image.h"
+
+namespace fs = std::filesystem;
 
 void exifPrint(const Exiv2::ExifData& exifData);
 
@@ -176,5 +183,43 @@ void exifPrint(const Exiv2::ExifData& exifData)
                   << i->count() << "  "
                   << std::dec << i->value()
                   << "\n";
+    }
+}
+
+TEST_CASE("edit jp2 metadata", "[integration,upstream]"){
+    const std::string source = IMAGE_TEST_PATH + "dummy.jp2";
+    const std::string out = IMAGE_TEST_PATH + "changeme.jp2";
+    auto [key, startingValue, value] = GENERATE(table<std::string, std::string, std::string>({
+            {"Xmp.iptc.CreatorContactInfo/Iptc4xmpCore:CiAdrCity", "Urbana", "Champaign"},
+            {"Xmp.iptc.CreatorContactInfo/Iptc4xmpCore:CiEmailWork", "digidcc@library.illinois.edu", "digitizationservices@library.illinois.edu"},
+            {"Xmp.dc.creator", "University of Illinois Library", "University of Illinois"},
+            {"Xmp.photoshop.Credit", "Alyssa Bralower", "University of Illinois Library"},
+            {"Xmp.photoshop.DateCreated", "2016-05-19T18:41:17", "2024-01-10T18:41:17"},
+    }
+    ) );
+    DYNAMIC_SECTION("Change " << key <<" to " << value){
+        fs::copy(source, out, fs::copy_options::overwrite_existing);
+        {
+            auto image = Exiv2::ImageFactory::open(out);
+            assert(image.get() != 0);
+            image->readMetadata();
+            auto xmpData = image->xmpData();
+            REQUIRE(xmpData[key].value().toString() == startingValue);
+            auto x = xmpData.findKey(Exiv2::XmpKey(key));
+            if (x != xmpData.end()){
+                xmpData.erase(x);
+            }
+            xmpData[key].setValue(value);
+            image->setXmpData(xmpData);
+            image->writeMetadata();
+        }
+        {
+            auto second_image = Exiv2::ImageFactory::open(out);
+            assert(second_image.get() != 0);
+            second_image->readMetadata();
+            auto secondXmpData = second_image->xmpData();
+            REQUIRE(secondXmpData[key].value().toString() == value);
+        }
+        fs::remove(out);
     }
 }
