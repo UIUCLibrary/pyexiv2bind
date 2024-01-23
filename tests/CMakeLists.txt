@@ -14,7 +14,7 @@ if (BUILD_TESTING)
             PATHS ${test_images_SOURCE_DIR})
     set(TEST_IMAGE_PATH ${TEST_IMAGE_PATH}/)
     set(PYTHON_TEST_FILES test_core.py)
-    find_package(PythonInterp 3 REQUIRED)
+    find_package(Python3 COMPONENTS Interpreter)
     if(pyexiv2bind_generate_python_bindings)
         add_custom_target(add_python_tests
             COMMENT "Adding Python test"
@@ -76,6 +76,7 @@ if (BUILD_TESTING)
     catch_discover_tests(cpp_tests TEST_PREFIX ${PROJECT_NAME}::test-pyexiv2::)
     add_executable(test_editing
             test_editing.cpp
+            $<TARGET_OBJECTS:glue>
 #            test_simple_edit.cpp
             )
 
@@ -85,5 +86,5 @@ if (BUILD_TESTING)
             )
     target_link_libraries(test_editing PRIVATE exiv2lib Catch2::Catch2WithMain)
     target_compile_definitions(test_editing PRIVATE TEST_IMAGE_PATH="${TEST_IMAGE_PATH}")
-
+    target_include_directories(test_editing PRIVATE ${PROJECT_SOURCE_DIR}/src/py3exiv2bind/core)
 endif ()
