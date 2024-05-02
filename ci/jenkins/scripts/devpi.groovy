@@ -291,7 +291,9 @@ def testDevpiPackage2(args=[:]){
         agent{
             testSetup()
             try{
-                logIntoDevpiServer(devpiExec, devpiServerUrl, credentialsId, clientDir)
+                timeout(10){
+                    logIntoDevpiServer(devpiExec, devpiServerUrl, credentialsId, clientDir)
+                }
                 runDevpiTest(devpiExec, devpiIndex, pkgName, pkgVersion, pkgSelector, clientDir, toxEnv)
             } catch(Exception e){
                 if (attempt < retries) {
