@@ -294,7 +294,10 @@ def testDevpiPackage2(args=[:]){
                 timeout(10){
                     logIntoDevpiServer(devpiExec, devpiServerUrl, credentialsId, clientDir)
                 }
-                runDevpiTest(devpiExec, devpiIndex, pkgName, pkgVersion, pkgSelector, clientDir, toxEnv)
+                def test_command = args.test['testCommands'] ? args.test['testCommands'] : {
+                    runDevpiTest(devpiExec, devpiIndex, pkgName, pkgVersion, pkgSelector, clientDir, toxEnv)
+                }
+                test_command()
             } catch(Exception e){
                 if (attempt < retries) {
                     echo 'Waiting 5 seconds'
