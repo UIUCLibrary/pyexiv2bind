@@ -1,94 +1,41 @@
 # escape=`
 ARG PIPX_HOME=c:\pipx
+ARG VS_INSTALL_PATH="C:\BuildTools"
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019
 ARG CONAN_USER_HOME=C:/Users/ContainerAdministrator
 ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
-ARG VS_INSTALL_PATH="C:\BuildTools\"
-ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019
-
-FROM ${FROM_IMAGE} AS base_image
-FROM base_image AS certsgen
+FROM ${FROM_IMAGE} as certsgen
 RUN certutil -generateSSTFromWU roots.sst
 
-FROM base_image AS BASE_BUILDER
+FROM ${FROM_IMAGE} as BASE_BUILDER
 
-COPY ci/docker/shared/startup.bat c:/startup/startup.bat
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
+
+COPY ci/docker/windows/tox/msvc/startup.bat c:/startup/startup.bat
+COPY ci/docker/windows/tox/msvc/visual_studio_config.json c:/setup/config.vsconfig
+COPY ci/docker/windows/tox/msvc/install_msvc.ps1 c:/scripts/install_msvc.ps1
 ARG VS_INSTALL_PATH
-RUN Invoke-WebRequest https://aka.ms/vs/17/release/vs_buildtools.exe -OutFile vs_buildtools.exe ; `
-    Write-Host \"Installing Visual Studio Build Tools to ${Env:VS_INSTALL_PATH}\" ; `
-    $ARGS_LIST = @(`
-        '--quiet', `
-        '--wait', `
-        '--norestart', `
-        '--nocache', `
-        '--installPath', `
-         ${Env:VS_INSTALL_PATH},`
-        '--add Microsoft.VisualStudio.Workload.VCTools', `
-        '--add Microsoft.VisualStudio.Component.VC.CLI.Support', `
-        '--add Microsoft.VisualStudio.Component.VC.CoreBuildTools', `
-        '--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64', `
-        '--add Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64', `
-        '--add Microsoft.VisualStudio.Component.Windows10SDK.18362', `
-        '--remove Microsoft.VisualStudio.Component.Windows10SDK.10240',`
-        '--remove Microsoft.VisualStudio.Component.Windows10SDK.10586', `
-        '--remove Microsoft.VisualStudio.Component.Windows10SDK.14393', `
-        '--remove Microsoft.VisualStudio.Component.Windows81SDK'`
-        ) ;`
-    $process = Start-Process -NoNewWindow -PassThru -FilePath vs_buildtools.exe  `
-    -ArgumentList $ARGS_LIST -Wait  ; `
-    if ( $process.ExitCode -eq 0) `
-    { `
-        Write-Host 'Installing Visual Studio Build Tools - Done' ; `
-    } `
-    else `
-    { `
-        Get-ChildItem c:\\ ; `
-        Get-ChildItem ${Env:ProgramFiles(x86)} ; `
-        Get-ChildItem ${Env:VS_INSTALL_PATH} ; `
-        Get-ChildItem ${Env:VS_INSTALL_PATH}\\Common7\\Tools ; `
-        $message = \"Installing Visual Studio Build Tools exited with code $($process.ExitCode) \"; `
-        Write-Host $message ;  `
-        throw 'unable to continue' ; `
-    } ; `
-    Write-Host 'Testing for VsDevCmd.bat' ; `
-    if (! (Test-Path "${Env:VS_INSTALL_PATH}\Common7\Tools\VsDevCmd.bat")) `
-    { `
-        Write-Host 'Testing for VsDevCmd.bat - Failed' ; `
-        Start-Process -NoNewWindow -FilePath $Env:TEMP\\collect.exe -ArgumentList '-nologo -zip:${Env:TEMP}\\vslogs.zip' -Wait; `
-        if (! (Test-Path '${Env:TEMP}\\vslogs.zip')) `
-        { `
-            throw 'VsDevCmd.bat not found and ${Env:TEMP}\\vslogs.zip never generated' ; `
-        } ; `
-        Expand-Archive -Path vslogs.zip -DestinationPath $Env:TEMP\\logs\\ ; `
-        Get-Content -LiteralPath '$Env:TEMP\\logs\\[Content_Types].xml' ; `
-        throw 'VsDevCmd.bat not found' ; `
-    } ; `
-    Write-Host "Testing for VsDevCmd.bat - Found" ; `
-    Write-Host "Setting up compiler environment to run every time a command is run from CMD" ; `
-    Set-ItemProperty -Path 'HKLM:\Software\Microsoft\Command Processor' -Name 'AutoRun' -Value "c:\startup\startup.bat" ; `
-    Write-Host "Testing for CL" ; `
-    cmd /S /C where cl ; `
-    Write-Host "Testing for CL - Success"; `
-    Write-Host "Removing build tools installer" ; `
-    Remove-Item vs_buildtools.exe ; `
-    Write-Host "Removing build tools installer - Done" ; `
-    Write-Host "Finished installing Visual Studio Build Tools"
 
+RUN c:/scripts/install_msvc.ps1 ${Env:VS_INSTALL_PATH} c:/setup/config.vsconfig; `
+    Get-ChildItem C:\Users\ContainerAdministrator\AppData\Local\Temp | Remove-Item -Recurse -Force -Verbose
 ARG CHOCOLATEY_SOURCE=https://chocolatey.org/api/v2
 ARG ChocolateyEnvironmentDebug=false
-COPY ci/docker/shared/chocolatey/install_choco.ps1 c:/choco/install_choco.ps1
+ARG chocolateyVersion
+COPY ci/docker/shared/chocolatey/install.ps1 c:/choco/install.ps1
+COPY ci/docker/shared/chocolatey/get_latest_chocolatey_url.ps1 c:/choco/get_latest_chocolatey_url.ps1
 RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
-    c:/choco/install_choco.ps1 -packageRepo $env:CHOCOLATEY_SOURCE ; `
+    $chocolateyDownloadUrl = c:/choco/get_latest_chocolatey_url.ps1 -packageRepo $env:CHOCOLATEY_SOURCE; `
+    c:/choco/install.ps1 -ChocolateyDownloadUrl $chocolateyDownloadUrl;`
     if( -not ([string]::IsNullOrEmpty($Env:CHOCOLATEY_SOURCE ))) `
     { `
         Write-Host "Adding $env:CHOCOLATEY_SOURCE to chocolatey sources" ; `
-        choco source add -n=CHOCOLATEY_SOURCE --priority=1 -s=\"$env:CHOCOLATEY_SOURCE\"; `
-        choco source remove -n=chocolatey ;`
+        choco source add -n=CHOCOLATEY_SOURCE --priority=1 -s=\"${env:CHOCOLATEY_SOURCE}\"; `
     }; `
     Write-Host "Disabling Showing Download Progress" ; `
     choco feature disable -n=showDownloadProgress ; `
     Remove-Item -Force -Recurse ${Env:TEMP}\*
-
-
 
 COPY ci/docker/shared/chocolatey/packages.config c:/choco/packages.config
 COPY ci/docker/shared/chocolatey/verifyenv.ps1 c:/verifyenv.ps1
