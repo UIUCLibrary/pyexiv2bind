@@ -12,17 +12,21 @@ SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 FROM BASE_BUILDER AS CHOCOLATEY_BASE
 ARG CHOCOLATEY_SOURCE=https://chocolatey.org/api/v2
 ARG ChocolateyEnvironmentDebug=false
-COPY ci/docker/shared/chocolatey/install_choco.ps1 c:/choco/install_choco.ps1
+ARG chocolateyVersion
+COPY ci/docker/shared/chocolatey/install.ps1 c:/choco/install.ps1
+COPY ci/docker/shared/chocolatey/get_latest_chocolatey_url.ps1 c:/choco/get_latest_chocolatey_url.ps1
 RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
-    c:/choco/install_choco.ps1 -packageRepo $env:CHOCOLATEY_SOURCE ; `
+    $chocolateyDownloadUrl = c:/choco/get_latest_chocolatey_url.ps1 -packageRepo $env:CHOCOLATEY_SOURCE; `
+    c:/choco/install.ps1 -ChocolateyDownloadUrl $chocolateyDownloadUrl;`
     if( -not ([string]::IsNullOrEmpty($Env:CHOCOLATEY_SOURCE ))) `
     { `
         Write-Host "Adding $env:CHOCOLATEY_SOURCE to chocolatey sources" ; `
-        choco source add -n=CHOCOLATEY_SOURCE --priority=1 -s=\"$env:CHOCOLATEY_SOURCE\"; `
-        choco source remove -n=chocolatey ;`
+        choco source add -n=CHOCOLATEY_SOURCE --priority=1 -s=\"${env:CHOCOLATEY_SOURCE}\"; `
     }; `
-    choco feature disable --name="showDownloadProgress" ; `
+    Write-Host "Disabling Showing Download Progress" ; `
+    choco feature disable -n=showDownloadProgress ; `
     Remove-Item -Force -Recurse ${Env:TEMP}\*
+
 
 COPY ci/docker/shared/chocolatey/packages.config c:/choco/packages.config
 RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
