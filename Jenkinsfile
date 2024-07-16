@@ -1,4 +1,4 @@
-library identifier: 'JenkinsPythonHelperLibrary@2024.1.2', retriever: modernSCM(
+library identifier: 'JenkinsPythonHelperLibrary@2024.2.0', retriever: modernSCM(
   [$class: 'GitSCMSource',
    remote: 'https://github.com/UIUCLibrary/JenkinsPythonHelperLibrary.git',
    ])
@@ -357,6 +357,7 @@ def runToxTests(){
                             dockerfile: 'ci/docker/linux/tox/Dockerfile',
                             dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
                             dockerRunArgs: '-v pipcache_pyexiv2bind:/.cache/pip',
+                            verbosity: 1,
                             retry: 3,
                         )
             },
@@ -367,6 +368,7 @@ def runToxTests(){
                                 dockerfile: 'ci/docker/windows/tox/Dockerfile',
                                 dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion',
                                 dockerRunArgs: '-v pipcache_pyexiv2bind:c:/users/containeradministrator/appdata/local/pip',
+                                verbosity: 1,
                                 retry: 3,
                             )
             }
