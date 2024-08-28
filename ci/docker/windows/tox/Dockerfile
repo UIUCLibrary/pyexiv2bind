@@ -6,10 +6,10 @@ ARG PIP_INDEX_URL
 ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019
 ARG CONAN_USER_HOME=C:/Users/ContainerAdministrator
 ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
-FROM ${FROM_IMAGE} as certsgen
+FROM ${FROM_IMAGE} AS certsgen
 RUN certutil -generateSSTFromWU roots.sst
 
-FROM ${FROM_IMAGE} as BASE_BUILDER
+FROM ${FROM_IMAGE} AS BASE_BUILDER
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 
@@ -116,13 +116,6 @@ ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
 ARG CONAN_USER_HOME
 COPY --from=CONAN_BUILDER ${CONAN_USER_HOME}/.conan/ ${CONAN_USER_HOME}/.conan/
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
-COPY conanfile.py c:/temp/conanfile.py
-RUN conan config home ; `
-    conan config init ; `
-    conan config set general.revisions_enabled=1 ; `
-    conan install c:/temp/ --build outdated --no-import -pr:b=default ; `
-    conan remove "*" -b --src -f ; `
-    conan remove --locks
 
 ARG PIPX_HOME
 ENV PIPX_HOME=${PIPX_HOME}
