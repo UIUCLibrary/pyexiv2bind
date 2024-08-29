@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "setuptools>=40.8.0",
+    "setuptools>=40.8.0,<74.0.0",
     "wheel",
     'uiucprescon.build @ git+https://github.com/UIUCLibrary/uiucprescon_build.git@v0.1.2',
     "conan>=1.50.0,<2.0"
