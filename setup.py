@@ -5,10 +5,9 @@ import sys
 import shutil
 from typing import Optional, List, Dict
 import contextlib
-from distutils.sysconfig import customize_compiler
 import pathlib
 import platform
-from setuptools import setup, errors
+from setuptools import setup, errors, Distribution
 
 try:
     from pybind11.setup_helpers import Pybind11Extension
@@ -23,7 +22,8 @@ cmd_class = {}
 extension_modules = []
 
 try:
-    from uiucprescon.build.conan_libs import BuildConan, locate_conanbuildinfo, ConanBuildInfoTXT
+    from uiucprescon.build.conan_libs import BuildConan
+    from uiucprescon.build.conan.files import locate_conanbuildinfo, ConanBuildInfoTXT
     cmd_class["build_conan"] = BuildConan
     from uiucprescon.build.pybind11_builder import BuildPybind11Extension, parse_conan_build_info
     cmd_class["build_ext"] = BuildPybind11Extension
@@ -145,17 +145,24 @@ class BuildCMakeLib(build_clib):
         self.cmake_api_dir = \
             os.path.join(self.build_temp, "deps", ".cmake", "api", "v1")
 
+    @staticmethod
+    def _get_new_compiler():
+        build_ext = Distribution().get_command_obj("build_ext")
+        build_ext.finalize_options()
+        # register an extension to ensure a compiler is created
+        build_ext.extensions = [Pybind11Extension("ignored", ["ignored.c"])]
+        # disable building fake extensions
+        build_ext.build_extensions = lambda: None
+        # run to populate self.compiler
+        build_ext.run()
+        return build_ext.compiler
+
     def run(self):
 
         if not self.libraries:
             return
 
-        # Yech -- this is cut 'n pasted from build_ext.py!
-        from distutils.ccompiler import new_compiler
-        self.compiler = new_compiler(compiler=self.compiler,
-                                     dry_run=self.dry_run,
-                                     force=self.force)
-        customize_compiler(self.compiler)
+        self.compiler = self._get_new_compiler()
 
         if self.include_dirs is not None:
             self.compiler.set_include_dirs(self.include_dirs)
