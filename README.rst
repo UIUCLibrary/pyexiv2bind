@@ -8,3 +8,16 @@ Py3exiv2bind
     :target: https://jenkins-prod.library.illinois.edu/job/open%20source/job/pyexiv2bind2/job/master/
 
 Python binding for exiv2.
+
+
+Building Portable Python Wheels For Mac
+---------------------------------------
+
+Since this package links to C and C++ libraries, to make sure that these files are generated in a portable manner and
+will run on other machines, please use the included shell script (contrib/build_mac_wheel.sh) provided to generate
+them.
+
+
+.. code-block:: console
+
+    ./contrib/build_mac_wheel.sh .

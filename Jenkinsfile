@@ -738,30 +738,9 @@ def mac_wheels(){
                                     ],
                                     retries: 3,
                                     buildCmd: {
-                                        withEnv([
-                                            '_PYTHON_HOST_PLATFORM=macosx-10.15-x86_64',
-                                            'MACOSX_DEPLOYMENT_TARGET=10.15',
-                                            'ARCHFLAGS=-arch x86_64'
-                                        ]){
-                                             sh(label: 'Building wheel',
-                                                script: """python${pythonVersion} -m venv venv
-                                                           . ./venv/bin/activate
-                                                           python -m pip install --upgrade pip
-                                                           pip install wheel==0.37
-                                                           pip install build delocate
-                                                           python -m build --wheel
-                                                           """
-                                               )
-                                             findFiles(glob: 'dist/*.whl').each{
-                                                    sh(label: 'Fixing up wheel',
-                                                       script: """. ./venv/bin/activate
-                                                                  pip list
-                                                                  delocate-listdeps --depending ${it.path}
-                                                                  delocate-wheel -w fixed_wheels --require-archs x86_64 --verbose ${it.path}
-                                                               """
-                                                 )
-                                             }
-                                         }
+                                        sh(label: 'Building wheel',
+                                           script: "contrib/build_mac_wheel.sh . --venv-path=./venv --base-python=python${pythonVersion}"
+                                           )
                                     },
                                     post:[
                                         cleanup: {
@@ -830,29 +809,9 @@ def mac_wheels(){
                                     ],
                                     retries: 3,
                                     buildCmd: {
-                                        withEnv([
-                                            '_PYTHON_HOST_PLATFORM=macosx-11.0-arm64',
-                                            'MACOSX_DEPLOYMENT_TARGET=11.0',
-                                            'ARCHFLAGS=-arch arm64'
-                                            ]) {
-                                                sh """
-                                                python${pythonVersion} -m venv venv
-                                                . ./venv/bin/activate
-                                                python -m pip install --upgrade pip
-                                                pip install wheel==0.37
-                                                pip install build delocate
-                                                python -m build --wheel .
-                                                """
-                                                findFiles(glob: 'dist/*.whl').each{
-                                                    sh(label: 'Fixing up wheel',
-                                                       script: """. ./venv/bin/activate
-                                                                  pip list
-                                                                  delocate-listdeps --depending ${it.path}
-                                                                  delocate-wheel -w fixed_wheels --require-archs x86_64 --verbose ${it.path}
-                                                               """
-                                                    )
-                                                }
-                                        }
+                                        sh(label: 'Building wheel',
+                                           script: "contrib/build_mac_wheel.sh . --venv-path=./venv --base-python=python${pythonVersion}"
+                                           )
                                     },
                                     post:[
                                         cleanup: {
