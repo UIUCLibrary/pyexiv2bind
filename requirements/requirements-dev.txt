@@ -1,6 +1,6 @@
 build
 cmake
-conan
+conan<2.0
 coverage
 flake8
 gcovr
@@ -18,4 +18,4 @@ pytest-bdd
 sphinx
 toml
 twine
-git+https://github.com/UIUCLibrary/uiucprescon_build.git@v0.1.0
+git+https://github.com/UIUCLibrary/uiucprescon_build.git@v0.2.1
