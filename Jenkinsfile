@@ -935,7 +935,7 @@ def mac_wheels(){
                                               pip install --upgrade pip
                                               pip install wheel delocate
                                               mkdir -p out
-                                              delocate-fuse  ${wheelNames.join(' ')} --verbose -w ./out/
+                                              delocate-merge  ${wheelNames.join(' ')} --verbose -w ./out/
                                               rm dist/*.whl
                                                """
                                    )
