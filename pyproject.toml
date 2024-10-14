@@ -7,9 +7,44 @@ requires = [
 ]
 build-backend = "uiucprescon.build"
 
+[project]
+name = "py3exiv2bind"
+version = "0.1.14.dev1"
+requires-python = '>=3.6'
+dependencies = []
+readme = "README.rst"
+license = {text = "University of Illinois/NCSA Open Source License"}
+authors = [
+    {name = "University Library at The University of Illinois at Urbana Champaign: Preservation Services", email = "prescons@library.illinois.edu"},
+]
+maintainers = [
+    {name = "Henry Borchers", email = "hborcher@illinois.edu"}
+]
+description = "Exiv2 bindings for Python3"
+
+[project.urls]
+Download = "https://github.com/UIUCLibrary/pyexiv2bind"
+
+[tool.setuptools]
+packages = [
+    "py3exiv2bind",
+]
+zip-safe = false
+package-dir = {"py3exiv2bind" = "src/py3exiv2bind"}
+
+[tool.setuptools.package-data]
+hathi_validate = ["py.typed", "core.pyi"]
+
 [tool.pytest.ini_options]
 pythonpath = "src"
 testpaths = ["tests"]
+addopts = "--verbose"
+norecursedirs = "thirdparty"
+filterwarnings =[
+    "error",
+    "ignore::Warning",
+]
+junit_family="xunit1"
 
 [tool.mypy]
 python_version = "3.11"

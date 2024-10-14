@@ -506,20 +506,7 @@ exiv2_extension = Pybind11Extension(
 )
 
 setup(
-    packages=['py3exiv2bind'],
-    python_requires=">=3.6",
-    setup_requires=[
-        'pytest-runner',
-        "pybind11",
-        "cmake"
-    ],
-    test_suite="tests",
-    tests_require=['pytest'],
     libraries=[exiv2],
     ext_modules=extension_modules,
-    package_data={
-        "py3exiv2bind": ["py.typed", "core.pyi"],
-    },
-    package_dir={"py3exiv2bind": "src/py3exiv2bind"},
     cmdclass=cmd_class
 )

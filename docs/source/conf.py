@@ -20,6 +20,8 @@
 import os
 import re
 import sys
+import tomllib
+
 sys.path.insert(0, os.path.abspath('../..'))
 sys.path.insert(0, os.path.abspath('../../_skbuild/setuptools/lib'))
 
@@ -31,9 +33,9 @@ sys.path.insert(0, os.path.abspath('../../src'))
 
 
 def get_project_metadata():
-    path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../setup.cfg"))
-    return read_configuration(path)["metadata"]
-
+    path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../pyproject.toml"))
+    with open(path, "rb") as f:
+        return tomllib.load(f)['project']
 
 # -- General configuration ------------------------------------------------
 
@@ -84,8 +86,8 @@ master_doc = 'index'
 
 # General information about the project.
 pproject = metadata['name']
-copyright = '2017, {}'.format(metadata['author'])
-author = metadata['author']
+copyright = '2017, {}'.format(metadata['authors'][0]['name'])
+author = metadata['authors'][0]['name']
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -181,7 +183,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'py3exiv2bind.tex', '{} Documentation'.format(metadata['name']),
-     metadata['author'], 'manual'),
+     metadata['authors'][0]['name'], 'manual'),
 ]
 
 
