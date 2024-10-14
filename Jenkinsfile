@@ -88,32 +88,6 @@ def startup(){
                     }
                 }
             },
-            'Getting Distribution Info': {
-                stage('Getting Distribution Info'){
-                    node('linux && docker && x86') {
-                        ws{
-                            checkout scm
-                            try{
-                                docker.image('python').inside {
-                                    timeout(2){
-                                        sh(
-                                           label: 'Running setup.py with dist_info',
-                                           script: '''python --version
-                                                      PIP_NO_CACHE_DIR=off python setup.py dist_info
-                                                   '''
-                                        )
-                                        stash includes: '*.dist-info/**', name: 'DIST-INFO'
-                                        archiveArtifacts artifacts: '*.dist-info/**'
-                                    }
-                                }
-                            } finally{
-                                cleanWs()
-                            }
-                        }
-                    }
-                }
-
-            }
         ]
     )
 }
@@ -582,7 +556,8 @@ def mac_wheels(){
                                                """
                                    )
                                def fusedWheel = findFiles(excludes: '', glob: 'out/*.whl')[0]
-                               def universalWheel = "py3exiv2bind-${props.Version}-cp${pythonVersion.replace('.','')}-cp${pythonVersion.replace('.','')}-macosx_11_0_universal2.whl"
+                               def props = readTOML( file: 'pyproject.toml')['project']
+                               def universalWheel = "py3exiv2bind-${props.version}-cp${pythonVersion.replace('.','')}-cp${pythonVersion.replace('.','')}-macosx_11_0_universal2.whl"
                                sh "mv ${fusedWheel.path} ./dist/${universalWheel}"
                                stash includes: 'dist/*.whl', name: "python${pythonVersion} mac-universal2 wheel"
                                wheelStashes << "python${pythonVersion} mac-universal2 wheel"
@@ -694,35 +669,9 @@ def mac_wheels(){
     parallel(wheelStages)
 }
 
-def get_props(){
-    stage('Reading Package Metadata'){
-        node() {
-            try{
-                unstash 'DIST-INFO'
-                def metadataFile = findFiles(excludes: '', glob: '*.dist-info/METADATA')[0]
-                def package_metadata = readProperties interpolate: true, file: metadataFile.path
-                echo """Metadata:
-
-    Name      ${package_metadata.Name}
-    Version   ${package_metadata.Version}
-    """
-                return package_metadata
-            } finally {
-                cleanWs(
-                    patterns: [
-                            [pattern: '*.dist-info/**', type: 'INCLUDE'],
-                        ],
-                    notFailBuild: true,
-                    deleteDirs: true
-                )
-            }
-        }
-    }
-}
 // *****************************************************************************
 stage('Pipeline Pre-tasks'){
     startup()
-    props = get_props()
 }
 pipeline {
     agent none
@@ -779,7 +728,10 @@ pipeline {
                         }
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${props.Name}-${props.Version}.doc.zip"
+                            script{
+                                def props = readTOML( file: 'pyproject.toml')['project']
+                                zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${props.name}-${props.version}.doc.zip"
+                            }
                             stash includes: 'dist/*.doc.zip,build/docs/html/**', name: 'DOCS_ARCHIVE'
                         }
                         cleanup{
@@ -1052,7 +1004,7 @@ pipeline {
                                     }
                                     steps{
                                         script{
-                                            load('ci/jenkins/scripts/sonarqube.groovy').sonarcloudSubmit(props, params.SONARCLOUD_TOKEN)
+                                            load('ci/jenkins/scripts/sonarqube.groovy').sonarcloudSubmit(readTOML( file: 'pyproject.toml')['project'], params.SONARCLOUD_TOKEN)
                                         }
                                     }
                                     post {
