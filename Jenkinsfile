@@ -38,36 +38,6 @@ wheelStashes = []
 // ============================================================================
 
 
-def runToxTests(){
-    script{
-        def windowsJobs = [:]
-        def linuxJobs = [:]
-        parallel(
-            'Linux':{
-                linuxJobs = getToxTestsParallel(
-                            envNamePrefix: 'Tox Linux',
-                            label: 'linux && docker && x86',
-                            dockerfile: 'ci/docker/linux/tox/Dockerfile',
-                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
-                            dockerRunArgs: '-v pipcache_pyexiv2bind:/.cache/pip',
-                            retry: 3,
-                        )
-            },
-            'Windows':{
-                windowsJobs = getToxTestsParallel(
-                                envNamePrefix: 'Tox Windows',
-                                label: 'windows && docker && x86',
-                                dockerfile: 'ci/docker/windows/tox/Dockerfile',
-                                dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion',
-                                dockerRunArgs: '-v pipcache_pyexiv2bind:c:/users/containeradministrator/appdata/local/pip',
-                                retry: 3,
-                            )
-            }
-        )
-        parallel(windowsJobs + linuxJobs)
-    }
-}
-
 def startup(){
     parallel(
         [
@@ -1048,9 +1018,49 @@ pipeline {
                        equals expected: true, actual: params.TEST_RUN_TOX
                        beforeAgent true
                     }
-                    steps {
-                        runToxTests()
+                    parallel{
+                        stage('Linux'){
+                            when{
+                                expression {return nodesByLabel('linux && docker && x86').size() > 0}
+                            }
+                            steps{
+                                script{
+                                    parallel(
+                                        getToxTestsParallel(
+                                            envNamePrefix: 'Tox Linux',
+                                            label: 'linux && docker && x86',
+                                            dockerfile: 'ci/docker/linux/tox/Dockerfile',
+                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
+                                            dockerRunArgs: '-v pipcache_pyexiv2bind:/.cache/pip',
+                                            retry: 3,
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                        stage('Windows'){
+                            when{
+                                expression {return nodesByLabel('windows && docker && x86').size() > 0}
+                            }
+                            steps{
+                                script{
+                                    parallel(
+                                        getToxTestsParallel(
+                                            envNamePrefix: 'Tox Windows',
+                                            label: 'windows && docker && x86',
+                                            dockerfile: 'ci/docker/windows/tox/Dockerfile',
+                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion',
+                                            dockerRunArgs: '-v pipcache_pyexiv2bind:c:/users/containeradministrator/appdata/local/pip',
+                                            retry: 3,
+                                        )
+                                    )
+                                }
+                            }
+                        }
                     }
+//                    steps {
+//                        runToxTests()
+//                    }
                 }
             }
         }
