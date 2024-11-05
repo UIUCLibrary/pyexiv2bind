@@ -54,17 +54,13 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     c:/verifyenv.ps1
 
 COPY ci/docker/shared/chocolatey/python.xml c:/choco/python.config
-RUN C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress --verbose c:/choco/python.config ;`
-    Remove-Item C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey -Recurse ; `
-    refreshenv ; `
-    Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
-    py --list ;`
-    py -3.8 --version ; `
-    py -3.9 --version ; `
-    py -3.10 --version ; `
-    py -3.11 --version ; `
-    py -3.12 --version ; `
+COPY ci/docker/shared/chocolatey/Install-Python.ps1 c:/choco/Install-Python.ps1
+
+RUN choco cache remove --confirm;`
+    c:/choco/Install-Python.ps1 choco/python.config ;`
+    choco cache remove --confirm ; `
     Write-Host "Installing Python with Chocolatey - Done"
+
 
 # ==============================================================================
 FROM BASE_BUILDER AS CONAN_BUILDER
@@ -97,9 +93,7 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 COPY requirements-dev.txt c:/python_requirments/
 COPY requirements/ c:/python_requirments/requirements
-RUN py -3.8 -m pip install --no-cache-dir pip --upgrade ; `
-    py -3.8 -m pip install --no-cache-dir build ; `
-    py -3.9 -m pip install --no-cache-dir pip --upgrade ;  `
+RUN py -3.9 -m pip install --no-cache-dir pip --upgrade ;  `
     py -3.9 -m pip install --no-cache-dir build; `
     py -3.10 -m pip install --no-cache-dir pip --upgrade ;  `
     py -3.10 -m pip install --no-cache-dir build; `

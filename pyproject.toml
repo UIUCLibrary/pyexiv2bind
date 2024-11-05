@@ -10,7 +10,7 @@ build-backend = "uiucprescon.build"
 [project]
 name = "py3exiv2bind"
 version = "0.1.14.dev1"
-requires-python = '>=3.6'
+requires-python = '>=3.9'
 dependencies = []
 readme = "README.rst"
 license = {text = "University of Illinois/NCSA Open Source License"}
@@ -62,6 +62,7 @@ build-frontend = "build"
 skip = [
     "cp36-*",
     "cp37-*",
+    "cp38-*",
     "pp*",
     "*-win32",
     "*-musllinux*",
