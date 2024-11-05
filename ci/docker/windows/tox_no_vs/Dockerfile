@@ -46,7 +46,6 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no
     refreshenv ; `
     Remove-Item -Force -Recurse ${Env:TEMP}\* ; `
     py --list ;`
-    py -3.8 --version ; `
     py -3.9 --version ; `
     py -3.10 --version ; `
     py -3.11 --version ; `
