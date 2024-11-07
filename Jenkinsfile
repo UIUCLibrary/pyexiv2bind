@@ -861,6 +861,7 @@ pipeline {
                                     steps{
                                         script{
                                             load('ci/jenkins/scripts/sonarqube.groovy').sonarcloudSubmit(readTOML( file: 'pyproject.toml')['project'], params.SONARCLOUD_TOKEN)
+                                            milestone label: 'sonarcloud'
                                         }
                                     }
                                     post {
