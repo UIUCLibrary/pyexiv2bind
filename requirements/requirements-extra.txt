@@ -1,3 +1,0 @@
-pip
-pybind11
-wheel
