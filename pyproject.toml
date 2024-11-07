@@ -2,7 +2,7 @@
 requires = [
     "setuptools>=40.8.0",
     "wheel",
-    'uiucprescon.build @ git+https://github.com/UIUCLibrary/uiucprescon_build.git@v0.2.1',
+    "uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/v0.2.3.tar.gz",
     "conan>=1.50.0,<2.0"
 ]
 build-backend = "uiucprescon.build"
@@ -75,7 +75,7 @@ environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_US
 before-all = [
     "python3 -m venv /tmp/ciwheelbuilder/py3exiv2bind/venv",
     "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/python -m pip install wheel",
-    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/python -m pip install -r requirements/requirements_conan.txt cmake",
+    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/python -m pip install -r requirements-dev.txt",
     "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/conan profile new $ENVTMPDIR/.conan/profiles/default --detect --force",
     "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else /tmp/ciwheelbuilder/py3exiv2bind/venv/bin/conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
     ". /tmp/ciwheelbuilder/py3exiv2bind/venv/bin/activate && conan install ./ --build missing --install-folder=$CONAN_BUILD_INFO_DIR"
@@ -90,7 +90,7 @@ MACOSX_DEPLOYMENT_TARGET="10.15"
 [tool.cibuildwheel.windows]
 before-all = [
     "pip install wheel",
-    "pip install -r requirements/requirements_conan.txt cmake ninja",
+    "pip install -r requirements-dev.txt",
     "conan profile new default --detect --force",
     "conan profile update settings.compiler.version=%CONAN_COMPILER_VERSION% default",
     "conan install ./ --build missing",
@@ -103,7 +103,7 @@ manylinux-x86_64-image = "manylinux2014"
 repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
 before-all = [
     "cc --version", "cc -dumpfullversion -dumpversion",
-    "pip3 install -r requirements/requirements_conan.txt cmake ninja",
+    "pip3 install -r requirements-dev.txt",
     "conan profile new /tmp/ciwheelbuilder/py3exiv2bind/.conan/profiles/default --detect",
     "if [ -z \"$CONAN_COMPILER_LIBCXX\" ]; then : ; else conan profile update settings.compiler.libcxx=$CONAN_COMPILER_LIBCXX default; fi",
     "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",

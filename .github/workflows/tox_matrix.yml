@@ -29,7 +29,7 @@ jobs:
           cache: 'pip' # caching pip dependencies
       - run: |
           pip install wheel
-          pip install -r requirements/requirements_tox.txt cmake
+          pip install -r requirements-dev.txt
       - uses: actions/cache@v3
         id: cache
         with:
@@ -40,7 +40,7 @@ jobs:
         if: ${{ !contains(matrix.os, 'windows') && steps.cache.outputs.cache-hit != 'true' }}
         run: |
           cc --version &&  cc -dumpfullversion -dumpversion 
-          pip install -r requirements/requirements_conan.txt
+          pip install -r requirements-dev.txt
           if conan profile show default; then echo 'profile exists'; else conan profile new default --detect; fi
           conan config init
           python3 ci/docker/shared/conan/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml ${{matrix.compiler_version}}
@@ -57,7 +57,7 @@ jobs:
         run: |
           rmdir /S /Q C:\\Strawberry
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          pip install -r requirements/requirements_conan.txt
+          pip install -r requirements-dev.txt
           conan config init
           conan config set general.revisions_enabled=1
           conan profile new default --detect

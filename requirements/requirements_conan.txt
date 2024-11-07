@@ -1,5 +1,0 @@
-conan<2.0
-build
-cmake
-ninja
-wheel

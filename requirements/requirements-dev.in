@@ -17,5 +17,6 @@ pytest
 pytest-bdd
 sphinx
 toml
+tox
 twine
-git+https://github.com/UIUCLibrary/uiucprescon_build.git@v0.2.1
+uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/v0.2.3.tar.gz

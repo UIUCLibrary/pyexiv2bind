@@ -67,9 +67,9 @@ FROM BASE_BUILDER AS CONAN_BUILDER
 ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-COPY requirements c:/requirements
+COPY requirements-dev.txt c:/requirements/requirements-dev.txt
 RUN python -m pip install --no-cache-dir --upgrade pip ; `
-    pip install --no-cache-dir -r c:/requirements/requirements_conan.txt
+    pip install --no-cache-dir -r c:/requirements/requirements-dev.txt
 
 COPY conanfile.py c:/temp/conanfile.py
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
@@ -91,8 +91,7 @@ RUN certutil -addstore -f root c:/roots.sst ; `
 
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-COPY requirements-dev.txt c:/python_requirments/
-COPY requirements/ c:/python_requirments/requirements
+COPY requirements-dev.txt c:/python_requirments/requirements-dev.txt
 RUN py -3.9 -m pip install --no-cache-dir pip --upgrade ;  `
     py -3.9 -m pip install --no-cache-dir build; `
     py -3.10 -m pip install --no-cache-dir pip --upgrade ;  `

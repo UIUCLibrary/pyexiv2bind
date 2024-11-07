@@ -5,8 +5,8 @@ RUN mkdir -p /.cache/pip && \
     chmod -R 777 /.cache
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-COPY requirements/requirements_conan.txt /tmp/requirements_conan.txt
-RUN python3 --version && python3 -m pip install --no-cache-dir -r /tmp/requirements_conan.txt
+COPY requirements-dev.txt /tmp/requirements-dev.txt
+RUN python3 --version && python3 -m pip install --no-cache-dir -r /tmp/requirements-dev.txt
 ARG TARGETARCH
 COPY conanfile.py /tmp/conanfile.py
 ENV CONAN_USER_HOME=/conan
