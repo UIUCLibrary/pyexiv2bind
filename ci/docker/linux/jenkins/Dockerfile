@@ -51,15 +51,19 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 ARG CONAN_USER_HOME
 COPY requirements-dev.txt /tmp/requirements-dev.txt
-RUN pip install --no-cache-dir -r /tmp/requirements-dev.txt
 COPY ci/docker/shared/conan/remotes.json ${CONAN_USER_HOME}/.conan/remotes.json
 COPY conanfile.py /tmp/conanfile.py
-RUN conan config init && \
+RUN python3 -m venv venv && \
+    ./venv/bin/pip install uv && \
+    . ./venv/bin/activate && \
+    uv pip install -r /tmp/requirements-dev.txt && \
+    conan config init && \
     conan config set general.revisions_enabled=1 && \
     conan profile update settings.compiler.version=$(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)") default && \
     conan install /tmp -pr:b=default --build outdated --no-import -pr:b=default && \
     conan remove "*" -b --src -f && \
-    conan remove --locks
+    conan remove --locks && \
+    rm -rf venv
 #==============================================================================
 FROM base_image AS DR_MEMORY_BUILDER
 RUN apt-get update &&  \
