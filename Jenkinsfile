@@ -475,6 +475,15 @@ def mac_wheels(){
     }
     parallel(wheelStages)
 }
+def get_sonarqube_unresolved_issues(report_task_file){
+    script{
+
+        def props = readProperties  file: '.scannerwork/report-task.txt'
+        def response = httpRequest url : props['serverUrl'] + '/api/issues/search?componentKeys=' + props['projectKey'] + '&resolved=no'
+        def outstandingIssues = readJSON text: response.content
+        return outstandingIssues
+    }
+}
 
 // *****************************************************************************
 stage('Pipeline Pre-tasks'){
@@ -506,16 +515,14 @@ pipeline {
                     equals expected: true, actual: params.TEST_RUN_TOX
                 }
             }
-            options{
-                retry(3)
-            }
             stages{
-                stage('Building Documentation'){
+                stage('Building and Testing'){
                     agent {
                         dockerfile {
                             filename 'ci/docker/linux/jenkins/Dockerfile'
                             label 'linux && docker && x86'
                             additionalBuildArgs '--build-arg PYTHON_VERSION=3.11  --build-arg PIP_EXTRA_INDEX_URL'
+                            args '--mount source=sonar-cache-py3exiv2bind,target=/opt/sonar/.sonar/cache'
                         }
                     }
                     environment{
@@ -525,349 +532,276 @@ pipeline {
                         UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
                         UV_CACHE_DIR='/tmp/uvcache'
                     }
-                    steps {
-                        catchError(buildResult: 'UNSTABLE', message: 'Building Sphinx documentation has issues', stageResult: 'UNSTABLE') {
-                            sh(label: 'Running Sphinx',
-                                script: '''python3 -m venv venv
-                                            . ./venv/bin/activate
-                                            venv/bin/pip install uv
-                                            uvx --from sphinx --with-editable . --with-requirements requirements-dev.txt sphinx-build -b html docs/source build/docs/html -d build/docs/doctrees -v -w logs/build_sphinx.log -W --keep-going
-                                            rm -rf ./venv
-                                        '''
-                            )
-                        }
-                    }
-                    post{
-                        always {
-                            recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', id: 'sphinx_build')])
-                        }
-                        success{
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            script{
-                                def props = readTOML( file: 'pyproject.toml')['project']
-                                zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${props.name}-${props.version}.doc.zip"
-                            }
-                            stash includes: 'dist/*.doc.zip,build/docs/html/**', name: 'DOCS_ARCHIVE'
-                        }
-                        cleanup{
-                            cleanWs(
-                                deleteDirs: true,
-                                patterns: [
-                                    [pattern: 'build/', type: 'INCLUDE'],
-                                    [pattern: 'logs/', type: 'INCLUDE'],
-                                    [pattern: 'dist/', type: 'INCLUDE']
-                                ]
-                            )
-                        }
-                    }
-                }
-                stage('Checks'){
-                    when{
-                        equals expected: true, actual: params.RUN_CHECKS
+                    options{
+                        retry(3)
                     }
                     stages{
-                        stage('Code Quality'){
-                            agent {
-                                dockerfile {
-                                    filename 'ci/docker/linux/jenkins/Dockerfile'
-                                    label 'linux && docker && x86'
-                                    additionalBuildArgs '--build-arg PYTHON_VERSION=3.11  --build-arg PIP_EXTRA_INDEX_URL'
-                                    args '--mount source=sonar-cache-py3exiv2bind,target=/opt/sonar/.sonar/cache'
+                        stage('Setup'){
+                            stages{
+                                stage('Setup Testing Environment'){
+                                    steps{
+                                        sh(
+                                            label: 'Create virtual environment',
+                                            script: '''python3 -m venv bootstrap_uv
+                                                       bootstrap_uv/bin/pip install uv
+                                                       bootstrap_uv/bin/uv venv venv
+                                                       . ./venv/bin/activate
+                                                       bootstrap_uv/bin/uv pip install --index-strategy unsafe-best-match uv
+                                                       rm -rf bootstrap_uv
+                                                       uv pip install --index-strategy unsafe-best-match -r requirements-dev.txt
+                                                       '''
+                                       )
+                                    }
+                                }
+                                stage('Installing project as editable module'){
+                                    steps{
+                                        sh(label: 'Building debug build with coverage data',
+                                           script: '''mkdir -p build/build_wrapper_output_directory
+                                                      . ./venv/bin/activate
+                                                      CFLAGS="--coverage -fprofile-arcs -ftest-coverage" LFLAGS="-lgcov --coverage" build-wrapper-linux --out-dir build/build_wrapper_output_directory uv pip install --verbose -e .
+                                                   '''
+                                       )
+                                    }
                                 }
                             }
-                            environment{
-                                PIP_CACHE_DIR='/tmp/pipcache'
-                                UV_INDEX_STRATEGY='unsafe-best-match'
-                                UV_TOOL_DIR='/tmp/uvtools'
-                                UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
-                                UV_CACHE_DIR='/tmp/uvcache'
+                        }
+                        stage('Building Documentation'){
+                            steps {
+                                catchError(buildResult: 'UNSTABLE', message: 'Building Sphinx documentation has issues', stageResult: 'UNSTABLE') {
+                                    sh(label: 'Running Sphinx',
+                                        script: '''. ./venv/bin/activate
+                                                   sphinx-build -b html docs/source build/docs/html -d build/docs/doctrees -v -w logs/build_sphinx.log -W --keep-going
+                                                '''
+                                    )
+                                }
+                            }
+                            post{
+                                always {
+                                    recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log', id: 'sphinx_build')])
+                                }
+                                success{
+                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+                                    script{
+                                        def props = readTOML( file: 'pyproject.toml')['project']
+                                        zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${props.name}-${props.version}.doc.zip"
+                                    }
+                                    stash includes: 'dist/*.doc.zip,build/docs/html/**', name: 'DOCS_ARCHIVE'
+                                }
+                            }
+                        }
+                        stage('Code Quality') {
+                            when{
+                                equals expected: true, actual: params.RUN_CHECKS
                             }
                             stages{
-                                stage('Testing') {
-                                    stages{
-                                        stage('Setup Testing Environment'){
-                                            steps{
-                                                sh(
-                                                    label: 'Create virtual environment',
-                                                    script: '''python3 -m venv bootstrap_uv
-                                                               bootstrap_uv/bin/pip install uv
-                                                               bootstrap_uv/bin/uv venv venv
-                                                               . ./venv/bin/activate
-                                                               bootstrap_uv/bin/uv pip install --index-strategy unsafe-best-match uv
-                                                               rm -rf bootstrap_uv
-                                                               uv pip install --index-strategy unsafe-best-match -r requirements-dev.txt
-                                                               '''
-                                               )
-                                            }
+                                stage('Building Extension code and C++ Tests with coverage data'){
+                                    steps{
+                                        tee('logs/cmake-build.log'){
+                                            sh(label: 'Building C++ Code',
+                                               script: '''. ./venv/bin/activate
+                                                          conan install . -if build/cpp/
+                                                          cmake -B build/cpp/ -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -Dpyexiv2bind_generate_python_bindings:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra" -DCMAKE_BUILD_TYPE=Debug
+                                                          '''
+                                            )
                                         }
-                                        stage('Building Project for Testing'){
-                                            parallel{
-                                                stage('Building Extension for Python with coverage data'){
-                                                    steps{
-                                                        sh(label: 'Building debug build with coverage data',
-                                                           script: '''mkdir -p build/build_wrapper_output_directory
-                                                                      . ./venv/bin/activate
-                                                                      CFLAGS="--coverage -fprofile-arcs -ftest-coverage" LFLAGS="-lgcov --coverage" build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory uv pip install --verbose -e .
-                                                                   '''
-                                                       )
-                                                    }
-                                                }
-                                                stage('Building Extension code and C++ Tests with coverage data'){
-                                                    steps{
-                                                        tee('logs/cmake-build.log'){
-                                                            sh(label: 'Building C++ Code',
-                                                               script: '''conan install . -if build/cpp/
-                                                                          cmake -B build/cpp/ -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -Dpyexiv2bind_generate_python_bindings:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra" -DCMAKE_BUILD_TYPE=Debug
-                                                                          '''
-                                                            )
-                                                        }
-                                                        sh 'mkdir -p build/build_wrapper_output_directory && build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --target all '
-                                                    }
-                                                    post{
-                                                        always{
-                                                            recordIssues(
-                                                                filters: [excludeFile('build/cpp/_deps/*')],
-                                                                tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']]
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        stage('Running Tests'){
-                                            parallel {
-                                                stage('Clang Tidy Analysis') {
-                                                    steps{
-                                                        tee('logs/clang-tidy.log') {
-                                                            catchError(buildResult: 'SUCCESS', message: 'Clang-Tidy found issues', stageResult: 'UNSTABLE') {
-                                                                sh(label: 'Run Clang Tidy', script: 'run-clang-tidy -clang-tidy-binary clang-tidy -p ./build/cpp/ src/py3exiv2bind/')
-                                                            }
-                                                        }
-                                                    }
-                                                    post{
-                                                        always {
-                                                            recordIssues(
-                                                                tools: [clangTidy(pattern: 'logs/clang-tidy.log')]
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                                stage('Task Scanner'){
-                                                    steps{
-                                                        recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'src/py3exiv2bind/**/*.py, src/py3exiv2bind/**/*.cpp, src/py3exiv2bind/**/*.h', normalTags: 'TODO')])
-                                                    }
-                                                }
-                                                stage('Memcheck'){
-                                                    when{
-                                                        equals expected: true, actual: params.RUN_MEMCHECK
-                                                    }
-                                                    steps{
-                                                        generate_ctest_memtest_script('memcheck.cmake')
-                                                        timeout(30){
-                                                            sh( label: 'Running memcheck',
-                                                                script: 'ctest -S memcheck.cmake --verbose -j $(grep -c ^processor /proc/cpuinfo)'
-                                                                )
-                                                        }
-                                                    }
-                                                    post{
-                                                        always{
-                                                            recordIssues(
-                                                                filters: [
-                                                                    excludeFile('build/cpp/_deps/*'),
-                                                                ],
-                                                                tools: [
-                                                                    drMemory(pattern: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt')
-                                                                    ]
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                                stage('CPP Check'){
-                                                    steps{
-                                                        catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
-                                                            sh(label: 'Running cppcheck',
-                                                               script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json -i_deps --enable=all --suppressions-list=cppcheck_suppression_file.txt -rp=$PWD/build/cpp  --xml --output-file=logs/cppcheck_debug.xml'
-                                                               )
-                                                        }
-                                                    }
-                                                    post{
-                                                        always {
-                                                            recordIssues(
-                                                                filters: [
-                                                                    excludeType('unmatchedSuppression'),
-                                                                    excludeType('missingIncludeSystem'),
-                                                                    excludeFile('catch.hpp'),
-                                                                    excludeFile('value.hpp'),
-                                                                ],
-                                                                tools: [
-                                                                    cppCheck(pattern: 'logs/cppcheck_debug.xml')
-                                                                ]
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                                stage('CTest'){
-                                                    steps{
-                                                        sh(label: 'Running CTest',
-                                                           script: 'cd build/cpp && ctest --output-on-failure --no-compress-output -T Test'
-                                                        )
-                                                    }
-                                                    post{
-                                                        always{
-                                                            xunit(
-                                                                testTimeMargin: '3000',
-                                                                thresholdMode: 1,
-                                                                thresholds: [
-                                                                    failed(),
-                                                                    skipped()
-                                                                ],
-                                                                tools: [
-                                                                    CTest(
-                                                                        deleteOutputFiles: true,
-                                                                        failIfNotNew: true,
-                                                                        pattern: 'build/Testing/**/*.xml',
-                                                                        skipNoTestFiles: true,
-                                                                        stopProcessingIfError: true
-                                                                    )
-                                                                ]
-                                                           )
-                                                        }
-                                                    }
-                                                }
-                                                stage('Run Doctest Tests'){
-                                                    steps {
-                                                        sh '''. ./venv/bin/activate
-                                                              coverage run --parallel-mode --source=src/py3exiv2bind -m sphinx docs/source reports/doctest -b doctest -d build/docs/.doctrees --no-color -w logs/doctest_warnings.log
-                                                           '''
-                                                    }
-                                                    post{
-                                                        always {
-                                                            recordIssues(tools: [sphinxBuild(name: 'Doctest', pattern: 'logs/doctest_warnings.log', id: 'doctest')])
-                                                        }
-                                                    }
-                                                }
-                                                stage('MyPy Static Analysis') {
-                                                    steps{
-                                                        tee('logs/mypy.log'){
-                                                            sh(returnStatus: true,
-                                                               script: '''. ./venv/bin/activate
-                                                                          mypy -p py3exiv2bind --html-report reports/mypy/html
-                                                                       '''
-                                                              )
-                                                        }
-                                                    }
-                                                    post {
-                                                        always {
-                                                            recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
-                                                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
-                                                        }
-                                                    }
-                                                }
-                                                stage('Run Pylint Static Analysis') {
-                                                    steps{
-                                                        catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
-                                                            sh(
-                                                                script: '''mkdir -p logs
-                                                                           mkdir -p reports
-                                                                           . ./venv/bin/activate
-                                                                           PYLINTHOME=. pylint src/py3exiv2bind -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
-                                                                           ''',
-                                                                label: 'Running pylint'
-                                                            )
-                                                        }
-                                                        sh(
-                                                            label: 'Running pylint for sonarqube',
-                                                            script: '''. ./venv/bin/activate
-                                                                       PYLINTHOME=. pylint  -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt
-                                                                   ''',
-                                                            returnStatus: true
-                                                        )
-                                                    }
-                                                    post{
-                                                        always{
-                                                            stash includes: 'reports/pylint_issues.txt,reports/pylint.txt', name: 'PYLINT_REPORT'
-                                                            recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
-                                                        }
-                                                    }
-                                                }
-                                                stage('Flake8') {
-                                                  steps{
-                                                    sh(
-                                                        returnStatus: true,
-                                                        script: '''. ./venv/bin/activate
-                                                                   flake8 src/py3exiv2bind --tee --output-file ./logs/flake8.log
-                                                                '''
-                                                        )
-                                                  }
-                                                  post {
-                                                    always {
-                                                        stash includes: 'logs/flake8.log', name: 'FLAKE8_REPORT'
-                                                        recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-                                                    }
-                                                  }
-                                                }
-                                                stage('Running Unit Tests'){
-                                                    steps{
-                                                        sh '''. ./venv/bin/activate
-                                                              coverage run --parallel-mode --source=src/py3exiv2bind -m pytest --junitxml=./reports/pytest/junit-pytest.xml
-                                                           '''
-                                                    }
-                                                    post{
-                                                        always{
-                                                            stash includes: 'reports/pytest/junit-pytest.xml', name: 'PYTEST_REPORT'
-                                                            junit 'reports/pytest/junit-pytest.xml'
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
+                                        sh '''. ./venv/bin/activate
+                                              mkdir -p build/build_wrapper_output_directory
+                                              build-wrapper-linux --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --target all
+                                           '''
                                     }
                                     post{
                                         always{
-                                            sh(label: 'combining coverage data',
-                                               script: '''mkdir -p reports/coverage
-                                                          . ./venv/bin/activate
-                                                          coverage combine
-                                                          coverage xml -o ./reports/coverage/coverage-python.xml
-                                                          gcovr --root . --filter src/py3exiv2bind --exclude-directories build/cpp/_deps/libcatch2-build --exclude-directories build/python/temp/conan_cache --exclude-throw-branches --exclude-unreachable-branches --print-summary --keep --json -o reports/coverage/coverage-c-extension.json
-                                                          gcovr --root . --filter src/py3exiv2bind --exclude-directories build/cpp/_deps/libcatch2-build --exclude-throw-branches --exclude-unreachable-branches --print-summary --keep --json -o reports/coverage/coverage_cpp.json
-                                                          gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --keep --print-summary --xml -o reports/coverage/coverage_cpp.xml --sonarqube -o reports/coverage/coverage_cpp_sonar.xml
-                                                          '''
-                                                  )
-                                            recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage/*.xml']])
+                                            recordIssues(
+                                                filters: [excludeFile('build/cpp/_deps/*')],
+                                                tools: [gcc(pattern: 'logs/cmake-build.log'), [$class: 'Cmake', pattern: 'logs/cmake-build.log']]
+                                            )
                                         }
                                     }
                                 }
-                                stage('Sonarcloud Analysis'){
-                                    options{
-                                        lock('py3exiv2bind-sonarcloud')
-                                    }
-                                    when{
-                                        allOf{
-                                            equals expected: true, actual: params.USE_SONARQUBE
-                                            expression{
-                                                try{
-                                                    withCredentials([string(credentialsId: params.SONARCLOUD_TOKEN, variable: 'dddd')]) {
-                                                        echo 'Found credentials for sonarqube'
+                                stage('Running Tests'){
+                                    parallel {
+                                        stage('Clang Tidy Analysis') {
+                                            steps{
+                                                tee('logs/clang-tidy.log') {
+                                                    catchError(buildResult: 'SUCCESS', message: 'Clang-Tidy found issues', stageResult: 'UNSTABLE') {
+                                                        sh(label: 'Run Clang Tidy', script: 'run-clang-tidy -clang-tidy-binary clang-tidy -p ./build/cpp/ src/py3exiv2bind/')
                                                     }
-                                                } catch(e){
-                                                    return false
                                                 }
-                                                return true
+                                            }
+                                            post{
+                                                always {
+                                                    recordIssues(
+                                                        tools: [clangTidy(pattern: 'logs/clang-tidy.log')]
+                                                    )
+                                                }
                                             }
                                         }
-                                    }
-                                    steps{
-                                        script{
-                                            load('ci/jenkins/scripts/sonarqube.groovy').sonarcloudSubmit(readTOML( file: 'pyproject.toml')['project'], params.SONARCLOUD_TOKEN)
-                                            milestone label: 'sonarcloud'
+                                        stage('Task Scanner'){
+                                            steps{
+                                                recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'src/py3exiv2bind/**/*.py, src/py3exiv2bind/**/*.cpp, src/py3exiv2bind/**/*.h', normalTags: 'TODO')])
+                                            }
                                         }
-                                    }
-                                    post {
-                                        always{
-                                            script{
-                                                if(fileExists('reports/sonar-report.json')){
-                                                    recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
+                                        stage('Memcheck'){
+                                            when{
+                                                equals expected: true, actual: params.RUN_MEMCHECK
+                                            }
+                                            steps{
+                                                generate_ctest_memtest_script('memcheck.cmake')
+                                                timeout(30){
+                                                    sh( label: 'Running memcheck',
+                                                        script: '''. ./venv/bin/activate
+                                                                   ctest -S memcheck.cmake --verbose -j $(grep -c ^processor /proc/cpuinfo)
+                                                                '''
+                                                        )
+                                                }
+                                            }
+                                            post{
+                                                always{
+                                                    recordIssues(
+                                                        filters: [
+                                                            excludeFile('build/cpp/_deps/*'),
+                                                        ],
+                                                        tools: [
+                                                            drMemory(pattern: 'build/cpp/Testing/Temporary/DrMemory/**/results.txt')
+                                                            ]
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        stage('CPP Check'){
+                                            steps{
+                                                catchError(buildResult: 'SUCCESS', message: 'cppcheck found issues', stageResult: 'UNSTABLE') {
+                                                    sh(label: 'Running cppcheck',
+                                                       script: 'cppcheck --error-exitcode=1 --project=build/cpp/compile_commands.json -i_deps --enable=all --suppressions-list=cppcheck_suppression_file.txt -rp=$PWD/build/cpp  --xml --output-file=logs/cppcheck_debug.xml'
+                                                       )
+                                                }
+                                            }
+                                            post{
+                                                always {
+                                                    recordIssues(
+                                                        filters: [
+                                                            excludeType('unmatchedSuppression'),
+                                                            excludeType('missingIncludeSystem'),
+                                                            excludeFile('catch.hpp'),
+                                                            excludeFile('value.hpp'),
+                                                        ],
+                                                        tools: [
+                                                            cppCheck(pattern: 'logs/cppcheck_debug.xml')
+                                                        ]
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        stage('CTest'){
+                                            steps{
+                                                sh(label: 'Running CTest',
+                                                   script: 'cd build/cpp && ctest --output-on-failure --no-compress-output -T Test'
+                                                )
+                                            }
+                                            post{
+                                                always{
+                                                    xunit(
+                                                        testTimeMargin: '3000',
+                                                        thresholdMode: 1,
+                                                        thresholds: [
+                                                            failed(),
+                                                            skipped()
+                                                        ],
+                                                        tools: [
+                                                            CTest(
+                                                                deleteOutputFiles: true,
+                                                                failIfNotNew: true,
+                                                                pattern: 'build/Testing/**/*.xml',
+                                                                skipNoTestFiles: true,
+                                                                stopProcessingIfError: true
+                                                            )
+                                                        ]
+                                                   )
+                                                }
+                                            }
+                                        }
+                                        stage('Run Doctest Tests'){
+                                            steps {
+                                                sh '''. ./venv/bin/activate
+                                                      coverage run --parallel-mode --source=src/py3exiv2bind -m sphinx docs/source reports/doctest -b doctest -d build/docs/.doctrees --no-color -w logs/doctest_warnings.log
+                                                   '''
+                                            }
+                                            post{
+                                                always {
+                                                    recordIssues(tools: [sphinxBuild(name: 'Doctest', pattern: 'logs/doctest_warnings.log', id: 'doctest')])
+                                                }
+                                            }
+                                        }
+                                        stage('MyPy Static Analysis') {
+                                            steps{
+                                                tee('logs/mypy.log'){
+                                                    sh(returnStatus: true,
+                                                       script: '''. ./venv/bin/activate
+                                                                  mypy -p py3exiv2bind --html-report reports/mypy/html
+                                                               '''
+                                                      )
+                                                }
+                                            }
+                                            post {
+                                                always {
+                                                    recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
+                                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                                }
+                                            }
+                                        }
+                                        stage('Run Pylint Static Analysis') {
+                                            steps{
+                                                catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
+                                                    sh(
+                                                        script: '''mkdir -p logs
+                                                                   mkdir -p reports
+                                                                   . ./venv/bin/activate
+                                                                   PYLINTHOME=. pylint src/py3exiv2bind -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
+                                                                   ''',
+                                                        label: 'Running pylint'
+                                                    )
+                                                }
+                                                sh(
+                                                    label: 'Running pylint for sonarqube',
+                                                    script: '''. ./venv/bin/activate
+                                                               PYLINTHOME=. pylint  -r n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt
+                                                           ''',
+                                                    returnStatus: true
+                                                )
+                                            }
+                                            post{
+                                                always{
+                                                    stash includes: 'reports/pylint_issues.txt,reports/pylint.txt', name: 'PYLINT_REPORT'
+                                                    recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
+                                                }
+                                            }
+                                        }
+                                        stage('Flake8') {
+                                          steps{
+                                            sh(
+                                                returnStatus: true,
+                                                script: '''. ./venv/bin/activate
+                                                           flake8 src/py3exiv2bind --tee --output-file ./logs/flake8.log
+                                                        '''
+                                                )
+                                          }
+                                          post {
+                                            always {
+                                                stash includes: 'logs/flake8.log', name: 'FLAKE8_REPORT'
+                                                recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+                                            }
+                                          }
+                                        }
+                                        stage('Running Unit Tests'){
+                                            steps{
+                                                sh '''. ./venv/bin/activate
+                                                      coverage run --parallel-mode --source=src/py3exiv2bind -m pytest --junitxml=./reports/pytest/junit-pytest.xml
+                                                   '''
+                                            }
+                                            post{
+                                                always{
+                                                    stash includes: 'reports/pytest/junit-pytest.xml', name: 'PYTEST_REPORT'
+                                                    junit 'reports/pytest/junit-pytest.xml'
                                                 }
                                             }
                                         }
@@ -875,28 +809,102 @@ pipeline {
                                 }
                             }
                             post{
-                                cleanup{
-                                    cleanWs(
-                                        patterns: [
-                                                [pattern: '.coverage/', type: 'INCLUDE'],
-                                                [pattern: '.eggs/', type: 'INCLUDE'],
-                                                [pattern: '.mypy_cache/', type: 'INCLUDE'],
-                                                [pattern: '.pytest_cache/', type: 'INCLUDE'],
-                                                [pattern: 'dist/', type: 'INCLUDE'],
-                                                [pattern: 'build/', type: 'INCLUDE'],
-                                                [pattern: '*.dist-info/', type: 'INCLUDE'],
-                                                [pattern: 'logs/', type: 'INCLUDE'],
-                                                [pattern: 'reports/', type: 'INCLUDE'],
-                                                [pattern: 'generatedJUnitFiles/', type: 'INCLUDE'],
-                                                [pattern: 'py3exiv2bind/*.so', type: 'INCLUDE'],
-                                                [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                [pattern: 'venv/', type: 'INCLUDE'],
-                                            ],
-                                        notFailBuild: true,
-                                        deleteDirs: true
-                                    )
+                                always{
+                                    sh(label: 'combining coverage data',
+                                       script: '''mkdir -p reports/coverage
+                                                  . ./venv/bin/activate
+                                                  coverage combine
+                                                  coverage xml -o ./reports/coverage/coverage-python.xml
+                                                  gcovr --root . --filter src/py3exiv2bind --exclude-directories build/cpp/_deps/libcatch2-build --exclude-directories build/python/temp/conan_cache --exclude-throw-branches --exclude-unreachable-branches --print-summary --keep --json -o reports/coverage/coverage-c-extension.json
+                                                  gcovr --root . --filter src/py3exiv2bind --exclude-directories build/cpp/_deps/libcatch2-build --exclude-throw-branches --exclude-unreachable-branches --print-summary --keep --json -o reports/coverage/coverage_cpp.json
+                                                  gcovr --add-tracefile reports/coverage/coverage-c-extension.json --add-tracefile reports/coverage/coverage_cpp.json --keep --print-summary --xml -o reports/coverage/coverage_cpp.xml --sonarqube -o reports/coverage/coverage_cpp_sonar.xml
+                                                  '''
+                                          )
+                                    recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage/*.xml']])
                                 }
                             }
+                        }
+                        stage('Sonarcloud Analysis'){
+                            options{
+                                lock('py3exiv2bind-sonarcloud')
+                            }
+                            when{
+                                allOf{
+                                    equals expected: true, actual: params.USE_SONARQUBE
+                                    expression{
+                                        try{
+                                            withCredentials([string(credentialsId: params.SONARCLOUD_TOKEN, variable: 'dddd')]) {
+                                                echo 'Found credentials for sonarqube'
+                                            }
+                                        } catch(e){
+                                            return false
+                                        }
+                                        return true
+                                    }
+                                }
+                            }
+                            steps{
+                                script{
+                                    withSonarQubeEnv(installationName:'sonarcloud', credentialsId: params.SONARCLOUD_TOKEN) {
+                                        if (env.CHANGE_ID){
+                                            sh(
+                                                label: 'Running Sonar Scanner',
+                                                script: """. ./venv/bin/activate
+                                                           uvx pysonar-scanner -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory
+                                                        """
+                                                )
+                                        } else {
+                                            sh(
+                                                label: 'Running Sonar Scanner',
+                                                script: """. ./venv/bin/activate
+                                                           uvx pysonar-scanner -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory
+                                                        """
+                                                )
+                                        }
+                                    }
+                                    timeout(time: 1, unit: 'HOURS') {
+                                         def sonarqube_result = waitForQualityGate(abortPipeline: false)
+                                         if (sonarqube_result.status != 'OK') {
+                                             unstable "SonarQube quality gate: ${sonarqube_result.status}"
+                                         }
+                                         def outstandingIssues = get_sonarqube_unresolved_issues('.scannerwork/report-task.txt')
+                                         writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
+                                    }
+                                }
+                            }
+                            post {
+                                always{
+                                    milestone 1
+                                    script{
+                                        if(fileExists('reports/sonar-report.json')){
+                                            recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    post{
+                        cleanup{
+                            cleanWs(
+                                patterns: [
+                                        [pattern: '.coverage/', type: 'INCLUDE'],
+                                        [pattern: '.eggs/', type: 'INCLUDE'],
+                                        [pattern: '.mypy_cache/', type: 'INCLUDE'],
+                                        [pattern: '.pytest_cache/', type: 'INCLUDE'],
+                                        [pattern: 'dist/', type: 'INCLUDE'],
+                                        [pattern: 'build/', type: 'INCLUDE'],
+                                        [pattern: '*.dist-info/', type: 'INCLUDE'],
+                                        [pattern: 'logs/', type: 'INCLUDE'],
+                                        [pattern: 'reports/', type: 'INCLUDE'],
+                                        [pattern: 'generatedJUnitFiles/', type: 'INCLUDE'],
+                                        [pattern: 'py3exiv2bind/*.so', type: 'INCLUDE'],
+                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                        [pattern: 'venv/', type: 'INCLUDE'],
+                                    ],
+                                notFailBuild: true,
+                                deleteDirs: true
+                            )
                         }
                     }
                 }
@@ -907,42 +915,171 @@ pipeline {
                     }
                     parallel{
                         stage('Linux'){
+                            environment{
+                                PIP_CACHE_DIR='/tmp/pipcache'
+                                UV_INDEX_STRATEGY='unsafe-best-match'
+                                UV_TOOL_DIR='/tmp/uvtools'
+                                UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
+                                UV_CACHE_DIR='/tmp/uvcache'
+                            }
                             when{
-                                expression {return nodesByLabel('linux && docker && x86').size() > 0}
+                                expression {return nodesByLabel('linux && docker').size() > 0}
                             }
                             steps{
                                 script{
+                                    def envs = []
+                                    node('docker && linux'){
+                                        docker.image('python').inside('--mount source=python-tmp-py3exiv2bind,target=/tmp'){
+                                            try{
+                                                checkout scm
+                                                sh(script: 'python3 -m venv venv && venv/bin/pip install uv')
+                                                envs = sh(
+                                                    label: 'Get tox environments',
+                                                    script: './venv/bin/uvx --quiet --with tox-uv tox list -d --no-desc',
+                                                    returnStdout: true,
+                                                ).trim().split('\n')
+                                            } finally{
+                                                cleanWs(
+                                                    patterns: [
+                                                        [pattern: 'venv/', type: 'INCLUDE'],
+                                                        [pattern: '.tox', type: 'INCLUDE'],
+                                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                    ]
+                                                )
+                                            }
+                                        }
+                                    }
                                     parallel(
-                                        getToxTestsParallel(
-                                            envNamePrefix: 'Tox Linux',
-                                            label: 'linux && docker && x86',
-                                            dockerfile: 'ci/docker/linux/tox/Dockerfile',
-                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
-                                            dockerRunArgs: '-v pipcache_pyexiv2bind:/.cache/pip',
-                                            retry: 3,
-                                        )
+                                        envs.collectEntries{toxEnv ->
+                                            def version = toxEnv.replaceAll(/py(\d)(\d+)/, '$1.$2')
+                                            [
+                                                "Tox Environment: ${toxEnv}",
+                                                {
+                                                    node('docker && linux'){
+                                                        checkout scm
+                                                        def image
+                                                        lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
+                                                            image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL .')
+                                                        }
+                                                        try{
+                                                            image.inside('--mount source=python-tmp-tox-py3exiv2bind,target=/tmp'){
+                                                                retry(3){
+                                                                    try{
+                                                                        sh( label: 'Running Tox',
+                                                                            script: """python3 -m venv /tmp/venv && /tmp/venv/bin/pip install uv
+                                                                                       . /tmp/venv/bin/activate
+                                                                                       uvx -p ${version} --with tox-uv tox run -e ${toxEnv} -vvv
+                                                                                    """
+                                                                            )
+                                                                    } catch(e) {
+                                                                        sh(script: '''. ./venv/bin/activate
+                                                                              uv python list
+                                                                              '''
+                                                                                )
+                                                                        throw e
+                                                                    } finally{
+                                                                        cleanWs(
+                                                                            patterns: [
+                                                                                [pattern: 'venv/', type: 'INCLUDE'],
+                                                                                [pattern: '.tox', type: 'INCLUDE'],
+                                                                                [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                                            ]
+                                                                        )
+                                                                    }
+                                                                }
+                                                            }
+                                                        } finally {
+                                                            sh "docker rmi ${image.id}"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
                                     )
                                 }
                             }
                         }
                         stage('Windows'){
-                            when{
-                                expression {return nodesByLabel('windows && docker && x86').size() > 0}
-                            }
-                            steps{
-                                script{
-                                    parallel(
-                                        getToxTestsParallel(
-                                            envNamePrefix: 'Tox Windows',
-                                            label: 'windows && docker && x86',
-                                            dockerfile: 'ci/docker/windows/tox/Dockerfile',
-                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion',
-                                            dockerRunArgs: '-v pipcache_pyexiv2bind:c:/users/containeradministrator/appdata/local/pip',
-                                            retry: 3,
-                                        )
-                                    )
-                                }
-                            }
+                             when{
+                                 expression {return nodesByLabel('windows && docker && x86').size() > 0}
+                             }
+                             environment{
+                                 UV_INDEX_STRATEGY='unsafe-best-match'
+                                 PIP_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\pipcache'
+                                 UV_TOOL_DIR='C:\\Users\\ContainerUser\\Documents\\uvtools'
+                                 UV_PYTHON_INSTALL_DIR='C:\\Users\\ContainerUser\\Documents\\uvpython'
+                                 UV_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\uvcache'
+                             }
+                             steps{
+                                 script{
+                                     def envs = []
+                                     node('docker && windows'){
+                                         docker.image('python').inside('--mount source=python-tmp-py3exiv2bind,target=C:\\Users\\ContainerUser\\Documents'){
+                                             try{
+                                                 checkout scm
+                                                 bat(script: 'python -m venv venv && venv\\Scripts\\pip install uv')
+                                                 envs = bat(
+                                                     label: 'Get tox environments',
+                                                     script: '@.\\venv\\Scripts\\uvx --quiet --with-requirements requirements-dev.txt --with tox-uv tox list -d --no-desc',
+                                                     returnStdout: true,
+                                                 ).trim().split('\r\n')
+                                             } finally{
+                                                 cleanWs(
+                                                     patterns: [
+                                                         [pattern: 'venv/', type: 'INCLUDE'],
+                                                         [pattern: '.tox', type: 'INCLUDE'],
+                                                         [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                     ]
+                                                 )
+                                             }
+                                         }
+                                     }
+                                     parallel(
+                                         envs.collectEntries{toxEnv ->
+                                             def version = toxEnv.replaceAll(/py(\d)(\d+)/, '$1.$2')
+                                             [
+                                                 "Tox Environment: ${toxEnv}",
+                                                 {
+                                                     node('docker && windows'){
+                                                        def image
+                                                        checkout scm
+                                                        lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
+                                                            image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion .')
+                                                        }
+                                                        try{
+                                                            image.inside('--mount source=python-tmp-py3exiv2bind,target=C:\\Users\\ContainerUser\\Documents'){
+                                                                try{
+                                                                    retry(3){
+                                                                        bat(label: 'Running Tox',
+                                                                             script: """python -m venv venv && venv\\Scripts\\pip install uv
+                                                                                    call venv\\Scripts\\activate.bat
+                                                                                    uv python install cpython-${version}
+                                                                                    uvx -p ${version} --with-requirements requirements-dev.txt --with tox-uv tox run -e ${toxEnv}
+                                                                                    rmdir /S /Q .tox
+                                                                                    rmdir /S /Q venv
+                                                                                 """
+                                                                        )
+                                                                    }
+                                                                } finally{
+                                                                     cleanWs(
+                                                                         patterns: [
+                                                                             [pattern: 'venv/', type: 'INCLUDE'],
+                                                                             [pattern: '.tox', type: 'INCLUDE'],
+                                                                             [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                                         ]
+                                                                     )
+                                                                }
+                                                            }
+                                                        } finally {
+                                                            bat "docker rmi --no-prune ${image.id}"
+                                                        }
+                                                     }
+                                                 }
+                                             ]
+                                         }
+                                     )
+                                 }
+                             }
                         }
                     }
                 }
@@ -1168,7 +1305,7 @@ pipeline {
                                                         checkout scm
                                                         unstash 'sdist'
                                                     },
-                                                    testCommand: {
+                                                    testCommand: {testCommand
                                                         findFiles(glob: 'dist/*.tar.gz').each{
                                                             withEnv([
                                                                 'PIP_CACHE_DIR=/tmp/pipcache',
