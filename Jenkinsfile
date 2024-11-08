@@ -475,6 +475,15 @@ def mac_wheels(){
     }
     parallel(wheelStages)
 }
+def get_sonarqube_unresolved_issues(report_task_file){
+    script{
+
+        def props = readProperties  file: '.scannerwork/report-task.txt'
+        def response = httpRequest url : props['serverUrl'] + '/api/issues/search?componentKeys=' + props['projectKey'] + '&resolved=no'
+        def outstandingIssues = readJSON text: response.content
+        return outstandingIssues
+    }
+}
 
 // *****************************************************************************
 stage('Pipeline Pre-tasks'){
@@ -549,7 +558,7 @@ pipeline {
                                         sh(label: 'Building debug build with coverage data',
                                            script: '''mkdir -p build/build_wrapper_output_directory
                                                       . ./venv/bin/activate
-                                                      CFLAGS="--coverage -fprofile-arcs -ftest-coverage" LFLAGS="-lgcov --coverage" build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory uv pip install --verbose -e .
+                                                      CFLAGS="--coverage -fprofile-arcs -ftest-coverage" LFLAGS="-lgcov --coverage" build-wrapper-linux --out-dir build/build_wrapper_output_directory uv pip install --verbose -e .
                                                    '''
                                        )
                                     }
@@ -594,7 +603,7 @@ pipeline {
                                                           '''
                                             )
                                         }
-                                        sh 'mkdir -p build/build_wrapper_output_directory && build-wrapper-linux-x86-64 --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --target all '
+                                        sh 'mkdir -p build/build_wrapper_output_directory && build-wrapper-linux --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --target all '
                                     }
                                     post{
                                         always{
@@ -830,12 +839,36 @@ pipeline {
                             }
                             steps{
                                 script{
-                                    load('ci/jenkins/scripts/sonarqube.groovy').sonarcloudSubmit(readTOML( file: 'pyproject.toml')['project'], params.SONARCLOUD_TOKEN)
-                                    milestone label: 'sonarcloud'
+                                    withSonarQubeEnv(installationName:'sonarcloud', credentialsId: params.SONARCLOUD_TOKEN) {
+                                        if (env.CHANGE_ID){
+                                            sh(
+                                                label: 'Running Sonar Scanner',
+                                                script: """. ./venv/bin/activate
+                                                           uvx pysonar-scanner -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory
+                                                        """
+                                                )
+                                        } else {
+                                            sh(
+                                                label: 'Running Sonar Scanner',
+                                                script: """. ./venv/bin/activate
+                                                           uvx pysonar-scanner -Dsonar.projectVersion=\$VERSION -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=\$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory
+                                                        """
+                                                )
+                                        }
+                                    }
+                                    timeout(time: 1, unit: 'HOURS') {
+                                         def sonarqube_result = waitForQualityGate(abortPipeline: false)
+                                         if (sonarqube_result.status != 'OK') {
+                                             unstable "SonarQube quality gate: ${sonarqube_result.status}"
+                                         }
+                                         def outstandingIssues = get_sonarqube_unresolved_issues('.scannerwork/report-task.txt')
+                                         writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
+                                    }
                                 }
                             }
                             post {
                                 always{
+                                    milestone 1
                                     script{
                                         if(fileExists('reports/sonar-report.json')){
                                             recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
