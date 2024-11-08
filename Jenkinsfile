@@ -598,12 +598,16 @@ pipeline {
                                     steps{
                                         tee('logs/cmake-build.log'){
                                             sh(label: 'Building C++ Code',
-                                               script: '''conan install . -if build/cpp/
+                                               script: '''. ./venv/bin/activate
+                                                          conan install . -if build/cpp/
                                                           cmake -B build/cpp/ -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -Dpyexiv2bind_generate_python_bindings:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra" -DCMAKE_BUILD_TYPE=Debug
                                                           '''
                                             )
                                         }
-                                        sh 'mkdir -p build/build_wrapper_output_directory && build-wrapper-linux --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --target all '
+                                        sh '''. ./venv/bin/activate
+                                              mkdir -p build/build_wrapper_output_directory
+                                              build-wrapper-linux --out-dir build/build_wrapper_output_directory cmake --build build/cpp -j $(grep -c ^processor /proc/cpuinfo) --target all
+                                           '''
                                     }
                                     post{
                                         always{
@@ -645,7 +649,9 @@ pipeline {
                                                 generate_ctest_memtest_script('memcheck.cmake')
                                                 timeout(30){
                                                     sh( label: 'Running memcheck',
-                                                        script: 'ctest -S memcheck.cmake --verbose -j $(grep -c ^processor /proc/cpuinfo)'
+                                                        script: '''. ./venv/bin/activate
+                                                                   ctest -S memcheck.cmake --verbose -j $(grep -c ^processor /proc/cpuinfo)
+                                                                '''
                                                         )
                                                 }
                                             }

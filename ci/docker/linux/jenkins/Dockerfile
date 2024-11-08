@@ -1,4 +1,3 @@
-ARG PIP_FIND_LINKS=/wheels/
 ARG CONAN_USER_HOME=/conan
 ARG PYTHON_VERSION=3.11
 ARG SONAR_USER_HOME=/opt/sonar/.sonar
@@ -8,27 +7,11 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-COPY requirements-dev.txt /requirements/requirements-dev.txt
-RUN python -m pip install --no-cache-dir pip --upgrade && \
-    pip install --no-cache-dir wheel && \
-    pip install --no-cache-dir setuptools --upgrade && \
-    pip install --no-cache-dir -r /requirements/requirements-dev.txt
-
 RUN mkdir -p /.cache/pip &&  \
     chmod -R 777 /.cache
 
 #==============================================================================
 
-FROM base_image AS wheel_builder
-ARG PIP_EXTRA_INDEX_URL
-
-COPY requirements-dev.txt /requirements/requirements-dev.txt
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-ARG PIP_FIND_LINKS
-RUN mkdir -p ${PIP_FIND_LINKS} &&  \
-    pip wheel --wheel-dir=${PIP_FIND_LINKS} --no-cache-dir -r /requirements/requirements-dev.txt
-#==============================================================================
 
 FROM base_image AS SONAR_BUILDER
 ARG SONAR_USER_HOME
@@ -105,24 +88,7 @@ COPY --from=DR_MEMORY_BUILDER /opt/drmemory /opt/drmemory/
 RUN ln -s /opt/drmemory/bin64/drmemory /usr/local/bin/drmemory && \
     drmemory -version
 
-ENV PIP_NO_CACHE_DIR=1
-ARG PIP_FIND_LINKS
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_TRUSTED_HOST
-COPY --from=wheel_builder ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
-COPY --from=wheel_builder requirements/ /requirements
-RUN pip install --no-index --no-cache-dir --find-links=${PIP_FIND_LINKS} \
-    -r /requirements/requirements-dev.txt
-
-ENV PIP_FIND_LINKS=${PIP_FIND_LINKS}
-
 ARG CONAN_USER_HOME
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 COPY --from=conan_builder ${CONAN_USER_HOME}/.conan/ ${CONAN_USER_HOME}/.conan/
-COPY conanfile.py /tmp/conanfile.py
-RUN conan install /tmp -pr:b=default --build  missing --no-import && \
-    conan remove "*" -b --src -f && \
-    conan remove --locks && \
-    chmod -R 777 ${CONAN_USER_HOME}
-
-ENV PIP_FIND_LINKS=${PIP_FIND_LINKS}
+RUN chmod -R 777 ${CONAN_USER_HOME}/.conan/
