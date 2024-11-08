@@ -907,42 +907,171 @@ pipeline {
                     }
                     parallel{
                         stage('Linux'){
+                            environment{
+                                PIP_CACHE_DIR='/tmp/pipcache'
+                                UV_INDEX_STRATEGY='unsafe-best-match'
+                                UV_TOOL_DIR='/tmp/uvtools'
+                                UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
+                                UV_CACHE_DIR='/tmp/uvcache'
+                            }
                             when{
-                                expression {return nodesByLabel('linux && docker && x86').size() > 0}
+                                expression {return nodesByLabel('linux && docker').size() > 0}
                             }
                             steps{
                                 script{
+                                    def envs = []
+                                    node('docker && linux'){
+                                        docker.image('python').inside('--mount source=python-tmp-py3exiv2bind,target=/tmp'){
+                                            try{
+                                                checkout scm
+                                                sh(script: 'python3 -m venv venv && venv/bin/pip install uv')
+                                                envs = sh(
+                                                    label: 'Get tox environments',
+                                                    script: './venv/bin/uvx --quiet --with tox-uv tox list -d --no-desc',
+                                                    returnStdout: true,
+                                                ).trim().split('\n')
+                                            } finally{
+                                                cleanWs(
+                                                    patterns: [
+                                                        [pattern: 'venv/', type: 'INCLUDE'],
+                                                        [pattern: '.tox', type: 'INCLUDE'],
+                                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                    ]
+                                                )
+                                            }
+                                        }
+                                    }
                                     parallel(
-                                        getToxTestsParallel(
-                                            envNamePrefix: 'Tox Linux',
-                                            label: 'linux && docker && x86',
-                                            dockerfile: 'ci/docker/linux/tox/Dockerfile',
-                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
-                                            dockerRunArgs: '-v pipcache_pyexiv2bind:/.cache/pip',
-                                            retry: 3,
-                                        )
+                                        envs.collectEntries{toxEnv ->
+                                            def version = toxEnv.replaceAll(/py(\d)(\d+)/, '$1.$2')
+                                            [
+                                                "Tox Environment: ${toxEnv}",
+                                                {
+                                                    node('docker && linux'){
+                                                        checkout scm
+                                                        def image
+                                                        lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
+                                                            image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL .')
+                                                        }
+                                                        try{
+                                                            image.inside('--mount source=python-tmp-tox-py3exiv2bind,target=/tmp'){
+                                                                retry(3){
+                                                                    try{
+                                                                        sh( label: 'Running Tox',
+                                                                            script: """python3 -m venv /tmp/venv && /tmp/venv/bin/pip install uv
+                                                                                       . /tmp/venv/bin/activate
+                                                                                       uvx -p ${version} --with tox-uv tox run -e ${toxEnv} -vvv
+                                                                                    """
+                                                                            )
+                                                                    } catch(e) {
+                                                                        sh(script: '''. ./venv/bin/activate
+                                                                              uv python list
+                                                                              '''
+                                                                                )
+                                                                        throw e
+                                                                    } finally{
+                                                                        cleanWs(
+                                                                            patterns: [
+                                                                                [pattern: 'venv/', type: 'INCLUDE'],
+                                                                                [pattern: '.tox', type: 'INCLUDE'],
+                                                                                [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                                            ]
+                                                                        )
+                                                                    }
+                                                                }
+                                                            }
+                                                        } finally {
+                                                            sh "docker rmi ${image.id}"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
                                     )
                                 }
                             }
                         }
                         stage('Windows'){
-                            when{
-                                expression {return nodesByLabel('windows && docker && x86').size() > 0}
-                            }
-                            steps{
-                                script{
-                                    parallel(
-                                        getToxTestsParallel(
-                                            envNamePrefix: 'Tox Windows',
-                                            label: 'windows && docker && x86',
-                                            dockerfile: 'ci/docker/windows/tox/Dockerfile',
-                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion',
-                                            dockerRunArgs: '-v pipcache_pyexiv2bind:c:/users/containeradministrator/appdata/local/pip',
-                                            retry: 3,
-                                        )
-                                    )
-                                }
-                            }
+                             when{
+                                 expression {return nodesByLabel('windows && docker && x86').size() > 0}
+                             }
+                             environment{
+                                 UV_INDEX_STRATEGY='unsafe-best-match'
+                                 PIP_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\pipcache'
+                                 UV_TOOL_DIR='C:\\Users\\ContainerUser\\Documents\\uvtools'
+                                 UV_PYTHON_INSTALL_DIR='C:\\Users\\ContainerUser\\Documents\\uvpython'
+                                 UV_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\uvcache'
+                             }
+                             steps{
+                                 script{
+                                     def envs = []
+                                     node('docker && windows'){
+                                         docker.image('python').inside('--mount source=python-tmp-py3exiv2bind,target=C:\\Users\\ContainerUser\\Documents'){
+                                             try{
+                                                 checkout scm
+                                                 bat(script: 'python -m venv venv && venv\\Scripts\\pip install uv')
+                                                 envs = bat(
+                                                     label: 'Get tox environments',
+                                                     script: '@.\\venv\\Scripts\\uvx --quiet --with-requirements requirements-dev.txt --with tox-uv tox list -d --no-desc',
+                                                     returnStdout: true,
+                                                 ).trim().split('\r\n')
+                                             } finally{
+                                                 cleanWs(
+                                                     patterns: [
+                                                         [pattern: 'venv/', type: 'INCLUDE'],
+                                                         [pattern: '.tox', type: 'INCLUDE'],
+                                                         [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                     ]
+                                                 )
+                                             }
+                                         }
+                                     }
+                                     parallel(
+                                         envs.collectEntries{toxEnv ->
+                                             def version = toxEnv.replaceAll(/py(\d)(\d+)/, '$1.$2')
+                                             [
+                                                 "Tox Environment: ${toxEnv}",
+                                                 {
+                                                     node('docker && windows'){
+                                                        def image
+                                                        checkout scm
+                                                        lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
+                                                            image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion .')
+                                                        }
+                                                        try{
+                                                            image.inside('--mount source=python-tmp-py3exiv2bind,target=C:\\Users\\ContainerUser\\Documents'){
+                                                                try{
+                                                                    retry(3){
+                                                                        bat(label: 'Running Tox',
+                                                                             script: """python -m venv venv && venv\\Scripts\\pip install uv
+                                                                                    call venv\\Scripts\\activate.bat
+                                                                                    uv python install cpython-${version}
+                                                                                    uvx -p ${version} --with-requirements requirements-dev.txt --with tox-uv tox run -e ${toxEnv}
+                                                                                    rmdir /S /Q .tox
+                                                                                    rmdir /S /Q venv
+                                                                                 """
+                                                                        )
+                                                                    }
+                                                                } finally{
+                                                                     cleanWs(
+                                                                         patterns: [
+                                                                             [pattern: 'venv/', type: 'INCLUDE'],
+                                                                             [pattern: '.tox', type: 'INCLUDE'],
+                                                                             [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                                         ]
+                                                                     )
+                                                                }
+                                                            }
+                                                        } finally {
+                                                            bat "docker rmi --no-prune ${image.id}"
+                                                        }
+                                                     }
+                                                 }
+                                             ]
+                                         }
+                                     )
+                                 }
+                             }
                         }
                     }
                 }
@@ -1168,7 +1297,7 @@ pipeline {
                                                         checkout scm
                                                         unstash 'sdist'
                                                     },
-                                                    testCommand: {
+                                                    testCommand: {testCommand
                                                         findFiles(glob: 'dist/*.tar.gz').each{
                                                             withEnv([
                                                                 'PIP_CACHE_DIR=/tmp/pipcache',
