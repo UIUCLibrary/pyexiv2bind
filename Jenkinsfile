@@ -126,7 +126,6 @@ def windows_wheels(){
                                     bat """python -m venv venv
                                            venv\\Scripts\\pip install uv
                                            venv\\Scripts\\uv build --python ${pythonVersion} --wheel
-                                           rmdir /S /Q .tox
                                            rmdir /S /Q venv
                                         """
                                     }
@@ -1052,7 +1051,7 @@ pipeline {
                                             arches << "x86_64"
                                         }
                                         if(params.INCLUDE_MACOS_ARM == true){
-                                            arches << "m1"
+                                            arches << "arm64"
                                         }
                                         arches.each{arch ->
                                             testSdistStages["Test sdist (MacOS ${arch} - Python ${pythonVersion})"] = {
@@ -1094,67 +1093,74 @@ pipeline {
                                     SUPPORTED_WINDOWS_VERSIONS.each{ pythonVersion ->
                                         if(params.INCLUDE_WINDOWS_X86_64 == true){
                                             testSdistStages["Test sdist (Windows x86_64 - Python ${pythonVersion})"] = {
-                                                testPythonPkg(
-                                                    agent: [
-                                                        dockerfile: [
-                                                            label: 'windows && docker',
-                                                            filename: 'ci/docker/windows/tox/Dockerfile',
-                                                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion',
-                                                            dockerRunArgs: '-v pipcache_pyexiv2bind:c:/users/containeradministrator/appdata/local/pip',
-                                                        ]
-                                                    ],
-                                                    testSetup: {
-                                                        checkout scm
-                                                        unstash 'sdist'
-                                                    },
-                                                    retries: 3,
-                                                    testCommand: {
-                                                        findFiles(glob: 'dist/*.tar.gz').each{
-                                                            timeout(60){
-                                                                withEnv([
-                                                                    'PIP_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\pipcache',
-                                                                    'UV_TOOL_DIR=C:\\Users\\ContainerUser\\Documents\\uvtools',
-                                                                    'UV_PYTHON_INSTALL_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython',
-                                                                    'UV_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\uvcache',
-                                                                    'UV_INDEX_STRATEGY=unsafe-best-match',
-                                                                ]){
-                                                                    bat(label: 'Running Tox',
-                                                                        script: """python -m pip install uv
-                                                                                   uvx --python ${pythonVersion} --with-requirements requirements-dev.txt --with tox-uv tox run  --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -v
-                                                                                   rmdir /S /Q .tox
-                                                                                   rmdir /S /Q venv
-                                                                                """
-                                                                        )
+                                                node('docker && windows'){
+                                                    def image
+                                                    checkout scm
+                                                    lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
+                                                        image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg chocolateyVersion .')
+                                                    }
+                                                    try{
+                                                        image.inside('--mount source=python-tox-tmp-py3exiv2bind,target=C:\\Users\\ContainerUser\\Documents'){
+                                                            checkout scm
+                                                            unstash 'sdist'
+                                                            findFiles(glob: 'dist/*.tar.gz').each{
+                                                                timeout(60){
+                                                                    withEnv([
+                                                                        'PIP_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\pipcache',
+                                                                        'UV_TOOL_DIR=C:\\Users\\ContainerUser\\Documents\\uvtools',
+                                                                        'UV_PYTHON_INSTALL_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython',
+                                                                        'UV_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\uvcache',
+                                                                        'UV_INDEX_STRATEGY=unsafe-best-match',
+                                                                    ]){
+                                                                        try{
+                                                                            bat(label: 'Running Tox',
+                                                                                script: """python -m venv venv
+                                                                                           venv\\Scripts\\pip install uv
+                                                                                           venv\\Scripts\\uvx --python ${pythonVersion} --with-requirements requirements-dev.txt --with tox-uv tox run  --runner=uv-venv-runner --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -v
+                                                                                           rmdir /S /Q .tox
+                                                                                           rmdir /S /Q venv
+                                                                                        """
+                                                                                )
+                                                                        } finally {
+                                                                            cleanWs(
+                                                                                patterns: [
+                                                                                        [pattern: '.tox/', type: 'INCLUDE'],
+                                                                                        [pattern: 'venv/', type: 'INCLUDE'],
+                                                                                        [pattern: 'dist/', type: 'INCLUDE'],
+                                                                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                                                                    ],
+                                                                                notFailBuild: true,
+                                                                                deleteDirs: true
+                                                                            )
+                                                                        }
+                                                                    }
                                                                 }
                                                             }
                                                         }
-                                                    },
-                                                    post:[
-                                                        cleanup: {
-                                                            cleanWs(
-                                                                patterns: [
-                                                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                                    ],
-                                                                notFailBuild: true,
-                                                                deleteDirs: true
-                                                            )
-                                                        },
-                                                    ]
-                                                )
+                                                    } finally {
+                                                        bat "docker rmi --no-prune ${image.id}"
+                                                    }
+                                                }
                                             }
                                         }
                                     }
                                     SUPPORTED_LINUX_VERSIONS.each{pythonVersion ->
+                                        def arches = []
                                         if(params.INCLUDE_LINUX_X86_64 == true){
-                                            testSdistStages["Test sdist (Linux x86_64 - Python ${pythonVersion})"] = {
+                                            arches << 'x86_64'
+                                        }
+                                        if(params.INCLUDE_LINUX_ARM == true){
+                                            arches << 'arm64'
+                                        }
+                                        arches.each{ arch ->
+                                            testSdistStages["Test sdist (Linux ${arch} - Python ${pythonVersion})"] = {
                                                 testPythonPkg(
                                                     agent: [
                                                         dockerfile: [
-                                                            label: 'linux && docker && x86',
+                                                            label: "linux && docker && ${arch}",
                                                             filename: 'ci/docker/linux/tox/Dockerfile',
                                                             additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
-                                                            args: '-v pipcache_pyexiv2bind:/.cache/pip'
+                                                            args: '--mount source=python-tox-tmp-py3exiv2bind,target=/tmp'
                                                         ]
                                                     ],
                                                     retries: 3,
@@ -1164,16 +1170,29 @@ pipeline {
                                                     },
                                                     testCommand: {
                                                         findFiles(glob: 'dist/*.tar.gz').each{
-                                                            sh(
-                                                                label: 'Running Tox',
-                                                                script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
-                                                                )
+                                                            withEnv([
+                                                                'PIP_CACHE_DIR=/tmp/pipcache',
+                                                                'UV_INDEX_STRATEGY=unsafe-best-match',
+                                                                'UV_TOOL_DIR=/tmp/uvtools',
+                                                                'UV_PYTHON_INSTALL_DIR=/tmp/uvpython',
+                                                                'UV_CACHE_DIR=/tmp/uvcache',
+                                                            ]){
+                                                                sh(
+                                                                    label: 'Running Tox',
+                                                                    script: """python3 -m venv venv
+                                                                               trap "rm -rf ./venv" EXIT
+                                                                               venv/bin/pip install uv
+                                                                               venv/bin/uvx --python ${pythonVersion} --with-requirements requirements-dev.txt --with tox-uv tox --runner=uv-venv-runner --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}
+                                                                            """
+                                                                    )
+                                                            }
                                                         }
                                                     },
                                                     post:[
                                                         cleanup: {
                                                             cleanWs(
                                                                 patterns: [
+                                                                        [pattern: 'venv/', type: 'INCLUDE'],
                                                                         [pattern: 'dist/', type: 'INCLUDE'],
                                                                         [pattern: '**/__pycache__/', type: 'INCLUDE'],
                                                                     ],
@@ -1183,47 +1202,6 @@ pipeline {
                                                         },
                                                     ]
                                                 )
-                                            }
-                                        }
-                                        if(params.INCLUDE_LINUX_ARM == true){
-                                            testSdistStages["Test sdist (Linux ARM64 - Python ${pythonVersion})"] = {
-                                                stage("Test sdist (Linux ARM64 - Python ${pythonVersion})"){
-                                                    testPythonPkg(
-                                                        agent: [
-                                                            dockerfile: [
-                                                                label: 'linux && docker && arm',
-                                                                filename: 'ci/docker/linux/tox/Dockerfile',
-                                                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
-                                                                args: '-v pipcache_pyexiv2bind:/.cache/pip'
-                                                            ]
-                                                        ],
-                                                        retries: 3,
-                                                        testSetup: {
-                                                            checkout scm
-                                                            unstash 'sdist'
-                                                        },
-                                                        testCommand: {
-                                                            findFiles(glob: 'dist/*.tar.gz').each{
-                                                                sh(
-                                                                    label: 'Running Tox',
-                                                                    script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
-                                                                    )
-                                                            }
-                                                        },
-                                                        post:[
-                                                            cleanup: {
-                                                                cleanWs(
-                                                                    patterns: [
-                                                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                                        ],
-                                                                    notFailBuild: true,
-                                                                    deleteDirs: true
-                                                                )
-                                                            },
-                                                        ]
-                                                    )
-                                                }
                                             }
                                         }
                                     }
