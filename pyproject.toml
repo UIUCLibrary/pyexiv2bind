@@ -26,6 +26,7 @@ description = "Exiv2 bindings for Python3"
 Download = "https://github.com/UIUCLibrary/pyexiv2bind"
 
 [tool.setuptools]
+include-package-data = false
 packages = [
     "py3exiv2bind",
 ]
