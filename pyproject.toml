@@ -34,7 +34,7 @@ zip-safe = false
 package-dir = {"py3exiv2bind" = "src/py3exiv2bind"}
 
 [tool.setuptools.package-data]
-hathi_validate = ["py.typed", "core.pyi"]
+py3exiv2bind = ["py.typed", "core.pyi"]
 
 [tool.pytest.ini_options]
 pythonpath = "src"
