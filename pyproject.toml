@@ -104,12 +104,12 @@ manylinux-x86_64-image = "manylinux2014"
 repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
 before-all = [
     "cc --version", "cc -dumpfullversion -dumpversion",
-    "pip3 install -r requirements-dev.txt",
-    "conan profile new /tmp/ciwheelbuilder/py3exiv2bind/.conan/profiles/default --detect",
-    "if [ -z \"$CONAN_COMPILER_LIBCXX\" ]; then : ; else conan profile update settings.compiler.libcxx=$CONAN_COMPILER_LIBCXX default; fi",
-    "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
-    "conan profile show default",
-    "conan install ./ --build missing",
+    "pip3 install uv",
+    "uvx --index-strategy unsafe-best-match --python 3.11 --with-requirements requirements-dev.txt conan profile new /tmp/ciwheelbuilder/py3exiv2bind/.conan/profiles/default --detect",
+    "if [ -z \"$CONAN_COMPILER_LIBCXX\" ]; then : ; else uvx --index-strategy unsafe-best-match --python 3.11  --with-requirements requirements-dev.txt conan profile update settings.compiler.libcxx=$CONAN_COMPILER_LIBCXX default; fi",
+    "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else uvx --index-strategy unsafe-best-match --python 3.11  --with-requirements requirements-dev.txt  conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
+    "uvx --index-strategy unsafe-best-match --python 3.11 --with-requirements requirements-dev.txt conan profile show default",
+    "uvx --index-strategy unsafe-best-match --python 3.11 --with-requirements requirements-dev.txt conan install ./ --build missing",
 
 ]
 [tool.cibuildwheel.linux.environment]
