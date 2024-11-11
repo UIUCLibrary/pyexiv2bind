@@ -1253,14 +1253,16 @@ pipeline {
                                                                         'UV_INDEX_STRATEGY=unsafe-best-match',
                                                                     ]){
                                                                         try{
-                                                                            bat(label: 'Running Tox',
-                                                                                script: """python -m venv venv
-                                                                                           venv\\Scripts\\pip install uv
-                                                                                           venv\\Scripts\\uvx --python ${pythonVersion} --with-requirements requirements-dev.txt --with tox-uv tox run  --runner=uv-venv-runner --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -v
-                                                                                           rmdir /S /Q .tox
-                                                                                           rmdir /S /Q venv
-                                                                                        """
+                                                                            retry(3){
+                                                                                bat(label: 'Running Tox',
+                                                                                    script: """python -m venv venv
+                                                                                               venv\\Scripts\\pip install uv
+                                                                                               venv\\Scripts\\uvx --python ${pythonVersion} --with-requirements requirements-dev.txt --with tox-uv tox run  --runner=uv-venv-runner --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -v
+                                                                                               rmdir /S /Q .tox
+                                                                                               rmdir /S /Q venv
+                                                                                            """
                                                                                 )
+                                                                            }
                                                                         } finally {
                                                                             cleanWs(
                                                                                 patterns: [
@@ -1308,7 +1310,7 @@ pipeline {
                                                         checkout scm
                                                         unstash 'sdist'
                                                     },
-                                                    testCommand: {testCommand
+                                                    testCommand: {
                                                         findFiles(glob: 'dist/*.tar.gz').each{
                                                             withEnv([
                                                                 'PIP_CACHE_DIR=/tmp/pipcache',
