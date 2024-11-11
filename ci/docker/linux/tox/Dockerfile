@@ -1,7 +1,4 @@
-ARG PIPX_HOME=/pipx
-ARG PIP_DOWNLOAD_CACHE=/.cache/pip
 ARG CONAN_USER_HOME=/conan
-ARG PIP_FIND_LINKS=/wheels
 FROM ubuntu:22.04 AS base
 COPY ci/docker/linux/tox/apt-packages.txt /tmp/
 RUN apt-get update && \
@@ -37,39 +34,10 @@ RUN python3 -m venv venv && \
 FROM base
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-COPY requirements-dev.txt /tmp/requirements-dev.txt
-RUN python3 -m pip install --upgrade pip && \
-    python3 -m pip install -r /tmp/requirements-dev.txt
-
 ARG CONAN_USER_HOME
 COPY --from=conan_builder ${CONAN_USER_HOME}/.conan/ ${CONAN_USER_HOME}/.conan/
-
-
-RUN conan config init && \
-    conan config set general.revisions_enabled=1 && \
-    conan profile update settings.compiler.libcxx=libstdc++11 default
-
-COPY conanfile.py /tmp/conanfile.py
-RUN conan install /tmp --build  missing --no-import -pr:b=default && \
-    conan remove "*" -b --src -f && \
-    conan remove --locks && \
-    chmod -R 777 ${CONAN_USER_HOME}
-
+RUN chmod -R 777 ${CONAN_USER_HOME}
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
-ARG PIP_DOWNLOAD_CACHE
-RUN mkdir -p ${PIP_DOWNLOAD_CACHE} && \
-    chmod -R 777 ${PIP_DOWNLOAD_CACHE}
-ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
-
-ARG PIPX_HOME
-ENV PIPX_HOME=${PIPX_HOME}
-ENV PIPX_BIN_DIR=${PIPX_HOME}/bin
-RUN pip3 install --no-cache-dir pipx && \
-    pipx ensurepath && \
-    mkdir -p $PIPX_HOME  && chmod -R 777 $PIPX_HOME
-RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install pip-audit
-
-
 
 WORKDIR /src
 

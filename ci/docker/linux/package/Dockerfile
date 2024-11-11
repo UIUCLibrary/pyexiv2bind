@@ -5,37 +5,21 @@ RUN mkdir -p /.cache/pip && \
     chmod -R 777 /.cache
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-COPY requirements-dev.txt /tmp/requirements-dev.txt
-RUN python3 --version && python3 -m pip install --no-cache-dir -r /tmp/requirements-dev.txt
-ARG TARGETARCH
-COPY conanfile.py /tmp/conanfile.py
 ENV CONAN_USER_HOME=/conan
-RUN conan config init && \
+COPY requirements-dev.txt /tmp/requirements-dev.txt
+COPY conanfile.py /tmp/conanfile.py
+COPY ci/docker/linux/tox/update_conan_compiler.py  /tmp/update_conan_compiler.py
+RUN python3 -m venv venv && \
+    . ./venv/bin/activate && \
+    pip install --no-cache-dir uv && \
+    uv pip install --no-cache -r /tmp/requirements-dev.txt && \
+    conan config init && \
     conan config set general.revisions_enabled=1 && \
+    python /tmp/update_conan_compiler.py ${CONAN_USER_HOME}/.conan/settings.yml gcc $(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)") && \
     conan profile update settings.compiler.version=$(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)") default && \
     conan install /tmp --build  missing --no-import  && \
     conan remove "*" -b --src -f && \
     conan remove --locks && \
-    chmod -R 777 /conan
+    chmod -R 777 /conan &&  \
+    rm -rf venv
 
-
-RUN /opt/python/cp38-cp38/bin/python -m pip install --no-cache-dir --upgrade pip && \
-    /opt/python/cp38-cp38/bin/python -m pip install --no-cache-dir --upgrade wheel && \
-    /opt/python/cp38-cp38/bin/python -m pip install --no-cache-dir --upgrade build &&  \
-    python3.8 -m build --version && \
-    /opt/python/cp39-cp39/bin/python -m pip install --no-cache-dir --upgrade pip && \
-    /opt/python/cp39-cp39/bin/python -m pip install --no-cache-dir --upgrade wheel && \
-    /opt/python/cp39-cp39/bin/python -m pip install --no-cache-dir --upgrade build &&  \
-    python3.9 -m build --version && \
-    /opt/python/cp310-cp310/bin/python -m pip install --no-cache-dir --upgrade pip && \
-    /opt/python/cp310-cp310/bin/python -m pip install --no-cache-dir --upgrade wheel && \
-    /opt/python/cp310-cp310/bin/python -m pip install --no-cache-dir --upgrade build &&  \
-    python3.10 -m build --version && \
-    /opt/python/cp311-cp311/bin/python -m pip install --no-cache-dir --upgrade pip && \
-    /opt/python/cp311-cp311/bin/python -m pip install --no-cache-dir --upgrade wheel && \
-    /opt/python/cp311-cp311/bin/python -m pip install --no-cache-dir --upgrade build &&  \
-    python3.11 -m build --version && \
-    /opt/python/cp312-cp312/bin/python -m pip install --no-cache-dir --upgrade pip && \
-    /opt/python/cp312-cp312/bin/python -m pip install --no-cache-dir --upgrade wheel && \
-    /opt/python/cp312-cp312/bin/python -m pip install --no-cache-dir --upgrade build &&  \
-    python3.12 -m build --version

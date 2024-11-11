@@ -3,6 +3,7 @@ ARG PIPX_HOME=c:\pipx
 ARG VS_INSTALL_PATH="C:\BuildTools"
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
+ARG UV_CACHE_DIR=c:\Users\ContainerUser\Documents\uvcache
 ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019
 ARG CONAN_USER_HOME=C:/Users/ContainerAdministrator
 ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
@@ -67,55 +68,42 @@ FROM BASE_BUILDER AS CONAN_BUILDER
 ARG CONAN_USER_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
-COPY requirements-dev.txt c:/requirements/requirements-dev.txt
-RUN python -m pip install --no-cache-dir --upgrade pip ; `
-    pip install --no-cache-dir -r c:/requirements/requirements-dev.txt
 
 COPY conanfile.py c:/temp/conanfile.py
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
+COPY requirements-dev.txt c:/requirements/requirements-dev.txt
+#RUN python -m pip install --no-cache-dir --upgrade pip ; `
+#    pip install --no-cache-dir -r c:/requirements/requirements-dev.txt
 COPY ci/docker/windows/tox/conan/profile.ini  ${CONAN_USER_HOME}/.conan/profiles/default
 SHELL ["cmd", "/S", "/C" ]
-RUN conan config home && `
-    conan config init && `
-    conan config set general.revisions_enabled=1
-
 ENV CONAN_CMAKE_GENERATOR=Ninja
-RUN conan install c:/temp/ --build --no-import -pr:b=default && `
+RUN python -m venv venv && `
+    call venv\\Scripts\\activate.bat && `
+    pip install uv --no-cache-dir && `
+    uv pip install -r c:/requirements/requirements-dev.txt && `
+    conan config home && `
+    conan config init && `
+    conan config set general.revisions_enabled=1 && `
+    conan install c:/temp/ --build --no-import -pr:b=default && `
     conan remove "*" -b --src -f && `
-    conan remove --lock
+    conan remove --lock && `
+    rmdir /S /Q venv
 
 FROM BASE_BUILDER
 COPY --from=certsgen c:/roots.sst c:/roots.sst
 RUN certutil -addstore -f root c:/roots.sst ; `
     del c:/roots.sst
 
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-COPY requirements-dev.txt c:/python_requirments/requirements-dev.txt
-RUN py -3.9 -m pip install --no-cache-dir pip --upgrade ;  `
-    py -3.9 -m pip install --no-cache-dir build; `
-    py -3.10 -m pip install --no-cache-dir pip --upgrade ;  `
-    py -3.10 -m pip install --no-cache-dir build; `
-    py -3.11 -m pip install --no-cache-dir pip --upgrade ;  `
-    py -3.11 -m pip install --no-cache-dir build ; `
-    py -3.12 -m pip install --no-cache-dir build ; `
-    python -m pip install --no-cache-dir pip --upgrade ; pip install --no-cache-dir -r c:/python_requirments/requirements-dev.txt
-
-
 ARG PIP_DOWNLOAD_CACHE
-RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force
+ARG UV_CACHE_DIR
+RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force ; `
+    New-Item -type directory -path ${Env:UV_CACHE_DIR} -Force
 ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
+ENV UV_CACHE_DIR=${UV_CACHE_DIR}
 
 ARG CONAN_USER_HOME
 COPY --from=CONAN_BUILDER ${CONAN_USER_HOME}/.conan/ ${CONAN_USER_HOME}/.conan/
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
-
-ARG PIPX_HOME
-ENV PIPX_HOME=${PIPX_HOME}
-ENV PIPX_BIN_DIR=${PIPX_HOME}\bin
-
-RUN py -3 -m pip install --no-cache-dir pipx ; `
-    py -3 -m pipx ensurepath
 
 
 WORKDIR C:/src
