@@ -207,7 +207,10 @@ def linux_wheels(){
                                     buildCmd: {
                                         try{
                                             sh(label: 'Building python wheel',
-                                               script:"""python${pythonVersion} -m build --wheel
+                                               script:"""python${pythonVersion} -m venv venv
+                                                         trap "rm -rf venv" EXIT
+                                                         ./venv/bin/pip install uv
+                                                         ./venv/bin/uv build --index-strategy unsafe-best-match --python ${pythonVersion} --wheel
                                                          auditwheel repair ./dist/*.whl -w ./dist
                                                          """
                                                )
