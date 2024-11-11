@@ -834,6 +834,9 @@ pipeline {
                             options{
                                 lock('py3exiv2bind-sonarcloud')
                             }
+                            environment{
+                                SONAR_USER_HOME = '/tmp/sonar'
+                            }
                             when{
                                 allOf{
                                     equals expected: true, actual: params.USE_SONARQUBE
