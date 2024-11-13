@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<packages>
-    <package id="python39"/>
-    <package id="python310"/>
-    <package id="python311"/>
-    <package id="python312"/>
-</packages>
