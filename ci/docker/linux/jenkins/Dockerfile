@@ -1,5 +1,5 @@
 ARG CONAN_USER_HOME=/conan
-ARG PYTHON_VERSION=3.11
+ARG PYTHON_VERSION=latest
 ARG SONAR_USER_HOME=/opt/sonar/.sonar
 FROM python:${PYTHON_VERSION} AS base_image
 RUN apt-get update && \
