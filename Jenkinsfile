@@ -597,7 +597,7 @@ pipeline {
                                 equals expected: true, actual: params.RUN_CHECKS
                             }
                             stages{
-                                stage('Building Extension code and C++ Tests with coverage data'){
+                                stage('Building C++ Tests with coverage data'){
                                     steps{
                                         tee('logs/cmake-build.log'){
                                             sh(label: 'Building C++ Code',
