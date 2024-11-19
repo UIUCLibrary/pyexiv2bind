@@ -322,7 +322,6 @@ def mac_wheels(){
                                     stage(newWheelStage){
                                         if(selectedArches.contains(arch)){
                                             stage("Build Wheel (${pythonVersion} MacOS ${arch})"){
-
                                                 buildPythonPkg(
                                                     agent: [
                                                         label: "mac && python${pythonVersion} && ${arch}",
@@ -351,42 +350,42 @@ def mac_wheels(){
                                                         }
                                                     ]
                                                 )
-                                                if(params.TEST_PACKAGES == true){
-                                                    stage("Test Wheel (${pythonVersion} MacOS ${arch})"){
-                                                        testPythonPkg(
-                                                            agent: [
-                                                                label: "mac && python${pythonVersion} && ${arch}",
-                                                            ],
-                                                            testSetup: {
-                                                                checkout scm
-                                                                unstash "python${pythonVersion} mac ${arch} wheel"
-                                                            },
-                                                            retries: 3,
-                                                            testCommand: {
-                                                                findFiles(glob: 'dist/*.whl').each{
-                                                                    sh(label: 'Running Tox',
-                                                                       script: """python${pythonVersion} -m venv venv
-                                                                       ./venv/bin/python -m pip install --disable-pip-version-check --upgrade pip
-                                                                       ./venv/bin/pip install --disable-pip-version-check -r requirements-dev.txt
-                                                                       ./venv/bin/tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
-                                                                    )
-                                                                }
-                                                            },
-                                                            post:[
-                                                                cleanup: {
-                                                                    cleanWs(
-                                                                        patterns: [
-                                                                                [pattern: 'dist/', type: 'INCLUDE'],
-                                                                                [pattern: 'venv/', type: 'INCLUDE'],
-                                                                                [pattern: '.tox/', type: 'INCLUDE'],
-                                                                            ],
-                                                                        notFailBuild: true,
-                                                                        deleteDirs: true
-                                                                    )
-                                                                }
-                                                            ]
-                                                        )
-                                                    }
+                                            }
+                                            if(params.TEST_PACKAGES == true){
+                                                stage("Test Wheel (${pythonVersion} MacOS ${arch})"){
+                                                    testPythonPkg(
+                                                        agent: [
+                                                            label: "mac && python${pythonVersion} && ${arch}",
+                                                        ],
+                                                        testSetup: {
+                                                            checkout scm
+                                                            unstash "python${pythonVersion} mac ${arch} wheel"
+                                                        },
+                                                        retries: 3,
+                                                        testCommand: {
+                                                            findFiles(glob: 'dist/*.whl').each{
+                                                                sh(label: 'Running Tox',
+                                                                   script: """python${pythonVersion} -m venv venv
+                                                                   ./venv/bin/python -m pip install --disable-pip-version-check --upgrade pip
+                                                                   ./venv/bin/pip install --disable-pip-version-check -r requirements-dev.txt
+                                                                   ./venv/bin/tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
+                                                                )
+                                                            }
+                                                        },
+                                                        post:[
+                                                            cleanup: {
+                                                                cleanWs(
+                                                                    patterns: [
+                                                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                                                            [pattern: 'venv/', type: 'INCLUDE'],
+                                                                            [pattern: '.tox/', type: 'INCLUDE'],
+                                                                        ],
+                                                                    notFailBuild: true,
+                                                                    deleteDirs: true
+                                                                )
+                                                            }
+                                                        ]
+                                                    )
                                                 }
                                             }
                                         } else {
