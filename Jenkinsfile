@@ -164,9 +164,16 @@ def windows_wheels(){
                                     'UV_INDEX_STRATEGY=unsafe-best-match',
                                 ]){
                                     findFiles(glob: 'dist/*.whl').each{
-                                        bat """python -m pip install --disable-pip-version-check uv
-                                               uvx --python ${pythonVersion} --with-requirements requirements-dev.txt --with tox-uv tox run -e py${pythonVersion.replace('.', '')}  --installpkg ${it.path}
-                                            """
+                                        retry(3){
+                                            bat(label: 'Running Tox',
+                                                script: """python -m venv venv
+                                                           venv\\Scripts\\pip install --disable-pip-version-check uv
+                                                           venv\\Scripts\\uvx --python ${pythonVersion} --with-requirements requirements-dev.txt --with tox-uv tox run -e py${pythonVersion.replace('.', '')}  --installpkg ${it.path}
+                                                           rmdir /S /Q venv
+                                                           rmdir /S /Q .tox
+                                                        """
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -1078,18 +1085,18 @@ pipeline {
                                                                 try{
                                                                     retry(3){
                                                                         bat(label: 'Running Tox',
-                                                                             script: """python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv
-                                                                                    call venv\\Scripts\\activate.bat
-                                                                                    uv python install cpython-${version}
-                                                                                    uvx -p ${version} --with-requirements requirements-dev.txt --with tox-uv tox run -e ${toxEnv}
-                                                                                    rmdir /S /Q .tox
-                                                                                    rmdir /S /Q venv
-                                                                                 """
+                                                                            script: """py -m venv venv
+                                                                                       venv\\Scripts\\pip install --disable-pip-version-check uv
+                                                                                       venv\\Scripts\\uv python install cpython-${version}
+                                                                                       venv\\Scripts\\uvx -p ${version} --with-requirements requirements-dev.txt --with tox-uv tox run -e ${toxEnv} --workdir %WORKSPACE_TMP%\\.tox
+                                                                                       rmdir /S /Q venv
+                                                                                    """
                                                                         )
                                                                     }
                                                                 } finally{
                                                                      cleanWs(
                                                                          patterns: [
+                                                                             [pattern: '${WORKSPACE_TMP}/.tox/', type: 'INCLUDE'],
                                                                              [pattern: 'venv/', type: 'INCLUDE'],
                                                                              [pattern: '.tox', type: 'INCLUDE'],
                                                                              [pattern: '**/__pycache__/', type: 'INCLUDE'],
