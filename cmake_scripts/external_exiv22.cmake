@@ -55,7 +55,6 @@ FetchContent_Declare(
         PATCH_COMMAND
             COMMAND git cherry-pick 71bb2b193aad369c4d6ed9cab813c2042f626afe --no-commit
 #            COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/tiff_resolution_path.patch
-        EXCLUDE_FROM_ALL
 )
 
 FetchContent_GetProperties(libexiv2)

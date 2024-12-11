@@ -6,10 +6,7 @@ if (BUILD_TESTING)
             SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/sample_images
             )
     FetchContent_GetProperties(test_images)
-    if (NOT test_images_POPULATED)
-        FetchContent_Populate(test_images)
-    endif()
-
+    FetchContent_MakeAvailable(test_images)
     find_path(TEST_IMAGE_PATH dummy.jp2
             PATHS ${test_images_SOURCE_DIR})
     set(TEST_IMAGE_PATH ${TEST_IMAGE_PATH}/)
