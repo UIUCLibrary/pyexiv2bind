@@ -55,23 +55,24 @@ FetchContent_Declare(
         PATCH_COMMAND
             COMMAND git cherry-pick 71bb2b193aad369c4d6ed9cab813c2042f626afe --no-commit
 #            COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/tiff_resolution_path.patch
+        EXCLUDE_FROM_ALL
 )
 
 FetchContent_GetProperties(libexiv2)
 if (NOT libexiv2_POPULATED)
-    FetchContent_Populate(libexiv2)
-    patch_tiff_resolution("${libexiv2_SOURCE_DIR}")
-    patch_exiv2_cmake("${libexiv2_SOURCE_DIR}")
     option(EXIV2_ENABLE_INIH "" OFF)
     option(EXIV2_BUILD_EXIV2_COMMAND "" OFF)
+    set(CMAKE_SKIP_TEST_ALL_DEPENDENCY OFF CACHE BOOL "")
     set(EXIV2_BUILD_EXIV2_COMMAND OFF CACHE BOOL "")
     set(EXIV2_BUILD_SAMPLES OFF CACHE BOOL "")
     option(EXIV2_BUILD_SAMPLES "" OFF)
     if(MSVC)
         option(EXIV2_ENABLE_DYNAMIC_RUNTIME "" ON)
     endif()
+    FetchContent_MakeAvailable(libexiv2)
 
+    patch_tiff_resolution("${libexiv2_SOURCE_DIR}")
+    patch_exiv2_cmake("${libexiv2_SOURCE_DIR}")
     list(APPEND CMAKE_MODULE_PATH "${libexiv2_SOURCE_DIR}/cmake")
     include_directories(${libexiv2_BINARY_DIR})
-    add_subdirectory(${libexiv2_SOURCE_DIR} ${libexiv2_BINARY_DIR})
 endif ()
