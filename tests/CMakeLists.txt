@@ -6,10 +6,7 @@ if (BUILD_TESTING)
             SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/sample_images
             )
     FetchContent_GetProperties(test_images)
-    if (NOT test_images_POPULATED)
-        FetchContent_Populate(test_images)
-    endif()
-
+    FetchContent_MakeAvailable(test_images)
     find_path(TEST_IMAGE_PATH dummy.jp2
             PATHS ${test_images_SOURCE_DIR})
     set(TEST_IMAGE_PATH ${TEST_IMAGE_PATH}/)
@@ -55,7 +52,7 @@ if (BUILD_TESTING)
 
     FetchContent_MakeAvailable(libcatch2)
     FetchContent_GetProperties(libcatch2)
-    target_include_directories(Catch2 INTERFACE ${libcatch2_SOURCE_DIR}/src)
+    list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
     add_executable(cpp_tests
             test_basic.cpp
             $<TARGET_OBJECTS:glue>
