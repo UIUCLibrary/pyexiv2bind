@@ -52,7 +52,7 @@ if (BUILD_TESTING)
 
     FetchContent_MakeAvailable(libcatch2)
     FetchContent_GetProperties(libcatch2)
-    target_include_directories(Catch2 INTERFACE ${libcatch2_SOURCE_DIR}/src)
+    list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
     add_executable(cpp_tests
             test_basic.cpp
             $<TARGET_OBJECTS:glue>

@@ -23,8 +23,8 @@ FetchContent_Declare(libpybind11
         )
 
 FetchContent_Declare(libcatch2
-        URL https://github.com/catchorg/Catch2/archive/v3.4.0.tar.gz
-        URL_HASH SHA1=4c308576c856a43dc88949a8f64ef90ebf94ae1b
+        URL https://github.com/catchorg/Catch2/archive/v3.7.1.tar.gz
+        URL_HASH SHA1=0c67df1524fd3ce88f656a3865ba4d4e4886168f
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         )
 
