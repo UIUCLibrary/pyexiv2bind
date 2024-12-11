@@ -22,12 +22,14 @@ jobs:
       fail-fast: false
     name: Python ${{ matrix.python-version }} ${{ matrix.os }} build
     steps:
+
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip' # caching pip dependencies
-      - run: |
+      - name: "install Python dependencies"
+        run: |
           pip install wheel
           pip install -r requirements-dev.txt
       - uses: actions/cache@v3
@@ -38,6 +40,10 @@ jobs:
 
       - name: Build conan packages on Non-Windows Operating Systems
         if: ${{ !contains(matrix.os, 'windows') && steps.cache.outputs.cache-hit != 'true' }}
+        env:
+          CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
+          CONAN_COMPILER_LIBCXX: ${{ matrix.compiler_libcxx }}
+          CONAN_USER_HOME: ${{ matrix.conan_user_home }}
         run: |
           cc --version &&  cc -dumpfullversion -dumpversion 
           pip install -r requirements-dev.txt
@@ -47,10 +53,13 @@ jobs:
           conan config set general.revisions_enabled=1
           if [[ -z "$CONAN_COMPILER_LIBCXX" ]]; then echo 'CONAN_COMPILER_LIBCXX is not defined'; else conan profile update settings.compiler.libcxx=$CONAN_COMPILER_LIBCXX default; fi
           conan install  . --build missing --build openjpeg --no-import -pr:b=default
-        env:
-          CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
-          CONAN_COMPILER_LIBCXX: ${{ matrix.compiler_libcxx }}
-          CONAN_USER_HOME: ${{ matrix.conan_user_home }}
+
+      - uses: actions/github-script@v7
+        id: tox-env
+        with:
+            result-encoding: string
+            script: |
+              return "py${{matrix.python-version}}".replace('.','')
       - name: Run tox
         if: contains(matrix.os, 'windows')
         shell: cmd
@@ -62,12 +71,12 @@ jobs:
           conan config set general.revisions_enabled=1
           conan profile new default --detect
           conan install . --build  missing --no-import 
-          tox -e py
+          tox -e ${{ steps.tox-env.outputs.result }}
         env:
           CONAN_USER_HOME: "C:/Users/runneradmin"
       - name: Run tox
         if: "!contains(matrix.os, 'windows')"
-        run: cc --version &&  cc -dumpfullversion -dumpversion && tox -e py -vvv
+        run: cc --version &&  cc -dumpfullversion -dumpversion && tox -e ${{ steps.tox-env.outputs.result }} -vvv
         env:
           CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
           CONAN_COMPILER_LIBCXX: ${{ matrix.compiler_libcxx }}
