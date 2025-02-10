@@ -1183,9 +1183,11 @@ pipeline {
                                                venv/bin/uv build --sdist
                                             '''
                                 )
+                                echo "sdist built on ${env.NODE_NAME}"
                             }
                             post{
                                 success {
+                                    echo 'Stashing sdist'
                                     stash includes: 'dist/*.tar.gz,dist/*.zip', name: 'sdist'
                                     archiveArtifacts artifacts: 'dist/*.tar.gz,dist/*.zip'
                                     script{
@@ -1193,6 +1195,7 @@ pipeline {
                                     }
                                 }
                                 cleanup {
+                                    echo 'cleaning up workspace'
                                     cleanWs(
                                         patterns: [
                                             [pattern: 'venv/', type: 'INCLUDE'],
@@ -1273,7 +1276,7 @@ pipeline {
                                             selectedArches << "x86_64"
                                         }
                                         return allValidArches.collectEntries{ arch ->
-                                            def newStageName = "Test sdist (Windows x86_64 - Python ${pythonVersion})"
+                                            def newStageName = "Test sdist (Windows ${arch} - Python ${pythonVersion})"
                                             return [
                                                 "${newStageName}": {
                                                     if(selectedArches.contains(arch)){
