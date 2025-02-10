@@ -1,12 +1,30 @@
 on: [push, pull_request]
 name: Tox Multi-platform Compatibility Test
 jobs:
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    outputs:
+      tox_matrix: ${{ steps.dataStep.outputs.myoutput }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        name: Get tox environments
+        with:
+          cache: 'pip'
+          python-version: '3.13'
+      - id: dataStep
+        run: |
+          python -m pip install tox-uv
+          echo "myoutput=$(uvx --quiet --with tox-uv tox list -d --no-desc | sed -E 's/(.*py)([0-9])([0-9]+)/\2.\3/' | jq  --raw-input . | jq -c --slurp)" >> $GITHUB_OUTPUT
+
   build:
+    needs: setup
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-2019]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ${{ fromJson(needs.setup.outputs.tox_matrix) }}
         include:
           - os: macos-latest
             compiler_libcxx: libc++
