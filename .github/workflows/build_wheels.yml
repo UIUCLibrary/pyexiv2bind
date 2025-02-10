@@ -26,8 +26,8 @@ jobs:
             compiler_version: 16
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Install cibuildwheel
@@ -50,7 +50,7 @@ jobs:
            CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
 
         #   CIBW_SOME_OPTION: value
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if:  ${{ inputs.save }}
         with:
           name: uiucprescon.ocr-wheels
