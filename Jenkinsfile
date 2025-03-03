@@ -407,43 +407,45 @@ def mac_wheels(){
                     if(params.INCLUDE_MACOS_X86_64 && params.INCLUDE_MACOS_ARM){
                         stage("Universal2 Wheel: Python ${pythonVersion}"){
                             stage('Make Universal2 wheel'){
-                                node("mac && python${pythonVersion}") {
-                                    checkout scm
-                                    unstash "python${pythonVersion} mac arm64 wheel"
-                                    unstash "python${pythonVersion} mac x86_64 wheel"
-                                    def wheelNames = []
-                                    findFiles(excludes: '', glob: 'dist/*.whl').each{wheelFile ->
-                                        wheelNames.add(wheelFile.path)
+                                retry(3){
+                                    node("mac && python${pythonVersion}") {
+                                        checkout scm
+                                        unstash "python${pythonVersion} mac arm64 wheel"
+                                        unstash "python${pythonVersion} mac x86_64 wheel"
+                                        def wheelNames = []
+                                        findFiles(excludes: '', glob: 'dist/*.whl').each{wheelFile ->
+                                            wheelNames.add(wheelFile.path)
+                                        }
+                                        try{
+                                            sh(label: 'Make Universal2 wheel',
+                                               script: """python${pythonVersion} -m venv venv
+                                                          . ./venv/bin/activate
+                                                          pip install --disable-pip-version-check --upgrade pip
+                                                          pip install --disable-pip-version-check wheel delocate
+                                                          mkdir -p out
+                                                          delocate-merge  ${wheelNames.join(' ')} --verbose -w ./out/
+                                                          rm dist/*.whl
+                                                           """
+                                               )
+                                           def fusedWheel = findFiles(excludes: '', glob: 'out/*.whl')[0]
+                                           def props = readTOML( file: 'pyproject.toml')['project']
+                                           def universalWheel = "py3exiv2bind-${props.version}-cp${pythonVersion.replace('.','')}-cp${pythonVersion.replace('.','')}-macosx_11_0_universal2.whl"
+                                           sh "mv ${fusedWheel.path} ./dist/${universalWheel}"
+                                           stash includes: 'dist/*.whl', name: "python${pythonVersion} mac-universal2 wheel"
+                                           wheelStashes << "python${pythonVersion} mac-universal2 wheel"
+                                           archiveArtifacts artifacts: 'dist/*.whl'
+                                        } finally {
+                                            cleanWs(
+                                                patterns: [
+                                                        [pattern: 'out/', type: 'INCLUDE'],
+                                                        [pattern: 'dist/', type: 'INCLUDE'],
+                                                        [pattern: 'venv/', type: 'INCLUDE'],
+                                                    ],
+                                                notFailBuild: true,
+                                                deleteDirs: true
+                                            )
+                                       }
                                     }
-                                    try{
-                                        sh(label: 'Make Universal2 wheel',
-                                           script: """python${pythonVersion} -m venv venv
-                                                      . ./venv/bin/activate
-                                                      pip install --disable-pip-version-check --upgrade pip
-                                                      pip install --disable-pip-version-check wheel delocate
-                                                      mkdir -p out
-                                                      delocate-merge  ${wheelNames.join(' ')} --verbose -w ./out/
-                                                      rm dist/*.whl
-                                                       """
-                                           )
-                                       def fusedWheel = findFiles(excludes: '', glob: 'out/*.whl')[0]
-                                       def props = readTOML( file: 'pyproject.toml')['project']
-                                       def universalWheel = "py3exiv2bind-${props.version}-cp${pythonVersion.replace('.','')}-cp${pythonVersion.replace('.','')}-macosx_11_0_universal2.whl"
-                                       sh "mv ${fusedWheel.path} ./dist/${universalWheel}"
-                                       stash includes: 'dist/*.whl', name: "python${pythonVersion} mac-universal2 wheel"
-                                       wheelStashes << "python${pythonVersion} mac-universal2 wheel"
-                                       archiveArtifacts artifacts: 'dist/*.whl'
-                                    } finally {
-                                        cleanWs(
-                                            patterns: [
-                                                    [pattern: 'out/', type: 'INCLUDE'],
-                                                    [pattern: 'dist/', type: 'INCLUDE'],
-                                                    [pattern: 'venv/', type: 'INCLUDE'],
-                                                ],
-                                            notFailBuild: true,
-                                            deleteDirs: true
-                                        )
-                                   }
                                 }
                             }
                             if(params.TEST_PACKAGES == true){
