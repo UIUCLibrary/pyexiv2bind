@@ -267,7 +267,7 @@ def linux_wheels(){
                                                                 "TOX_INSTALL_PKG=${findFiles(glob:'dist/*.whl')[0].path}",
                                                                 "TOX_ENV=py${pythonVersion.replace('.', '')}"
                                                             ]){
-                                                                docker.image('python').inside('--mount source=python-tmp-py3exiv2bind,target=/tmp'){
+                                                                docker.image('python').inside{
                                                                     sh(
                                                                         label: 'Testing with tox',
                                                                         script: '''python3 -m venv venv
@@ -965,7 +965,7 @@ pipeline {
                                 script{
                                     def envs = []
                                     node('docker && linux'){
-                                        docker.image('python').inside('--mount source=python-tmp-py3exiv2bind,target=/tmp'){
+                                        docker.image('python').inside{
                                             try{
                                                 checkout scm
                                                 sh(script: 'python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv')
@@ -998,7 +998,7 @@ pipeline {
                                                             image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL .')
                                                         }
                                                         try{
-                                                            image.inside('--mount source=python-tmp-tox-py3exiv2bind,target=/tmp'){
+                                                            image.inside{
                                                                 retry(3){
                                                                     try{
                                                                         sh( label: 'Running Tox',
@@ -1166,7 +1166,6 @@ pipeline {
                                 docker{
                                     image 'python'
                                     label 'linux && docker'
-                                    args '--mount source=python-tmp-py3exiv2bind,target=/tmp'
                                   }
                             }
                             environment{
@@ -1362,7 +1361,6 @@ pipeline {
                                                                         label: "linux && docker && ${arch}",
                                                                         filename: 'ci/docker/linux/tox/Dockerfile',
                                                                         additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
-                                                                        args: '--mount source=python-tox-tmp-py3exiv2bind,target=/tmp'
                                                                     ]
                                                                 ],
                                                                 retries: 3,
@@ -1434,7 +1432,6 @@ pipeline {
                         docker{
                             image 'python'
                             label 'docker && linux'
-                            args '--mount source=python-tmp-py3exiv2bind,target=/tmp'
                         }
                     }
                     when{
