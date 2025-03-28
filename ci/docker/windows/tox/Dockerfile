@@ -95,4 +95,5 @@ COPY --from=CONAN_BUILDER ${CONAN_USER_HOME}/.conan/ ${CONAN_USER_HOME}/.conan/
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}
 
 WORKDIR C:/src
+ENV DISTUTILS_USE_SDK=1
 CMD ["tox", "--workdir", "${Env:TEMP}\tox\\", "-vv",  "--recreate", "-p=auto"]

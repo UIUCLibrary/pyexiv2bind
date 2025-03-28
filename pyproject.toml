@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "setuptools>=40.8.0",
+    "setuptools>=77.0.0",
     "wheel",
     "ninja",
     "uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/v0.2.3.tar.gz",
@@ -14,7 +14,7 @@ version = "0.1.15.dev0"
 requires-python = '>=3.9'
 dependencies = []
 readme = "README.rst"
-license = {text = "University of Illinois/NCSA Open Source License"}
+license = "NCSA"
 authors = [
     {name = "University Library at The University of Illinois at Urbana Champaign: Preservation Services", email = "prescons@library.illinois.edu"},
 ]
