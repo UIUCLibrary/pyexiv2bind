@@ -1,5 +1,5 @@
 build
-cmake
+cmake<4.0
 conan<2.0
 coverage
 flake8
