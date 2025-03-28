@@ -28,7 +28,7 @@ chardet==5.2.0
     # via tox
 charset-normalizer==3.4.1
     # via requests
-cmake==4.0.0
+cmake==3.30.5
     # via
     #   -r requirements/requirements-dev.in
     #   uiucprescon-build
