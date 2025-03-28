@@ -44,7 +44,7 @@ colorama==0.4.6
     #   tqdm
 colorlog==6.9.0
     # via gcovr
-conan==1.66.0
+conan==1.65.0
     # via
     #   -r requirements/requirements-dev.in
     #   uiucprescon-build
