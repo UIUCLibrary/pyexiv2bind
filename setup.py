@@ -9,49 +9,14 @@ import pathlib
 import platform
 from setuptools import setup, errors, Distribution
 
-try:
-    from pybind11.setup_helpers import Pybind11Extension
-except ImportError:
-    from setuptools import Extension as Pybind11Extension
+from pybind11.setup_helpers import Pybind11Extension
 from setuptools.command.build_clib import build_clib
+from uiucprescon.build.conan_libs import BuildConan
+from uiucprescon.build.conan.files import locate_conanbuildinfo, ConanBuildInfoTXT
+from uiucprescon.build.pybind11_builder import BuildPybind11Extension, parse_conan_build_info
 
 
 MIN_MACOSX_DEPLOYMENT_TARGET = '10.15'
-
-cmd_class = {}
-extension_modules = []
-
-try:
-    from uiucprescon.build.conan_libs import BuildConan
-    from uiucprescon.build.conan.files import locate_conanbuildinfo, ConanBuildInfoTXT
-    cmd_class["build_conan"] = BuildConan
-    from uiucprescon.build.pybind11_builder import BuildPybind11Extension, parse_conan_build_info
-    cmd_class["build_ext"] = BuildPybind11Extension
-    exiv2_extension = Pybind11Extension(
-        "py3exiv2bind.core",
-        sources=[
-            "src/py3exiv2bind/core/core.cpp",
-            "src/py3exiv2bind/core/glue/ExifStrategy.cpp",
-            "src/py3exiv2bind/core/glue/glue.cpp",
-            "src/py3exiv2bind/core/glue/Image.cpp",
-            "src/py3exiv2bind/core/glue/IPTC_Strategy.cpp",
-            "src/py3exiv2bind/core/glue/XmpStrategy.cpp",
-            "src/py3exiv2bind/core/glue/MetadataProcessor.cpp",
-        ],
-        libraries=[
-            "exiv2",
-        ],
-        include_dirs=[
-            "src/py3exiv2bind/core/glue",
-        ],
-        language='c++',
-        cxx_std=17
-
-    )
-    extension_modules.append(exiv2_extension)
-except ImportError:
-    pass
-
 PACKAGE_NAME = "py3exiv2bind"
 
 
@@ -468,45 +433,48 @@ class BuildExiv2(BuildCMakeLib):
         if temp_lib_dir not in core_ext.library_dirs:
             core_ext.library_dirs.insert(0, temp_lib_dir)
 
-exiv2 = ("exiv2", {
-    "sources": [],
-    "CMAKE_SOURCE_DIR": os.path.dirname(__file__),
-    "CMAKE_CONFIG": [
-        '-Dpyexiv2bind_generate_python_bindings:BOOL=NO',
-        '-DEXIV2_ENABLE_NLS:BOOL=NO',
-        '-DEXIV2_ENABLE_VIDEO:BOOL=OFF',
-        '-DEXIV2_ENABLE_PNG:BOOL=OFF',
-        '-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=OFF',
-        "-DCMAKE_CXX_STANDARD=17"
-    ],
-})
 
-
-cmd_class['build_clib'] = BuildExiv2
-
-exiv2_extension = Pybind11Extension(
-    "py3exiv2bind.core",
-    sources=[
-        "src/py3exiv2bind/core/core.cpp",
-        "src/py3exiv2bind/core/glue/ExifStrategy.cpp",
-        "src/py3exiv2bind/core/glue/glue.cpp",
-        "src/py3exiv2bind/core/glue/Image.cpp",
-        "src/py3exiv2bind/core/glue/IPTC_Strategy.cpp",
-        "src/py3exiv2bind/core/glue/XmpStrategy.cpp",
-        "src/py3exiv2bind/core/glue/MetadataProcessor.cpp",
-    ],
-    libraries=[
-        "exiv2",
-    ],
-    include_dirs=[
-        "src/py3exiv2bind/core/glue"
-    ],
-    language='c++',
-
-)
 
 setup(
-    libraries=[exiv2],
-    ext_modules=extension_modules,
-    cmdclass=cmd_class
+    libraries=[
+        ("exiv2", {
+            "sources": [],
+            "CMAKE_SOURCE_DIR": os.path.dirname(__file__),
+            "CMAKE_CONFIG": [
+                '-Dpyexiv2bind_generate_python_bindings:BOOL=NO',
+                '-DEXIV2_ENABLE_NLS:BOOL=NO',
+                '-DEXIV2_ENABLE_VIDEO:BOOL=OFF',
+                '-DEXIV2_ENABLE_PNG:BOOL=OFF',
+                '-DEXIV2_BUILD_EXIV2_COMMAND:BOOL=OFF',
+                "-DCMAKE_CXX_STANDARD=17"
+            ],
+        })
+    ],
+    ext_modules=[
+        Pybind11Extension(
+            "py3exiv2bind.core",
+            sources=[
+                "src/py3exiv2bind/core/core.cpp",
+                "src/py3exiv2bind/core/glue/ExifStrategy.cpp",
+                "src/py3exiv2bind/core/glue/glue.cpp",
+                "src/py3exiv2bind/core/glue/Image.cpp",
+                "src/py3exiv2bind/core/glue/IPTC_Strategy.cpp",
+                "src/py3exiv2bind/core/glue/XmpStrategy.cpp",
+                "src/py3exiv2bind/core/glue/MetadataProcessor.cpp",
+            ],
+            libraries=[
+                "exiv2",
+            ],
+            include_dirs=[
+                "src/py3exiv2bind/core/glue",
+            ],
+            language='c++',
+            cxx_std=17
+        )
+    ],
+    cmdclass={
+        "build_conan": BuildConan,
+        "build_ext": BuildPybind11Extension,
+        "build_clib": BuildExiv2,
+    }
 )
