@@ -57,7 +57,7 @@ def SUPPORTED_LINUX_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
 def SUPPORTED_WINDOWS_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
 // ============================================================================
 //  Dynamic variables. Used to help manage state
-wheelStashes = []
+def wheelStashes = []
 
 
 def startup(){
@@ -1211,34 +1211,30 @@ pipeline {
                                 retry(3)
                             }
                             steps{
-                                sh(
-                                    label: 'Package',
-                                    script: '''python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv
-                                               trap "rm -rf venv" EXIT
-                                               venv/bin/uv build --sdist
-                                            '''
-                                )
-                                echo "sdist built on ${env.NODE_NAME}"
-                            }
-                            post{
-                                success {
-                                    echo 'Stashing sdist'
-                                    stash includes: 'dist/*.tar.gz,dist/*.zip', name: 'sdist'
-                                    archiveArtifacts artifacts: 'dist/*.tar.gz,dist/*.zip'
-                                    script{
-                                        wheelStashes << 'sdist'
+                                script{
+                                    try{
+                                        sh(
+                                            label: 'Package',
+                                            script: '''python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv
+                                                       trap "rm -rf venv" EXIT
+                                                       venv/bin/uv build --sdist
+                                                    '''
+                                        )
+                                        stash includes: 'dist/*.tar.gz,dist/*.zip', name: 'sdist'
+                                        archiveArtifacts artifacts: 'dist/*.tar.gz,dist/*.zip'
+                                        script{
+                                            wheelStashes << 'sdist'
+                                        }
+                                    } finally {
+                                        cleanWs(
+                                            patterns: [
+                                                [pattern: 'venv/', type: 'INCLUDE'],
+                                                [pattern: 'dist/', type: 'INCLUDE'],
+                                            ],
+                                            notFailBuild: true,
+                                            deleteDirs: true
+                                        )
                                     }
-                                }
-                                cleanup {
-                                    echo 'cleaning up workspace'
-                                    cleanWs(
-                                        patterns: [
-                                            [pattern: 'venv/', type: 'INCLUDE'],
-                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                        ],
-                                        notFailBuild: true,
-                                        deleteDirs: true
-                                    )
                                 }
                             }
                         }
