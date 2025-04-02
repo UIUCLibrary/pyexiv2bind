@@ -100,7 +100,7 @@ def test_cpp_code(buildPath){
     }
 }
 
-def windows_wheels(pythonVersions, testPackages, params){
+def windows_wheels(pythonVersions, testPackages, params, wheelStashes){
     def wheelStages = [:]
     pythonVersions.each{ pythonVersion ->
         if(params.INCLUDE_WINDOWS_X86_64 == true){
@@ -225,7 +225,7 @@ def windows_wheels(pythonVersions, testPackages, params){
     parallel(wheelStages)
 }
 
-def linux_wheels(pythonVersions, testPackages, params){
+def linux_wheels(pythonVersions, testPackages, params, wheelStashes){
     def wheelStages = [:]
     def selectedArches = []
     def allValidArches = ['arm64', 'x86_64']
@@ -346,7 +346,7 @@ def linux_wheels(pythonVersions, testPackages, params){
     })
 }
 
-def mac_wheels(pythonVersions, testPackages, params){
+def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
     def selectedArches = []
     def allValidArches = ['arm64', 'x86_64']
     if(params.INCLUDE_MACOS_X86_64 == true){
@@ -1171,7 +1171,7 @@ pipeline {
                         }
                     }
                     steps{
-                        mac_wheels(SUPPORTED_MAC_VERSIONS, params.TEST_PACKAGES, params)
+                        mac_wheels(SUPPORTED_MAC_VERSIONS, params.TEST_PACKAGES, params, wheelStashes)
                     }
                 }
                 stage('Platform Wheels: Windows'){
@@ -1179,7 +1179,7 @@ pipeline {
                         equals expected: true, actual: params.INCLUDE_WINDOWS_X86_64
                     }
                     steps{
-                        windows_wheels(SUPPORTED_WINDOWS_VERSIONS, params.TEST_PACKAGES, params)
+                        windows_wheels(SUPPORTED_WINDOWS_VERSIONS, params.TEST_PACKAGES, params, wheelStashes)
                     }
                 }
                 stage('Platform Wheels: Linux'){
@@ -1190,7 +1190,7 @@ pipeline {
                         }
                     }
                     steps{
-                        linux_wheels(SUPPORTED_LINUX_VERSIONS, params.TEST_PACKAGES, params)
+                        linux_wheels(SUPPORTED_LINUX_VERSIONS, params.TEST_PACKAGES, params, wheelStashes)
                     }
                 }
                 stage('Source Distribution'){
