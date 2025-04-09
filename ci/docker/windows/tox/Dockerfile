@@ -4,7 +4,7 @@ ARG VS_INSTALL_PATH="C:\BuildTools"
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 ARG UV_CACHE_DIR=c:\Users\ContainerUser\Documents\uvcache
-ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019
+ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8.1
 ARG CONAN_USER_HOME=C:/Users/ContainerAdministrator
 ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
 FROM ${FROM_IMAGE} AS certsgen
