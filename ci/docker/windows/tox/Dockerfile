@@ -44,10 +44,6 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress c:/choco/packages.config ;`
     refreshenv ; `
     choco cache remove --confirm;`
-    if (!(Test-Path 'C:\Program Files\Git\cmd\git.exe')) `
-    { `
-        throw 'git.exe not found' ; `
-    }; `
     Write-Host "Finished install packages with Chocolatey" ;`
     Write-Host "Verifying installed packages" ;`
     $env:Path = [System.Environment]::GetEnvironmentVariable(\"Path\",\"Machine\") + \";\" + [System.Environment]::GetEnvironmentVariable(\"Path\",\"User\") ; `
