@@ -1031,14 +1031,17 @@ pipeline {
                                                 "Tox Environment: ${toxEnv}",
                                                 {
                                                     node('docker && linux'){
+                                                        def maxRetries = 3
                                                         checkout scm
                                                         def image
                                                         lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
-                                                            image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL .')
+                                                            retry(maxRetries){
+                                                                image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL .')
+                                                            }
                                                         }
                                                         try{
                                                             image.inside{
-                                                                retry(3){
+                                                                retry(maxRetries){
                                                                     try{
                                                                         sh( label: 'Running Tox',
                                                                             script: """python3 -m venv /tmp/venv && /tmp/venv/bin/pip install --disable-pip-version-check uv
@@ -1116,13 +1119,16 @@ pipeline {
                                                  "Tox Environment: ${toxEnv}",
                                                  {
                                                      node('docker && windows'){
+                                                        def maxRetries = 3
                                                         def image
                                                         checkout scm
                                                         lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
-                                                            image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                            retry(maxRetries){
+                                                                image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                            }
                                                         }
                                                         try{
-                                                            retry(3){
+                                                            retry(maxRetries){
                                                                 try{
                                                                     checkout scm
                                                                     image.inside("--mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
