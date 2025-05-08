@@ -124,11 +124,7 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes){
                                             'UV_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\uvcache',
                                             'UV_INDEX_STRATEGY=unsafe-best-match',
                                         ]){
-                                            bat """python -m venv venv
-                                                   venv\\Scripts\\pip install --disable-pip-version-check uv
-                                                   venv\\Scripts\\uv build --python ${pythonVersion} --wheel
-                                                   rmdir /S /Q venv
-                                                """
+                                            bat "uv build --python ${pythonVersion} --wheel"
                                         }
                                         stash includes: 'dist/*.whl', name: "python${pythonVersion} windows wheel"
                                         wheelStashes << "python${pythonVersion} windows wheel"
@@ -1134,11 +1130,8 @@ pipeline {
                                                                     image.inside("--mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
                                                                         bat(label: 'Running Tox',
                                                                             script: """CALL C:\\BuildTools\\Common7\\Tools\\VsDevCmd.bat -arch=amd64
-                                                                                       py -m venv venv
-                                                                                       venv\\Scripts\\pip install --disable-pip-version-check uv
-                                                                                       venv\\Scripts\\uv python install cpython-${version}
-                                                                                       venv\\Scripts\\uvx -p ${version} --with-requirements requirements-dev.txt --with tox-uv tox run -e ${toxEnv} --workdir %WORKSPACE_TMP%\\.tox
-                                                                                       rmdir /S /Q venv
+                                                                                       uv python install cpython-${version}
+                                                                                       uvx -p ${version} --with-requirements requirements-dev.txt --with tox-uv tox run -e ${toxEnv} --workdir %WORKSPACE_TMP%\\.tox
                                                                                     """
                                                                         )
                                                                     }
@@ -1340,11 +1333,8 @@ pipeline {
                                                                                     try{
                                                                                         retry(3){
                                                                                             bat(label: 'Running Tox',
-                                                                                                script: """python -m venv venv
-                                                                                                           venv\\Scripts\\pip install --disable-pip-version-check uv
-                                                                                                           venv\\Scripts\\uvx --python ${pythonVersion} --with-requirements requirements-dev.txt --with tox-uv tox run  --runner=uv-venv-runner --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -v
+                                                                                                script: """uvx --python ${pythonVersion} --with-requirements requirements-dev.txt --with tox-uv tox run  --runner=uv-venv-runner --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -v
                                                                                                            rmdir /S /Q .tox
-                                                                                                           rmdir /S /Q venv
                                                                                                         """
                                                                                             )
                                                                                         }

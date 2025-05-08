@@ -1,26 +1,32 @@
 # escape=`
-ARG PIPX_HOME=c:\pipx
-ARG VS_INSTALL_PATH="C:\BuildTools"
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_INDEX_URL
-ARG UV_CACHE_DIR=c:\Users\ContainerUser\Documents\uvcache
 ARG FROM_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8.1
+
+ARG VS_INSTALL_PATH="C:\BuildTools"
+
 ARG CONAN_USER_HOME=C:/Users/ContainerAdministrator
+
+ARG UV_CACHE_DIR=c:/users/containeradministrator/appdata/local/uv
 ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
+ARG CHOCOLATEY_SOURCE=https://chocolatey.org/api/v2
+ARG chocolateyVersion
+
 FROM ${FROM_IMAGE} AS certsgen
 RUN certutil -generateSSTFromWU roots.sst
 
 FROM ${FROM_IMAGE} AS BASE_BUILDER
 
+
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 
-COPY ci/docker/windows/tox/msvc/startup.bat c:/startup/startup.bat
 COPY ci/docker/windows/tox/msvc/visual_studio_config.json c:/setup/config.vsconfig
 COPY ci/docker/windows/tox/msvc/install_msvc.ps1 c:/scripts/install_msvc.ps1
 ARG VS_INSTALL_PATH
+ARG VS_VERSION="2022"
+ARG VS_DevCmdArguments="-arch=amd64"
+ARG VS_DevPowershellArguments='-arch=amd64'
+RUN c:/scripts/install_msvc.ps1 -InstallPath ${Env:VS_INSTALL_PATH} -VSConfigFile c:/setup/config.vsconfig -DevCmdArguments ${Env:VS_DevCmdArguments} -DevPowershellArguments ${Env:VS_DevPowershellArguments} -VSVersion ${Env:VS_VERSION}; `
+    Write-Host "Note: Exporting This layer can take a while."
 
-RUN c:/scripts/install_msvc.ps1 ${Env:VS_INSTALL_PATH} c:/setup/config.vsconfig; `
-    Get-ChildItem C:\Users\ContainerAdministrator\AppData\Local\Temp | Remove-Item -Recurse -Force -Verbose
 ARG CHOCOLATEY_SOURCE=https://chocolatey.org/api/v2
 ARG ChocolateyEnvironmentDebug=false
 ARG chocolateyVersion
@@ -62,17 +68,13 @@ COPY requirements-dev.txt c:/requirements/requirements-dev.txt
 COPY ci/docker/windows/tox/conan/profile.ini  ${CONAN_USER_HOME}/.conan/profiles/default
 SHELL ["cmd", "/S", "/C" ]
 ENV CONAN_CMAKE_GENERATOR=Ninja
-RUN python -m venv venv && `
-    call venv\\Scripts\\activate.bat && `
-    pip install --disable-pip-version-check --no-cache-dir uv  && `
-    uv pip install --no-cache -r c:/requirements/requirements-dev.txt && `
-    conan config home && `
-    conan config init && `
-    conan config set general.revisions_enabled=1 && `
-    conan install c:/temp/ --build --no-import -pr:b=default && `
-    conan remove "*" -b --src -f && `
-    conan remove --lock && `
-    rmdir /S /Q venv
+RUN uvx --with-requirements c:/requirements/requirements-dev.txt conan config home && `
+    uvx --with-requirements c:/requirements/requirements-dev.txt conan config init && `
+    uvx --with-requirements c:/requirements/requirements-dev.txt conan config set general.revisions_enabled=1 && `
+    uvx --with-requirements c:/requirements/requirements-dev.txt conan install c:/temp/ --build --no-import -pr:b=default && `
+    uvx --with-requirements c:/requirements/requirements-dev.txt conan remove "*" -b --src -f && `
+    uvx --with-requirements c:/requirements/requirements-dev.txt conan remove --lock && `
+    uv cache clean --no-progress
 
 FROM BASE_BUILDER
 COPY --from=certsgen c:/roots.sst c:/roots.sst
