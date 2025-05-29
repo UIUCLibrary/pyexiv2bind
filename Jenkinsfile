@@ -324,7 +324,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                     buildCmd: {
                                                         timeout(60){
                                                             sh(label: 'Building wheel',
-                                                               script: "contrib/build_mac_wheel.sh . --venv-path=./venv --python-version={pythonVersion}"
+                                                               script: "contrib/build_mac_wheel.sh . --uv=./venv/bin/uv --python-version={pythonVersion}"
                                                            )
                                                         }
                                                     },
