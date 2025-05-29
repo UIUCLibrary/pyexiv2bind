@@ -132,9 +132,9 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes){
                     if(testPackages == true){
                         stage("Test Wheel (${pythonVersion} Windows)"){
                             node('windows && docker'){
+                                checkout scm
                                 docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside('--mount source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython --mount source=msvc-runtime,target=c:\\msvc_runtime --mount source=windows-certs,target=c:\\certs'){
                                     installMSVCRuntime('c:\\msvc_runtime\\')
-                                    checkout scm
                                     unstash "python${pythonVersion} windows wheel"
                                     withEnv([
                                         'PIP_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\pipcache',
@@ -956,9 +956,9 @@ pipeline {
                                 script{
                                     def envs = []
                                     node('docker && linux'){
+                                        checkout scm
                                         docker.image('python').inside{
                                             try{
-                                                checkout scm
                                                 sh(script: 'python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv')
                                                 envs = sh(
                                                     label: 'Get tox environments',
@@ -1044,9 +1044,9 @@ pipeline {
                                  script{
                                      def envs = []
                                      node('docker && windows'){
+                                         checkout scm
                                          docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
                                              try{
-                                                 checkout scm
                                                  bat(script: 'python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv')
                                                  envs = bat(
                                                      label: 'Get tox environments',
@@ -1278,8 +1278,8 @@ pipeline {
                                                                     image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                                 }
                                                                 try{
+                                                                    checkout scm
                                                                     image.inside('--mount source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython'){
-                                                                        checkout scm
                                                                         unstash 'sdist'
                                                                         findFiles(glob: 'dist/*.tar.gz').each{
                                                                             timeout(60){
