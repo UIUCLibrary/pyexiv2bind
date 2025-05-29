@@ -18,6 +18,8 @@ function Build-DockerImage {
         "--isolation", $DockerIsolation,
         "--platform windows/amd64",
         "-f", $DockerfilePath,
+        "--build-arg PIP_EXTRA_INDEX_URL",
+        "--build-arg PIP_INDEX_URL",
         "--build-arg CHOCOLATEY_SOURCE",
         "--build-arg UV_CACHE_DIR=c:/users/containeradministrator/appdata/local/uv",
         "-t", $ImageName,
