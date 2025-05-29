@@ -1,4 +1,10 @@
+# PIP Cache directory. Change this only if you need to override the default location.
+ARG PIP_DOWNLOAD_CACHE=/.cache/pip
+
+# UV Cache directory. Change this only if you need to override the default location.
+ARG UV_CACHE_DIR=/.cache/uv
 ARG CONAN_USER_HOME=/conan
+
 FROM ubuntu:22.04 AS base
 COPY ci/docker/linux/tox/apt-packages.txt /tmp/
 RUN apt-get update && \
@@ -19,7 +25,11 @@ COPY conanfile.py /tmp/conanfile.py
 
 COPY ci/docker/linux/tox/update_conan_compiler.py  /tmp/update_conan_compiler.py
 COPY conanfile.py /tmp/conanfile.py
-RUN python3 -m venv venv && \
+ARG UV_CACHE_DIR
+ARG PIP_DOWNLOAD_CACHE
+RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
+    --mount=type=cache,target=${UV_CACHE_DIR} \
+    python3 -m venv venv && \
     ./venv/bin/pip install --disable-pip-version-check --no-cache-dir uv && \
     ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config init && \
     ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config set general.revisions_enabled=1 && \
