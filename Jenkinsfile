@@ -111,7 +111,9 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes){
                             def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
                             retry(3){
                                 checkout scm
-                                powershell(label: 'Building Wheel for Windows', script: "contrib/build_windows.ps1 -PythonVersion ${pythonVersion} -DockerImageName ${dockerImageName}")
+                                timeout(60){
+                                    powershell(label: 'Building Wheel for Windows', script: "contrib/build_windows.ps1 -PythonVersion ${pythonVersion} -DockerImageName ${dockerImageName}")
+                                }
                                 try{
                                     stash includes: 'dist/*.whl', name: "python${pythonVersion} windows wheel"
                                     wheelStashes << "python${pythonVersion} windows wheel"
@@ -143,14 +145,16 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes){
                                     ]){
                                         findFiles(glob: 'dist/*.whl').each{
                                             retry(3){
-                                                bat(label: 'Running Tox',
-                                                    script: """python -m venv venv
-                                                               venv\\Scripts\\pip install --disable-pip-version-check uv
-                                                               venv\\Scripts\\uvx --python ${pythonVersion} --with-requirements requirements-dev.txt --with tox-uv tox run -e py${pythonVersion.replace('.', '')}  --installpkg ${it.path}
-                                                               rmdir /S /Q venv
-                                                               rmdir /S /Q .tox
-                                                            """
-                                                )
+                                                timeout(60){
+                                                    bat(label: 'Running Tox',
+                                                        script: """python -m venv venv
+                                                                   venv\\Scripts\\pip install --disable-pip-version-check uv
+                                                                   venv\\Scripts\\uvx --python ${pythonVersion} --with-requirements requirements-dev.txt --with tox-uv tox run -e py${pythonVersion.replace('.', '')}  --installpkg ${it.path}
+                                                                   rmdir /S /Q venv
+                                                                   rmdir /S /Q .tox
+                                                                """
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -197,14 +201,16 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                 retries: 3,
                                                 buildCmd: {
                                                     try{
-                                                        sh(label: 'Building python wheel',
-                                                           script:"""python${pythonVersion} -m venv venv
-                                                                     trap "rm -rf venv" EXIT
-                                                                     ./venv/bin/pip install --disable-pip-version-check uv
-                                                                     ./venv/bin/uv build --index-strategy unsafe-best-match --python ${pythonVersion} --wheel
-                                                                     auditwheel repair ./dist/*.whl -w ./dist
-                                                                     """
-                                                           )
+                                                        timeout(60){
+                                                            sh(label: 'Building python wheel',
+                                                               script:"""python${pythonVersion} -m venv venv
+                                                                         trap "rm -rf venv" EXIT
+                                                                         ./venv/bin/pip install --disable-pip-version-check uv
+                                                                         ./venv/bin/uv build --index-strategy unsafe-best-match --python ${pythonVersion} --wheel
+                                                                         auditwheel repair ./dist/*.whl -w ./dist
+                                                                         """
+                                                               )
+                                                       }
                                                     } catch(e) {
                                                         sh "python${pythonVersion} -m pip list"
                                                         throw e
@@ -247,16 +253,18 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                                 "TOX_ENV=py${pythonVersion.replace('.', '')}"
                                                             ]){
                                                                 docker.image('python').inside{
-                                                                    sh(
-                                                                        label: 'Testing with tox',
-                                                                        script: '''python3 -m venv venv
-                                                                                   . ./venv/bin/activate
-                                                                                   trap "rm -rf venv" EXIT
-                                                                                   pip install --disable-pip-version-check uv
-                                                                                   uvx --with tox-uv tox
-                                                                                   rm -rf .tox
-                                                                                '''
-                                                                    )
+                                                                    timeout(60){
+                                                                        sh(
+                                                                            label: 'Testing with tox',
+                                                                            script: '''python3 -m venv venv
+                                                                                       . ./venv/bin/activate
+                                                                                       trap "rm -rf venv" EXIT
+                                                                                       pip install --disable-pip-version-check uv
+                                                                                       uvx --with tox-uv tox
+                                                                                       rm -rf .tox
+                                                                                    '''
+                                                                        )
+                                                                    }
                                                                 }
                                                             }
                                                         } finally {
@@ -314,9 +322,11 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                     ],
                                                     retries: 3,
                                                     buildCmd: {
-                                                        sh(label: 'Building wheel',
-                                                           script: "contrib/build_mac_wheel.sh . --venv-path=./venv --base-python=python${pythonVersion}"
+                                                        timeout(60){
+                                                            sh(label: 'Building wheel',
+                                                               script: "contrib/build_mac_wheel.sh . --venv-path=./venv --base-python=python${pythonVersion}"
                                                            )
+                                                        }
                                                     },
                                                     post:[
                                                         cleanup: {
@@ -350,12 +360,14 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                         retries: 3,
                                                         testCommand: {
                                                             findFiles(glob: 'dist/*.whl').each{
-                                                                sh(label: 'Running Tox',
-                                                                   script: """python${pythonVersion} -m venv venv
-                                                                   ./venv/bin/python -m pip install --disable-pip-version-check --upgrade pip
-                                                                   ./venv/bin/pip install --disable-pip-version-check -r requirements-dev.txt
-                                                                   ./venv/bin/tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
-                                                                )
+                                                                timeout(60){
+                                                                    sh(label: 'Running Tox',
+                                                                       script: """python${pythonVersion} -m venv venv
+                                                                       ./venv/bin/python -m pip install --disable-pip-version-check --upgrade pip
+                                                                       ./venv/bin/pip install --disable-pip-version-check -r requirements-dev.txt
+                                                                       ./venv/bin/tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
+                                                                    )
+                                                                }
                                                             }
                                                         },
                                                         post:[
@@ -1156,13 +1168,15 @@ pipeline {
                             steps{
                                 script{
                                     try{
-                                        sh(
-                                            label: 'Package',
-                                            script: '''python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv
-                                                       trap "rm -rf venv" EXIT
-                                                       venv/bin/uv build --sdist
-                                                    '''
-                                        )
+                                        timeout(60){
+                                            sh(
+                                                label: 'Package',
+                                                script: '''python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv
+                                                           trap "rm -rf venv" EXIT
+                                                           venv/bin/uv build --sdist
+                                                        '''
+                                            )
+                                        }
                                         stash includes: 'dist/*.tar.gz,dist/*.zip', name: 'sdist'
                                         archiveArtifacts artifacts: 'dist/*.tar.gz,dist/*.zip'
                                         script{
@@ -1212,14 +1226,16 @@ pipeline {
                                                                     retry(3){
                                                                         try{
                                                                             withEnv(["UV_INDEX_STRATEGY=unsafe-best-match"]){
-                                                                                sh(label: 'Running Tox',
-                                                                                   script: """python${pythonVersion} -m venv venv
-                                                                                              trap "rm -rf venv" EXIT
-                                                                                              ./venv/bin/python -m pip install --disable-pip-version-check uv
-                                                                                              trap "rm -rf venv && rm -rf .tox" EXIT
-                                                                                              ./venv/bin/uvx --python=${pythonVersion} --with-requirements requirements-dev.txt --with tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
-                                                                                       """
-                                                                                )
+                                                                                timeout(60){
+                                                                                    sh(label: 'Running Tox',
+                                                                                       script: """python${pythonVersion} -m venv venv
+                                                                                                  trap "rm -rf venv" EXIT
+                                                                                                  ./venv/bin/python -m pip install --disable-pip-version-check uv
+                                                                                                  trap "rm -rf venv && rm -rf .tox" EXIT
+                                                                                                  ./venv/bin/uvx --python=${pythonVersion} --with-requirements requirements-dev.txt --with tox-uv tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                                                                           """
+                                                                                    )
+                                                                                }
                                                                             }
                                                                         }finally{
                                                                             cleanWs(
@@ -1276,11 +1292,13 @@ pipeline {
                                                                                 ]){
                                                                                     try{
                                                                                         retry(3){
-                                                                                            bat(label: 'Running Tox',
-                                                                                                script: """uvx --python ${pythonVersion} --with-requirements requirements-dev.txt --with tox-uv tox run  --runner=uv-venv-runner --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -v
-                                                                                                           rmdir /S /Q .tox
-                                                                                                        """
-                                                                                            )
+                                                                                            timeout(60){
+                                                                                                bat(label: 'Running Tox',
+                                                                                                    script: """uvx --python ${pythonVersion} --with-requirements requirements-dev.txt --with tox-uv tox run  --runner=uv-venv-runner --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -v
+                                                                                                               rmdir /S /Q .tox
+                                                                                                            """
+                                                                                                )
+                                                                                            }
                                                                                         }
                                                                                     } finally {
                                                                                         cleanWs(
@@ -1347,14 +1365,16 @@ pipeline {
                                                                             'UV_PYTHON_INSTALL_DIR=/tmp/uvpython',
                                                                             'UV_CACHE_DIR=/tmp/uvcache',
                                                                         ]){
-                                                                            sh(
-                                                                                label: 'Running Tox',
-                                                                                script: """python3 -m venv venv
-                                                                                           trap "rm -rf ./venv" EXIT
-                                                                                           venv/bin/pip install --disable-pip-version-check uv
-                                                                                           venv/bin/uvx --python ${pythonVersion} --with-requirements requirements-dev.txt --with tox-uv tox --runner=uv-venv-runner --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}
-                                                                                        """
+                                                                            timeout(60){
+                                                                                sh(
+                                                                                    label: 'Running Tox',
+                                                                                    script: """python3 -m venv venv
+                                                                                               trap "rm -rf ./venv" EXIT
+                                                                                               venv/bin/pip install --disable-pip-version-check uv
+                                                                                               venv/bin/uvx --python ${pythonVersion} --with-requirements requirements-dev.txt --with tox-uv tox --runner=uv-venv-runner --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}
+                                                                                            """
                                                                                 )
+                                                                            }
                                                                         }
                                                                     }
                                                                 },
