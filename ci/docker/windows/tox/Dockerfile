@@ -5,6 +5,10 @@ ARG VS_INSTALL_PATH="C:\BuildTools"
 
 ARG CONAN_USER_HOME=C:/Users/ContainerAdministrator
 
+# If you want to use a diffrent remote for Conan, such as a proxy. Set the CONAN_CENTER_PROXY_V1_URL
+# Not this is only for building the image. The actual conan center proxy URL is set in the remotes.json file.
+ARG CONAN_CENTER_PROXY_V1_URL
+
 ARG UV_CACHE_DIR=c:/users/containeradministrator/appdata/local/uv
 ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
 ARG CHOCOLATEY_SOURCE=https://chocolatey.org/api/v2
@@ -66,15 +70,26 @@ COPY conanfile.py c:/temp/conanfile.py
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
 COPY requirements-dev.txt c:/requirements/requirements-dev.txt
 COPY ci/docker/windows/tox/conan/profile.ini  ${CONAN_USER_HOME}/.conan/profiles/default
-SHELL ["cmd", "/S", "/C" ]
+#SHELL ["cmd", "/S", "/C" ]
 ENV CONAN_CMAKE_GENERATOR=Ninja
-RUN uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan config home && `
-    uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan config init && `
-    uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan config set general.revisions_enabled=1 && `
-    uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan install c:/temp/ --build --no-import -pr:b=default && `
-    uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan remove "*" -b --src -f && `
-    uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan remove --lock && `
-    uv cache clean --no-progress
+ARG CONAN_CENTER_PROXY_V1_URL
+RUN uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan config home ; `
+    uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan config init ; `
+    uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan config set general.revisions_enabled=1 ; `
+    if ( -not ([string]::IsNullOrEmpty($Env:CONAN_CENTER_PROXY_V1_URL ))) `
+    { `
+      Copy-Item -Path "${Env:CONAN_USER_HOME}\.conan\remotes.json" -Destination "c:\remotes.json" ; `
+      uvx --constraint=requirements-dev.txt conan remote remove conan-center ; `
+      uvx --constraint=requirements-dev.txt conan remote add conan-center-proxy ${Env:CONAN_CENTER_PROXY_V1_URL} ; `
+    }; `
+    uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan install c:/temp/ --build --no-import -pr:b=default ; `
+    uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan remove "*" -b --src -f ; `
+    uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan remove --lock ; `
+    uv cache clean --no-progress ;`
+    if ( -not ([string]::IsNullOrEmpty($Env:CONAN_CENTER_PROXY_V1_URL ))) `
+    {`
+      Move-Item -Path "c:\remotes.json" -Destination "${Env:CONAN_USER_HOME}\.conan\remotes.json" -Force ;`
+    }
 
 FROM BASE_BUILDER
 COPY --from=certsgen c:/roots.sst c:/roots.sst
