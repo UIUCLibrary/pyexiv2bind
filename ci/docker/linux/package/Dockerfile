@@ -10,16 +10,14 @@ COPY requirements-dev.txt /tmp/requirements-dev.txt
 COPY conanfile.py /tmp/conanfile.py
 COPY ci/docker/linux/tox/update_conan_compiler.py  /tmp/update_conan_compiler.py
 RUN python3 -m venv venv && \
-    . ./venv/bin/activate && \
-    pip install --no-cache-dir uv && \
-    uv pip install --no-cache -r /tmp/requirements-dev.txt && \
-    conan config init && \
-    conan config set general.revisions_enabled=1 && \
-    python /tmp/update_conan_compiler.py ${CONAN_USER_HOME}/.conan/settings.yml gcc $(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)") && \
-    conan profile update settings.compiler.version=$(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)") default && \
-    conan install /tmp --build  missing --no-import  && \
-    conan remove "*" -b --src -f && \
-    conan remove --locks && \
+    ./venv/bin/pip install --no-cache-dir --disable-pip-version-check uv && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config init && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config set general.revisions_enabled=1 && \
+    ./venv/bin/uv run  /tmp/update_conan_compiler.py ${CONAN_USER_HOME}/.conan/settings.yml gcc $(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)") && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan profile update settings.compiler.version=$(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)") default && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan install /tmp --build  missing --no-import  && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remove "*" -b --src -f && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remove --locks && \
     chmod -R 777 /conan &&  \
     rm -rf venv
 
