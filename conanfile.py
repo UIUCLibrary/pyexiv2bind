@@ -14,7 +14,7 @@ class pyexiv2bind(ConanFile):
     def requirements(self):
         self.requires("brotli/1.0.9")
         self.requires("expat/2.5.0")
-        self.requires("zlib/1.2.11")
+        self.requires("zlib/1.3.1")
         if self.settings.os in ["Macos", "Linux"]:
             self.requires("libiconv/1.17")
     def imports(self):
