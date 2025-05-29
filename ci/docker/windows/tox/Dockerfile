@@ -68,12 +68,12 @@ COPY requirements-dev.txt c:/requirements/requirements-dev.txt
 COPY ci/docker/windows/tox/conan/profile.ini  ${CONAN_USER_HOME}/.conan/profiles/default
 SHELL ["cmd", "/S", "/C" ]
 ENV CONAN_CMAKE_GENERATOR=Ninja
-RUN uvx --with-requirements c:/requirements/requirements-dev.txt conan config home && `
-    uvx --with-requirements c:/requirements/requirements-dev.txt conan config init && `
-    uvx --with-requirements c:/requirements/requirements-dev.txt conan config set general.revisions_enabled=1 && `
-    uvx --with-requirements c:/requirements/requirements-dev.txt conan install c:/temp/ --build --no-import -pr:b=default && `
-    uvx --with-requirements c:/requirements/requirements-dev.txt conan remove "*" -b --src -f && `
-    uvx --with-requirements c:/requirements/requirements-dev.txt conan remove --lock && `
+RUN uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan config home && `
+    uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan config init && `
+    uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan config set general.revisions_enabled=1 && `
+    uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan install c:/temp/ --build --no-import -pr:b=default && `
+    uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan remove "*" -b --src -f && `
+    uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan remove --lock && `
     uv cache clean --no-progress
 
 FROM BASE_BUILDER

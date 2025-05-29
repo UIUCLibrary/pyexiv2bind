@@ -20,16 +20,13 @@ ARG UV_CACHE_DIR
 ARG PIP_DOWNLOAD_CACHE
 RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=cache,target=${UV_CACHE_DIR} \
-    python3 -m venv venv && \
-    ./venv/bin/pip install --no-cache-dir --disable-pip-version-check uv && \
-    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config init && \
-    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config set general.revisions_enabled=1 && \
-    ./venv/bin/uv run  /tmp/update_conan_compiler.py ${CONAN_USER_HOME}/.conan/settings.yml gcc $(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)") && \
-    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan profile update settings.compiler.version=$(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)") default && \
-    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan install /tmp --build  missing --no-import  && \
-    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remove "*" -b --src -f && \
-    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remove --locks && \
-    ./venv/bin/uv cache prune && \
-    chmod -R 777 /conan &&  \
-    rm -rf venv
+    uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config init && \
+    uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config set general.revisions_enabled=1 && \
+    uv run  /tmp/update_conan_compiler.py ${CONAN_USER_HOME}/.conan/settings.yml gcc $(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)") && \
+    uvx --constraint=/tmp/requirements-dev.txt --with cmake conan profile update settings.compiler.version=$(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)") default && \
+    uvx --constraint=/tmp/requirements-dev.txt --with cmake conan install /tmp --build  missing --no-import  && \
+    uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remove "*" -b --src -f && \
+    uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remove --locks && \
+    uv cache prune && \
+    chmod -R 777 /conan
 
