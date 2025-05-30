@@ -70,12 +70,11 @@ COPY conanfile.py c:/temp/conanfile.py
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
 COPY requirements-dev.txt c:/requirements/requirements-dev.txt
 COPY ci/docker/windows/tox/conan/profile.ini  ${CONAN_USER_HOME}/.conan/profiles/default
-#COPY ci/docker/windows/tox/conan/python.ini  ${CONAN_USER_HOME}/.conan/profiles/python
+COPY ci/docker/windows/tox/conan/python.ini  ${CONAN_USER_HOME}/.conan/profiles/python
 #SHELL ["cmd", "/S", "/C" ]
 ENV CONAN_CMAKE_GENERATOR=Ninja
 ARG CONAN_CENTER_PROXY_V1_URL
-RUN uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan config home ; `
-    uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan config init ; `
+RUN uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan config init ; `
     uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan config set general.revisions_enabled=1 ; `
     if ( -not ([string]::IsNullOrEmpty($Env:CONAN_CENTER_PROXY_V1_URL ))) `
     { `
@@ -83,7 +82,7 @@ RUN uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan con
       uvx --constraint=requirements-dev.txt conan remote remove conan-center ; `
       uvx --constraint=requirements-dev.txt conan remote add conan-center-proxy ${Env:CONAN_CENTER_PROXY_V1_URL} ; `
     }; `
-    uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan install c:/temp/ --build --no-import -pr:b=default ; `
+    uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan install c:/temp/ --build --no-import -pr:h=default -pr:b=python; `
     uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan remove "*" -b --src -f ; `
     uvx --constraint c:/requirements/requirements-dev.txt --with cmake conan remove --lock ; `
     uv cache clean --no-progress ;`
