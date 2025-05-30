@@ -1243,7 +1243,7 @@ pipeline {
                                                                             }
                                                                         }
                                                                     } finally {
-                                                                        sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                                                        bat "${tool(name: 'Default', type: 'git')} clean -dfx"
                                                                         bat "docker rmi --no-prune ${image.id}"
                                                                     }
                                                                 }
