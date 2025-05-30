@@ -23,7 +23,7 @@ jobs:
           - os: ubuntu-20.04
             compiler_version: 10.2
           - os: windows-2022
-            compiler_version: 16
+            compiler_version: 17
 
     steps:
       - uses: actions/checkout@v4
