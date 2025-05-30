@@ -4,7 +4,7 @@ set -e
 
 DEFAULT_PYTHON_VENV="./wheel_builder_venv"
 DEFAULT_BASE_PYTHON="python3"
-
+DEFAULT_PYTHON_VERSION=3.10
 remove_venv(){
     if [ -d $1 ]; then
         echo "removing $1"
@@ -12,20 +12,18 @@ remove_venv(){
     fi
 }
 
-generate_venv(){
+generate_venv_with_venv(){
     base_python=$1
     virtual_env=$2
     trap "remove_venv $virtual_env" ERR SIGINT SIGTERM
     $base_python -m venv $virtual_env
-    . $virtual_env/bin/activate
-    pip install uv
-    UV_INDEX_STRATEGY=unsafe-best-match uv pip install wheel==0.37 build delocate
+    $virtual_env/bin/pip install --disable-pip-version-check uv
 }
 
 generate_wheel(){
-    virtual_env=$1
-    . $virtual_env/bin/activate
-    python --version
+    uv_exec=$1
+    project_root=$2
+    python_version=$3
 
     # Get the processor type
     processor_type=$(uname -m)
@@ -55,7 +53,7 @@ generate_wheel(){
     out_temp_wheels_dir=$(mktemp -d /tmp/python_wheels.XXXXXX)
     output_path="./dist"
     trap "rm -rf $out_temp_wheels_dir" ERR SIGINT SIGTERM RETURN
-    UV_INDEX_STRATEGY=unsafe-best-match _PYTHON_HOST_PLATFORM=$_PYTHON_HOST_PLATFORM MACOSX_DEPLOYMENT_TARGET=$MACOSX_DEPLOYMENT_TARGET ARCHFLAGS=$ARCHFLAGS python -m build --wheel --installer=uv --outdir=$out_temp_wheels_dir
+    UV_INDEX_STRATEGY=unsafe-best-match _PYTHON_HOST_PLATFORM=$_PYTHON_HOST_PLATFORM MACOSX_DEPLOYMENT_TARGET=$MACOSX_DEPLOYMENT_TARGET ARCHFLAGS=$ARCHFLAGS $uv_exec build --build-constraints=requirements-dev.txt --wheel --out-dir=$out_temp_wheels_dir --python=$python_version $project_root
     pattern="$out_temp_wheels_dir/*.whl"
     files=( $pattern )
     undelocate_wheel="${files[0]}"
@@ -63,22 +61,25 @@ generate_wheel(){
     echo ""
     echo "================================================================================"
     echo "${undelocate_wheel} is linked to the following:"
-    delocate-listdeps --depending "${undelocate_wheel}"
+    $uv_path tool run --constraint requirements-dev.txt --from delocate delocate-listdeps --depending "${undelocate_wheel}"
     echo ""
     echo "================================================================================"
-    delocate-wheel -w $output_path --require-archs $REQUIRED_ARCH --verbose "$undelocate_wheel"
+    $uv_path tool run --constraint requirements-dev.txt --from delocate delocate-wheel -w $output_path --require-archs $REQUIRED_ARCH --verbose "$undelocate_wheel"
 }
 
+
 print_usage(){
-    echo "Usage: $0 project_root [--venv_path optional_path]"
+    echo "Usage: $0 project_root [--uv path] [--python-version version]"
 }
+
 
 show_help() {
   print_usage
   echo
   echo "Arguments:"
   echo "  project_root          Path to Python project containing pyproject.toml file."
-  echo "  --venv_path[=path]    Path used to install build tools. Defaults to '$DEFAULT_PYTHON_VENV'."
+  echo "  --uv[=path]           Path to uv executable. If not provided, defaults to 'uv' and if that is missing, a copy will be downloaded."
+  echo "  --python-version[=version]      Python version to generate wheel for. Default is $DEFAULT_PYTHON_VERSION."
   echo "  --help, -h            Display this help message."
 }
 
@@ -112,30 +113,25 @@ fi
 # Assign the project_root argument to a variable
 project_root=$1
 
-# venv_path value is set to default
-venv_path=$DEFAULT_PYTHON_VENV
-
-# base_python_path value is set to default
-base_python_path=$DEFAULT_BASE_PYTHON
-
-# Parse optional arguments
+python_version=$DEFAULT_PYTHON_VERSION
+## Parse optional arguments
 while [[ "$#" -gt 0 ]]; do
   case $1 in
-    --venv-path=*)
-      venv_path="${1#*=}"
+    --python-version=*)
+      python_version="${1#*=}"
       shift
       ;;
-    --venv-path)
-      venv_path="$2"
+    --python-version)
+      python_version="$2"
       shift 2
       ;;
 
-    --base-python=*)
-      base_python_path="${1#*=}"
+    --uv-path=*)
+      uv_path="${1#*=}"
       shift
       ;;
-    --base-python)
-      base_python_path="$2"
+    --uv-path)
+      uv_path="$2"
       shift 2
       ;;
 
@@ -149,11 +145,15 @@ done
 
 check_args
 
-build_virtual_env=$venv_path
-if [[ ! -f "$build_virtual_env/bin/python" ]]; then
-    generate_venv $base_python_path $build_virtual_env
+uv_path=uv
+if [[ ! -f "$uv_path" ]]; then
+    if [[ ! -f "/tmp/uv/bin/uv" ]]; then
+      generate_venv_with_venv python3 /tmp/uv
+    fi
+    uv_path=/tmp/uv/bin/uv
+    echo "installed uv: $uv_path"
 else
     echo "Using existing venv: $build_virtual_env"
 fi
 
-generate_wheel $build_virtual_env $project_root
+generate_wheel $uv_path $project_root $python_version

@@ -1,5 +1,17 @@
 ARG CONAN_USER_HOME=/conan
 ARG PYTHON_VERSION=latest
+
+# If you want to use a diffrent remote for Conan, such as a proxy. Set the CONAN_CENTER_PROXY_V1_URL
+# Not this is only for building the image. The actual conan center proxy URL is set in the remotes.json file.
+ARG CONAN_CENTER_PROXY_V1_URL
+
+# PIP Cache directory. Change this only if you need to override the default location.
+ARG PIP_DOWNLOAD_CACHE=/.cache/pip
+
+# UV Cache directory. Change this only if you need to override the default location.
+ARG UV_CACHE_DIR=/.cache/uv
+
+
 ARG SONAR_USER_HOME=/opt/sonar/.sonar
 FROM python:${PYTHON_VERSION} AS base_image
 RUN apt-get update && \
@@ -36,17 +48,29 @@ ARG CONAN_USER_HOME
 COPY requirements-dev.txt /tmp/requirements-dev.txt
 COPY ci/docker/shared/conan/remotes.json ${CONAN_USER_HOME}/.conan/remotes.json
 COPY conanfile.py /tmp/conanfile.py
-RUN python3 -m venv venv && \
-    ./venv/bin/pip install uv && \
-    . ./venv/bin/activate && \
-    uv pip install -r /tmp/requirements-dev.txt && \
-    conan config init && \
-    conan config set general.revisions_enabled=1 && \
-    conan profile update settings.compiler.version=$(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)") default && \
-    conan install /tmp -pr:b=default --build outdated --no-import -pr:b=default && \
-    conan remove "*" -b --src -f && \
-    conan remove --locks && \
-    rm -rf venv
+ARG UV_CACHE_DIR
+ARG PIP_DOWNLOAD_CACHE
+ARG CONAN_CENTER_PROXY_V1_URL
+RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
+    --mount=type=cache,target=${UV_CACHE_DIR} \
+    python3 -m venv venv && \
+    ./venv/bin/pip --disable-pip-version-check install uv && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config init && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan config set general.revisions_enabled=1 && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan profile update settings.compiler.version=$(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)") default && \
+    if [ -n "${CONAN_CENTER_PROXY_V1_URL}" ]; then \
+      echo 'Using a proxy for conan center' && \
+      cp ${CONAN_USER_HOME}/.conan/remotes.json /tmp/remotes.json && \
+      ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remote remove conan-center && \
+      ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remote add conan-center ${CONAN_CENTER_PROXY_V1_URL}; \
+    fi && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan install /tmp -pr:b=default --build outdated --no-import -pr:b=default && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remove "*" -b --src -f && \
+    ./venv/bin/uvx --constraint=/tmp/requirements-dev.txt --with cmake conan remove --locks && \
+    rm -rf venv && \
+    if [ -n "${CONAN_CENTER_PROXY_V1_URL}" ]; then \
+      mv -f /tmp/remotes.json ${CONAN_USER_HOME}/.conan/remotes.json; \
+    fi
 #==============================================================================
 FROM base_image AS DR_MEMORY_BUILDER
 RUN apt-get update &&  \
