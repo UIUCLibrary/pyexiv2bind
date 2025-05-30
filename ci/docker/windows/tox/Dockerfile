@@ -56,8 +56,8 @@ RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     choco cache remove --confirm;`
     Write-Host "Finished install packages with Chocolatey" ;`
     Write-Host "Verifying installed packages" ;`
-    $env:Path = [System.Environment]::GetEnvironmentVariable(\"Path\",\"Machine\") + \";\" + [System.Environment]::GetEnvironmentVariable(\"Path\",\"User\") ; `
-    c:/verifyenv.ps1
+    c:/verifyenv.ps1 ;`
+    Write-Host "Verifying installed packages - Done"
 
 
 # ==============================================================================
@@ -70,6 +70,7 @@ COPY conanfile.py c:/temp/conanfile.py
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
 COPY requirements-dev.txt c:/requirements/requirements-dev.txt
 COPY ci/docker/windows/tox/conan/profile.ini  ${CONAN_USER_HOME}/.conan/profiles/default
+#COPY ci/docker/windows/tox/conan/python.ini  ${CONAN_USER_HOME}/.conan/profiles/python
 #SHELL ["cmd", "/S", "/C" ]
 ENV CONAN_CMAKE_GENERATOR=Ninja
 ARG CONAN_CENTER_PROXY_V1_URL
