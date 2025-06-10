@@ -44,6 +44,13 @@ function(patch_tiff_resolution root)
     execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different "${libexiv2_BINARY_DIR}/tiffimage_int.cpp" "${tiffimage_int}")
 endfunction()
 
+if(NOT TARGET EXPAT::EXPAT)
+    if(TARGET expat::expat)
+        message(STATUS "Target expat::expat was found but required target, EXPAT::EXPAT, was not. Creating an alias target EXPAT::EXPAT from expat::expat")
+        add_library(EXPAT::EXPAT ALIAS expat::expat)
+    endif ()
+endif ()
+
 FetchContent_Declare(
         libexiv2
 #        URL https://github.com/Exiv2/exiv2/archive/refs/tags/v0.28.1.tar.gz
@@ -52,6 +59,7 @@ FetchContent_Declare(
             GIT_TAG v0.28.1
         #            GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
 #            GIT_TAG ${EXIV2_VERSION_TAG}
+        SYSTEM
         PATCH_COMMAND
             COMMAND git cherry-pick 71bb2b193aad369c4d6ed9cab813c2042f626afe --no-commit
 #            COMMAND git apply ${PROJECT_SOURCE_DIR}/patches/tiff_resolution_path.patch

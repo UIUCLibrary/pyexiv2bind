@@ -1,14 +1,16 @@
-import os
-from platform import platform
+from conan import ConanFile
 
-from conans import ConanFile, CMake
-
+from importlib.metadata import version
 class pyexiv2bind(ConanFile):
     settings = "os", "arch", "compiler", "build_type"
 
-    generators = ["cmake_find_package", "cmake_paths", "json"]
+    if version('conan') < "2.0":
+        generators = ["cmake_find_package", "cmake_paths", "json"]
+    else:
+        generators = ["CMakeToolchain", "CMakeDeps"]
+
     default_options = {
-        "expat:shared": False,
+        "expat/*:shared": False,
     }
 
     def requirements(self):

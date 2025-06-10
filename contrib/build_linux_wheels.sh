@@ -9,6 +9,13 @@ DEFAULT_DOCKER_IMAGE_NAME="pyexiv2bind_builder"
 OUTPUT_PATH="$PROJECT_ROOT/dist"
 arch=$(uname -m)
 
+REMOVE_DIRS_FIRST=( \
+  'py3exiv2bind.egg-info', \
+  'cmake-build-debug', \
+  '.tox', \
+  'build' \
+  )
+
 case "$arch" in
   x86_64|amd64)
     DEFAULT_PLATFORM="linux/amd64"
@@ -58,12 +65,21 @@ generate_wheel(){
     COMMAND="echo 'Making a shadow copy to prevent modifying files' && \
             mkdir -p /tmp/build && \
             lndir -silent /project/ /tmp/build && \
-            rm -rf /tmp/build/py3exiv2bind.egg-info && \
+            for d in "${REMOVE_DIRS_FIRST[@]}"; do
+                if [ -d \"\$d\" ]; then
+                  echo \"Removing from build path: \$d\";
+                  rm -rf /tmp/build/\$d;
+                fi; \
+            done && \
             for i in "${python_versions_to_use[@]}"; do
                 echo \"Creating wheel for Python version: \$i\";
                 uv build --python=\$i --python-preference=system --build-constraints=/project/$BUILD_CONSTRAINTS --wheel --out-dir=/tmp/dist /tmp/build;
+                if [ \$? -ne 0 ]; then
+                  echo \"Failed to build wheel for Python \$i\";
+                  exit 1;
+                fi; \
             done && \
-            echo 'Fixing up wheel' && \
+            echo 'Fixing up wheels' && \
             auditwheel -v repair /tmp/dist/*.whl -w /dist/;
             for file in /dist/*manylinux*.whl; do
                 auditwheel show \$file

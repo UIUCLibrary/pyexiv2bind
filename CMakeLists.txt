@@ -10,6 +10,7 @@ endif ()
 option(pyexiv2bind_build_exiv2 "Build Exiv2 from source" ON)
 option(pyexiv2bind_generate_python_bindings "Generate python bindings" OFF)
 
+find_package(EXPAT REQUIRED)
 include(cmake_scripts/external_exiv22.cmake)
 
 option(pyexiv2bind_build_tests "build test suite" ON)
