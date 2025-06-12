@@ -11,6 +11,8 @@ ARG UV_CACHE_DIR=/.cache/uv
 ARG manylinux_image=quay.io/pypa/manylinux2014_x86_64
 
 FROM ${manylinux_image} AS base_python
+RUN --mount=type=cache,target=/var/cache/yum \
+    yum install -y lndir
 ENV PATH=/opt/python/cp39-cp39/bin:/opt/python/cp38-cp38/bin:/opt/python/cp37-cp37m/bin:/opt/python/cp36-cp36m/bin:/opt/python/cp35-cp35m/bin:$PATH
 RUN mkdir -p /.cache/pip && \
     chmod -R 777 /.cache
