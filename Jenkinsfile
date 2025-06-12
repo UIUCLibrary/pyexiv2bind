@@ -172,12 +172,12 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes){
 def linux_wheels(pythonVersions, testPackages, params, wheelStashes){
     def wheelStages = [:]
     def selectedArches = []
-    def allValidArches = ['arm64', 'x86_64']
+    def allValidArches = ['arm64', 'amd64']
     if(params.INCLUDE_LINUX_ARM == true){
         selectedArches << 'arm64'
     }
     if(params.INCLUDE_LINUX_X86_64 == true){
-        selectedArches << 'x86_64'
+        selectedArches << 'amd64'
     }
      parallel([failFast: true] << pythonVersions.collectEntries{ pythonVersion ->
         [
@@ -190,51 +190,22 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes){
                                 stage(newStageName){
                                     if(selectedArches.contains(arch)){
                                         stage("Build Wheel (${pythonVersion} Linux ${arch})"){
-                                            buildPythonPkg(
-                                                agent: [
-                                                    dockerfile: [
-                                                        label: "linux && docker && ${arch}",
-                                                        filename: 'ci/docker/linux/package/Dockerfile',
-                                                        additionalBuildArgs: "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg manylinux_image=${arch=='x86_64'? 'quay.io/pypa/manylinux_2_28_x86_64': 'quay.io/pypa/manylinux_2_28_aarch64'}"
-                                                    ]
-                                                ],
-                                                retries: 3,
-                                                buildCmd: {
+                                            node("linux && docker && ${arch}"){
+                                                try{
+                                                    checkout scm
+                                                    def dockerImageName = "pyexiv2bind_builder-${UUID.randomUUID().toString()}"
                                                     try{
-                                                        timeout(60){
-                                                            sh(label: 'Building python wheel',
-                                                               script:"""python${pythonVersion} -m venv venv
-                                                                         trap "rm -rf venv" EXIT
-                                                                         ./venv/bin/pip install --disable-pip-version-check uv
-                                                                         ./venv/bin/uv build --build-constraints=requirements-dev.txt --index-strategy unsafe-best-match --python ${pythonVersion} --wheel
-                                                                         auditwheel repair ./dist/*.whl -w ./dist
-                                                                         """
-                                                               )
-                                                       }
-                                                    } catch(e) {
-                                                        sh "python${pythonVersion} -m pip list"
-                                                        throw e
-                                                    }
-
-                                                },
-                                                post:[
-                                                    cleanup: {
-                                                        cleanWs(
-                                                            patterns: [
-                                                                    [pattern: 'dist/', type: 'INCLUDE'],
-                                                                    [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                                ],
-                                                            notFailBuild: true,
-                                                            deleteDirs: true
-                                                        )
-                                                    },
-                                                    success: {
+                                                        sh "contrib/build_linux_wheels.sh --python-version ${pythonVersion} --platform linux/${arch} --docker-image-name ${dockerImageName}"
                                                         stash includes: 'dist/*manylinux*.*whl', name: "python${pythonVersion} linux - ${arch} - wheel"
                                                         wheelStashes << "python${pythonVersion} linux - ${arch} - wheel"
                                                         archiveArtifacts artifacts: 'dist/*.whl'
+                                                    } finally {
+                                                        sh "docker rmi --force --no-prune ${dockerImageName}"
                                                     }
-                                                ]
-                                            )
+                                                } finally {
+                                                    sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                                }
+                                            }
                                         }
                                         if(testPackages == true){
                                             stage("Test Wheel (${pythonVersion} Linux ${arch})"){
