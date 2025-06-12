@@ -553,8 +553,8 @@ pipeline {
                                         tee('logs/cmake-build.log'){
                                             sh(label: 'Building C++ Code',
                                                script: '''. ./venv/bin/activate
-                                                          conan install . -if build/cpp/
-                                                          cmake -B build/cpp/ -Wdev -DCMAKE_TOOLCHAIN_FILE=build/cpp/conan_paths.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -Dpyexiv2bind_generate_python_bindings:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra" -DCMAKE_BUILD_TYPE=Debug
+                                                          conan install . -if build/cpp/ -pr:b=default -g CMakeToolchain -g CMakeDeps
+                                                          cmake --preset release -B build/cpp/ -Wdev -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -Dpyexiv2bind_generate_python_bindings:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
                                                           '''
                                             )
                                         }

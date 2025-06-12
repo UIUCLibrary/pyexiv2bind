@@ -108,6 +108,16 @@ RUN mkdir -p "$SONAR_USER_HOME" && \
 
 ENV SONAR_SCANNER_OPTS="-server"
 
+ARG UV_CACHE_DIR
+run mkdir -p "${UV_CACHE_DIR}" && \
+    chmod -R 777 "${UV_CACHE_DIR}"
+ENV UV_CACHE_DIR=${UV_CACHE_DIR}
+
+ARG PIP_DOWNLOAD_CACHE
+run mkdir -p "${PIP_DOWNLOAD_CACHE}" && \
+    chmod -R 777 "${PIP_DOWNLOAD_CACHE}"
+ENV PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
+
 COPY --from=DR_MEMORY_BUILDER /opt/drmemory /opt/drmemory/
 RUN ln -s /opt/drmemory/bin64/drmemory /usr/local/bin/drmemory && \
     drmemory -version

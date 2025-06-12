@@ -12,9 +12,10 @@ from setuptools import setup, errors, Distribution
 from pybind11.setup_helpers import Pybind11Extension
 from setuptools.command.build_clib import build_clib
 from uiucprescon.build.conan_libs import BuildConan
-from uiucprescon.build.conan.files import locate_conanbuildinfo, ConanBuildInfoTXT
-from uiucprescon.build.pybind11_builder import BuildPybind11Extension, parse_conan_build_info
 
+from uiucprescon.build.pybind11_builder import BuildPybind11Extension
+
+from importlib.metadata import version
 
 MIN_MACOSX_DEPLOYMENT_TARGET = '10.15'
 PACKAGE_NAME = "py3exiv2bind"
@@ -177,9 +178,13 @@ class BuildCMakeLib(build_clib):
             os.path.join(self.build_temp, "Release"),
             os.path.join(self.build_temp, "Release", "conan"),
         ]
-        cmake_toolchain = locate_file("conan_paths.cmake", toolchain_locations)
+        if version('conan') < "2.0":
+            cmake_toolchain_file_name = "conan_paths.cmake"
+        else:
+            cmake_toolchain_file_name = "conan_toolchain.cmake"
+        cmake_toolchain = locate_file(cmake_toolchain_file_name, toolchain_locations)
         if cmake_toolchain is None:
-            raise FileNotFoundError("Missing toolchain file conan_paths.cmake")
+            raise FileNotFoundError(f"Missing toolchain file {cmake_toolchain_file_name}")
 
         configure_command = [
             self.cmake_exec, f'-S{source_dir}'
@@ -366,7 +371,49 @@ def locate_file(file_name, search_locations):
         file_candidate = os.path.join(location, file_name)
         if os.path.exists(file_candidate):
             return file_candidate
+def add_conan_build_info_v1(core_ext, build_temp):
+    from uiucprescon.build.conan.files import locate_conanbuildinfo, ConanBuildInfoTXT
+    build_locations = [
+        os.path.join(build_temp, "conan"),
+        os.path.join(build_temp, "conan", "Release"),
+        os.path.join(build_temp, "Release"),
+    ]
+    conanbuildinfotext = locate_conanbuildinfo(build_locations)
+    metadata_strategy = ConanBuildInfoTXT()
+    text_md = metadata_strategy.parse(conanbuildinfotext)
+    for lib in text_md["libs"]:
+        if lib not in core_ext.libraries:
+            core_ext.libraries.append(lib)
+    for path in reversed(text_md["lib_paths"]):
+        if path not in core_ext.library_dirs:
+            core_ext.library_dirs.insert(0, path)
+    return core_ext
 
+def add_conan_build_info_v2(core_ext, build_temp):
+    from uiucprescon.build.conan.files import read_conan_build_info_json
+    build_locations = [
+        os.path.join(build_temp, "conan"),
+        os.path.join(build_temp, "conan", "Release"),
+        os.path.join(build_temp, "Release"),
+    ]
+    for location in build_locations:
+        build_info = os.path.join(location, "conan_build_info.json")
+        if os.path.exists(build_info):
+            break
+    else:
+        raise FileNotFoundError("conan_build_info.json not found")
+
+    with open(build_info, 'r', encoding="utf-8") as f:
+        build_info = read_conan_build_info_json(f)
+
+    for lib in build_info['libs']:
+        if lib not in core_ext.libraries:
+            core_ext.libraries.append(lib)
+
+    for path in reversed(build_info['lib_paths']):
+        if path not in core_ext.libraries:
+            core_ext.library_dirs.insert(0, path)
+    return core_ext
 
 class BuildExiv2(BuildCMakeLib):
 
@@ -386,41 +433,26 @@ class BuildExiv2(BuildCMakeLib):
         except Exception:
             self.announce("Building with conan failed.", level=3)
             raise
-        toolchain_locations = [
-            self.build_temp,
-            os.path.join(self.build_temp, "conan"),
-            os.path.join(self.build_temp, "Release"),
-            os.path.join(self.build_temp, "Release", "conan"),
-        ]
-        cmake_toolchain = locate_file("conan_paths.cmake", toolchain_locations)
-        if cmake_toolchain is None:
-            raise FileNotFoundError(
-                f"Missing toolchain file conan_paths.cmake. "
-                f"Searching in {toolchain_locations}",
-            )
-        self.extra_cmake_options.append(
-            f'-DCMAKE_TOOLCHAIN_FILE={cmake_toolchain}'
-        )
+        if version('conan') >= "2.0":
+            self.extra_cmake_options.append("--preset=conan-release")
+        else:
+            self.extra_cmake_options.append("-DCMAKE_POLICY_DEFAULT_CMP0091=NEW")
 
         super().run()
         ext_command = self.get_finalized_command("build_ext")
 
-        core_ext = ext_command.ext_map['py3exiv2bind.core']
-        build_locations = [
-            build_clib.build_temp,
-            os.path.join(build_clib.build_temp, "conan"),
-            os.path.join(build_clib.build_temp, "conan", "Release"),
-            os.path.join(build_clib.build_temp, "Release"),
-        ]
-        conanbuildinfotext = locate_conanbuildinfo(build_locations)
-        metadata_strategy = ConanBuildInfoTXT()
-        text_md = metadata_strategy.parse(conanbuildinfotext)
-        for lib in text_md["libs"]:
-            if lib not in core_ext.libraries:
-                core_ext.libraries.append(lib)
-        for path in reversed(text_md["lib_paths"]):
-            if path not in core_ext.library_dirs:
-                core_ext.library_dirs.insert(0, path)
+        if version('conan') < "2.0":
+            core_ext =\
+                add_conan_build_info_v1(
+                    ext_command.ext_map['py3exiv2bind.core'],
+                    build_clib.build_temp
+                )
+        else:
+            core_ext =\
+                add_conan_build_info_v2(
+                    ext_command.ext_map['py3exiv2bind.core'],
+                    build_clib.build_temp
+                )
 
         core_ext.include_dirs.insert(0, os.path.join(self.build_temp, "include"))
         if os.name == 'nt':
