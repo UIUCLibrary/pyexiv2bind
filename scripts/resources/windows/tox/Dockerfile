@@ -22,8 +22,8 @@ FROM ${FROM_IMAGE} AS BASE_BUILDER
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 
-COPY contrib/resources/windows/tox/msvc/visual_studio_config.json c:/setup/config.vsconfig
-COPY contrib/resources/windows/tox/msvc/install_msvc.ps1 c:/scripts/install_msvc.ps1
+COPY scripts/resources/windows/tox/msvc/visual_studio_config.json c:/setup/config.vsconfig
+COPY scripts/resources/windows/tox/msvc/install_msvc.ps1 c:/scripts/install_msvc.ps1
 ARG VS_INSTALL_PATH
 ARG VS_VERSION="2022"
 ARG VS_DevCmdArguments="-arch=amd64"
@@ -34,8 +34,8 @@ RUN c:/scripts/install_msvc.ps1 -InstallPath ${Env:VS_INSTALL_PATH} -VSConfigFil
 ARG CHOCOLATEY_SOURCE=https://chocolatey.org/api/v2
 ARG ChocolateyEnvironmentDebug=false
 ARG chocolateyVersion
-COPY contrib/resources/windows/tox/chocolatey/install.ps1 c:/choco/install.ps1
-COPY contrib/resources/windows/tox/chocolatey/get_latest_chocolatey_url.ps1 c:/choco/get_latest_chocolatey_url.ps1
+COPY scripts/resources/windows/tox/chocolatey/install.ps1 c:/choco/install.ps1
+COPY scripts/resources/windows/tox/chocolatey/get_latest_chocolatey_url.ps1 c:/choco/get_latest_chocolatey_url.ps1
 RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
     $chocolateyDownloadUrl = c:/choco/get_latest_chocolatey_url.ps1 -packageRepo $env:CHOCOLATEY_SOURCE; `
     c:/choco/install.ps1 -ChocolateyDownloadUrl $chocolateyDownloadUrl;`
@@ -48,8 +48,8 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
     choco feature disable -n=showDownloadProgress ; `
     choco cache remove --confirm
 
-COPY contrib/resources/windows/tox/chocolatey/packages.config c:/choco/packages.config
-COPY contrib/resources/windows/tox/chocolatey/verifyenv.ps1 c:/verifyenv.ps1
+COPY scripts/resources/windows/tox/chocolatey/packages.config c:/choco/packages.config
+COPY scripts/resources/windows/tox/chocolatey/verifyenv.ps1 c:/verifyenv.ps1
 RUN C:\ProgramData\chocolatey\bin\choco.exe sources ; `
     C:\ProgramData\chocolatey\bin\choco.exe install -y --stoponfirstfailure --no-progress c:/choco/packages.config ;`
     refreshenv ; `
@@ -69,8 +69,8 @@ ARG PIP_INDEX_URL
 COPY conanfile.py c:/temp/conanfile.py
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_USER_HOME}/.conan/remotes.json
 COPY requirements-dev.txt c:/requirements/requirements-dev.txt
-COPY contrib/resources/windows/tox/conan/profile.ini  ${CONAN_USER_HOME}/.conan/profiles/default
-COPY contrib/resources/windows/tox/conan/python.ini  ${CONAN_USER_HOME}/.conan/profiles/python
+COPY scripts/resources/windows/tox/conan/profile.ini  ${CONAN_USER_HOME}/.conan/profiles/default
+COPY scripts/resources/windows/tox/conan/python.ini  ${CONAN_USER_HOME}/.conan/profiles/python
 #SHELL ["cmd", "/S", "/C" ]
 ENV CONAN_CMAKE_GENERATOR=Ninja
 ARG CONAN_CENTER_PROXY_V1_URL

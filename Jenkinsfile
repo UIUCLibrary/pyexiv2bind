@@ -112,7 +112,7 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes){
                             retry(3){
                                 checkout scm
                                 timeout(60){
-                                    powershell(label: 'Building Wheel for Windows', script: "contrib/build_windows.ps1 -PythonVersion ${pythonVersion} -DockerImageName ${dockerImageName}")
+                                    powershell(label: 'Building Wheel for Windows', script: "scripts/build_windows.ps1 -PythonVersion ${pythonVersion} -DockerImageName ${dockerImageName}")
                                 }
                                 try{
                                     stash includes: 'dist/*.whl', name: "python${pythonVersion} windows wheel"
@@ -195,7 +195,7 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                     checkout scm
                                                     def dockerImageName = "pyexiv2bind_builder-${UUID.randomUUID().toString()}"
                                                     try{
-                                                        sh "contrib/build_linux_wheels.sh --python-version ${pythonVersion} --platform linux/${arch} --docker-image-name ${dockerImageName}"
+                                                        sh "scripts/build_linux_wheels.sh --python-version ${pythonVersion} --platform linux/${arch} --docker-image-name ${dockerImageName}"
                                                         stash includes: 'dist/*manylinux*.*whl', name: "python${pythonVersion} linux - ${arch} - wheel"
                                                         wheelStashes << "python${pythonVersion} linux - ${arch} - wheel"
                                                         archiveArtifacts artifacts: 'dist/*.whl'
@@ -288,7 +288,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                     buildCmd: {
                                                         timeout(60){
                                                             sh(label: 'Building wheel',
-                                                               script: "contrib/build_mac_wheel.sh . --uv=./venv/bin/uv --python-version=${pythonVersion}"
+                                                               script: "scripts/build_mac_wheel.sh . --uv=./venv/bin/uv --python-version=${pythonVersion}"
                                                            )
                                                         }
                                                     },
@@ -995,7 +995,7 @@ pipeline {
                                                         checkout scm
                                                         lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
                                                             retry(maxRetries){
-                                                                image = docker.build(UUID.randomUUID().toString(), '-f contrib/resources/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg CHOCOLATEY_SOURCE' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                                image = docker.build(UUID.randomUUID().toString(), '-f scripts/resources/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg CHOCOLATEY_SOURCE' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                             }
                                                         }
                                                         try{
@@ -1186,7 +1186,7 @@ pipeline {
                                                                 def image
                                                                 checkout scm
                                                                 lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
-                                                                    image = docker.build(UUID.randomUUID().toString(), '-f contrib/resources/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg CHOCOLATEY_SOURCE' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                                    image = docker.build(UUID.randomUUID().toString(), '-f scripts/resources/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CONAN_CENTER_PROXY_V1_URL --build-arg CHOCOLATEY_SOURCE' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
                                                                 }
                                                                 retry(3){
                                                                     try{

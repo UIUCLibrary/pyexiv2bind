@@ -6,7 +6,7 @@ param (
 function Build-DockerImage {
     [CmdletBinding()]
     param (
-        [string]$DockerfilePath = "contrib/resources/windows/tox/Dockerfile",
+        [string]$DockerfilePath = "scripts/resources/windows/tox/Dockerfile",
         [string]$ImageName = "pyexiv2builder",
         [string]$DockerExec = "docker.exe",
         [string]$DockerIsolation = "process"
