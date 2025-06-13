@@ -7,14 +7,13 @@ DEFAULT_PYTHON_VERSION="3.10"
 DOCKERFILE=$(realpath "$scriptDir/resources/package_for_linux/Dockerfile")
 DEFAULT_DOCKER_IMAGE_NAME="pyexiv2bind_builder"
 OUTPUT_PATH="$PROJECT_ROOT/dist"
-arch=$(uname -m)
-
+DEFAULT_BUILD_CONSTRAINTS="requirements-dev.txt"
 REMOVE_DIRS_FIRST=( \
-  'py3exiv2bind.egg-info', \
-  'cmake-build-debug', \
-  '.tox', \
+  'py3exiv2bind.egg-info' \
   'build' \
   )
+
+arch=$(uname -m)
 
 case "$arch" in
   x86_64|amd64)
@@ -29,12 +28,12 @@ case "$arch" in
 esac
 
 
-BUILD_CONSTRAINTS="requirements-dev.txt"
-
 generate_wheel(){
     platform=$1
     local docker_image_name_to_use=$2
-    local python_versions_to_use=("${@:3}")
+    local constraints_file=$3
+    local python_versions_to_use=("${@:4}")
+
     case $platform in
         linux/amd64)
             manylinux_image=quay.io/pypa/manylinux_2_28_x86_64
@@ -56,24 +55,29 @@ generate_wheel(){
         --build-arg PIP_INDEX_URL \
         --build-arg UV_EXTRA_INDEX_URL \
         --build-arg UV_INDEX_URL \
+        --build-arg UV_CONSTRAINT=$constraints_file \
         --build-arg manylinux_image=$manylinux_image \
         "$PROJECT_ROOT"
 
     mkdir -p "$OUTPUT_PATH"
     echo "Building wheels for Python versions: ${python_versions_to_use[*]}"
-
-    COMMAND="echo 'Making a shadow copy to prevent modifying files' && \
-            mkdir -p /tmp/build && \
-            lndir -silent /project/ /tmp/build && \
+    CONTAINER_WORKSPACE=/tmp/workspace
+    COMMAND="echo 'Making a shadow copy to prevent modifying local files' && \
+            mkdir -p ${CONTAINER_WORKSPACE} && \
+            lndir -silent /project/ ${CONTAINER_WORKSPACE} && \
             for d in "${REMOVE_DIRS_FIRST[@]}"; do
-                if [ -d \"\$d\" ]; then
-                  echo \"Removing from build path: \$d\";
-                  rm -rf /tmp/build/\$d;
+                OFFENDING_PATH=${CONTAINER_WORKSPACE}/\$d
+                if [ -d \"\$OFFENDING_PATH\" ]; then
+                  echo \"Removing copy from temporary working path to avoid issues: \$OFFENDING_PATH\";
+                  rm -rf \$OFFENDING_PATH;
                 fi; \
             done && \
+            echo 'Removing Python cache files' && \
+            find ${CONTAINER_WORKSPACE} -type d -name '__pycache__' -exec rm -rf {} + && \
+            find ${CONTAINER_WORKSPACE} -type f -name '*.pyc' -exec rm -f {} + && \
             for i in "${python_versions_to_use[@]}"; do
                 echo \"Creating wheel for Python version: \$i\";
-                uv build --python=\$i --python-preference=system --build-constraints=/project/$BUILD_CONSTRAINTS --wheel --out-dir=/tmp/dist /tmp/build;
+                uv build --python=\$i --python-preference=system --build-constraints=/project/$constraints_file --wheel --out-dir=/tmp/dist ${CONTAINER_WORKSPACE};
                 if [ \$? -ne 0 ]; then
                   echo \"Failed to build wheel for Python \$i\";
                   exit 1;
@@ -93,6 +97,7 @@ generate_wheel(){
         --entrypoint="/bin/bash" \
         $docker_image_name_to_use \
         -c "$COMMAND"
+    echo "Built wheel can be found in '$OUTPUT_PATH'"
 }
 print_usage(){
     echo "Usage: $0 [--project-root[=PROJECT_ROOT]] [--python-version[=PYTHON_VERSION]] [--help]"
@@ -101,12 +106,22 @@ print_usage(){
 show_help() {
   print_usage
   echo
-  echo "Arguments:"
-  echo "  --project-root        Path to Python project containing pyproject.toml file. Defaults to current directory."
-  echo "  --python-version      Version of Python wheel to build. Defaults to $DEFAULT_PYTHON_VERSION. Can be specified multiple times to build for multiple versions."
-  echo "  --platform            Platform to build the wheel for. Defaults to $DEFAULT_PLATFORM."
-  echo "  --docker-image-name   Name of the Docker image to use for building the wheel. Defaults to $DEFAULT_DOCKER_IMAGE_NAME."
-  echo "  --help, -h            Display this help message."
+  echo "Arguments:                                                                      "
+  echo "  --project-root   : Path to Python project containing pyproject.toml file.     "
+  echo "                   Defaults to current directory.                               "
+  echo "  --python-version : Version of Python wheel to build. This can be specified    "
+  echo "                   multiple times to build for multiple versions.               "
+  echo "                   Defaults to \"$DEFAULT_PYTHON_VERSION\".                     "
+  echo "  --platform       : Platform to build the wheel for.                           "
+  echo "                   Defaults to \"$DEFAULT_PLATFORM\".                           "
+  echo "  --docker-image-name                                                           "
+  echo "                   : Name of the Docker image to use for building the wheel.    "
+  echo "                   Defaults to \"$DEFAULT_DOCKER_IMAGE_NAME\".                  "
+  echo "  --build-constraints-file                                                      "
+  echo "                   : File to use for build constraints. This must be within the "
+  echo "                   root of the repository.                                      "
+  echo "                   Defaults to \"$DEFAULT_BUILD_CONSTRAINTS\"                   "
+  echo "  --help, -h       : Display this help message.                                 "
 }
 
 
@@ -120,6 +135,24 @@ check_args(){
         echo "error: $PROJECT_ROOT contains no pyproject.toml"
         exit 1
     fi
+
+    if [[ "$build_constraints_file" = /* ]]; then
+      echo "The build constraints file '$build_constraints_file' cannot be an absolute path."
+      exit 1
+    fi
+
+    if [[ ! -f "$build_constraints_file" ]]; then
+      echo "No valid file found at $build_constraints_file"
+      exit 1
+    fi
+
+  # Check if the resolved path is within the source repository
+  if [[ ! $(realpath "$build_constraints_file") == "$PROJECT_ROOT"* ]]; then
+    echo "Error: The path '$build_constraints_file' is not within the source repository."
+    exit 1
+  fi
+
+
 }
 # === Main script starts here ===
 
@@ -142,6 +175,14 @@ while [[ "$#" -gt 0 ]]; do
       ;;
     --project-root)
       PROJECT_ROOT="$2"
+      shift 2
+      ;;
+    --build-constraints-file=*)
+      build_constraints_file="${1#*=}"
+      shift
+      ;;
+    --build-constraints-file)
+      build_constraints_file="${2}"
       shift 2
       ;;
     --docker-image-name=*)
@@ -200,6 +241,13 @@ fi
 
 if [[ ! -v docker_image_name ]]; then
     docker_image_name=$DEFAULT_DOCKER_IMAGE_NAME
+else
+  echo "Using '$docker_image_name' for the name of the Docker Image generated to build."
+fi
+if [[ -z "$build_constraints_file" ]]; then
+    build_constraints_file=$DEFAULT_BUILD_CONSTRAINTS
+else
+  echo "Using '$build_constraints_file' for constraints file."
 fi
 check_args
-generate_wheel $PLATFORM $docker_image_name ${python_versions[@]}
+generate_wheel $PLATFORM $docker_image_name $build_constraints_file ${python_versions[@]}
