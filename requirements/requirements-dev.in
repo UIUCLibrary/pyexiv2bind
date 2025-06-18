@@ -1,6 +1,6 @@
 build
 cmake<4.0
-conan<2.0
+conan>=2.0
 coverage
 flake8
 gcovr
@@ -19,4 +19,4 @@ sphinx
 toml
 tox
 twine
-uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/v0.2.5.tar.gz
+uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/v0.2.6b17.tar.gz

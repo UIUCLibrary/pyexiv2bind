@@ -10,3 +10,4 @@ recursive-include tests *.py *.cpp
 recursive-include docs/source *.*
 include docs/make.bat docs/Makefile
 recursive-include src/py3exiv2bind *.py *.cpp *.h CMakeLists.txt
+exclude CMakeUserPresets.json

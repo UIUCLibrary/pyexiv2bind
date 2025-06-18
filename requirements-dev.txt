@@ -14,13 +14,11 @@ backports-tarfile==1.2.0 ; python_full_version < '3.12' and platform_machine != 
     # via jaraco-context
 bcrypt==4.3.0
     # via paramiko
-bottle==0.12.25
-    # via conan
 build==1.2.2.post1
     # via -r requirements/requirements-dev.in
-cachetools==6.0.0
+cachetools==6.1.0
     # via tox
-certifi==2025.4.26
+certifi==2025.6.15
     # via requests
 cffi==1.17.1
     # via
@@ -43,16 +41,15 @@ colorama==0.4.6
     #   pytest
     #   sphinx
     #   tox
-    #   tqdm
 colorlog==6.9.0
     # via gcovr
-conan==1.66.0
+conan==2.18.1
     # via
     #   -r requirements/requirements-dev.in
     #   uiucprescon-build
-coverage==7.8.2
+coverage==7.9.2
     # via -r requirements/requirements-dev.in
-cryptography==45.0.3
+cryptography==45.0.5
     # via
     #   paramiko
     #   secretstorage
@@ -60,7 +57,7 @@ dill==0.4.0
     # via pylint
 distlib==0.3.9
     # via virtualenv
-distro==1.8.0 ; sys_platform == 'linux' or sys_platform == 'linux2'
+distro==1.8.0 ; platform_system == 'FreeBSD' or sys_platform == 'linux'
     # via conan
 docutils==0.21.2
     # via
@@ -74,7 +71,7 @@ filelock==3.18.0
     # via
     #   tox
     #   virtualenv
-flake8==7.2.0
+flake8==7.3.0
     # via -r requirements/requirements-dev.in
 gcovr==8.3
     # via -r requirements/requirements-dev.in
@@ -101,7 +98,7 @@ jaraco-classes==3.4.0 ; platform_machine != 'ppc64le' and platform_machine != 's
     # via keyring
 jaraco-context==6.0.1 ; platform_machine != 'ppc64le' and platform_machine != 's390x'
     # via keyring
-jaraco-functools==4.1.0 ; platform_machine != 'ppc64le' and platform_machine != 's390x'
+jaraco-functools==4.2.1 ; platform_machine != 'ppc64le' and platform_machine != 's390x'
     # via keyring
 jeepney==0.9.0 ; platform_machine != 'ppc64le' and platform_machine != 's390x' and sys_platform == 'linux'
     # via
@@ -114,7 +111,7 @@ jinja2==3.1.6
     #   sphinx
 keyring==25.6.0 ; platform_machine != 'ppc64le' and platform_machine != 's390x'
     # via twine
-lxml==5.4.0
+lxml==6.0.0
     # via
     #   -r requirements/requirements-dev.in
     #   gcovr
@@ -138,7 +135,7 @@ more-itertools==10.7.0 ; platform_machine != 'ppc64le' and platform_machine != '
     # via
     #   jaraco-classes
     #   jaraco-functools
-mypy==1.16.0
+mypy==1.16.1
     # via -r requirements/requirements-dev.in
 mypy-extensions==1.1.0
     # via mypy
@@ -146,8 +143,6 @@ nh3==0.2.21
     # via readme-renderer
 ninja==1.11.1.4
     # via -r requirements/requirements-dev.in
-node-semver==0.6.1
-    # via conan
 packaging==25.0
     # via
     #   build
@@ -165,8 +160,10 @@ parse==1.20.2
     #   pytest-bdd
 parse-type==0.6.4
     # via pytest-bdd
-patch-ng==1.17.4
+patch-ng==1.18.1
     # via conan
+patchelf==0.17.2.2 ; sys_platform == 'linux'
+    # via uiucprescon-build
 pathspec==0.12.1
     # via mypy
 platformdirs==4.3.8
@@ -178,27 +175,23 @@ pluggy==1.6.0
     # via
     #   pytest
     #   tox
-pluginbase==1.0.1
-    # via conan
 pybind11==2.10.4
     # via
     #   -r requirements/requirements-dev.in
     #   uiucprescon-build
-pycodestyle==2.13.0
+pycodestyle==2.14.0
     # via flake8
 pycparser==2.22
     # via cffi
-pyflakes==3.3.2
+pyflakes==3.4.0
     # via flake8
-pygments==2.19.1
+pygments==2.19.2
     # via
-    #   conan
     #   gcovr
+    #   pytest
     #   readme-renderer
     #   rich
     #   sphinx
-pyjwt==2.10.1
-    # via conan
 pylint==3.3.7
     # via -r requirements/requirements-dev.in
 pynacl==1.5.0
@@ -207,7 +200,7 @@ pyproject-api==1.9.1
     # via tox
 pyproject-hooks==1.2.0
     # via build
-pytest==8.3.5
+pytest==8.4.1
     # via
     #   -r requirements/requirements-dev.in
     #   pytest-bdd
@@ -218,10 +211,12 @@ python-dateutil==2.9.0.post0
 pywin32-ctypes==0.2.3 ; platform_machine != 'ppc64le' and platform_machine != 's390x' and sys_platform == 'win32'
     # via keyring
 pyyaml==6.0.2
-    # via conan
+    # via
+    #   conan
+    #   uiucprescon-build
 readme-renderer==44.0
     # via twine
-requests==2.32.3
+requests==2.32.4
     # via
     #   conan
     #   id
@@ -240,9 +235,8 @@ secretstorage==3.3.3 ; platform_machine != 'ppc64le' and platform_machine != 's3
     # via keyring
 setuptools==80.9.0
     # via uiucprescon-build
-six==1.16.0
+six==1.17.0
     # via
-    #   conan
     #   parse-type
     #   python-dateutil
 snowballstemmer==3.0.1
@@ -279,15 +273,13 @@ tomli==2.2.1 ; python_full_version < '3.11'
     #   pytest
     #   sphinx
     #   tox
-tomlkit==0.13.2
+tomlkit==0.13.3
     # via pylint
-tox==4.26.0
+tox==4.27.0
     # via -r requirements/requirements-dev.in
-tqdm==4.67.1
-    # via conan
 twine==6.1.0
     # via -r requirements/requirements-dev.in
-typing-extensions==4.13.2
+typing-extensions==4.14.1
     # via
     #   astroid
     #   exceptiongroup
@@ -296,9 +288,9 @@ typing-extensions==4.13.2
     #   pytest-bdd
     #   rich
     #   tox
-uiucprescon-build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/v0.2.5.tar.gz
+uiucprescon-build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/v0.2.6b17.tar.gz
     # via -r requirements/requirements-dev.in
-urllib3==1.26.20
+urllib3==2.0.7
     # via
     #   conan
     #   requests
@@ -307,5 +299,5 @@ virtualenv==20.31.2
     # via tox
 wheel==0.45.1
     # via uiucprescon-build
-zipp==3.22.0 ; (python_full_version < '3.10.2' and platform_machine == 'ppc64le') or (python_full_version < '3.10.2' and platform_machine == 's390x') or (python_full_version < '3.12' and platform_machine != 'ppc64le' and platform_machine != 's390x')
+zipp==3.23.0 ; (python_full_version < '3.10.2' and platform_machine == 'ppc64le') or (python_full_version < '3.10.2' and platform_machine == 's390x') or (python_full_version < '3.12' and platform_machine != 'ppc64le' and platform_machine != 's390x')
     # via importlib-metadata

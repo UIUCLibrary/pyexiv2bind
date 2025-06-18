@@ -1,4 +1,5 @@
 import abc
+import json
 import os
 
 import sys
@@ -171,9 +172,9 @@ class BuildCMakeLib(build_clib):
         codemodel_file = \
             os.path.join(self.cmake_api_dir, "query", "codemodel-v2")
         pathlib.Path(codemodel_file).touch()
-
+        build_conan = self.get_finalized_command("build_conan")
         toolchain_locations = [
-            self.build_temp,
+            build_conan.build_temp,
             os.path.join(self.build_temp, "conan"),
             os.path.join(self.build_temp, "Release"),
             os.path.join(self.build_temp, "Release", "conan"),
@@ -189,12 +190,12 @@ class BuildCMakeLib(build_clib):
         configure_command = [
             self.cmake_exec, f'-S{source_dir}'
         ]
-        ninja = shutil.which("ninja")
-        if ninja:
-            configure_command += [
-                "-G", "Ninja",
-                f"-DCMAKE_MAKE_PROGRAM:FILEPATH={ninja}",
-            ]
+        # ninja = shutil.which("ninja")
+        # if ninja:
+        #     configure_command += [
+        #         "-G", "Ninja",
+        #         f"-DCMAKE_MAKE_PROGRAM:FILEPATH={ninja}",
+        #     ]
         configure_command += [
             f'-B{dep_build_path}',
             f"-DCMAKE_TOOLCHAIN_FILE={cmake_toolchain}",
@@ -392,6 +393,7 @@ def add_conan_build_info_v1(core_ext, build_temp):
 def add_conan_build_info_v2(core_ext, build_temp):
     from uiucprescon.build.conan.files import read_conan_build_info_json
     build_locations = [
+        build_temp,
         os.path.join(build_temp, "conan"),
         os.path.join(build_temp, "conan", "Release"),
         os.path.join(build_temp, "Release"),
@@ -415,6 +417,35 @@ def add_conan_build_info_v2(core_ext, build_temp):
             core_ext.library_dirs.insert(0, path)
     return core_ext
 
+
+def get_conan_preset_name(conan_build_folder: str) -> str:
+    cmake_presets_json_file = os.path.join(conan_build_folder, "CMakePresets.json")
+    if not os.path.exists(cmake_presets_json_file):
+        raise FileNotFoundError(f"Missing {cmake_presets_json_file}")
+    with open(cmake_presets_json_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    configure_presets = data.get('configurePresets')
+    if configure_presets is None:
+        raise KeyError(f"configurePresets key missing from {cmake_presets_json_file}")
+    for preset in configure_presets:
+        if "conan" in preset['name']:
+            return preset['name']
+    raise ValueError("Unable to locate a conan config preset")
+
+
+def get_conan_toolchain_file(preset_name, conan_build_path):
+    cmake_presets_json_file = os.path.join(conan_build_path, "CMakePresets.json")
+    if not os.path.exists(cmake_presets_json_file):
+        raise FileNotFoundError(f"Missing {cmake_presets_json_file}")
+    with open(cmake_presets_json_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    for preset in data.get('configurePresets', []):
+        if preset['name'] == preset_name:
+            return os.path.join(preset['binaryDir'], preset['toolchainFile'])
+
+    raise ValueError("Unable to locate a conan toolchain file")
+
 class BuildExiv2(BuildCMakeLib):
 
     def __init__(self, dist):
@@ -434,7 +465,8 @@ class BuildExiv2(BuildCMakeLib):
             self.announce("Building with conan failed.", level=3)
             raise
         if version('conan') >= "2.0":
-            self.extra_cmake_options.append("--preset=conan-release")
+            cmake_preset = get_conan_preset_name(conan_build_folder=conan_cmd.build_temp)
+            self.extra_cmake_options.append(f"--preset={cmake_preset}")
         else:
             self.extra_cmake_options.append("-DCMAKE_POLICY_DEFAULT_CMP0091=NEW")
 
@@ -451,7 +483,7 @@ class BuildExiv2(BuildCMakeLib):
             core_ext =\
                 add_conan_build_info_v2(
                     ext_command.ext_map['py3exiv2bind.core'],
-                    build_clib.build_temp
+                    conan_cmd.build_temp
                 )
 
         core_ext.include_dirs.insert(0, os.path.join(self.build_temp, "include"))
