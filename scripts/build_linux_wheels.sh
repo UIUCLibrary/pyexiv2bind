@@ -13,6 +13,10 @@ REMOVE_DIRS_FIRST=( \
   'build' \
   )
 
+REMOVE_FILES_FIRST=(
+  'CMakeUserPresets.json'
+  )
+
 arch=$(uname -m)
 
 case "$arch" in
@@ -70,6 +74,13 @@ generate_wheel(){
                 if [ -d \"\$OFFENDING_PATH\" ]; then
                   echo \"Removing copy from temporary working path to avoid issues: \$OFFENDING_PATH\";
                   rm -rf \$OFFENDING_PATH;
+                fi; \
+            done && \
+            for f in "${REMOVE_FILES_FIRST[@]}"; do
+                OFFENDING_FILE=${CONTAINER_WORKSPACE}/\$f
+                if [ -f \"\$OFFENDING_FILE\" ]; then
+                  echo \"Removing copy from temporary working path to avoid issues: \$OFFENDING_FILE\";
+                  rm \$OFFENDING_FILE;
                 fi; \
             done && \
             echo 'Removing Python cache files' && \
