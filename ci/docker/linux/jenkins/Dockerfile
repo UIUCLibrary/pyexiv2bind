@@ -17,7 +17,7 @@ ARG UV_CACHE_DIR=/.cache/uv
 ARG SONAR_USER_HOME=/opt/sonar/.sonar
 FROM python:${PYTHON_VERSION} AS base_image
 RUN rm -f /etc/apt/apt.conf.d/docker-clean
-RUN --mount=type=cache,target=/var/cache/apt \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt_cache \
     apt-get update && \
     apt-get install -y --no-install-recommends unzip git && \
     apt-get clean && \
@@ -46,7 +46,7 @@ RUN case $(uname -m) in \
 
 # ==============================================================================
 FROM base_image AS conan_builder
-RUN --mount=type=cache,target=/var/cache/apt \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt_cache \
     apt-get update && \
     apt-get install -y --no-install-recommends jq && \
     apt-get clean && \
