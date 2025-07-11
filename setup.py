@@ -171,9 +171,9 @@ class BuildCMakeLib(build_clib):
         codemodel_file = \
             os.path.join(self.cmake_api_dir, "query", "codemodel-v2")
         pathlib.Path(codemodel_file).touch()
-
+        build_conan = self.get_finalized_command("build_conan")
         toolchain_locations = [
-            self.build_temp,
+            build_conan.build_temp,
             os.path.join(self.build_temp, "conan"),
             os.path.join(self.build_temp, "Release"),
             os.path.join(self.build_temp, "Release", "conan"),
@@ -189,12 +189,12 @@ class BuildCMakeLib(build_clib):
         configure_command = [
             self.cmake_exec, f'-S{source_dir}'
         ]
-        ninja = shutil.which("ninja")
-        if ninja:
-            configure_command += [
-                "-G", "Ninja",
-                f"-DCMAKE_MAKE_PROGRAM:FILEPATH={ninja}",
-            ]
+        # ninja = shutil.which("ninja")
+        # if ninja:
+        #     configure_command += [
+        #         "-G", "Ninja",
+        #         f"-DCMAKE_MAKE_PROGRAM:FILEPATH={ninja}",
+        #     ]
         configure_command += [
             f'-B{dep_build_path}',
             f"-DCMAKE_TOOLCHAIN_FILE={cmake_toolchain}",
@@ -392,6 +392,7 @@ def add_conan_build_info_v1(core_ext, build_temp):
 def add_conan_build_info_v2(core_ext, build_temp):
     from uiucprescon.build.conan.files import read_conan_build_info_json
     build_locations = [
+        build_temp,
         os.path.join(build_temp, "conan"),
         os.path.join(build_temp, "conan", "Release"),
         os.path.join(build_temp, "Release"),
@@ -451,7 +452,7 @@ class BuildExiv2(BuildCMakeLib):
             core_ext =\
                 add_conan_build_info_v2(
                     ext_command.ext_map['py3exiv2bind.core'],
-                    build_clib.build_temp
+                    conan_cmd.build_temp
                 )
 
         core_ext.include_dirs.insert(0, os.path.join(self.build_temp, "include"))
