@@ -3,9 +3,7 @@ requires = [
     "setuptools>=77.0.0",
     "wheel",
     "ninja",
-#    'uiucprescon.build @ /Users/hborcher/CLionProjects/henryborchers/uiucprescon_build',
-#    "uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/v0.2.5.tar.gz",
-    'uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/0.2.6a4.tar.gz',
+    'uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/0.2.6a14.tar.gz',
     "cmake<4.0",
 #    "conan>=1.50.0,<2.0"
     "conan>=2.0"

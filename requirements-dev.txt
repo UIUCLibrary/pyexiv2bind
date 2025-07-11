@@ -43,13 +43,13 @@ colorama==0.4.6
     #   tox
 colorlog==6.9.0
     # via gcovr
-conan==2.17.0
+conan==2.18.1
     # via
     #   -r requirements/requirements-dev.in
     #   uiucprescon-build
-coverage==7.9.1
+coverage==7.9.2
     # via -r requirements/requirements-dev.in
-cryptography==45.0.4
+cryptography==45.0.5
     # via
     #   paramiko
     #   secretstorage
@@ -71,7 +71,7 @@ filelock==3.18.0
     # via
     #   tox
     #   virtualenv
-flake8==7.2.0
+flake8==7.3.0
     # via -r requirements/requirements-dev.in
 gcovr==8.3
     # via -r requirements/requirements-dev.in
@@ -98,7 +98,7 @@ jaraco-classes==3.4.0 ; platform_machine != 'ppc64le' and platform_machine != 's
     # via keyring
 jaraco-context==6.0.1 ; platform_machine != 'ppc64le' and platform_machine != 's390x'
     # via keyring
-jaraco-functools==4.1.0 ; platform_machine != 'ppc64le' and platform_machine != 's390x'
+jaraco-functools==4.2.1 ; platform_machine != 'ppc64le' and platform_machine != 's390x'
     # via keyring
 jeepney==0.9.0 ; platform_machine != 'ppc64le' and platform_machine != 's390x' and sys_platform == 'linux'
     # via
@@ -111,7 +111,7 @@ jinja2==3.1.6
     #   sphinx
 keyring==25.6.0 ; platform_machine != 'ppc64le' and platform_machine != 's390x'
     # via twine
-lxml==5.4.0
+lxml==6.0.0
     # via
     #   -r requirements/requirements-dev.in
     #   gcovr
@@ -162,6 +162,8 @@ parse-type==0.6.4
     # via pytest-bdd
 patch-ng==1.18.1
     # via conan
+patchelf==0.17.2.2 ; sys_platform == 'linux'
+    # via uiucprescon-build
 pathspec==0.12.1
     # via mypy
 platformdirs==4.3.8
@@ -177,13 +179,13 @@ pybind11==2.10.4
     # via
     #   -r requirements/requirements-dev.in
     #   uiucprescon-build
-pycodestyle==2.13.0
+pycodestyle==2.14.0
     # via flake8
 pycparser==2.22
     # via cffi
-pyflakes==3.3.2
+pyflakes==3.4.0
     # via flake8
-pygments==2.19.1
+pygments==2.19.2
     # via
     #   gcovr
     #   pytest
@@ -277,7 +279,7 @@ tox==4.27.0
     # via -r requirements/requirements-dev.in
 twine==6.1.0
     # via -r requirements/requirements-dev.in
-typing-extensions==4.14.0
+typing-extensions==4.14.1
     # via
     #   astroid
     #   exceptiongroup
@@ -286,7 +288,7 @@ typing-extensions==4.14.0
     #   pytest-bdd
     #   rich
     #   tox
-uiucprescon-build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/0.2.6a4.tar.gz
+uiucprescon-build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/0.2.6a14.tar.gz
     # via -r requirements/requirements-dev.in
 urllib3==2.0.7
     # via
