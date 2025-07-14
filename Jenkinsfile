@@ -963,7 +963,7 @@ pipeline {
                                  PIP_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\pipcache'
                                  UV_TOOL_DIR='C:\\Users\\ContainerUser\\Documents\\uvtools'
                                  UV_PYTHON_INSTALL_DIR='C:\\Users\\ContainerUser\\Documents\\uvpython'
-                                 UV_CACHE_DIR='C:\\uvcache'
+                                 UV_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\uvcache'
                              }
                              steps{
                                  script{
