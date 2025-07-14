@@ -31,6 +31,7 @@ ARG VS_DevCmdArguments="-arch=amd64"
 ARG VS_DevPowershellArguments='-arch=amd64'
 RUN c:/scripts/install_msvc.ps1 -InstallPath ${Env:VS_INSTALL_PATH} -VSConfigFile c:/setup/config.vsconfig -DevCmdArguments ${Env:VS_DevCmdArguments} -DevPowershellArguments ${Env:VS_DevPowershellArguments} -VSVersion ${Env:VS_VERSION}; `
     Write-Host "Note: Exporting This layer can take a while."
+RUN New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 
 ARG CHOCOLATEY_SOURCE=https://chocolatey.org/api/v2
 ARG ChocolateyEnvironmentDebug=false
