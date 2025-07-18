@@ -288,7 +288,7 @@ typing-extensions==4.14.1
     #   pytest-bdd
     #   rich
     #   tox
-uiucprescon-build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/0.2.6a14.tar.gz
+uiucprescon-build @ https://github.com/UIUCLibrary/uiucprescon_build/archive/refs/tags/0.2.6a15.tar.gz
     # via -r requirements/requirements-dev.in
 urllib3==2.0.7
     # via
