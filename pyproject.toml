@@ -78,26 +78,22 @@ environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_US
 
 before-all = [
     "python3 -m venv /tmp/ciwheelbuilder/py3exiv2bind/venv",
-    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/python -m pip install wheel",
-    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/python -m pip install -r requirements-dev.txt",
-    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/conan profile new $ENVTMPDIR/.conan/profiles/default --detect --force",
-    "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else /tmp/ciwheelbuilder/py3exiv2bind/venv/bin/conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
-    ". /tmp/ciwheelbuilder/py3exiv2bind/venv/bin/activate && conan install ./ --build missing --install-folder=$CONAN_BUILD_INFO_DIR"
+    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/python -m pip install --disable-pip-version-check uv",
+    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/uvx --constraint=requirements-dev.txt conan profile detect --exist-ok",
+    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/uvx --constraint=requirements-dev.txt conan install conanfile.py --build missing -pr:b=default -of /tmp/ciwheelbuilder/py3exiv2bind/tmp",
 ]
 [tool.cibuildwheel.macos.environment]
 ENVTMPDIR="/tmp/ciwheelbuilder/py3exiv2bind"
 CONAN_USER_HOME="/tmp/ciwheelbuilder/py3exiv2bind"
-CONAN_DEFAULT_PROFILE_PATH="/tmp/ciwheelbuilder/py3exiv2bind/.conan/profiles/default"
+CONAN_DEFAULT_PROFILE_PATH="/tmp/ciwheelbuilder/py3exiv2bind/.conan2/profiles/default"
 CONAN_BUILD_INFO_DIR="/tmp/ciwheelbuilder/py3exiv2bind/build/"
 MACOSX_DEPLOYMENT_TARGET="10.15"
 
 [tool.cibuildwheel.windows]
 before-all = [
-    "pip install wheel",
-    "pip install -r requirements-dev.txt",
-    "conan profile new default --detect --force",
-    "conan profile update settings.compiler.version=%CONAN_COMPILER_VERSION% default",
-    "conan install ./ --build missing",
+    "pip install --disable-pip-version-check uv",
+    "uvx --constraint=requirements-dev.txt --with cmake conan profile detect --exist-ok",
+    "uvx --constraint=requirements-dev.txt --with cmake conan install ./ --build missing",
 ]
 [tool.cibuildwheel.windows.environment]
 CONAN_USER_HOME="$TEMP/conan"
@@ -107,17 +103,14 @@ manylinux-x86_64-image = "manylinux2014"
 repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
 before-all = [
     "cc --version", "cc -dumpfullversion -dumpversion",
-    "pip3 install uv",
-    "uvx --index-strategy unsafe-best-match --python 3.11 --with-requirements requirements-dev.txt conan profile new /tmp/ciwheelbuilder/py3exiv2bind/.conan/profiles/default --detect",
-    "if [ -z \"$CONAN_COMPILER_LIBCXX\" ]; then : ; else uvx --index-strategy unsafe-best-match --python 3.11  --with-requirements requirements-dev.txt conan profile update settings.compiler.libcxx=$CONAN_COMPILER_LIBCXX default; fi",
-    "if [ -z \"$CONAN_COMPILER_VERSION\" ]; then : ; else uvx --index-strategy unsafe-best-match --python 3.11  --with-requirements requirements-dev.txt  conan profile update settings.compiler.version=$CONAN_COMPILER_VERSION default; fi",
-    "uvx --index-strategy unsafe-best-match --python 3.11 --with-requirements requirements-dev.txt conan profile show default",
-    "uvx --index-strategy unsafe-best-match --python 3.11 --with-requirements requirements-dev.txt conan install ./ --build missing",
+    "pip3 install --disable-pip-version-check uv",
+    "uvx --index-strategy unsafe-best-match --constraint=requirements-dev.txt --with cmake conan profile detect --exist-ok",
+    "uvx --index-strategy unsafe-best-match --constraint=requirements-dev.txt --with cmake conan install ./ --build missing",
 
 ]
 [tool.cibuildwheel.linux.environment]
 CONAN_USER_HOME="/tmp/ciwheelbuilder/py3exiv2bind"
-CONAN_DEFAULT_PROFILE_PATH="/tmp/ciwheelbuilder/py3exiv2bind/.conan/profiles/default"
+CONAN_DEFAULT_PROFILE_PATH="/tmp/ciwheelbuilder/py3exiv2bind/.conan2/profiles/default"
 CONAN_BUILD_INFO_DIR="/tmp/ciwheelbuilder/py3exiv2bind/build/"
 PYTHONFAULTHANDLER="True"
 #
