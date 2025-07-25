@@ -23,7 +23,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-2019]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ${{ fromJson(needs.setup.outputs.tox_matrix) }}
         include:
           - os: macos-latest
@@ -32,7 +32,7 @@ jobs:
           - os: ubuntu-latest
             compiler_libcxx: libstdc++11
             conan_user_home: "/home/runner"
-          - os: windows-2019
+          - os: windows-latest
             conan_user_home: 'C:/Users/runneradmin'
       fail-fast: false
     name: Python ${{ matrix.python-version }} ${{ matrix.os }} build
@@ -45,28 +45,19 @@ jobs:
           cache: 'pip' # caching pip dependencies
       - name: "install Python dependencies"
         run: |
-          pip install wheel
-          pip install -r requirements-dev.txt
+          pip install uv
       - uses: actions/cache@v3
         id: cache
         with:
-          path: "${{ matrix.conan_user_home }}/.conan"
+          path: "${{ matrix.conan_user_home }}/.conan2"
           key: ${{ runner.os }}-${{ hashFiles('**/conanfile.py') }}
 
       - name: Build conan packages on Non-Windows Operating Systems
         if: ${{ !contains(matrix.os, 'windows') && steps.cache.outputs.cache-hit != 'true' }}
-        env:
-          CONAN_COMPILER_LIBCXX: ${{ matrix.compiler_libcxx }}
-          CONAN_USER_HOME: ${{ matrix.conan_user_home }}
         run: |
-          cc --version &&  cc -dumpfullversion -dumpversion 
-          pip install -r requirements-dev.txt
-          if conan profile show default; then echo 'profile exists'; else conan profile new default --detect; fi
-          conan config init
-          python3 ci/docker/shared/conan/ensure_compiler_support_by_conan.py $(conan config home)/settings.yml $(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)")
-          conan config set general.revisions_enabled=1
-          if [[ -z "$CONAN_COMPILER_LIBCXX" ]]; then echo 'CONAN_COMPILER_LIBCXX is not defined'; else conan profile update settings.compiler.libcxx=$CONAN_COMPILER_LIBCXX default; fi
-          conan install  . --build missing --build openjpeg --no-import -pr:b=default
+          uvx --index-strategy unsafe-best-match --constraint=requirements-dev.txt --with cmake conan profile detect --exist-ok
+          uvx --index-strategy unsafe-best-match --constraint=requirements-dev.txt --with cmake conan install conanfile.py --build missing -of /tmp/ciwheelbuilder -pr:b=default
+          rm -rf /tmp/ciwheelbuilder
 
       - uses: actions/github-script@v7
         id: tox-env
@@ -79,18 +70,14 @@ jobs:
         shell: cmd
         run: |
           rmdir /S /Q C:\\Strawberry
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          pip install -r requirements-dev.txt
-          conan config init
-          conan config set general.revisions_enabled=1
-          conan profile new default --detect
-          conan install . --build  missing --no-import 
-          tox -e ${{ steps.tox-env.outputs.result }}
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uvx --constraint=requirements-dev.txt --with cmake conan profile detect --exist-ok
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uvx --constraint=requirements-dev.txt --with cmake conan install conanfile.py --build missing -of %TEMP%/ciwheelbuilder -pr:b=default 
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uvx --constraint=requirements-dev.txt --with tox-uv tox -e ${{ steps.tox-env.outputs.result }}
         env:
-          CONAN_USER_HOME: "C:/Users/runneradmin"
+          CONAN_USER_HOME: ${{ matrix.conan_user_home }}
       - name: Run tox
         if: "!contains(matrix.os, 'windows')"
-        run: cc --version &&  cc -dumpfullversion -dumpversion && tox -e ${{ steps.tox-env.outputs.result }} -vvv
+        run: cc --version &&  cc -dumpfullversion -dumpversion && uvx --constraint=requirements-dev.txt --with tox-uv tox -e ${{ steps.tox-env.outputs.result }} -vvv
         env:
           CONAN_COMPILER_LIBCXX: ${{ matrix.compiler_libcxx }}
           CONAN_USER_HOME: ${{ matrix.conan_user_home }}

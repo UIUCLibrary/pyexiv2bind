@@ -18,12 +18,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macOS-11
+          - os: macOS-latest
             compiler_version: 13
-          - os: ubuntu-20.04
+          - os: ubuntu-latest
             compiler_version: 10.2
-          - os: windows-2022
-            compiler_version: 17
+          - os: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -37,8 +36,7 @@ jobs:
         shell: cmd
         run: |
           rmdir /S /Q C:\\Strawberry
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          python -m cibuildwheel --output-dir wheelhouse
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && python -m cibuildwheel --output-dir wheelhouse
         env:
           CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
       - name: Build wheels
