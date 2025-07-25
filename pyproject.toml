@@ -81,7 +81,7 @@ before-all = [
     "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/python -m pip install --disable-pip-version-check uv",
     "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/uvx --constraint=requirements-dev.txt conan profile detect --exist-ok",
     "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/uvx --constraint=requirements-dev.txt conan install conanfile.py --build missing -pr:b=default -of /tmp/ciwheelbuilder/py3exiv2bind/tmp",
-    "-rm -rf /tmp/ciwheelbuilder/py3exiv2bind/tmp",
+    "rm -rf /tmp/ciwheelbuilder/py3exiv2bind/tmp",
 ]
 
 before-build = [

@@ -18,9 +18,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macOS-11
+          - os: macOS-latest
             compiler_version: 13
-          - os: ubuntu-20.04
+          - os: ubuntu-latest
             compiler_version: 10.2
           - os: windows-latest
 
