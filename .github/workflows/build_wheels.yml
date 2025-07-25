@@ -22,8 +22,7 @@ jobs:
             compiler_version: 13
           - os: ubuntu-20.04
             compiler_version: 10.2
-          - os: windows-2022
-            compiler_version: 17
+          - os: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -45,9 +44,6 @@ jobs:
         if: "!contains(matrix.os, 'windows')"
 #      - name: Build wheels
 #        uses: pypa/cibuildwheel@v2.11.2
-        env:
-           CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
-
         #   CIBW_SOME_OPTION: value
       - uses: actions/upload-artifact@v4
         if:  ${{ inputs.save }}
