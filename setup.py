@@ -6,20 +6,27 @@ import sys
 import shutil
 from typing import Optional, List, Dict
 import contextlib
-import pathlib
 import platform
-from setuptools import setup, errors, Distribution
-
+import cmake
 from pybind11.setup_helpers import Pybind11Extension
+
+from setuptools import setup, errors, Distribution
 from setuptools.command.build_clib import build_clib
-from uiucprescon.build.conan_libs import BuildConan
 
+from uiucprescon.build.conan.files import read_conan_build_info_json
 from uiucprescon.build.pybind11_builder import BuildPybind11Extension
-
-from importlib.metadata import version
 
 MIN_MACOSX_DEPLOYMENT_TARGET = '10.15'
 PACKAGE_NAME = "py3exiv2bind"
+
+class BuildExtension(BuildPybind11Extension):
+
+    def build_extension(self, ext: Pybind11Extension) -> None:
+        build_clib_cmd = self.get_finalized_command('build_clib')
+        ext.include_dirs.insert(0, os.path.join(build_clib_cmd.installed_prefix, "include"))
+        ext.library_dirs.insert(0, os.path.join(build_clib_cmd.installed_prefix, "lib"))
+        super().build_extension(ext)
+
 
 
 class AbsCMakePlatform(abc.ABC):
@@ -46,9 +53,25 @@ class UnixCMakePlatform(AbsCMakePlatform):
 @contextlib.contextmanager
 def set_compiler_env(envvars: Dict[str, str]):
     og_env = os.environ.copy()
-    os.environ = {**os.environ, **envvars}
+    os.environ.update(**envvars)
+
     yield
-    os.environ = og_env
+
+    # Do not assign os.environ to og_env because it makes os.environ
+    # case-sensitive, even on OSs that have case-insensitive environment
+    # variables such as windows. When this happens it makes it hard to use
+    # os.environ and breaks setuptools trying to find Visual Studio.
+
+    # Remove any keys that were set since entering the context
+    for k in [
+        k for k in os.environ.keys()
+        if k not in og_env
+    ]:
+        del os.environ[k]
+
+    # set the values of environment variables before entering the context
+    for k, v in og_env.items():
+        os.environ[k] = v
 
 
 class OSXCMakelib(UnixCMakePlatform):
@@ -92,6 +115,8 @@ class BuildCMakeLib(build_clib):
     def initialize_options(self):
         super().initialize_options()
         self.cmake_exec = None
+        self.installed_prefix = None
+        self.cmake_build_path = None
 
     def __init__(self, dist):
         super().__init__(dist)
@@ -106,11 +131,9 @@ class BuildCMakeLib(build_clib):
 
     def finalize_options(self):
         super().finalize_options()
-        import cmake
         self.cmake_exec = shutil.which("cmake", path=cmake.CMAKE_BIN_DIR)
-
-        self.cmake_api_dir = \
-            os.path.join(self.build_temp, "deps", ".cmake", "api", "v1")
+        self.cmake_build_path = os.path.join(self.build_temp, "cmake_builds")
+        self.installed_prefix = os.path.join(self.build_temp, "cmake_deps")
 
     @staticmethod
     def _get_new_compiler():
@@ -157,21 +180,15 @@ class BuildCMakeLib(build_clib):
 
     def configure_cmake(self, extension: Pybind11Extension):
         source_dir = os.path.abspath(os.path.dirname(__file__))
-
         self.announce("Configuring CMake Project", level=3)
-        dep_build_path = os.path.join(self.build_temp, "deps")
-        self.mkpath(dep_build_path)
+        dep_build_path = os.path.join(self.cmake_build_path, str(extension[0]))
+        if not os.path.exists(dep_build_path):
+            self.mkpath(dep_build_path)
 
         if self.debug:
             build_configuration_name = 'Debug'
         else:
             build_configuration_name = 'Release'
-
-        self.mkpath(os.path.join(self.cmake_api_dir, "query"))
-
-        codemodel_file = \
-            os.path.join(self.cmake_api_dir, "query", "codemodel-v2")
-        pathlib.Path(codemodel_file).touch()
         build_conan = self.get_finalized_command("build_conan")
         toolchain_locations = [
             build_conan.build_temp,
@@ -179,10 +196,7 @@ class BuildCMakeLib(build_clib):
             os.path.join(self.build_temp, "Release"),
             os.path.join(self.build_temp, "Release", "conan"),
         ]
-        if version('conan') < "2.0":
-            cmake_toolchain_file_name = "conan_paths.cmake"
-        else:
-            cmake_toolchain_file_name = "conan_toolchain.cmake"
+        cmake_toolchain_file_name = "conan_toolchain.cmake"
         cmake_toolchain = locate_file(cmake_toolchain_file_name, toolchain_locations)
         if cmake_toolchain is None:
             raise FileNotFoundError(f"Missing toolchain file {cmake_toolchain_file_name}")
@@ -190,17 +204,11 @@ class BuildCMakeLib(build_clib):
         configure_command = [
             self.cmake_exec, f'-S{source_dir}'
         ]
-        # ninja = shutil.which("ninja")
-        # if ninja:
-        #     configure_command += [
-        #         "-G", "Ninja",
-        #         f"-DCMAKE_MAKE_PROGRAM:FILEPATH={ninja}",
-        #     ]
         configure_command += [
             f'-B{dep_build_path}',
             f"-DCMAKE_TOOLCHAIN_FILE={cmake_toolchain}",
             f'-DCMAKE_BUILD_TYPE={build_configuration_name}',
-            f'-DCMAKE_INSTALL_PREFIX={os.path.abspath(self.build_clib)}',
+            f'-DCMAKE_INSTALL_PREFIX={os.path.abspath(self.installed_prefix)}',
         ]
         configure_command += extension[1].get('CMAKE_CONFIG', [])
         configure_command += self._cmake_platform.platform_specific_configs()
@@ -226,22 +234,10 @@ class BuildCMakeLib(build_clib):
                 print("Failed at CMake config time", file=sys.stderr)
                 raise
 
-    def find_target(self, target_name: str, build_type=None) -> Optional[str]:
-        for f in os.scandir(os.path.join(self.cmake_api_dir, "reply")):
-            if f"target-{target_name}-" not in f.name:
-                continue
-            if build_type is not None:
-                if build_type not in f.name:
-                    continue
-            return f.path
-
-        return None
-
     def build_cmake(self, extension: Pybind11Extension):
-        dep_build_path = os.path.join(self.build_temp, "deps")
         build_command = [
             self.cmake_exec,
-            "--build", dep_build_path,
+            "--build", os.path.join(self.cmake_build_path, str(extension[0])),
         ]
         if self.verbose == 1:
             build_command.append("--verbose")
@@ -275,7 +271,7 @@ class BuildCMakeLib(build_clib):
             raise
 
     def build_install_cmake(self, extension: Pybind11Extension):
-        dep_build_path = os.path.join(self.build_temp, "deps")
+        dep_build_path = os.path.join(self.cmake_build_path, str(extension[0]))
         install_command = [
             self.cmake_exec,
             "--build", dep_build_path
@@ -294,77 +290,12 @@ class BuildCMakeLib(build_clib):
 
         if build_ext_cmd.parallel:
             install_command.extend(["-j", str(build_ext_cmd.parallel)])
-        ext: Pybind11Extension
-        for ext in build_ext_cmd.extensions:
-            ext.library_dirs.insert(
-                0,
-                os.path.abspath(os.path.join(build_ext_cmd.build_lib, "src/py3exiv2bind"))
-            )
-        build_ext_cmd.include_dirs.insert(
-            0,
-            os.path.abspath(
-                os.path.join(build_ext_cmd.build_temp, "include")
-            )
-        )
 
-        build_ext_cmd.library_dirs.insert(
-            0, os.path.abspath(os.path.join(build_ext_cmd.build_temp, "lib"))
-        )
-
-        self.mkpath(os.path.join(self.build_clib, "bin"))
         try:
             self.compiler.spawn(install_command)
         except errors.ExecError:
             print("CMake failed at install time")
             raise
-
-        install_manifest = os.path.join(self.build_temp, "deps", "install_manifest.txt")
-        self.add_cmake_built_libraries(install_manifest)
-        lib_dirs = list(self.locate_cmake_installed_lib_dirs(install_manifest))
-        ext: Pybind11Extension
-        for ext in build_ext_cmd.extensions:
-            ext.library_dirs = lib_dirs + [
-                dir_ for dir_ in ext.library_dirs if os.path.exists(dir_)
-            ]
-            if sys.platform == "darwin":
-                if "@loader_path" not in ext.runtime_library_dirs:
-                    ext.runtime_library_dirs.append("@loader_path")
-            elif sys.platform == "linux":
-                if "$ORIGIN" not in ext.runtime_library_dirs:
-                    ext.runtime_library_dirs.append("$ORIGIN")
-
-    def add_cmake_built_libraries(self, install_manifest):
-        if not os.path.exists(install_manifest):
-            raise FileNotFoundError(f"Missing {install_manifest}")
-        with open(install_manifest, "r", encoding="utf8") as f:
-            build_py = self.get_finalized_command("build_py")
-            install_dir = os.path.abspath(
-                os.path.join(
-                    build_py.build_lib,
-                    build_py.get_package_dir(build_py.packages[0]))
-            )
-            for line in f.readlines():
-                file_path = line.strip()
-                if ".dylib" not in file_path:
-                    continue
-                shutil.copy(file_path, install_dir, follow_symlinks=False)
-
-    def locate_cmake_installed_lib_dirs(self, install_manifest):
-        with open(install_manifest, "r", encoding="utf8") as f:
-            file_paths = set()
-            # don't return any dup paths
-            for line in f.readlines():
-                file_path = line.strip()
-                if platform.system() == "Windows":
-                    if ".lib" not in file_path:
-                        continue
-                else:
-                    if ".a" not in file_path:
-                        continue
-                path = str(pathlib.Path(file_path).parent)
-                if path not in file_paths:
-                    file_paths.add(path)
-                    yield path
 
 
 def locate_file(file_name, search_locations):
@@ -372,26 +303,9 @@ def locate_file(file_name, search_locations):
         file_candidate = os.path.join(location, file_name)
         if os.path.exists(file_candidate):
             return file_candidate
-def add_conan_build_info_v1(core_ext, build_temp):
-    from uiucprescon.build.conan.files import locate_conanbuildinfo, ConanBuildInfoTXT
-    build_locations = [
-        os.path.join(build_temp, "conan"),
-        os.path.join(build_temp, "conan", "Release"),
-        os.path.join(build_temp, "Release"),
-    ]
-    conanbuildinfotext = locate_conanbuildinfo(build_locations)
-    metadata_strategy = ConanBuildInfoTXT()
-    text_md = metadata_strategy.parse(conanbuildinfotext)
-    for lib in text_md["libs"]:
-        if lib not in core_ext.libraries:
-            core_ext.libraries.append(lib)
-    for path in reversed(text_md["lib_paths"]):
-        if path not in core_ext.library_dirs:
-            core_ext.library_dirs.insert(0, path)
-    return core_ext
 
-def add_conan_build_info_v2(core_ext, build_temp):
-    from uiucprescon.build.conan.files import read_conan_build_info_json
+def add_conan_build_info(core_ext, build_temp):
+
     build_locations = [
         build_temp,
         os.path.join(build_temp, "conan"),
@@ -403,7 +317,9 @@ def add_conan_build_info_v2(core_ext, build_temp):
         if os.path.exists(build_info):
             break
     else:
-        raise FileNotFoundError("conan_build_info.json not found")
+        raise FileNotFoundError(
+            f"conan_build_info.json not found, searched {*build_locations,}"
+        )
 
     with open(build_info, 'r', encoding="utf-8") as f:
         build_info = read_conan_build_info_json(f)
@@ -416,7 +332,6 @@ def add_conan_build_info_v2(core_ext, build_temp):
         if path not in core_ext.libraries:
             core_ext.library_dirs.insert(0, path)
     return core_ext
-
 
 def get_conan_preset_name(conan_build_folder: str) -> str:
     cmake_presets_json_file = os.path.join(conan_build_folder, "CMakePresets.json")
@@ -433,19 +348,6 @@ def get_conan_preset_name(conan_build_folder: str) -> str:
     raise ValueError("Unable to locate a conan config preset")
 
 
-def get_conan_toolchain_file(preset_name, conan_build_path):
-    cmake_presets_json_file = os.path.join(conan_build_path, "CMakePresets.json")
-    if not os.path.exists(cmake_presets_json_file):
-        raise FileNotFoundError(f"Missing {cmake_presets_json_file}")
-    with open(cmake_presets_json_file, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    for preset in data.get('configurePresets', []):
-        if preset['name'] == preset_name:
-            return os.path.join(preset['binaryDir'], preset['toolchainFile'])
-
-    raise ValueError("Unable to locate a conan toolchain file")
-
 class BuildExiv2(BuildCMakeLib):
 
     def __init__(self, dist):
@@ -458,33 +360,20 @@ class BuildExiv2(BuildCMakeLib):
 
     def run(self):
         conan_cmd = self.get_finalized_command("build_conan")
-        build_clib = self.get_finalized_command("build_clib")
-        try:
-            conan_cmd.run()
-        except Exception:
-            self.announce("Building with conan failed.", level=3)
-            raise
-        if version('conan') >= "2.0":
-            cmake_preset = get_conan_preset_name(conan_build_folder=conan_cmd.build_temp)
-            self.extra_cmake_options.append(f"--preset={cmake_preset}")
-        else:
-            self.extra_cmake_options.append("-DCMAKE_POLICY_DEFAULT_CMP0091=NEW")
+        conan_cmd.run()
+        self.extra_cmake_options.append(
+            f"--preset={get_conan_preset_name(conan_cmd.build_temp)}"
+        )
 
         super().run()
         ext_command = self.get_finalized_command("build_ext")
 
-        if version('conan') < "2.0":
-            core_ext =\
-                add_conan_build_info_v1(
-                    ext_command.ext_map['py3exiv2bind.core'],
-                    build_clib.build_temp
-                )
-        else:
-            core_ext =\
-                add_conan_build_info_v2(
-                    ext_command.ext_map['py3exiv2bind.core'],
-                    conan_cmd.build_temp
-                )
+
+        core_ext = \
+            add_conan_build_info(
+                ext_command.ext_map['py3exiv2bind.core'],
+                conan_cmd.build_temp
+            )
 
         core_ext.include_dirs.insert(0, os.path.join(self.build_temp, "include"))
         if os.name == 'nt':
@@ -537,8 +426,7 @@ setup(
         )
     ],
     cmdclass={
-        "build_conan": BuildConan,
-        "build_ext": BuildPybind11Extension,
+        "build_ext": BuildExtension,
         "build_clib": BuildExiv2,
     }
 )
