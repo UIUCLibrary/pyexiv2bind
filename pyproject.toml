@@ -117,12 +117,15 @@ before-all = [
     "cc --version", "cc -dumpfullversion -dumpversion",
     "pip3 install --disable-pip-version-check uv",
     "uvx --index-strategy unsafe-best-match --constraint=requirements-dev.txt --with cmake conan profile detect --exist-ok",
-    "uvx --index-strategy unsafe-best-match --constraint=requirements-dev.txt --with cmake conan install ./ --build missing",
-
+    "uvx --index-strategy unsafe-best-match --constraint=requirements-dev.txt --with cmake conan install conanfile.py --build missing -of /tmp/ciwheelbuilder",
+    "rm -rf /tmp/ciwheelbuilder/py3exiv2bind/tmp",
 ]
+before-build = [
+    "[ -f CMakeUserPresets.json ] && rm CMakeUserPresets.json"
+]
+
 [tool.cibuildwheel.linux.environment]
 CONAN_USER_HOME="/tmp/ciwheelbuilder/py3exiv2bind"
 CONAN_DEFAULT_PROFILE_PATH="/tmp/ciwheelbuilder/py3exiv2bind/.conan2/profiles/default"
 CONAN_BUILD_INFO_DIR="/tmp/ciwheelbuilder/py3exiv2bind/build/"
 PYTHONFAULTHANDLER="True"
-#
