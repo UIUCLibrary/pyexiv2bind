@@ -533,7 +533,7 @@ pipeline {
                                 catchError(buildResult: 'UNSTABLE', message: 'Building Sphinx documentation has issues', stageResult: 'UNSTABLE') {
                                     sh(label: 'Running Sphinx',
                                         script: '''. ./venv/bin/activate
-                                                   sphinx-build -b html docs/source build/docs/html -d build/docs/doctrees -v -w logs/build_sphinx.log -W --keep-going
+                                                   python -m sphinx -b html docs/source build/docs/html -d build/docs/doctrees -v -w logs/build_sphinx.log -W --keep-going
                                                 '''
                                     )
                                 }
