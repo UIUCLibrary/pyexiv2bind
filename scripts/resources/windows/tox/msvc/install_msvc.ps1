@@ -10,6 +10,109 @@ $VSBUILDTOOLS_URLS = @{
     '2019' = 'https://aka.ms/vs/16/release/vs_buildtools.exe'
 }
 
+function CreateHelloWorldSource {
+    param(
+        [Parameter(Mandatory=$true)][string]$Location
+    )
+
+    $local:content = @"
+    #include <iostream>
+    using namespace std;
+    int main(){
+        cout << "Hello world\n";
+        return 0;
+    }
+"@
+    Set-Content -Path $Location -Value $local:content
+}
+
+function TestCompileWithCmd {
+    param(
+        [Parameter(Mandatory=$true)][string]$SampleFile
+    )
+    $local:command_description = 'Testing compile hello world in cmd'
+
+    $local:tempDir = Join-Path $([System.IO.Path]::GetTempPath()) $((New-Guid).ToString("N"))
+    New-Item -ItemType Directory -Path $local:tempDir | Out-Null
+
+    $local:buildDir = Join-Path $local:tempDir "build"
+    New-Item -ItemType Directory -Path $local:buildDir | Out-Null
+
+    $local:binDir = Join-Path $local:tempDir "bin"
+    New-Item -ItemType Directory -Path $local:binDir | Out-Null
+
+    Write-Host "Testing compile hello world in cmd"
+
+    $local:compileArgs = @(
+        '/S', '/C',
+        'cl',
+        '/EHsc',
+        "/Fo${local:buildDir}",
+        "/Fe${local:binDir}\helloworld_cmd",
+        $SampleFile
+    )
+    $local:testClProcess = Start-Process -FilePath cmd -ArgumentList $local:compileArgs -NoNewWindow -PassThru
+    Wait-Process -InputObject $local:testClProcess
+    if ($local:testClProcess.ExitCode -ne 0)
+    {
+        throw "${$local:command_description} - Failed"
+    }
+    Write-Host "${$local:command_description} - Success"
+
+    Write-Host "Test running hello world"
+    $local:testRun = Start-Process -FilePath "${local:binDir}\helloworld_cmd.exe" -NoNewWindow -PassThru -RedirectStandardOutput "NUL" -Wait
+    if ($local:testRun.ExitCode -ne 0)
+    {
+        throw "Test running hello world - Failed"
+    }
+    Write-Host "Test running hello world - Success"
+    Remove-Item -Path $local:tempDir -Recurse
+}
+
+function TestCompileWithPowershell {
+    param(
+        [Parameter(Mandatory=$true)][string]$SampleFile
+    )
+    $local:command_description = 'Testing compile hello world in powershell'
+
+    $local:tempDir = Join-Path $([System.IO.Path]::GetTempPath()) $((New-Guid).ToString("N"))
+    New-Item -ItemType Directory -Path $local:tempDir | Out-Null
+
+    $local:buildDir = Join-Path $local:tempDir "build"
+    New-Item -ItemType Directory -Path $local:buildDir | Out-Null
+
+    $local:binDir = Join-Path $local:tempDir "bin"
+    New-Item -ItemType Directory -Path $local:binDir | Out-Null
+
+    Write-Host "Testing compile hello world in cmd"
+
+    $local:compileArgs = @(
+        '-Command',
+        'cl',
+        '/EHsc',
+        "/Fo${local:buildDir}",
+        "/Fe${local:binDir}\helloworld_ps",
+        $SampleFile
+    )
+    $local:testClProcess = Start-Process -FilePath powershell -ArgumentList $local:compileArgs -NoNewWindow -PassThru
+    Wait-Process -InputObject $local:testClProcess
+    if ($local:testClProcess.ExitCode -ne 0)
+    {
+        throw "${local:command_description} - Failed"
+    }
+    Write-Host "${local:command_description} - Success"
+
+    Write-Host "Test running hello world"
+    $local:testRun = Start-Process -FilePath "${local:binDir}\helloworld_ps.exe" -NoNewWindow -PassThru -RedirectStandardOutput "NUL" -Wait
+    if ($local:testRun.ExitCode -ne 0)
+    {
+        throw "Test running hello world - Failed"
+    }
+    Write-Host "Test running hello world - Success"
+    Remove-Item -Path $local:tempDir -Recurse
+}
+
+
 function TestInstalledProperty {
     param ([Parameter(Mandatory=$true)][String]$InstallPath)
 
@@ -30,6 +133,8 @@ function TestInstalledProperty {
     Write-Host "Testing for VsDevCmd.bat - Found"
 
     Write-Host "Finished installing Visual Studio Build Tools"
+
+
 }
 
 function RemoveApplications {
@@ -182,7 +287,7 @@ function AddVsStudioToPowershell{
         [string]$DevCmdArguments = '-arch=amd64'
     )
     if (!(Test-Path "C:/Users/ContainerAdministrator/Documents/WindowsPowerShell")){
-        New-Item -ItemType Directory -Path "C:/Users/ContainerAdministrator/Documents/WindowsPowerShell"
+        New-Item -ItemType Directory -Path "C:/Users/ContainerAdministrator/Documents/WindowsPowerShell" | Out-Null
     }
 
     $modulePath = Join-Path -Path $VSInstallPath -ChildPath "Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
@@ -216,15 +321,26 @@ function AddStartupScripts{
     )
     Write-Host "Configuring Visual Studio development environment for shells"
 
+
+
     # ========== Cmd startup ==========
     Write-Host "Setting up compiler environment to run every time a command is run from CMD"
     AddVsStudioToCMD -VSInstallPath $VSInstallPath -DevCmdArguments $DevCmdArguments
+
+    $newDirPath = Join-Path $([System.IO.Path]::GetTempPath()) $((New-Guid).ToString("N"))
+    $sourceFile = Join-Path $newDirPath "helloworld.cpp"
+    New-Item -ItemType Directory -Path $newDirPath | Out-Null
+    CreateHelloWorldSource -Location $sourceFile
+    TestCompileWithCmd -SampleFile $sourceFile
     Write-Host "Setting up compiler environment to run every time a command is run from CMD - Done"
 
     # ========== Powershell Profile ==========
     Write-Host "Adding setup Visual Studio development environment scripts to Powershell Profile"
     AddVsStudioToPowershell -VSInstallPath $VSInstallPath -DevCmdArguments $DevPowershellArguments
+    TestCompileWithPowershell -SampleFile $sourceFile
     Write-Host "Adding setup Visual Studio development environment scripts to Powershell Profile - Done"
+
+    Remove-Item -Path $local:newDirPath -Recurse
 
 }
 
