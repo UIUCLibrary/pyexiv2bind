@@ -45,6 +45,7 @@ ARG PIP_INDEX_URL
 ARG UV_EXTRA_INDEX_URL
 ARG UV_INDEX_URL
 
+COPY scripts/resources/package_for_linux/conan/profile.ini ${CONAN_HOME}/profiles/default
 COPY ci/docker/shared/conan/remotes.json ${CONAN_HOME}/remotes.json
 COPY conanfile.py /tmp/conanfile.py
 COPY ci/docker/linux/tox/update_conan_compiler.py  /tmp/update_conan_compiler.py
@@ -54,6 +55,7 @@ ARG CONAN_CENTER_PROXY_V2_URL
 ARG UV_CONSTRAINT
 COPY ${UV_CONSTRAINT} /tmp/${UV_CONSTRAINT}
 ENV UV_CONSTRAINT=/tmp/${UV_CONSTRAINT}
+
 RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=cache,target=${UV_CACHE_DIR} \
     uvx --with cmake conan profile detect --exist-ok &&  \
