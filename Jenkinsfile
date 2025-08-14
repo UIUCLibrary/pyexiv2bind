@@ -133,39 +133,43 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes){
                         stage("Test Wheel (${pythonVersion} Windows)"){
                             node('windows && docker'){
                                 checkout scm
-                                docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python')
-                                    .inside('\
-                                        --mount type=volume,source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\cache\\uvpython \
-                                        --mount type=volume,source=pipcache,target=C:\\Users\\ContainerUser\\Documents\\cache\\pipcache \
-                                        --mount type=volume,source=uv_cache_dir,target=C:\\Users\\ContainerUser\\Documents\\cache\\uvcache \
-                                        --mount type=volume,source=msvc-runtime,target=c:\\msvc_runtime \
-                                        --mount type=volume,source=windows-certs,target=c:\\certs \
-                                        '
-                                    ){
-                                    installMSVCRuntime('c:\\msvc_runtime\\')
-                                    unstash "python${pythonVersion} windows wheel"
-                                    withEnv([
-                                        'PIP_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\cache\\pipcache',
-                                        'UV_PYTHON_INSTALL_DIR=C:\\Users\\ContainerUser\\Documents\\cache\\uvpython',
-                                        'UV_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\cache\\uvcache',
-                                        'UV_TOOL_DIR=C:\\Users\\ContainerUser\\Documents\\uvtools',
-                                        'UV_INDEX_STRATEGY=unsafe-best-match',
-                                    ]){
-                                        findFiles(glob: 'dist/*.whl').each{
-                                            retry(3){
-                                                timeout(60){
-                                                    bat(label: 'Running Tox',
-                                                        script: """python -m venv venv
-                                                                   venv\\Scripts\\pip install --disable-pip-version-check uv
-                                                                   venv\\Scripts\\uvx --python ${pythonVersion} --constraint=requirements-dev.txt --with tox-uv tox run -e py${pythonVersion.replace('.', '')}  --installpkg ${it.path}
-                                                                   rmdir /S /Q venv
-                                                                   rmdir /S /Q .tox
-                                                                """
-                                                    )
+                                try{
+                                    docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python')
+                                        .inside('\
+                                            --mount type=volume,source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\cache\\uvpython \
+                                            --mount type=volume,source=pipcache,target=C:\\Users\\ContainerUser\\Documents\\cache\\pipcache \
+                                            --mount type=volume,source=uv_cache_dir,target=C:\\Users\\ContainerUser\\Documents\\cache\\uvcache \
+                                            --mount type=volume,source=msvc-runtime,target=c:\\msvc_runtime \
+                                            --mount type=volume,source=windows-certs,target=c:\\certs \
+                                            '
+                                        ){
+                                        installMSVCRuntime('c:\\msvc_runtime\\')
+                                        unstash "python${pythonVersion} windows wheel"
+                                        withEnv([
+                                            'PIP_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\cache\\pipcache',
+                                            'UV_PYTHON_INSTALL_DIR=C:\\Users\\ContainerUser\\Documents\\cache\\uvpython',
+                                            'UV_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\cache\\uvcache',
+                                            'UV_TOOL_DIR=C:\\Users\\ContainerUser\\Documents\\uvtools',
+                                            'UV_INDEX_STRATEGY=unsafe-best-match',
+                                        ]){
+                                            findFiles(glob: 'dist/*.whl').each{
+                                                retry(3){
+                                                    timeout(60){
+                                                        bat(label: 'Running Tox',
+                                                            script: """python -m venv venv
+                                                                       venv\\Scripts\\pip install --disable-pip-version-check uv
+                                                                       venv\\Scripts\\uvx --python ${pythonVersion} --constraint=requirements-dev.txt --with tox-uv tox run -e py${pythonVersion.replace('.', '')}  --installpkg ${it.path}
+                                                                       rmdir /S /Q venv
+                                                                       rmdir /S /Q .tox
+                                                                    """
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
                                     }
+                                } finally {
+                                    bat "${tool(name: 'Default', type: 'git')} clean -dfx"
                                 }
                             }
                         }
@@ -1236,11 +1240,22 @@ pipeline {
                                                                                     unstash 'sdist'
                                                                                     findFiles(glob: 'dist/*.tar.gz').each{
                                                                                         timeout(60){
-                                                                                            bat(label: 'Running Tox',
-                                                                                                script: """uvx --python ${pythonVersion} --constraint=requirements-dev.txt --with tox-uv tox run  --runner=uv-venv-runner --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -v
-                                                                                                           rmdir /S /Q .tox
-                                                                                                        """
-                                                                                            )
+                                                                                            try{
+                                                                                                bat(label: 'Running Tox',
+                                                                                                    script: """uvx --python ${pythonVersion} --constraint=requirements-dev.txt --with tox-uv tox run  --runner=uv-venv-runner --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -v
+                                                                                                               rmdir /S /Q .tox
+                                                                                                            """
+                                                                                                )
+                                                                                            } finally{
+                                                                                                cleanWs(
+                                                                                                    patterns: [
+                                                                                                        [pattern: '.tox/', type: 'INCLUDE'],
+                                                                                                        [pattern: 'CMakeUserPresets.json', type: 'INCLUDE'],
+                                                                                                    ],
+                                                                                                    notFailBuild: true,
+                                                                                                    deleteDirs: true
+                                                                                                )
+                                                                                            }
                                                                                         }
                                                                                     }
                                                                                 }
