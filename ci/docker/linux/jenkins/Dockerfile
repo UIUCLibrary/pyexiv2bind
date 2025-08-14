@@ -71,7 +71,8 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     python3 -m venv venv && \
     ./venv/bin/pip --disable-pip-version-check install uv && \
     ./venv/bin/uvx --with cmake conan profile detect --exist-ok &&  \
-#    ./venv/bin/uvx --with cmake conan profile update settings.compiler.version=$(cc -dumpfullversion -dumpversion | grep -oE  "^([0-9]+(\.)?)([0-9]+?)") default && \
+    cp ${CONAN_HOME}/global.conf /tmp/global.conf.original && \
+    echo "core.sources:download_cache = $CONAN_DOWNLOAD_CACHE" >> ${CONAN_HOME}/global.conf && \
     if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
         echo "Setting the conan center url for building cache: ${CONAN_CENTER_PROXY_V2_URL}" && \
         cp ${CONAN_HOME}/remotes.json /tmp/remotes.json && \
@@ -82,7 +83,9 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     rm -rf venv && \
     if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
       mv -f /tmp/remotes.json ${CONAN_HOME}/remotes.json; \
-    fi
+    fi && \
+    mv -f /tmp/global.conf.original ${CONAN_HOME}/global.conf
+
 #==============================================================================
 FROM base_image AS DR_MEMORY_BUILDER
 RUN apt-get update &&  \
