@@ -1221,30 +1221,36 @@ pipeline {
                                                                 ]){
                                                                     def image
                                                                     checkout scm
-                                                                    lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
-                                                                        image = docker.build(UUID.randomUUID().toString(), '-f scripts/resources/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL --build-arg CHOCOLATEY_SOURCE' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
-                                                                    }
-                                                                    retry(3){
-                                                                        try{
-                                                                            checkout scm
-                                                                            image.inside(
-                                                                                '--mount type=volume,source=uv_python_install_dir,target=$UV_PYTHON_INSTALL_DIR ' +
-                                                                                '--mount type=volume,source=pipcache,target=$PIP_CACHE_DIR ' +
-                                                                                '--mount type=volume,source=uv_cache_dir,target=$UV_CACHE_DIR'
-                                                                            ){
-                                                                                unstash 'sdist'
-                                                                                findFiles(glob: 'dist/*.tar.gz').each{
-                                                                                    timeout(60){
-                                                                                        bat(label: 'Running Tox',
-                                                                                            script: """uvx --python ${pythonVersion} --constraint=requirements-dev.txt --with tox-uv tox run  --runner=uv-venv-runner --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -v
-                                                                                                       rmdir /S /Q .tox
-                                                                                                    """
-                                                                                        )
+                                                                    try{
+                                                                        lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
+                                                                            image = docker.build(UUID.randomUUID().toString(), '-f scripts/resources/windows/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL --build-arg CHOCOLATEY_SOURCE' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                                        }
+                                                                        retry(3){
+                                                                            try{
+                                                                                checkout scm
+                                                                                image.inside(
+                                                                                    '--mount type=volume,source=uv_python_install_dir,target=$UV_PYTHON_INSTALL_DIR ' +
+                                                                                    '--mount type=volume,source=pipcache,target=$PIP_CACHE_DIR ' +
+                                                                                    '--mount type=volume,source=uv_cache_dir,target=$UV_CACHE_DIR'
+                                                                                ){
+                                                                                    unstash 'sdist'
+                                                                                    findFiles(glob: 'dist/*.tar.gz').each{
+                                                                                        timeout(60){
+                                                                                            bat(label: 'Running Tox',
+                                                                                                script: """uvx --python ${pythonVersion} --constraint=requirements-dev.txt --with tox-uv tox run  --runner=uv-venv-runner --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -v
+                                                                                                           rmdir /S /Q .tox
+                                                                                                        """
+                                                                                            )
+                                                                                        }
                                                                                     }
                                                                                 }
+                                                                            } finally {
+                                                                                bat "${tool(name: 'Default', type: 'git')} clean -dfx"
+
                                                                             }
-                                                                        } finally {
-                                                                            bat "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                                                        }
+                                                                    } finally {
+                                                                        if(image){
                                                                             bat "docker rmi --no-prune ${image.id}"
                                                                         }
                                                                     }
