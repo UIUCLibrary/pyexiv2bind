@@ -129,3 +129,6 @@ CONAN_USER_HOME="/tmp/ciwheelbuilder/py3exiv2bind"
 CONAN_DEFAULT_PROFILE_PATH="/tmp/ciwheelbuilder/py3exiv2bind/.conan2/profiles/default"
 CONAN_BUILD_INFO_DIR="/tmp/ciwheelbuilder/py3exiv2bind/build/"
 PYTHONFAULTHANDLER="True"
+
+[tool.uv]
+cache-keys = [{ file = "pyproject.toml" }, { file = "requirements-dev.txt" }]
