@@ -8,13 +8,23 @@ DOCKERFILE=$(realpath "$scriptDir/resources/package_for_linux/Dockerfile")
 DEFAULT_DOCKER_IMAGE_NAME="pyexiv2bind_builder"
 OUTPUT_PATH="$PROJECT_ROOT/dist"
 DEFAULT_BUILD_CONSTRAINTS="requirements-dev.txt"
-REMOVE_DIRS_FIRST=( \
-  'py3exiv2bind.egg-info' \
-  'build' \
-  )
 
-REMOVE_FILES_FIRST=(
+SKIP_DIRS_NAMED=(\
+    'venv' \
+    '.tox' \
+    '.git' \
+    '.idea' \
+    'reports' \
+    '.mypy_cache' \
+    '__pycache__' \
+    'wheelhouse' \
+    '.pytest_cache' \
+    'py3exiv2bind.egg-info'\
+    'build' \
+)
+REMOVE_FILES_FIRST=(\
   'CMakeUserPresets.json'
+  'conan.lock'
   )
 
 arch=$(uname -m)
@@ -54,7 +64,7 @@ generate_wheel(){
         -t $docker_image_name_to_use \
         --platform=$platform \
         -f "$DOCKERFILE" \
-        --build-arg CONAN_CENTER_PROXY_V1_URL \
+        --build-arg CONAN_CENTER_PROXY_V2_URL \
         --build-arg PIP_EXTRA_INDEX_URL \
         --build-arg PIP_INDEX_URL \
         --build-arg UV_EXTRA_INDEX_URL \
@@ -66,16 +76,21 @@ generate_wheel(){
     mkdir -p "$OUTPUT_PATH"
     echo "Building wheels for Python versions: ${python_versions_to_use[*]}"
     CONTAINER_WORKSPACE=/tmp/workspace
+
     COMMAND="echo 'Making a shadow copy to prevent modifying local files' && \
-            mkdir -p ${CONTAINER_WORKSPACE} && \
-            lndir -silent /project/ ${CONTAINER_WORKSPACE} && \
-            for d in "${REMOVE_DIRS_FIRST[@]}"; do
-                OFFENDING_PATH=${CONTAINER_WORKSPACE}/\$d
-                if [ -d \"\$OFFENDING_PATH\" ]; then
-                  echo \"Removing copy from temporary working path to avoid issues: \$OFFENDING_PATH\";
-                  rm -rf \$OFFENDING_PATH;
-                fi; \
+            prune_expr=() && \
+            for name in "${SKIP_DIRS_NAMED[@]}"; do \
+                prune_expr+=(-name \"\$name\" -type d -prune -o); \
             done && \
+            mkdir -p ${CONTAINER_WORKSPACE} && \
+            (cd /project/ && \
+            find . \"\${prune_expr[@]}\" -type d -print | while read -r dir; do \
+                mkdir -p \"${CONTAINER_WORKSPACE}/\$dir\"
+            done && \
+            find . \"\${prune_expr[@]}\" \( -type f -o -type l \) -print | while read -r file; do \
+                echo \"\$file\"
+                ln -sf "/project/\$file" \"${CONTAINER_WORKSPACE}/\$file\"
+            done) && \
             for f in "${REMOVE_FILES_FIRST[@]}"; do
                 OFFENDING_FILE=${CONTAINER_WORKSPACE}/\$f
                 if [ -f \"\$OFFENDING_FILE\" ]; then
