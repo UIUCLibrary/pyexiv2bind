@@ -931,22 +931,12 @@ pipeline {
                                                             retry(maxRetries){
                                                                 try{
                                                                     image.inside('--mount source=python-tmp-py3exiv2bind,target=/tmp'){
-                                                                        try{
-                                                                            sh( label: 'Running Tox',
-                                                                                script: """python3 -m venv /tmp/venv && /tmp/venv/bin/pip install --disable-pip-version-check uv
-                                                                                           . /tmp/venv/bin/activate
-                                                                                           uvx -p ${version} --constraint=requirements-dev.txt --with tox-uv tox run -e ${toxEnv} -vvv
-                                                                                        """
-                                                                                )
-                                                                        } catch(e) {
-                                                                            if(fileExists('venv/bin/uv')){
-                                                                                sh(script: '''. ./venv/bin/activate
-                                                                                              uv python list
-                                                                                           '''
-                                                                                      )
-                                                                            }
-                                                                            throw e
-                                                                        }
+                                                                        sh( label: 'Running Tox',
+                                                                            script: """python3 -m venv /tmp/venv && /tmp/venv/bin/pip install --disable-pip-version-check uv
+                                                                                       . /tmp/venv/bin/activate
+                                                                                       uvx -p ${version} --python-preference only-system --constraint=requirements-dev.txt --with tox-uv tox run -e ${toxEnv} -vvv
+                                                                                    """
+                                                                            )
                                                                     }
                                                                 } finally{
                                                                     sh "${tool(name: 'Default', type: 'git')} clean -dfx"
