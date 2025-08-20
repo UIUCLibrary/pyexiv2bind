@@ -1017,9 +1017,8 @@ pipeline {
                                                                     retry(maxRetries){
                                                                         try{
                                                                             bat(label: 'Running Tox',
-                                                                                script: """CALL C:\\BuildTools\\Common7\\Tools\\VsDevCmd.bat -arch=amd64
-                                                                                           uv python install cpython-${version}
-                                                                                           uvx -p ${version} --constraint=requirements-dev.txt --with tox-uv tox run -e ${toxEnv} --workdir %WORKSPACE_TMP%\\.tox
+                                                                                script: """uv python install cpython-${version}
+                                                                                           uvx -p ${version} --constraint=requirements-dev.txt --with tox-uv tox run -e ${toxEnv} -vv
                                                                                         """
                                                                             )
                                                                         } finally{
