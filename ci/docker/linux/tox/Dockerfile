@@ -14,7 +14,7 @@ ARG CONAN_CENTER_PROXY_V2_URL=https://center2.conan.io
 FROM ubuntu:22.04 AS base
 COPY ci/docker/linux/tox/apt-packages.txt /tmp/
 RUN rm -f /etc/apt/apt.conf.d/docker-clean
-RUN --mount=type=cache,target=/var/cache/apt \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && \
     apt-get install -y software-properties-common gpg-agent --no-install-recommends && \
     add-apt-repository ppa:deadsnakes/ppa && \
@@ -26,30 +26,34 @@ RUN --mount=type=cache,target=/var/cache/apt \
 # ==============================================================================
 
 FROM base AS conan_builder
-RUN --mount=type=cache,target=/var/cache/apt \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && \
     apt-get install -y --no-install-recommends jq && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+ARG CONAN_DOWNLOAD_CACHE=/tmp/conan_download_cache
+
 ARG CONAN_USER_HOME
 ARG CONAN_HOME
 
+COPY ci/docker/linux/tox/conan/profile.ini ${CONAN_HOME}/profiles/default
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_HOME}/remotes.json
 COPY requirements-dev.txt /tmp/requirements-dev.txt
 ENV UV_CONSTRAINT=/tmp/requirements-dev.txt
 
-COPY conanfile.py /tmp/conanfile.py
-COPY ci/docker/linux/tox/update_conan_compiler.py  /tmp/update_conan_compiler.py
 COPY conanfile.py /tmp/conanfile.py
 ARG UV_CACHE_DIR
 ARG PIP_DOWNLOAD_CACHE
 ARG CONAN_CENTER_PROXY_V2_URL
 RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=cache,target=${UV_CACHE_DIR} \
+    --mount=type=cache,target=${CONAN_DOWNLOAD_CACHE} \
     python3 -m venv venv && \
     ./venv/bin/pip install --disable-pip-version-check --no-cache-dir uv && \
     ./venv/bin/uvx --with cmake conan profile detect --exist-ok &&  \
+    cp ${CONAN_HOME}/global.conf /tmp/global.conf.original && \
+    echo "core.sources:download_cache = $CONAN_DOWNLOAD_CACHE" >> ${CONAN_HOME}/global.conf && \
     if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
         echo "Setting the conan center url for building cache: ${CONAN_CENTER_PROXY_V2_URL}" && \
         cp ${CONAN_HOME}/remotes.json /tmp/remotes.json && \
@@ -60,7 +64,8 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     rm -rf venv && \
     if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
         mv -f /tmp/remotes.json ${CONAN_HOME}/remotes.json; \
-    fi
+    fi && \
+    mv -f /tmp/global.conf.original ${CONAN_HOME}/global.conf
 # ==============================================================================
 FROM base
 ARG PIP_EXTRA_INDEX_URL

@@ -45,6 +45,7 @@ ARG PIP_INDEX_URL
 ARG UV_EXTRA_INDEX_URL
 ARG UV_INDEX_URL
 
+COPY scripts/resources/package_for_linux/conan/profile.ini ${CONAN_HOME}/profiles/default
 COPY ci/docker/shared/conan/remotes.json ${CONAN_HOME}/remotes.json
 COPY conanfile.py /tmp/conanfile.py
 COPY ci/docker/linux/tox/update_conan_compiler.py  /tmp/update_conan_compiler.py
@@ -54,9 +55,12 @@ ARG CONAN_CENTER_PROXY_V2_URL
 ARG UV_CONSTRAINT
 COPY ${UV_CONSTRAINT} /tmp/${UV_CONSTRAINT}
 ENV UV_CONSTRAINT=/tmp/${UV_CONSTRAINT}
+
 RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=cache,target=${UV_CACHE_DIR} \
     uvx --with cmake conan profile detect --exist-ok &&  \
+    cp ${CONAN_HOME}/global.conf /tmp/global.conf.original && \
+    echo "core.sources:download_cache = $CONAN_DOWNLOAD_CACHE" >> ${CONAN_HOME}/global.conf && \
     if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
           echo "Setting the conan center url for building cache: ${CONAN_CENTER_PROXY_V2_URL}" && \
           cp ${CONAN_HOME}/remotes.json /tmp/remotes.json && \
@@ -67,7 +71,8 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     uv cache prune && \
     if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
         mv -f /tmp/remotes.json ${CONAN_HOME}/remotes.json; \
-    fi
+    fi && \
+    mv -f /tmp/global.conf.original ${CONAN_HOME}/global.conf
 # ==============================================================================
 
 FROM base

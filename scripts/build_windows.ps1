@@ -20,7 +20,7 @@ function Build-DockerImage {
         "-f", $DockerfilePath,
         "--build-arg PIP_EXTRA_INDEX_URL",
         "--build-arg PIP_INDEX_URL",
-        "--build-arg CONAN_CENTER_PROXY_V1_URL",
+        "--build-arg CONAN_CENTER_PROXY_V2_URL",
         "--build-arg CHOCOLATEY_SOURCE",
         "--build-arg UV_CACHE_DIR=c:/users/containeradministrator/appdata/local/uv",
         "-t", $ImageName,
@@ -79,7 +79,7 @@ function Build-Wheel {
         $DockerImageName
         "-c",
         ${createShallowCopy};`
-        "uv build --build-constraints=${containerSourcePath}\requirements-dev.txt --python=${PythonVersion} --wheel --out-dir=${containerDistPath} --config-setting=conan_cache=C:/Users/ContainerAdministrator/.conan --verbose"
+        "uv build --build-constraints=${containerSourcePath}\requirements-dev.txt --python=${PythonVersion} --wheel --out-dir=${containerDistPath} --config-setting=conan_cache=C:/Users/ContainerAdministrator/.conan2 --verbose"
     )
 
     $local:dockerBuildProcess = Start-Process -FilePath $DockerExec -WorkingDirectory $(Get-Item $PSScriptRoot).Parent.FullName -ArgumentList $dockerArgsList -NoNewWindow -PassThru -Wait
