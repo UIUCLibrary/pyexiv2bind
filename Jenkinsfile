@@ -1228,8 +1228,8 @@ pipeline {
                                                                                 checkout scm
                                                                                 image.inside(
                                                                                     '--mount type=volume,source=uv_python_install_dir,target=$UV_PYTHON_INSTALL_DIR ' +
-                                                                                    '--mount type=volume,source=pipcache,target=$PIP_CACHE_DIR ' +
-                                                                                    '--mount type=volume,source=uv_cache_dir,target=$UV_CACHE_DIR'
+                                                                                    '--mount type=volume,source=pipcache,target=$PIP_CACHE_DIR '
+                                                                                    // + '--mount type=volume,source=uv_cache_dir,target=$UV_CACHE_DIR'
                                                                                 ){
                                                                                     unstash 'sdist'
                                                                                     findFiles(glob: 'dist/*.tar.gz').each{
