@@ -20,22 +20,19 @@
 import os
 import re
 import sys
-import tomllib
-
-sys.path.insert(0, os.path.abspath('../..'))
-sys.path.insert(0, os.path.abspath('../../_skbuild/setuptools/lib'))
-
 try:
-    from setuptools.config.setupcfg import read_configuration
-except ModuleNotFoundError:
-    from setuptools.config import read_configuration
+    from tomllib import loads as load_toml
+except ImportError:
+    from toml import loads as load_toml
+
 sys.path.insert(0, os.path.abspath('../../src'))
 
 
 def get_project_metadata():
     path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../pyproject.toml"))
-    with open(path, "rb") as f:
-        return tomllib.load(f)['project']
+    with open(path, "r") as f:
+        a = f.read()
+        return load_toml(a)['project']
 
 # -- General configuration ------------------------------------------------
 

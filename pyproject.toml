@@ -3,7 +3,7 @@ requires = [
     "setuptools>=77.0.0",
     "wheel",
     "ninja",
-    "uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/releases/download/v0.2.9/uiucprescon_build-0.2.9-py3-none-any.whl",
+    "uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/releases/download/v0.3.0/uiucprescon_build-0.3.0-py3-none-any.whl",
     "cmake<4.0",
 #    "conan>=1.50.0,<2.0"
     "conan>=2.0"
@@ -27,6 +27,40 @@ description = "Exiv2 bindings for Python3"
 
 [project.urls]
 Download = "https://github.com/UIUCLibrary/pyexiv2bind"
+
+[dependency-groups]
+test = [
+    "pytest",
+    "pytest-bdd",
+    "coverage",
+]
+docs = ["sphinx", "setuptools", "toml; python_version < '3.11'"]
+tox = ["tox"]
+dev = [
+    {include-group = "docs"},
+    {include-group = "tox"},
+    {include-group = "test"},
+    "bandit",
+    "flake8",
+    "gcovr",
+    "importlib-metadata>=0.12; python_version < '3.8'",
+    "lxml",
+    "macholib ; sys_platform == 'darwin'",
+    "mypy",
+    "pylint",
+]
+conan =["conan>=2.0", "cmake<4.0"]
+package = ["delocate ; sys_platform == 'darwin'"]
+publish = ["twine"]
+
+ci = [
+    {include-group = "dev"},
+    {include-group = "publish"},
+    {include-group = "conan"},
+    "uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/releases/download/v0.3.0/uiucprescon_build-0.3.0-py3-none-any.whl",
+    "pybind11",
+    "pysonar",
+]
 
 [tool.setuptools]
 include-package-data = false
@@ -129,6 +163,3 @@ CONAN_USER_HOME="/tmp/ciwheelbuilder/py3exiv2bind"
 CONAN_DEFAULT_PROFILE_PATH="/tmp/ciwheelbuilder/py3exiv2bind/.conan2/profiles/default"
 CONAN_BUILD_INFO_DIR="/tmp/ciwheelbuilder/py3exiv2bind/build/"
 PYTHONFAULTHANDLER="True"
-
-[tool.uv]
-cache-keys = [{ file = "pyproject.toml" }, { file = "requirements-dev.txt" }]
