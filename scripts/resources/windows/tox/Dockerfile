@@ -66,26 +66,27 @@ FROM BASE_BUILDER AS CONAN_BUILDER
 ARG CONAN_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
+ENV UV_FROZEN=1
 
 COPY conanfile.py c:/temp/conanfile.py
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_HOME}/remotes.json
-COPY requirements-dev.txt c:/requirements/requirements-dev.txt
 COPY scripts/resources/windows/tox/conan/profile.ini  ${CONAN_HOME}/profiles/default
 COPY scripts/resources/windows/tox/conan/python.ini  ${CONAN_HOME}/profiles/python
+ENV UV_PROJECT=c:/temp/
+COPY pyproject.toml uv.lock ${UV_PROJECT}/
 #SHELL ["cmd", "/S", "/C" ]
-ENV CONAN_CMAKE_GENERATOR=Ninja`
-    UV_CONSTRAINT=c:/requirements/requirements-dev.txt
+ENV CONAN_CMAKE_GENERATOR=Ninja
 ARG CONAN_CENTER_PROXY_V2_URL
-RUN uvx --with cmake conan profile detect --exist-ok ; `
+RUN uv run --only-group conan conan profile detect --exist-ok ; `
     if (${env:CONAN_CENTER_PROXY_V2_URL} -ne $(Get-Content -Raw -Path ${Env:CONAN_HOME}\remotes.json)) { `
           Copy-Item -Path "${Env:CONAN_HOME}\remotes.json" -Destination "c:\remotes.json" ; `
-          uvx --with cmake conan remote update conan-center --url ${env:CONAN_CENTER_PROXY_V2_URL}; `
+          uv run --only-group conan conan remote update conan-center --url ${env:CONAN_CENTER_PROXY_V2_URL}; `
     }; `
-    uvx --with cmake conan install c:/temp/ -pr:h=default -pr:b=python; `
+    uv run --only-group conan conan install c:/temp/ -pr:h=default -pr:b=python; `
     if ($LASTEXITCODE -ne 0) { `
       throw \"Command 'conan install' failed with exit code: $LASTEXITCODE\"`
     } ;`
-    uvx --with cmake conan cache clean "*" -b --source --build --temp ; `
+    uv run --only-group conan conan cache clean "*" -b --source --build --temp ; `
     uv cache clean --no-progress ; `
     if (${env:CONAN_CENTER_PROXY_V2_URL} -ne $(Get-Content -Raw -Path ${Env:CONAN_HOME}\remotes.json)) { `
       Move-Item -Path "c:\remotes.json" -Destination "${Env:CONAN_HOME}\remotes.json" -Force ;`
@@ -110,3 +111,6 @@ ENV CONAN_USER_HOME=${CONAN_USER_HOME}`
 
 WORKDIR C:/src
 ENV DISTUTILS_USE_SDK=1
+
+# To help mark the image as a CI image so it can be cleaned up more easily
+LABEL purpose=ci

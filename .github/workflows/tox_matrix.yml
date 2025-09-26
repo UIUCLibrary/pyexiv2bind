@@ -55,8 +55,8 @@ jobs:
       - name: Build conan packages on Non-Windows Operating Systems
         if: ${{ !contains(matrix.os, 'windows') && steps.cache.outputs.cache-hit != 'true' }}
         run: |
-          uvx --index-strategy unsafe-best-match --constraint=requirements-dev.txt --with cmake conan profile detect --exist-ok
-          uvx --index-strategy unsafe-best-match --constraint=requirements-dev.txt --with cmake conan install conanfile.py --build missing -of /tmp/ciwheelbuilder -pr:b=default
+          uvx --index-strategy unsafe-best-match --with cmake conan profile detect --exist-ok
+          uvx --index-strategy unsafe-best-match --with cmake conan install conanfile.py --build missing -of /tmp/ciwheelbuilder -pr:b=default
           rm -rf /tmp/ciwheelbuilder
 
       - uses: actions/github-script@v7
@@ -70,14 +70,14 @@ jobs:
         shell: cmd
         run: |
           rmdir /S /Q C:\\Strawberry
-          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uvx --constraint=requirements-dev.txt --with cmake conan profile detect --exist-ok
-          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uvx --constraint=requirements-dev.txt --with cmake conan install conanfile.py --build missing -of %TEMP%/ciwheelbuilder -pr:b=default 
-          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uvx --constraint=requirements-dev.txt --with tox-uv tox -e ${{ steps.tox-env.outputs.result }}
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uvx --with cmake conan profile detect --exist-ok
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uvx --with cmake conan install conanfile.py --build missing -of %TEMP%/ciwheelbuilder -pr:b=default 
+          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uvx --with tox-uv tox -e ${{ steps.tox-env.outputs.result }}
         env:
           CONAN_USER_HOME: ${{ matrix.conan_user_home }}
       - name: Run tox
         if: "!contains(matrix.os, 'windows')"
-        run: cc --version &&  cc -dumpfullversion -dumpversion && uvx --constraint=requirements-dev.txt --with tox-uv tox -e ${{ steps.tox-env.outputs.result }} -vvv
+        run: cc --version &&  cc -dumpfullversion -dumpversion && uvx --with tox-uv tox -e ${{ steps.tox-env.outputs.result }} -vvv
         env:
           CONAN_COMPILER_LIBCXX: ${{ matrix.compiler_libcxx }}
           CONAN_USER_HOME: ${{ matrix.conan_user_home }}

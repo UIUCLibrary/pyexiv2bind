@@ -20,9 +20,6 @@ ARG UV_CACHE_DIR=/.cache/uv
 ARG PIP_DOWNLOAD_CACHE=/.cache/pip
 # PIP Cache directory. Change this only if you need to override the default location.
 
-ARG UV_CONSTRAINT=requirements-dev.txt
-# Python contraint file used when acquiring conan to prebuild the native dependencies
-
 # ==============================================================================
 FROM ${manylinux_image} AS base
 
@@ -52,22 +49,21 @@ COPY ci/docker/linux/tox/update_conan_compiler.py  /tmp/update_conan_compiler.py
 ARG UV_CACHE_DIR
 ARG PIP_DOWNLOAD_CACHE
 ARG CONAN_CENTER_PROXY_V2_URL
-ARG UV_CONSTRAINT
-COPY ${UV_CONSTRAINT} /tmp/${UV_CONSTRAINT}
-ENV UV_CONSTRAINT=/tmp/${UV_CONSTRAINT}
-
-RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
+ENV UV_FROZEN=1
+RUN --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=cache,target=${UV_CACHE_DIR} \
-    uvx --with cmake conan profile detect --exist-ok &&  \
+    uv run --only-group conan conan profile detect --exist-ok &&  \
     cp ${CONAN_HOME}/global.conf /tmp/global.conf.original && \
     echo "core.sources:download_cache = $CONAN_DOWNLOAD_CACHE" >> ${CONAN_HOME}/global.conf && \
     if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
           echo "Setting the conan center url for building cache: ${CONAN_CENTER_PROXY_V2_URL}" && \
           cp ${CONAN_HOME}/remotes.json /tmp/remotes.json && \
-          uvx --with cmake conan remote update conan-center --url ${CONAN_CENTER_PROXY_V2_URL}; \
+          uv run --only-group conan conan remote update conan-center --url ${CONAN_CENTER_PROXY_V2_URL}; \
         fi && \
-    uvx --with cmake conan install /tmp --build missing && \
-    uvx --with cmake conan cache clean "*" -b --source --build --temp && \
+    uv run --only-group conan conan install /tmp --build missing && \
+    uv run --only-group conan conan cache clean "*" -b --source --build --temp && \
     uv cache prune && \
     if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
         mv -f /tmp/remotes.json ${CONAN_HOME}/remotes.json; \
@@ -79,15 +75,15 @@ FROM base
 
 ARG CONAN_USER_HOME
 ARG CONAN_HOME
-COPY --from=conan_builder ${CONAN_HOME}/ ${CONAN_HOME}/
+COPY --from=conan_builder --chmod=777 ${CONAN_HOME}/ ${CONAN_HOME}/
 ARG UV_CACHE_DIR
 ARG PIP_DOWNLOAD_CACHE
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}\
     CONAN_HOME=${CONAN_HOME}\
     UV_CACHE_DIR=${UV_CACHE_DIR}\
     PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}
-RUN chmod -R 777 ${CONAN_USER_HOME} && \
-    mkdir -p ${PIP_DOWNLOAD_CACHE} && \
+
+RUN mkdir -p ${PIP_DOWNLOAD_CACHE} && \
     chmod -R 777 ${PIP_DOWNLOAD_CACHE} && \
     mkdir -p ${UV_CACHE_DIR} && \
     chmod -R 777 ${UV_CACHE_DIR}
