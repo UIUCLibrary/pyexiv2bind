@@ -113,8 +113,8 @@ environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_US
 before-all = [
     "python3 -m venv /tmp/ciwheelbuilder/py3exiv2bind/venv",
     "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/python -m pip install --disable-pip-version-check uv",
-    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/uvx --constraint=requirements-dev.txt conan profile detect --exist-ok",
-    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/uvx --constraint=requirements-dev.txt conan install conanfile.py --build missing -pr:b=default -of /tmp/ciwheelbuilder/py3exiv2bind/tmp",
+    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/uvx conan profile detect --exist-ok",
+    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/uvx conan install conanfile.py --build missing -pr:b=default -of /tmp/ciwheelbuilder/py3exiv2bind/tmp",
     "rm -rf /tmp/ciwheelbuilder/py3exiv2bind/tmp",
 ]
 
@@ -132,8 +132,8 @@ MACOSX_DEPLOYMENT_TARGET="10.15"
 [tool.cibuildwheel.windows]
 before-all = [
     "pip install --disable-pip-version-check uv",
-    "uvx --constraint=requirements-dev.txt --with cmake conan profile detect --exist-ok",
-    "uvx --constraint=requirements-dev.txt --with cmake conan install conanfile.py --build missing -pr:b=default -of build\\conan\\temp",
+    "uvx --with cmake conan profile detect --exist-ok",
+    "uvx --with cmake conan install conanfile.py --build missing -pr:b=default -of build\\conan\\temp",
     "rmdir /S /Q build\\conan\\temp",
 ]
 before-build = [
@@ -150,8 +150,8 @@ repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
 before-all = [
     "cc --version", "cc -dumpfullversion -dumpversion",
     "pip3 install --disable-pip-version-check uv",
-    "uvx --index-strategy unsafe-best-match --constraint=requirements-dev.txt --with cmake conan profile detect --exist-ok",
-    "uvx --index-strategy unsafe-best-match --constraint=requirements-dev.txt --with cmake conan install conanfile.py --build missing -of /tmp/ciwheelbuilder",
+    "uvx --index-strategy unsafe-best-match --with cmake conan profile detect --exist-ok",
+    "uvx --index-strategy unsafe-best-match --with cmake conan install conanfile.py --build missing -of /tmp/ciwheelbuilder",
     "rm -rf /tmp/ciwheelbuilder/py3exiv2bind/tmp",
 ]
 before-build = [
