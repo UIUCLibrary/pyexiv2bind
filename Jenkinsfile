@@ -521,7 +521,7 @@ pipeline {
                                 sh(
                                     label: 'Install project as editable module with ci dependencies',
                                     script: '''mkdir -p build/build_wrapper_output_directory
-                                               build-wrapper-linux --out-dir build/build_wrapper_output_directory uv sync --group ci --refresh-package py3exiv2bind --verbose
+                                               build-wrapper-linux --out-dir build/build_wrapper_output_directory uv sync --frozen --group ci --refresh-package py3exiv2bind --verbose
                                             '''
                                )
                             }
@@ -860,6 +860,9 @@ pipeline {
                        equals expected: true, actual: params.TEST_RUN_TOX
                        beforeAgent true
                     }
+                    environment{
+                        UV_FROZEN='1'
+                    }
                     parallel{
                         stage('Linux'){
                             environment{
@@ -1042,6 +1045,9 @@ pipeline {
                 anyOf{
                     equals expected: true, actual: params.BUILD_PACKAGES
                 }
+            }
+            environment{
+                UV_FROZEN='1'
             }
             failFast true
             parallel{
