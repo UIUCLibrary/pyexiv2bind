@@ -860,9 +860,6 @@ pipeline {
                        equals expected: true, actual: params.TEST_RUN_TOX
                        beforeAgent true
                     }
-                    environment{
-                        UV_FROZEN='1'
-                    }
                     parallel{
                         stage('Linux'){
                             environment{
@@ -871,6 +868,7 @@ pipeline {
                                 UV_TOOL_DIR='/tmp/uvtools'
                                 UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
                                 UV_CACHE_DIR='/tmp/uvcache'
+                                UV_FROZEN='1'
                             }
                             when{
                                 expression {return nodesByLabel('linux && docker').size() > 0}
