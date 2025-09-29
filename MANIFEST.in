@@ -1,5 +1,5 @@
 # Include the license file
-include tox.ini CHANGELOG.rst README.rst CMakeLists.txt tests/CMakeLists.txt requirements-dev.txt
+include tox.ini CHANGELOG.rst README.rst CMakeLists.txt tests/CMakeLists.txt
 include conanfile.py
 include src/py3exiv2bind/core.pyi
 include patches/*.patch
