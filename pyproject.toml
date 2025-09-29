@@ -50,6 +50,7 @@ dev = [
     "pylint",
 ]
 conan =["conan>=2.0", "cmake<4.0"]
+cibuildwheel = ["cibuildwheel"]
 package = ["delocate ; sys_platform == 'darwin'"]
 publish = ["twine"]
 
@@ -113,8 +114,8 @@ environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_US
 before-all = [
     "python3 -m venv /tmp/ciwheelbuilder/py3exiv2bind/venv",
     "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/python -m pip install --disable-pip-version-check uv",
-    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/uvx conan profile detect --exist-ok",
-    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/uvx conan install conanfile.py --build missing -pr:b=default -of /tmp/ciwheelbuilder/py3exiv2bind/tmp",
+    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/uv run --only-group conan conan profile detect --exist-ok",
+    "/tmp/ciwheelbuilder/py3exiv2bind/venv/bin/uv run --only-group conan conan install conanfile.py --build missing -pr:b=default -of /tmp/ciwheelbuilder/py3exiv2bind/tmp",
     "rm -rf /tmp/ciwheelbuilder/py3exiv2bind/tmp",
 ]
 
@@ -132,8 +133,8 @@ MACOSX_DEPLOYMENT_TARGET="10.15"
 [tool.cibuildwheel.windows]
 before-all = [
     "pip install --disable-pip-version-check uv",
-    "uvx --with cmake conan profile detect --exist-ok",
-    "uvx --with cmake conan install conanfile.py --build missing -pr:b=default -of build\\conan\\temp",
+    "uv run --only-group conan conan profile detect --exist-ok",
+    "uv run --only-group conan conan install conanfile.py --build missing -pr:b=default -of build\\conan\\temp",
     "rmdir /S /Q build\\conan\\temp",
 ]
 before-build = [
@@ -144,14 +145,14 @@ before-build = [
 CONAN_USER_HOME="$TEMP/conan"
 
 [tool.cibuildwheel.linux]
-manylinux-x86_64-image = "quay.io/pypa/manylinux_2_28_x86_64"
-manylinux-aarch64-image = "quay.io/pypa/manylinux_2_28_aarch64"
+manylinux-x86_64-image = "quay.io/pypa/manylinux_2_28"
+manylinux-aarch64-image = "quay.io/pypa/manylinux_2_28"
 repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
 before-all = [
     "cc --version", "cc -dumpfullversion -dumpversion",
     "pip3 install --disable-pip-version-check uv",
-    "uvx --index-strategy unsafe-best-match --with cmake conan profile detect --exist-ok",
-    "uvx --index-strategy unsafe-best-match --with cmake conan install conanfile.py --build missing -of /tmp/ciwheelbuilder",
+    "uv run --only-group conan conan profile detect --exist-ok",
+    "uv run --only-group conan conan install conanfile.py --build missing -of /tmp/ciwheelbuilder",
     "rm -rf /tmp/ciwheelbuilder/py3exiv2bind/tmp",
 ]
 before-build = [
