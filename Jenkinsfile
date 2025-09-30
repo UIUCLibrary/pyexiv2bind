@@ -900,7 +900,7 @@ pipeline {
                                                 "Tox Environment: ${toxEnv}",
                                                 {
                                                     node('docker && linux'){
-                                                        def maxRetries = 1
+                                                        def maxRetries = 3
                                                         checkout scm
                                                         def image
                                                         lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
