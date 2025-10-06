@@ -1,4 +1,5 @@
 import abc
+import copy
 import json
 import os
 
@@ -333,19 +334,45 @@ def add_conan_build_info(core_ext, build_temp):
             core_ext.library_dirs.insert(0, path)
     return core_ext
 
-def get_conan_preset_name(conan_build_folder: str) -> str:
-    cmake_presets_json_file = os.path.join(conan_build_folder, "CMakePresets.json")
-    if not os.path.exists(cmake_presets_json_file):
-        raise FileNotFoundError(f"Missing {cmake_presets_json_file}")
-    with open(cmake_presets_json_file, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    configure_presets = data.get('configurePresets')
-    if configure_presets is None:
-        raise KeyError(f"configurePresets key missing from {cmake_presets_json_file}")
-    for preset in configure_presets:
-        if "conan" in preset['name']:
-            return preset['name']
-    raise ValueError("Unable to locate a conan config preset")
+
+def update_generated_conan_preset_name(cmake_user_preset_file, include_path_to_preset, conan_config_preset_name, conan_build_preset_name, conan_test_preset_name):
+    with open(cmake_user_preset_file, "r", encoding="utf-8") as f:
+        top_level_cmake_user_preset_data = json.loads(f.read())
+
+    for include in top_level_cmake_user_preset_data['include']:
+        to_search_for = os.path.abspath(include_path_to_preset)
+        if to_search_for in os.path.abspath(include):
+            cmake_preset_path = include
+            break
+    else:
+        raise FileNotFoundError(f"Missing {include_path_to_preset}")
+
+    print(f"Found preset path {cmake_preset_path}")
+    with open(cmake_preset_path, "r", encoding="utf-8") as f:
+        cmake_preset_data = json.loads(f.read())
+    original_data = copy.deepcopy(cmake_preset_data)
+
+    if len(cmake_preset_data['configurePresets']) > 1:
+        raise ValueError("Too many configurePresets to update")
+    if len(cmake_preset_data['buildPresets']) > 1:
+        raise ValueError("Too many buildPresets to update")
+    if len(cmake_preset_data['testPresets']) > 1:
+        raise ValueError("Too many testPresets to update")
+
+    config_preset = cmake_preset_data['configurePresets'][0]
+    config_preset['name'] = conan_config_preset_name
+
+    build_preset = cmake_preset_data['buildPresets'][0]
+    build_preset['name'] = conan_build_preset_name
+    build_preset['configurePreset'] = conan_config_preset_name
+
+    test_preset = cmake_preset_data['testPresets'][0]
+    test_preset['name'] = conan_test_preset_name
+    test_preset['configurePreset'] = conan_config_preset_name
+    if original_data != cmake_preset_data:
+        print(f"Updating file {cmake_preset_path}")
+        with open(cmake_preset_path, "w", encoding="utf-8") as f:
+            json.dump(cmake_preset_data, f, indent=4)
 
 
 class BuildExiv2(BuildCMakeLib):
@@ -361,8 +388,14 @@ class BuildExiv2(BuildCMakeLib):
     def run(self):
         conan_cmd = self.get_finalized_command("build_conan")
         conan_cmd.run()
+        conan_config_preset_name = f"python-{sys.version_info.major}.{sys.version_info.minor}-config"
+        conan_build_preset_name = f"python-{sys.version_info.major}.{sys.version_info.minor}-build"
+        conan_test_preset_name = f"python-{sys.version_info.major}.{sys.version_info.minor}-test"
+        if os.path.exists("CMakeUserPresets.json"):
+            update_generated_conan_preset_name("CMakeUserPresets.json", conan_cmd.build_temp, conan_config_preset_name, conan_build_preset_name, conan_test_preset_name)
+        print("Updated generated user preset names")
         self.extra_cmake_options.append(
-            f"--preset={get_conan_preset_name(conan_cmd.build_temp)}"
+            f"--preset={conan_config_preset_name}"
         )
 
         super().run()
