@@ -557,7 +557,7 @@ pipeline {
                                     steps{
                                         tee('logs/cmake-build.log'){
                                             sh(label: 'Building C++ Code',
-                                               script: '''uvx conan install conanfile.py -of build/cpp --build=missing -pr:b=default
+                                               script: '''uv run conan install conanfile.py -of build/cpp --build=missing -pr:b=default
                                                           uv run cmake --preset conan-release -B build/cpp/ -Wdev -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -DBUILD_TESTING:BOOL=true -Dpyexiv2bind_generate_python_bindings:BOOL=true -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage -Wall -Wextra"
                                                        '''
                                             )
