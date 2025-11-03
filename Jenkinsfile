@@ -71,9 +71,9 @@ def installMSVCRuntime(cacheLocation){
         powershell(label: 'Install VC Runtime', script: 'Start-Process -filepath "$Env:CACHED_FILE" -ArgumentList "/install", "/passive", "/norestart" -Passthru | Wait-Process;')
     }
 }
-def SUPPORTED_MAC_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
-def SUPPORTED_LINUX_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
-def SUPPORTED_WINDOWS_VERSIONS = ['3.9', '3.10', '3.11', '3.12', '3.13']
+def SUPPORTED_MAC_VERSIONS = ['3.10', '3.11', '3.12', '3.13']
+def SUPPORTED_LINUX_VERSIONS = ['3.10', '3.11', '3.12', '3.13']
+def SUPPORTED_WINDOWS_VERSIONS = ['3.10', '3.11', '3.12', '3.13']
 // ============================================================================
 //  Dynamic variables. Used to help manage state
 def wheelStashes = []
