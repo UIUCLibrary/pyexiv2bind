@@ -70,7 +70,7 @@ generate_wheel(){
 
 
 print_usage(){
-    echo "Usage: $0 [--uv path] [--python-version version]"
+     echo "Usage: $0 [--uv path] [--python-version version]"
 }
 
 
@@ -105,11 +105,11 @@ while [[ "$#" -gt 0 ]]; do
       shift 2
       ;;
 
-    --uv-path=*)
+    --uv=*)
       uv_path="${1#*=}"
       shift
       ;;
-    --uv-path)
+    --uv)
       uv_path="$2"
       shift 2
       ;;
@@ -119,8 +119,9 @@ while [[ "$#" -gt 0 ]]; do
       ;;
   esac
 done
-
-uv_path=uv
+if [ -z "{uv_path+x}" ]; then
+  uv_path=uv
+fi
 if [[ ! -f "$uv_path" ]]; then
     if [[ ! -f "/tmp/uv/bin/uv" ]]; then
       generate_venv_with_venv python3 /tmp/uv

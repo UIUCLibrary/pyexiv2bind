@@ -322,8 +322,12 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                         try{
                                                            withEnv(["UV_CONFIG_FILE=${createUVConfig()}"]){
                                                                sh(label: 'Building wheel',
-                                                                  script: "scripts/build_mac_wheel.sh --uv=./venv/bin/uv --python-version=${pythonVersion}"
-                                                               )
+                                                                  script: """python3 -m venv venv
+                                                                             trap "rm -rf venv" EXIT
+                                                                             venv/bin/pip install --disable-pip-version-check uv
+                                                                             scripts/build_mac_wheel.sh --uv=./venv/bin/uv --python-version=${pythonVersion}
+                                                                          """
+                                                              )
                                                            }
                                                            stash includes: 'dist/*.whl', name: "python${pythonVersion} mac ${arch} wheel"
                                                            wheelStashes << "python${pythonVersion} mac ${arch} wheel"
