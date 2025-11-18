@@ -903,32 +903,34 @@ pipeline {
                                             [
                                                 "Tox Environment: ${toxEnv}",
                                                 {
-                                                    node('docker && linux'){
-                                                        def maxRetries = 3
-                                                        checkout scm
-                                                        def image
-                                                        lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
-                                                            retry(maxRetries){
-                                                                image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL .')
-                                                            }
-                                                        }
-                                                        try{
-                                                            retry(maxRetries){
-                                                                try{
-                                                                    withEnv(["UV_CONFIG_FILE=${createUVConfig()}"]){
-                                                                        image.inside('--mount source=python-tmp-py3exiv2bind,target=/tmp'){
-                                                                            sh( label: 'Running Tox',
-                                                                                script: "uv run --only-group tox -p ${version} --python-preference only-system --with tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vvv"
-                                                                                )
-                                                                        }
-                                                                    }
-                                                                } finally{
-                                                                    sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                                    retry(2){
+                                                        node('docker && linux'){
+                                                            def maxRetries = 2
+                                                            checkout scm
+                                                            def image
+                                                            lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
+                                                                retry(maxRetries){
+                                                                    image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/linux/tox/Dockerfile --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL .')
                                                                 }
                                                             }
-                                                        } finally {
-                                                            if (image){
-                                                                sh "docker rmi --force --no-prune ${image.id}"
+                                                            try{
+                                                                retry(maxRetries){
+                                                                    try{
+                                                                        withEnv(["UV_CONFIG_FILE=${createUVConfig()}"]){
+                                                                            image.inside('--mount source=python-tmp-py3exiv2bind,target=/tmp'){
+                                                                                sh( label: 'Running Tox',
+                                                                                    script: "uv run --only-group tox -p ${version} --python-preference only-system --with tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vvv"
+                                                                                    )
+                                                                            }
+                                                                        }
+                                                                    } finally{
+                                                                        sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                                                    }
+                                                                }
+                                                            } finally {
+                                                                if (image){
+                                                                    sh "docker rmi --force --no-prune ${image.id}"
+                                                                }
                                                             }
                                                         }
                                                     }
