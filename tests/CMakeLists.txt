@@ -1,6 +1,6 @@
 include(FetchContent)
-if (BUILD_TESTING)
-
+if (BUILD_TESTING AND Catch2_FOUND)
+    include(Catch)
     FetchContent_Declare(test_images
             URL https://nexus.library.illinois.edu/repository/sample-data/images/sample_images.tar.gz
             SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/sample_images
@@ -50,8 +50,6 @@ if (BUILD_TESTING)
         endif()
     endif()
 
-    FetchContent_MakeAvailable(libcatch2)
-    FetchContent_GetProperties(libcatch2)
     list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
     add_executable(cpp_tests
             test_basic.cpp
@@ -68,8 +66,8 @@ if (BUILD_TESTING)
             )
     target_include_directories(cpp_tests PRIVATE ${PROJECT_SOURCE_DIR}/src/py3exiv2bind/core)
     target_link_libraries(cpp_tests PRIVATE Catch2::Catch2WithMain exiv2lib)
-    include(Catch)
 
+    list(APPEND CMAKE_MODULE_PATH ${catch_SOURCE_DIR}/contrib/)
     catch_discover_tests(cpp_tests TEST_PREFIX ${PROJECT_NAME}::test-pyexiv2::)
     add_executable(test_editing
             test_editing.cpp
