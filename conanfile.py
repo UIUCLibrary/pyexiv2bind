@@ -21,7 +21,7 @@ class pyexiv2bind(ConanFile):
             self.requires("libiconv/1.17")
 
     def build_requirements(self):
-        self.test_requires('catch2/3.7.1')
+        self.test_requires('catch2/3.11.0')
     def imports(self):
         self.copy("*.dll", dst="bin", src="bin") # From bin to bin
         self.copy("*.dylib*", dst=".", src="lib") # From lib to bin
