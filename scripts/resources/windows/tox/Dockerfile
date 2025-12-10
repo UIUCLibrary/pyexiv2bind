@@ -18,7 +18,7 @@ ARG chocolateyVersion
 FROM ${FROM_IMAGE} AS certsgen
 RUN certutil -generateSSTFromWU roots.sst
 
-FROM ${FROM_IMAGE} AS BASE_BUILDER
+FROM ${FROM_IMAGE} AS base_builder
 
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
@@ -62,13 +62,13 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
 
 
 # ==============================================================================
-FROM BASE_BUILDER AS CONAN_BUILDER
+FROM base_builder AS conan_builder
 ARG CONAN_HOME
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
 ENV UV_FROZEN=1
 
-COPY conanfile.py c:/temp/conanfile.py
+COPY conanfile.py conan.lock c:/temp/
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_HOME}/remotes.json
 COPY scripts/resources/windows/tox/conan/profile.ini  ${CONAN_HOME}/profiles/default
 COPY scripts/resources/windows/tox/conan/python.ini  ${CONAN_HOME}/profiles/python
@@ -92,7 +92,7 @@ RUN uv run --only-group conan conan profile detect --exist-ok ; `
       Move-Item -Path "c:\remotes.json" -Destination "${Env:CONAN_HOME}\remotes.json" -Force ;`
     }
 
-FROM BASE_BUILDER
+FROM base_builder
 COPY --from=certsgen c:/roots.sst c:/roots.sst
 RUN certutil -addstore -f root c:/roots.sst ; `
     del c:/roots.sst
@@ -102,7 +102,7 @@ ARG UV_CACHE_DIR
 RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force | Out-Null ; `
     New-Item -type directory -path ${Env:UV_CACHE_DIR} -Force | Out-Null
 ARG CONAN_HOME
-COPY --from=CONAN_BUILDER ${CONAN_HOME}/ ${CONAN_HOME}/
+COPY --from=conan_builder ${CONAN_HOME}/ ${CONAN_HOME}/
 ARG CONAN_USER_HOME
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}`
     CONAN_HOME=${CONAN_HOME}`

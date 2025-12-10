@@ -1,0 +1,15 @@
+{
+    "version": "0.5",
+    "requires": [
+        "zlib/1.3.1#b8bc2603263cf7eccbd6e17e66b0ed76%1755184481.162043",
+        "libiconv/1.17#1e65319e945f2d31941a9d28cc13c058%1755178573.409999",
+        "expat/2.5.0#91e43e4544923e4c934bfad1fa4306f9%1755186526.919869",
+        "catch2/3.11.0#a560b55882ff2deb1f4bafad832a1b98%1763673919.270116",
+        "brotli/1.0.9#8419c3e664bc762bc479561c5c7d2274%1755186526.576017"
+    ],
+    "build_requires": [
+        "cmake/3.31.9#f9b9bb4bdfa37937619a33e9218703a6%1761647880.115"
+    ],
+    "python_requires": [],
+    "config_requires": []
+}

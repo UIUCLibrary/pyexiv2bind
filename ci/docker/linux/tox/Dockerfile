@@ -42,7 +42,6 @@ ARG CONAN_HOME
 COPY ci/docker/linux/tox/conan/profile.ini ${CONAN_HOME}/profiles/default
 COPY ci/docker/shared/conan/remotes.json  ${CONAN_HOME}/remotes.json
 
-COPY conanfile.py /tmp/conanfile.py
 ARG UV_CACHE_DIR
 ARG PIP_DOWNLOAD_CACHE
 ARG CONAN_CENTER_PROXY_V2_URL
@@ -52,6 +51,8 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=cache,target=${CONAN_DOWNLOAD_CACHE} \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=conanfile.py,target=/tmp/conanfile.py \
+    --mount=type=bind,source=conan.lock,target=/tmp/conan.lock \
     uv run --only-group conan conan profile detect --exist-ok &&  \
     cp ${CONAN_HOME}/global.conf /tmp/global.conf.original && \
     echo "core.sources:download_cache = $CONAN_DOWNLOAD_CACHE" >> ${CONAN_HOME}/global.conf && \
