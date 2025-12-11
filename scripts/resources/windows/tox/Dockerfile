@@ -82,11 +82,13 @@ RUN uv run --only-group conan conan profile detect --exist-ok ; `
           Copy-Item -Path "${Env:CONAN_HOME}\remotes.json" -Destination "c:\remotes.json" ; `
           uv run --only-group conan conan remote update conan-center --url ${env:CONAN_CENTER_PROXY_V2_URL}; `
     }; `
-    uv run --only-group conan conan install c:/temp/ -pr:h=default -pr:b=python; `
+    uv run --only-group conan conan install c:/temp/ -pr:h=default -pr:b=python -of c:/temp/delme; `
     if ($LASTEXITCODE -ne 0) { `
       throw \"Command 'conan install' failed with exit code: $LASTEXITCODE\"`
     } ;`
+    Remove-Item -Path "c:\temp\delme" -Recurse -Force ; `
     uv run --only-group conan conan cache clean "*" -b --source --build --temp ; `
+    Remove-Item -Path "${env:UV_PROJECT}\.venv" -Recurse -Force ; `
     uv cache clean --no-progress ; `
     if (${env:CONAN_CENTER_PROXY_V2_URL} -ne $(Get-Content -Raw -Path ${Env:CONAN_HOME}\remotes.json)) { `
       Move-Item -Path "c:\remotes.json" -Destination "${Env:CONAN_HOME}\remotes.json" -Force ;`
