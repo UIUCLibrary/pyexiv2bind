@@ -56,7 +56,7 @@ FetchContent_Declare(
 #        URL https://github.com/Exiv2/exiv2/archive/refs/tags/v0.28.1.tar.gz
 #        URL_HASH SHA256=3078651f995cb6313b1041f07f4dd1bf0e9e4d394d6e2adc6e92ad0b621291fa
             GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
-            GIT_TAG v0.28.1
+            GIT_TAG v0.28.7
         #            GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
 #            GIT_TAG ${EXIV2_VERSION_TAG}
         SYSTEM
