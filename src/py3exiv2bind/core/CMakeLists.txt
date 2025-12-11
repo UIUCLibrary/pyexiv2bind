@@ -7,7 +7,7 @@ if (pyexiv2bind_generate_python_bindings)
     Python3_add_library(core core.cpp $<TARGET_OBJECTS:glue> )
     set_target_properties(core PROPERTIES EXCLUDE_FROM_ALL on)
     add_custom_command(TARGET core
-            POST_BUILD
+        POST_BUILD
             COMMAND ${Python3_EXECUTABLE} setup.py build_py --build-lib ${PROJECT_BINARY_DIR}
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             )
