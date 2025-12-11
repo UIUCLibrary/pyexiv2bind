@@ -2,9 +2,18 @@
 // Created by hborcher on 10/4/2017.
 //
 #include "glue.h"
-#include <exiv2/exiv2.hpp>
+
+
+#include <exiv2/exif.hpp>
+#include <exiv2/image.hpp>
+#include <exiv2/version.hpp>
+
+#include <memory>
+#include <string>
+
 using Exiv2::Image;
 using Exiv2::ImageFactory;
+
 std::string exiv2_version() {
     return Exiv2::versionString();
 }

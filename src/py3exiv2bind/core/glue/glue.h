@@ -5,8 +5,8 @@
 #ifndef SUPERBUILD_GLUE_H
 #define SUPERBUILD_GLUE_H
 
-#include <string>
 #include <map>
+#include <string>
 
 struct metadata_chunk {
 

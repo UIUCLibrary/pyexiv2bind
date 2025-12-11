@@ -4,7 +4,12 @@
 
 #include "XmpStrategy.h"
 #include "make_dictionary.h"
-#include <iostream>
+
+#include <exiv2/image.hpp>
+
+#include <string>
+#include <unordered_map>
+
 std::unordered_map<std::string, std::string> XmpStrategy::load(const Exiv2::Image &image){
     return make_dictionary(image.xmpData());
 }

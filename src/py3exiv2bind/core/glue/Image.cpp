@@ -3,14 +3,23 @@
 //
 
 #include "Image.h"
+
 #include "MetadataProcessor.h"
-#include "glue.h"
+#include "MetadataStrategies.h"
 #include "glue_execeptions.h"
-#include <cassert>
+
 #include <exiv2/error.hpp>
+#include <exiv2/image.hpp>
+#include <exiv2/types.hpp>
+
+#include <cassert>
 #include <iostream>
+#include <list>
+#include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
+#include <unordered_map>
 
 std::ostringstream warning_log;
 std::ostringstream error_log;
