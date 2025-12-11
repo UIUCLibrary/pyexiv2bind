@@ -1,11 +1,10 @@
 [build-system]
 requires = [
     "setuptools>=77.0.0",
-    "wheel",
     "ninja",
-    "uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/releases/download/v0.4.0/uiucprescon_build-0.4.0-py3-none-any.whl",
+    "pybind11>=2.13",
+    "uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/releases/download/v0.4.2/uiucprescon_build-0.4.2-py3-none-any.whl",
     "cmake<4.0",
-#    "conan>=1.50.0,<2.0"
     "conan>=2.0"
 ]
 build-backend = "uiucprescon.build"
