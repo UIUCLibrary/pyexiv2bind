@@ -18,8 +18,8 @@ option(pyexiv2bind_build_tests "build test suite" ON)
 include_directories(${CMAKE_BINARY_DIR})
 include(FetchContent)
 FetchContent_Declare(libpybind11
-        URL https://github.com/pybind/pybind11/archive/refs/tags/v2.10.4.tar.gz
-        URL_HASH SHA1=5c366a92fc4b3937bcc3389405edbe362b1f3cbd
+        URL https://github.com/pybind/pybind11/archive/refs/tags/v2.13.6.tar.gz
+        URL_HASH SHA1=8c7e3e8fec829ced31a495dec281153511f33c63
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         EXCLUDE_FROM_ALL
         )
