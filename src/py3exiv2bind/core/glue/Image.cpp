@@ -31,7 +31,7 @@ Image::Image(const std::string &filename) : filename(filename) {
     error_log.str("");
     try {
         Exiv2::LogMsg::setHandler([](int level, const char *msg) {
-            switch((Exiv2::LogMsg::Level)level){
+            switch(static_cast<Exiv2::LogMsg::Level>(level)){
 
                 case Exiv2::LogMsg::debug:
                 case Exiv2::LogMsg::info:
@@ -53,8 +53,8 @@ Image::Image(const std::string &filename) : filename(filename) {
         std::cerr << e.what() << std::endl;
         throw std::runtime_error(e.what());
     }
-    std::string warning_msg = warning_log.str();
-    std::string error_msg = error_log.str();
+    const std::string warning_msg = warning_log.str();
+    const std::string error_msg = error_log.str();
 
     if(!warning_msg.empty()){
         warning_logs.push_back(warning_msg);
