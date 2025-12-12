@@ -38,18 +38,17 @@ generate_wheel(){
     # have that as a minimum.
 
     if [ "$processor_type" == "arm64" ]; then
-        _PYTHON_HOST_PLATFORM='macosx-11.0-arm64'
         MACOSX_DEPLOYMENT_TARGET='11.0'
         ARCHFLAGS='-arch arm64'
         REQUIRED_ARCH='arm64'
     elif [ "$processor_type" == "x86_64" ]; then
-        _PYTHON_HOST_PLATFORM='macosx-10.15-x86_64'
         MACOSX_DEPLOYMENT_TARGET='10.15'
-        ARCHFLAGS='-arch x86_64'
         REQUIRED_ARCH='x86_64'
+        ARCHFLAGS='-arch x86_64'
     else
       echo "Unknown processor type: $processor_type"
     fi
+    _PYTHON_HOST_PLATFORM="macosx-$MACOSX_DEPLOYMENT_TARGET-$REQUIRED_ARCH"
 
     out_temp_wheels_dir=$(mktemp -d /tmp/python_wheels.XXXXXX)
     output_path="./dist"
