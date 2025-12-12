@@ -539,7 +539,7 @@ pipeline {
                                 )
                                 sh(
                                     label: 'Install project as editable module with ci dependencies',
-                                    script: '''uv pip install "pybind11>=2.13" "uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/releases/download/v0.4.2/uiucprescon_build-0.4.2-py3-none-any.whl"
+                                    script: '''uv pip install "pybind11>=2.13" "uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/releases/download/v0.5.0/uiucprescon_build-0.5.0-py3-none-any.whl"
                                                mkdir -p build/build_wrapper_output_directory
                                                build-wrapper-linux --out-dir build/build_wrapper_output_directory uv run setup.py build_clib build_ext --inplace --build-temp build/temp  --build-lib build/lib --debug -v
                                             '''
