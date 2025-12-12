@@ -33,15 +33,16 @@ Image::Image(const std::string &filename) : filename(filename) {
         Exiv2::LogMsg::setHandler([](int level, const char *msg) {
             switch((Exiv2::LogMsg::Level)level){
 
-                case Exiv2::LogMsg::debug:break;
-                case Exiv2::LogMsg::info:break;
+                case Exiv2::LogMsg::debug:
+                case Exiv2::LogMsg::info:
+                case Exiv2::LogMsg::mute:
+                    break;
                 case Exiv2::LogMsg::warn:
                     warning_log << msg;
                     break;
                 case Exiv2::LogMsg::error:
                     error_log << msg;
                     break;
-                case Exiv2::LogMsg::mute:break;
                 default: break;
             }
         });

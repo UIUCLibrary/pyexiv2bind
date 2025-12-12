@@ -8,24 +8,26 @@
 
 #include <exiv2/exif.hpp>
 #include <exiv2/image.hpp>
+#include <exiv2/properties.hpp>
+#include <exiv2/types.hpp>
+#include <exiv2/value.hpp>
 
 #include <cassert>
-#include <iostream>
 #include <filesystem>
+#include <iostream>
+#include <iomanip>
 
 namespace fs = std::filesystem;
 
-void exifPrint(const Exiv2::ExifData& exifData);
+static void exifPrint(const Exiv2::ExifData& exifData);
 
-#define METADATA_KEY "Exif.Image.XResolution"
-
-const std::string IMAGE_TEST_PATH(TEST_IMAGE_PATH);
+constexpr auto METADATA_KEY = "Exif.Image.XResolution";
 
 TEST_CASE("Edit"){
-    const std::string filename = IMAGE_TEST_PATH + "dummy.tif";
+    constexpr auto filename = TEST_IMAGE_PATH "dummy.tif";
     {
 
-        auto image = Exiv2::ImageFactory::open(filename);
+        const auto image = Exiv2::ImageFactory::open(filename);
         assert(image.get() != nullptr);
         assert(image->good());
         assert(image->checkMode(Exiv2::MetadataId::mdExif) !=Exiv2::AccessMode::amRead);
@@ -33,11 +35,11 @@ TEST_CASE("Edit"){
         image->readMetadata();
 
         Exiv2::ExifData exifData = image->exifData();
-        std::cout << "The original value of "<< METADATA_KEY << " is " << exifData[METADATA_KEY] << std::endl;
-        Exiv2::Exifdatum d = exifData["Exif.Image.XResolution"];
-        std::cout << "family name " << d.familyName() << std::endl;
-        std::cout << "groupName " << d.groupName() << std::endl;
-        std::cout << "tagName " << d.tagName() << std::endl;
+        std::cout << "The original value of " << METADATA_KEY << " is " << exifData[METADATA_KEY] << std::endl;
+        const Exiv2::Exifdatum data = exifData["Exif.Image.XResolution"];
+        std::cout << "family name " << data.familyName() << std::endl;
+        std::cout << "groupName " << data.groupName() << std::endl;
+        std::cout << "tagName " << data.tagName() << std::endl;
 
         Exiv2::RationalValue value;
         value.read("300/1");
@@ -50,8 +52,8 @@ TEST_CASE("Edit"){
 
     std::cout << "Written to " << filename <<std::endl;
     {
-        auto image = Exiv2::ImageFactory::open(filename);
-        assert(image.get() != 0);
+        const auto image = Exiv2::ImageFactory::open(filename);
+        assert(image.get() != nullptr);
         image->readMetadata();
         Exiv2::ExifData exifData_second = image->exifData();
         std::cout << "Now the value of " << exifData_second[METADATA_KEY].key() << " is " << exifData_second[METADATA_KEY].value().toFloat() << std::endl;
@@ -59,12 +61,12 @@ TEST_CASE("Edit"){
     }
 }
 TEST_CASE("Edit tiff") {
-    const std::string filename = IMAGE_TEST_PATH + "dummy.tif";
+    constexpr auto filename = TEST_IMAGE_PATH "dummy.tif";
     {
 
-        auto image = Exiv2::ImageFactory::open(filename);
+        const auto image = Exiv2::ImageFactory::open(filename);
 
-        assert(image.get() != 0);
+        assert(image.get() != nullptr);
         assert(image->good());
         assert(image->checkMode(Exiv2::MetadataId::mdExif) != Exiv2::AccessMode::amRead);
 
@@ -74,10 +76,7 @@ TEST_CASE("Edit tiff") {
         exifPrint(exifData);
         exifData["Exif.Image.XResolution"] = 300;
         exifData["Exif.Image.YResolution"] = 300;
-        std::string stringvalue = exifData[METADATA_KEY].toString();
         exifData["Exif.Image.ResolutionUnit"] = 2;
-        Exiv2::Exifdatum d = exifData["Exif.Image.ResolutionUnit"];
-
         image->setExifData(exifData);
         image->writeMetadata();
         std::cout << "Written to " << filename << std::endl;
@@ -87,8 +86,8 @@ TEST_CASE("Edit tiff") {
     }
 
     {
-        auto image = Exiv2::ImageFactory::open(filename);
-        assert(image.get() != 0);
+        const auto image = Exiv2::ImageFactory::open(filename);
+        assert(image.get() != nullptr);
         image->readMetadata();
         Exiv2::ExifData exifData_second = image->exifData();
         std::cout << "Now the value of " << exifData_second["Exif.Image.XResolution"].key() << " is "
@@ -101,8 +100,7 @@ TEST_CASE("Edit tiff") {
 
 void exifPrint(const Exiv2::ExifData& exifData)
 {
-    Exiv2::ExifData::const_iterator i = exifData.begin();
-    for (; i != exifData.end(); ++i) {
+    for (auto i = exifData.begin(); i != exifData.end(); ++i) {
         std::cout << std::setw(44) << std::setfill(' ') << std::left
                   << i->key() << " "
                   << "0x" << std::setw(4) << std::setfill('0') << std::right
@@ -118,8 +116,6 @@ void exifPrint(const Exiv2::ExifData& exifData)
 }
 
 TEST_CASE("edit jp2 metadata", "[integration,upstream]"){
-    const std::string source = IMAGE_TEST_PATH + "dummy.jp2";
-    const std::string out = IMAGE_TEST_PATH + "changeme.jp2";
     auto [key, startingValue, value] = GENERATE(table<std::string, std::string, std::string>({
             {"Xmp.iptc.CreatorContactInfo/Iptc4xmpCore:CiAdrCity", "Urbana", "Champaign"},
             {"Xmp.iptc.CreatorContactInfo/Iptc4xmpCore:CiEmailWork", "digidcc@library.illinois.edu", "digitizationservices@library.illinois.edu"},
@@ -129,16 +125,17 @@ TEST_CASE("edit jp2 metadata", "[integration,upstream]"){
     }
     ) );
     DYNAMIC_SECTION("Change " << key <<" to " << value){
+        constexpr auto source = TEST_IMAGE_PATH "dummy.jp2";
+        constexpr auto out = TEST_IMAGE_PATH "changeme.jp2";
         fs::copy(source, out, fs::copy_options::overwrite_existing);
         {
             auto image = Exiv2::ImageFactory::open(out);
-            assert(image.get() != 0);
+            assert(image.get() != nullptr);
             image->readMetadata();
             auto xmpData = image->xmpData();
             REQUIRE(xmpData[key].value().toString() == startingValue);
-            auto x = xmpData.findKey(Exiv2::XmpKey(key));
-            if (x != xmpData.end()){
-                xmpData.erase(x);
+            if (auto erase_key = xmpData.findKey(Exiv2::XmpKey(key)); erase_key != xmpData.end()){
+                xmpData.erase(erase_key);
             }
             xmpData[key].setValue(value);
             image->setXmpData(xmpData);
@@ -146,7 +143,7 @@ TEST_CASE("edit jp2 metadata", "[integration,upstream]"){
         }
         {
             auto second_image = Exiv2::ImageFactory::open(out);
-            assert(second_image.get() != 0);
+            assert(second_image.get() != nullptr);
             second_image->readMetadata();
             auto secondXmpData = second_image->xmpData();
             REQUIRE(secondXmpData[key].value().toString() == value);

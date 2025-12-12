@@ -19,6 +19,6 @@ struct metadata_chunk {
 
 std::string exiv2_version();
 
-void set_dpi(const std::string &filename, int x, int y);
+void set_dpi(const std::string &filename, int x_res, int y_res);
 
 #endif //SUPERBUILD_GLUE_H

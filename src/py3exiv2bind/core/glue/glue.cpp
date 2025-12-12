@@ -19,15 +19,15 @@ std::string exiv2_version() {
 }
 
 
-void set_dpi(const std::string &filename, int x, int y){
-    std::unique_ptr<Exiv2::Image> image = ImageFactory::open(filename);
+void set_dpi(const std::string &filename, int x_res, int y_res){
+    const std::unique_ptr<Exiv2::Image> image = ImageFactory::open(filename);
 
     image->readMetadata();
 
     Exiv2::ExifData metadata = image->exifData();
 
-    metadata["Exif.Image.XResolution"] = Exiv2::URational(x, 1);
-    metadata["Exif.Image.YResolution"] = Exiv2::URational(y, 1);
+    metadata["Exif.Image.XResolution"] = Exiv2::URational(x_res, 1);
+    metadata["Exif.Image.YResolution"] = Exiv2::URational(y_res, 1);
     metadata["Exif.Image.ResolutionUnit"] = 2;
     image->setExifData(metadata);
     image->writeMetadata();
