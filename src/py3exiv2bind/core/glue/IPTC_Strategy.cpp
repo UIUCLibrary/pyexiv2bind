@@ -4,8 +4,12 @@
 
 #include "IPTC_Strategy.h"
 #include "make_dictionary.h"
-#include <exiv2/error.hpp>
-#include <iostream>
+
+#include <exiv2/image.hpp>
+
+#include <string>
+#include <unordered_map>
+
 
 std::unordered_map<std::string, std::string> IPTC_Strategy::load(const Exiv2::Image &image){
     return make_dictionary(image.iptcData());

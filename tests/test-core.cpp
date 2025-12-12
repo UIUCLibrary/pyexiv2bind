@@ -75,11 +75,11 @@ TEST_CASE("bad tiff file with set_dpi raises"){
     corruptedFile.open(bad_file, std::ios::binary);
     OtherDataFormat packet{3, 3, 3, 1.2};
     int number = 444;
-    const char header = 'I';
+    constexpr char header = 'I';
     corruptedFile.write(&header, sizeof(char ));
     corruptedFile.write(&header, sizeof(char ));
-    corruptedFile.write((char*) &number, sizeof(int ));
-    corruptedFile.write((char *) &packet, sizeof(OtherDataFormat));
+    corruptedFile.write(reinterpret_cast<char *>(&number), sizeof(int ));
+    corruptedFile.write(reinterpret_cast<char *>(&packet), sizeof(OtherDataFormat));
     corruptedFile.close();
     REQUIRE_THROWS_AS(set_dpi(bad_file, 100, 100), Exiv2::Error);
 }

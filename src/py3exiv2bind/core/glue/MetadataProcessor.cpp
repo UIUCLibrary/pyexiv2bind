@@ -2,10 +2,17 @@
 // Created by hborcher on 10/11/2017.
 //
 
-#include "MetadataProcessor.h"
 #include "ExifStrategy.h"
 #include "IPTC_Strategy.h"
+#include "MetadataProcessor.h"
+#include "MetadataStrategies.h"
 #include "XmpStrategy.h"
+
+#include <exiv2/image.hpp>
+
+#include <memory>
+#include <string>
+#include <unordered_map>
 
 const std::unordered_map<std::string, std::string> &MetadataProcessor::getMetadata() const {
     return metadata;

@@ -6,9 +6,10 @@
 #define PYEXIV2BIND_METADATA_PROCESSOR_H
 
 
-#include <string>
-#include <map>
 #include <memory>
+#include <string>
+#include <unordered_map>
+
 #include "AbsMetadataStrategy.h"
 #include "MetadataStrategies.h"
 
@@ -19,7 +20,7 @@ private:
 public:
     void build(const Exiv2::Image &image);
     const std::unordered_map<std::string, std::string> &getMetadata() const;
-    void set_output_format(MetadataStrategies);
+    void set_output_format(MetadataStrategies metadata_type);
 };
 
 

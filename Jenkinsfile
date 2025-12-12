@@ -855,7 +855,7 @@ pipeline {
                                         withCredentials([string(credentialsId: params.SONARCLOUD_TOKEN, variable: 'token')]) {
                                             sh(
                                                 label: 'Running Sonar Scanner',
-                                                script: 'uv run pysonar -t $token -Dsonar.projectVersion=$VERSION -Dsonar.buildString="$BUILD_TAG" -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.build-wrapper-output=build/build_wrapper_output_directory -Dsonar.python.coverage.reportPaths=./reports/coverage/coverage-python.xml -Dsonar.cfamily.cobertura.reportPaths=reports/coverage/coverage_cpp.xml ' + (env.CHANGE_ID ?  '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$CHANGE_TARGET' : '-Dsonar.branch.name=$BRANCH_NAME')
+                                                script: 'uv run pysonar -t $token -Dsonar.projectVersion=$VERSION -Dsonar.buildString="$BUILD_TAG" -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.compile-commands=build/build_wrapper_output_directory/compile_commands.json -Dsonar.python.coverage.reportPaths=./reports/coverage/coverage-python.xml -Dsonar.cfamily.cobertura.reportPaths=reports/coverage/coverage_cpp.xml ' + (env.CHANGE_ID ?  '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$CHANGE_TARGET' : '-Dsonar.branch.name=$BRANCH_NAME')
                                             )
                                         }
                                     }
@@ -884,25 +884,7 @@ pipeline {
                     }
                     post{
                         cleanup{
-                            cleanWs(
-                                patterns: [
-                                        [pattern: '.coverage/', type: 'INCLUDE'],
-                                        [pattern: '.eggs/', type: 'INCLUDE'],
-                                        [pattern: '.mypy_cache/', type: 'INCLUDE'],
-                                        [pattern: '.pytest_cache/', type: 'INCLUDE'],
-                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                        [pattern: 'build/', type: 'INCLUDE'],
-                                        [pattern: '*.dist-info/', type: 'INCLUDE'],
-                                        [pattern: 'logs/', type: 'INCLUDE'],
-                                        [pattern: 'reports/', type: 'INCLUDE'],
-                                        [pattern: 'generatedJUnitFiles/', type: 'INCLUDE'],
-                                        [pattern: 'py3exiv2bind/*.so', type: 'INCLUDE'],
-                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                        [pattern: 'venv/', type: 'INCLUDE'],
-                                    ],
-                                notFailBuild: true,
-                                deleteDirs: true
-                            )
+                            sh "git clean -dfx"
                         }
                     }
                 }

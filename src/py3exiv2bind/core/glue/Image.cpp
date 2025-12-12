@@ -3,17 +3,28 @@
 //
 
 #include "Image.h"
-#include "MetadataProcessor.h"
-#include "glue.h"
-#include "glue_execeptions.h"
-#include <cassert>
-#include <exiv2/error.hpp>
-#include <iostream>
-#include <sstream>
-#include <string>
 
-std::ostringstream warning_log;
-std::ostringstream error_log;
+#include "MetadataProcessor.h"
+#include "MetadataStrategies.h"
+#include "glue_execeptions.h"
+
+#include <exiv2/error.hpp>
+#include <exiv2/image.hpp>
+#include <exiv2/types.hpp>
+
+#include <cassert>
+#include <iostream>
+#include <list>
+#include <memory>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+
+namespace {
+    std::ostringstream warning_log;
+    std::ostringstream error_log;
+} // namespace
 
 Image::Image(const std::string &filename) : filename(filename) {
     warning_log.clear();
@@ -22,17 +33,18 @@ Image::Image(const std::string &filename) : filename(filename) {
     error_log.str("");
     try {
         Exiv2::LogMsg::setHandler([](int level, const char *msg) {
-            switch((Exiv2::LogMsg::Level)level){
+            switch(static_cast<Exiv2::LogMsg::Level>(level)){
 
-                case Exiv2::LogMsg::debug:break;
-                case Exiv2::LogMsg::info:break;
+                case Exiv2::LogMsg::debug:
+                case Exiv2::LogMsg::info:
+                case Exiv2::LogMsg::mute:
+                    break;
                 case Exiv2::LogMsg::warn:
                     warning_log << msg;
                     break;
                 case Exiv2::LogMsg::error:
                     error_log << msg;
                     break;
-                case Exiv2::LogMsg::mute:break;
                 default: break;
             }
         });
@@ -43,8 +55,8 @@ Image::Image(const std::string &filename) : filename(filename) {
         std::cerr << e.what() << std::endl;
         throw std::runtime_error(e.what());
     }
-    std::string warning_msg = warning_log.str();
-    std::string error_msg = error_log.str();
+    const std::string warning_msg = warning_log.str();
+    const std::string error_msg = error_log.str();
 
     if(!warning_msg.empty()){
         warning_logs.push_back(warning_msg);

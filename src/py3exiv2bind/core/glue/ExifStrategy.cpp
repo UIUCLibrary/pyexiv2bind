@@ -4,7 +4,10 @@
 
 #include "ExifStrategy.h"
 #include "make_dictionary.h"
-#include <iostream>
+#include <string>
+#include <unordered_map>
+
+#include <exiv2/image.hpp>
 
 std::unordered_map<std::string, std::string> ExifStrategy::load(const Exiv2::Image &image){
     return make_dictionary(image.exifData());
