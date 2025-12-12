@@ -660,7 +660,7 @@ pipeline {
                                             script{
                                                 try{
                                                     sh(label: 'Creating gcovr coverage report',
-                                                       script: 'uv run gcovr --root $WORKSPACE --exclude \'\\.venv\' --exclude \'/.*/build/\' --exclude-directories=$WORKSPACE/.venv --exclude-directories=$WORKSPACE/build/cpp --exclude-directories=$WORKSPACE/build/temp/cmake_builds/exiv2/_deps --print-summary --json=$WORKSPACE/reports/coverage/coverage-c-extension_tests.json --txt=$WORKSPACE/reports/coverage/coverage-c-extension_tests.txt --exclude-throw-branches --fail-under-line=1 --gcov-object-directory=$WORKSPACE/build/temp/src build/temp/src'
+                                                       script: 'uv run gcovr --root $WORKSPACE --exclude \'\\.venv\' --exclude \'/.*/build/\' --exclude-directories=$WORKSPACE/.venv --exclude-directories=$WORKSPACE/build/cpp --exclude-directories=$WORKSPACE/build/temp/cmake_builds/exiv2/_deps --print-summary --json=$WORKSPACE/reports/coverage/coverage-c-extension_tests.json --txt=$WORKSPACE/reports/coverage/coverage-c-extension_tests.txt --exclude-throw-branches --exclude-unreachable-branches --fail-under-line=1 --gcov-object-directory=$WORKSPACE/build/temp/src build/temp/src'
                                                     )
                                                 } catch (e){
                                                     sh(label: 'locating gcno and gcda files', script: 'find . \\( -name "*.gcno" -o -name "*.gcda" \\)')
