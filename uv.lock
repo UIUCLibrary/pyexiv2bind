@@ -1307,7 +1307,7 @@ ci = [
     { name = "toml", marker = "python_full_version < '3.11'" },
     { name = "tox" },
     { name = "twine" },
-    { name = "uiucprescon-build", url = "https://github.com/UIUCLibrary/uiucprescon_build/releases/download/v0.4.0/uiucprescon_build-0.4.0-py3-none-any.whl" },
+    { name = "uiucprescon-build", url = "https://github.com/UIUCLibrary/uiucprescon_build/releases/download/v0.5.0/uiucprescon_build-0.5.0-py3-none-any.whl" },
 ]
 cibuildwheel = [{ name = "cibuildwheel" }]
 conan = [
@@ -1451,7 +1451,7 @@ wheels = [
 
 [[package]]
 name = "pysonar"
-version = "1.2.0.2419"
+version = "1.3.0.4086"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jproperties" },
@@ -1460,9 +1460,9 @@ dependencies = [
     { name = "responses" },
     { name = "tomli" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a7/b1/4b408bc6abfc804f1bbb14f76a78128d5abde0e27433d358df1c2fbcdfc7/pysonar-1.2.0.2419.tar.gz", hash = "sha256:3b48f24bc520c930981fb19979bc39e02fee707bdc3bb39292f517e0a805ba94", size = 26409, upload-time = "2025-09-15T14:47:55.687Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8b/ab/6dd074f540a73e5badede000fbf8d8268423b9175da16d8df72f854d0d41/pysonar-1.3.0.4086.tar.gz", hash = "sha256:b05f887503de37d13bfec799a3b1d52fea084a4fd2ff06fdd2d2c8f9b73a4634", size = 26421, upload-time = "2025-12-02T14:59:41.68Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ce/a0/6a0e78854900d6c4474b37fe645d68794899b2f8b008a44ce1226c634548/pysonar-1.2.0.2419-py3-none-any.whl", hash = "sha256:a9b8cf858b11709b68d82c4a9395dd8381378eab93497d44ed08aeeb54cb7447", size = 39522, upload-time = "2025-09-15T14:47:54.734Z" },
+    { url = "https://files.pythonhosted.org/packages/8e/13/06b631e8685251b74cfa92eb57e14e20ad6d51f124d11416a2e8aeb97141/pysonar-1.3.0.4086-py3-none-any.whl", hash = "sha256:64428c7d534c48066fcf6a13f9076a2477e717a930325fb18ad7375e10b0adee", size = 39562, upload-time = "2025-12-02T14:59:40.467Z" },
 ]
 
 [[package]]
@@ -1928,8 +1928,8 @@ wheels = [
 
 [[package]]
 name = "uiucprescon-build"
-version = "0.4.0"
-source = { url = "https://github.com/UIUCLibrary/uiucprescon_build/releases/download/v0.4.0/uiucprescon_build-0.4.0-py3-none-any.whl" }
+version = "0.5.0"
+source = { url = "https://github.com/UIUCLibrary/uiucprescon_build/releases/download/v0.5.0/uiucprescon_build-0.5.0-py3-none-any.whl" }
 dependencies = [
     { name = "cmake" },
     { name = "conan" },
@@ -1941,7 +1941,7 @@ dependencies = [
     { name = "wheel" },
 ]
 wheels = [
-    { url = "https://github.com/UIUCLibrary/uiucprescon_build/releases/download/v0.4.0/uiucprescon_build-0.4.0-py3-none-any.whl", hash = "sha256:e3b8fd6c3793d28775a7fca4af562f94bba821c52e7da24552b0b4e253c656da" },
+    { url = "https://github.com/UIUCLibrary/uiucprescon_build/releases/download/v0.5.0/uiucprescon_build-0.5.0-py3-none-any.whl", hash = "sha256:83b856a1133d1b321761ce7a6d66a87d96f96fb5ebba0b40d68e82032658f53a" },
 ]
 
 [package.metadata]
@@ -1949,7 +1949,7 @@ requires-dist = [
     { name = "cmake" },
     { name = "conan" },
     { name = "patchelf", marker = "sys_platform == 'linux'" },
-    { name = "pybind11", specifier = "~=2.10.1" },
+    { name = "pybind11", specifier = "<3.0" },
     { name = "pyyaml" },
     { name = "setuptools", specifier = ">=77.0.1" },
     { name = "toml" },

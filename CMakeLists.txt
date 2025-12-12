@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.24)
 project(pyexiv2bind)
 
 find_package(Python3 COMPONENTS Interpreter Development)
-find_package(Catch2)
+find_package(Catch2 QUIET)
 
 if (WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_DEBUG_POSTFIX "d")
