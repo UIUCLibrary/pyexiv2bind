@@ -21,8 +21,10 @@
 #include <string>
 #include <unordered_map>
 
-std::ostringstream warning_log;
-std::ostringstream error_log;
+namespace {
+    std::ostringstream warning_log;
+    std::ostringstream error_log;
+} // namespace
 
 Image::Image(const std::string &filename) : filename(filename) {
     warning_log.clear();
