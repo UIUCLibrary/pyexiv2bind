@@ -884,25 +884,7 @@ pipeline {
                     }
                     post{
                         cleanup{
-                            cleanWs(
-                                patterns: [
-                                        [pattern: '.coverage/', type: 'INCLUDE'],
-                                        [pattern: '.eggs/', type: 'INCLUDE'],
-                                        [pattern: '.mypy_cache/', type: 'INCLUDE'],
-                                        [pattern: '.pytest_cache/', type: 'INCLUDE'],
-                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                        [pattern: 'build/', type: 'INCLUDE'],
-                                        [pattern: '*.dist-info/', type: 'INCLUDE'],
-                                        [pattern: 'logs/', type: 'INCLUDE'],
-                                        [pattern: 'reports/', type: 'INCLUDE'],
-                                        [pattern: 'generatedJUnitFiles/', type: 'INCLUDE'],
-                                        [pattern: 'py3exiv2bind/*.so', type: 'INCLUDE'],
-                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                        [pattern: 'venv/', type: 'INCLUDE'],
-                                    ],
-                                notFailBuild: true,
-                                deleteDirs: true
-                            )
+                            sh "git clean -dfx"
                         }
                     }
                 }
