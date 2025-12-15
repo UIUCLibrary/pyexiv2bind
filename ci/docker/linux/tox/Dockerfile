@@ -13,7 +13,7 @@ ARG CONAN_CENTER_PROXY_V2_URL=https://center2.conan.io
 
 FROM ghcr.io/astral-sh/uv:latest AS uv_builder
 
-FROM ubuntu:22.04 AS base
+FROM ubuntu:24.04 AS base
 COPY ci/docker/linux/tox/apt-packages.txt /tmp/
 RUN rm -f /etc/apt/apt.conf.d/docker-clean
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -53,6 +53,7 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=conanfile.py,target=/tmp/conanfile.py \
     --mount=type=bind,source=conan.lock,target=/tmp/conan.lock \
+    --mount=type=tmpfs,target=.venv \
     uv run --only-group conan conan profile detect --exist-ok &&  \
     cp ${CONAN_HOME}/global.conf /tmp/global.conf.original && \
     echo "core.sources:download_cache = $CONAN_DOWNLOAD_CACHE" >> ${CONAN_HOME}/global.conf && \
