@@ -49,10 +49,10 @@ generate_wheel(){
 
     case $platform in
         linux/amd64)
-            manylinux_image=quay.io/pypa/manylinux_2_28_x86_64
+            manylinux_image=quay.io/pypa/manylinux_2_28
             ;;
         linux/arm64)
-            manylinux_image=quay.io/pypa/manylinux_2_28_aarch64
+            manylinux_image=quay.io/pypa/manylinux_2_28
             ;;
         *)
             echo "Unsupported platform: $platform"

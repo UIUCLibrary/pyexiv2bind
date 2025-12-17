@@ -25,9 +25,6 @@ generate_wheel(){
     uv_exec=$1
     project_root=$2
     python_version=$3
-    if [[ $python_version != *t ]]; then
-      python_version="${python_version}+gil"
-    fi
 
     # Get the processor type
     processor_type=$(uname -m)
@@ -65,10 +62,10 @@ generate_wheel(){
     echo ""
     echo "================================================================================"
     echo "${undelocate_wheel} is linked to the following:"
-    $uv_path run --only-group package delocate-listdeps --depending "${undelocate_wheel}"
+    $uv_path run --only-group=package --python=$python_version delocate-listdeps --depending "${undelocate_wheel}"
     echo ""
     echo "================================================================================"
-    $uv_path run --only-group package delocate-wheel -w $output_path --require-archs $REQUIRED_ARCH --verbose "$undelocate_wheel"
+    $uv_path run --only-group=package --python=$python_version delocate-wheel -w $output_path --require-archs $REQUIRED_ARCH --verbose "$undelocate_wheel"
 }
 
 
