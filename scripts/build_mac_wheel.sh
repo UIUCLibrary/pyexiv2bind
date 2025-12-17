@@ -25,6 +25,9 @@ generate_wheel(){
     uv_exec=$1
     project_root=$2
     python_version=$3
+    if [[ $python_version != *t ]]; then
+      python_version="${python_version}+gil"
+    fi
 
     # Get the processor type
     processor_type=$(uname -m)
@@ -52,6 +55,7 @@ generate_wheel(){
 
     out_temp_wheels_dir=$(mktemp -d /tmp/python_wheels.XXXXXX)
     output_path="./dist"
+    echo "Building wheel for Python $python_version on macOS $processor_type"
     trap "rm -rf $out_temp_wheels_dir" ERR SIGINT SIGTERM RETURN
     UV_INDEX_STRATEGY=unsafe-best-match _PYTHON_HOST_PLATFORM=$_PYTHON_HOST_PLATFORM MACOSX_DEPLOYMENT_TARGET=$MACOSX_DEPLOYMENT_TARGET ARCHFLAGS=$ARCHFLAGS $uv_exec build --wheel --out-dir=$out_temp_wheels_dir --python=$python_version $project_root
     pattern="$out_temp_wheels_dir/*.whl"
