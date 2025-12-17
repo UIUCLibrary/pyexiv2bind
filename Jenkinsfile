@@ -343,7 +343,11 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                     node("mac && python${pythonVersion} && ${arch}"){
                                                         unstash "python${pythonVersion} mac ${arch} wheel"
                                                         checkout scm
-                                                        findFiles(glob: 'dist/*.whl').each{
+                                                        def wheels = findFiles(glob: 'dist/*.whl')
+                                                        if(wheels.size() == 0){
+                                                            error "No wheels found to test"
+                                                        }
+                                                        wheels.each{
                                                             try{
                                                                 withEnv(["UV_CONFIG_FILE=${createUVConfig()}"]){
                                                                     timeout(60){
