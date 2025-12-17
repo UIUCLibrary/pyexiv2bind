@@ -341,8 +341,8 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                             if(testPackages == true){
                                                 stage("Test Wheel (${pythonVersion} MacOS ${arch})"){
                                                     node("mac && python${pythonVersion} && ${arch}"){
-                                                        unstash "python${pythonVersion} mac ${arch} wheel"
                                                         checkout scm
+                                                        unstash "python${pythonVersion} mac ${arch} wheel"
                                                         def wheels = findFiles(glob: 'dist/*.whl')
                                                         if(wheels.size() == 0){
                                                             error "No wheels found to test"
