@@ -54,7 +54,7 @@ generate_wheel(){
     output_path="./dist"
     echo "Building wheel for Python $python_version on macOS $processor_type"
     trap "rm -rf $out_temp_wheels_dir" ERR SIGINT SIGTERM RETURN
-    UV_INDEX_STRATEGY=unsafe-best-match _PYTHON_HOST_PLATFORM=$_PYTHON_HOST_PLATFORM MACOSX_DEPLOYMENT_TARGET=$MACOSX_DEPLOYMENT_TARGET ARCHFLAGS=$ARCHFLAGS $uv_exec build --wheel --out-dir=$out_temp_wheels_dir --python=$python_version $project_root
+    _PYTHON_HOST_PLATFORM=$_PYTHON_HOST_PLATFORM MACOSX_DEPLOYMENT_TARGET=$MACOSX_DEPLOYMENT_TARGET ARCHFLAGS=$ARCHFLAGS $uv_exec build --wheel --out-dir=$out_temp_wheels_dir --python=$python_version $project_root
     pattern="$out_temp_wheels_dir/*.whl"
     files=( $pattern )
     undelocate_wheel="${files[0]}"

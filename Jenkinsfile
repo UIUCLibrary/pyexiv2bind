@@ -169,7 +169,6 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes){
                                             'UV_PYTHON_INSTALL_DIR=C:\\Users\\ContainerUser\\Documents\\cache\\uvpython',
                                             'UV_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\cache\\uvcache',
                                             'UV_TOOL_DIR=C:\\Users\\ContainerUser\\Documents\\uvtools',
-                                            'UV_INDEX_STRATEGY=unsafe-best-match',
                                             "UV_CONFIG_FILE=${createUVConfig()}"
                                         ]){
                                             findFiles(glob: 'dist/*.whl').each{
@@ -250,11 +249,9 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                         try{
                                                             withEnv([
                                                                 'PIP_CACHE_DIR=/tmp/pipcache',
-                                                                'UV_INDEX_STRATEGY=unsafe-best-match',
                                                                 'UV_TOOL_DIR=/tmp/uvtools',
                                                                 'UV_PYTHON_INSTALL_DIR=/tmp/uvpython',
                                                                 'UV_CACHE_DIR=/tmp/uvcache',
-                                                                'UV_INDEX_STRATEGY=unsafe-best-match',
                                                                 "UV_CONFIG_FILE=${createUVConfig()}"
                                                             ]){
                                                                 docker.image('python').inside('--mount source=python-tmp-py3exiv2bind,target=/tmp'){
@@ -505,12 +502,11 @@ pipeline {
                             filename 'ci/docker/linux/jenkins/Dockerfile'
                             label 'linux && docker && x86'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL'
-                            args '--mount source=sonar-cache-py3exiv2bind,target=/opt/sonar/.sonar/cache --mount source=python-tmp-py3exiv2bind,target=/tmp'
+                            args '--mount source=sonar-cache-py3exiv2bind,target=/opt/sonar/.sonar/cache --mount source=python-tmp-py3exiv2bind,target=/tmp --mount type=tmpfs,dst=/.cache/puccinialin/'
                         }
                     }
                     environment{
                         PIP_CACHE_DIR='/tmp/pipcache'
-                        UV_INDEX_STRATEGY='unsafe-best-match'
                         UV_TOOL_DIR='/tmp/uvtools'
                         UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
                         UV_CACHE_DIR='/tmp/uvcache'
@@ -525,7 +521,7 @@ pipeline {
                                 sh(
                                      label: 'Create virtual environment',
                                      script: '''mkdir -p build/python
-                                                uv sync --group ci --no-install-project
+                                                uv sync --group ci --no-install-project --no-managed-python
                                                 mkdir -p build/temp
                                                 mkdir -p build/lib
                                                 mkdir -p build/docs
@@ -898,7 +894,6 @@ pipeline {
                         stage('Linux'){
                             environment{
                                 PIP_CACHE_DIR='/tmp/pipcache'
-                                UV_INDEX_STRATEGY='unsafe-best-match'
                                 UV_TOOL_DIR='/tmp/uvtools'
                                 UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
                                 UV_CACHE_DIR='/tmp/uvcache'
@@ -976,7 +971,6 @@ pipeline {
                                  expression {return nodesByLabel('windows && docker && x86').size() > 0}
                              }
                              environment{
-                                 UV_INDEX_STRATEGY='unsafe-best-match'
                                  PIP_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\cache\\pipcache'
                                  UV_TOOL_DIR='C:\\Users\\ContainerUser\\Documents\\uvtools'
                                  UV_PYTHON_INSTALL_DIR='C:\\Users\\ContainerUser\\Documents\\cache\\uvpython'
@@ -1126,7 +1120,6 @@ pipeline {
                             }
                             environment{
                                 PIP_CACHE_DIR='/tmp/pipcache'
-                                UV_INDEX_STRATEGY='unsafe-best-match'
                                 UV_CACHE_DIR='/tmp/uvcache'
                                 UV_CONFIG_FILE=createUVConfig()
                             }
@@ -1194,7 +1187,6 @@ pipeline {
                                                                     retry(3){
                                                                         try{
                                                                             withEnv([
-                                                                                "UV_INDEX_STRATEGY=unsafe-best-match",
                                                                                 "UV_CONFIG_FILE=${createUVConfig()}"
                                                                             ]){
                                                                                 timeout(60){
@@ -1240,7 +1232,6 @@ pipeline {
                                                                     'UV_TOOL_DIR=C:\\Users\\ContainerUser\\Documents\\uvtools',
                                                                     'UV_PYTHON_INSTALL_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython',
                                                                     'UV_CACHE_DIR=C:\\cache\\uvcache',
-                                                                    'UV_INDEX_STRATEGY=unsafe-best-match',
                                                                 ]){
                                                                     def image
                                                                     checkout scm
@@ -1320,7 +1311,6 @@ pipeline {
                                                                 checkout scm
                                                                 withEnv([
                                                                     'PIP_CACHE_DIR=/tmp/pipcache',
-                                                                    'UV_INDEX_STRATEGY=unsafe-best-match',
                                                                     'UV_TOOL_DIR=/tmp/uvtools',
                                                                     'UV_PYTHON_INSTALL_DIR=/tmp/uvpython',
                                                                     'UV_CACHE_DIR=/tmp/uvcache',
@@ -1389,7 +1379,6 @@ pipeline {
                 stage('Deploy to pypi') {
                     environment{
                         PIP_CACHE_DIR='/tmp/pipcache'
-                        UV_INDEX_STRATEGY='unsafe-best-match'
                         UV_TOOL_DIR='/tmp/uvtools'
                         UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
                         UV_CACHE_DIR='/tmp/uvcache'
@@ -1431,7 +1420,6 @@ pipeline {
                             withEnv(
                                 [
                                     "TWINE_REPOSITORY_URL=${SERVER_URL}",
-                                    'UV_INDEX_STRATEGY=unsafe-best-match'
                                 ]
                             ){
                                 withCredentials(
