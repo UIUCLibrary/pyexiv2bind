@@ -505,7 +505,7 @@ pipeline {
                             filename 'ci/docker/linux/jenkins/Dockerfile'
                             label 'linux && docker && x86'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL'
-                            args '--mount source=sonar-cache-py3exiv2bind,target=/opt/sonar/.sonar/cache --mount source=python-tmp-py3exiv2bind,target=/tmp --mount type=tmpfs,dst=/.cache/puccinialin/'
+                            args '--mount source=sonar-cache-py3exiv2bind,target=/opt/sonar/.sonar/cache --mount source=python-tmp-py3exiv2bind,target=/tmp'
                         }
                     }
                     environment{
