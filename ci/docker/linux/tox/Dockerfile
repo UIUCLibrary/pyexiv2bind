@@ -11,6 +11,8 @@ ARG CONAN_CENTER_PROXY_V2_URL=https://center2.conan.io
 # If you want to use a diffrent remote for Conan, such as a proxy. Set the CONAN_CENTER_PROXY_V2_URL
 # Not this is only for building the image. The actual conan center proxy URL is set in the remotes.json file.
 
+ARG SAMPLE_IMAGES_URL=https://nexus.library.illinois.edu/repository/sample-data/images/sample_images.tar.gz
+
 FROM ghcr.io/astral-sh/uv:latest AS uv_builder
 
 FROM ubuntu:24.04 AS base
@@ -25,6 +27,18 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
      < /tmp/apt-packages.txt xargs apt-get install -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+# ==============================================================================
+FROM base AS sample_files_downloader
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && \
+    apt-get install -y wget
+
+ARG SAMPLE_IMAGES_URL
+ENV EXPECTED_SHA256="0461f57db3806ca47d9063151eec4bc0720c66a83153dda04e230f838b64f063"
+
+RUN mkdir /sampledata && wget $SAMPLE_IMAGES_URL -P /sampledata && echo "$EXPECTED_SHA256 /sampledata/sample_images.tar.gz" | sha256sum --check
+
 # ==============================================================================
 
 FROM base AS conan_builder
@@ -74,9 +88,11 @@ FROM base
 COPY --from=uv_builder /uv /uvx /bin/
 ARG CONAN_USER_HOME
 ARG CONAN_HOME
+COPY --from=sample_files_downloader /sampledata /sampledata
 COPY --from=conan_builder --chmod=777 ${CONAN_HOME}/ ${CONAN_HOME}/
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}\
-    CONAN_HOME=${CONAN_HOME}
+    CONAN_HOME=${CONAN_HOME}\
+    SAMPLE_IMAGES_ARCHIVE=/sampledata/sample_images.tar.gz
 
 # To help mark the image as a CI image so it can be cleaned up more easily
 LABEL purpose=ci

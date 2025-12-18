@@ -1,15 +1,25 @@
 include(FetchContent)
 if (BUILD_TESTING AND Catch2_FOUND)
     include(Catch)
-    FetchContent_Declare(test_images
+    set(SAMPLE_IMAGES_ARCHIVE "" CACHE FILEPATH "Path to sample images archive. If not set, it will be downloaded from the internet.")
+    if(SAMPLE_IMAGES_ARCHIVE)
+        set(TEST_IMAGE_PATH "${CMAKE_CURRENT_BINARY_DIR}/sample_images/")
+        file(ARCHIVE_EXTRACT
+                INPUT "${SAMPLE_IMAGES_ARCHIVE}"
+                DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/"
+        )
+    else ()
+        FetchContent_Declare(test_images
             URL https://nexus.library.illinois.edu/repository/sample-data/images/sample_images.tar.gz
+            URL_HASH SHA256=0461f57db3806ca47d9063151eec4bc0720c66a83153dda04e230f838b64f063
             SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/sample_images
-            )
-    FetchContent_GetProperties(test_images)
-    FetchContent_MakeAvailable(test_images)
-    find_path(TEST_IMAGE_PATH dummy.jp2
-            PATHS ${test_images_SOURCE_DIR})
-    set(TEST_IMAGE_PATH ${TEST_IMAGE_PATH}/)
+        )
+        FetchContent_GetProperties(test_images)
+        FetchContent_MakeAvailable(test_images)
+        find_path(TEST_IMAGE_PATH dummy.jp2
+                PATHS ${test_images_SOURCE_DIR})
+        set(TEST_IMAGE_PATH ${TEST_IMAGE_PATH}/)
+    endif ()
     set(PYTHON_TEST_FILES test_core.py)
     find_package(Python3 COMPONENTS Interpreter)
     if(pyexiv2bind_generate_python_bindings)

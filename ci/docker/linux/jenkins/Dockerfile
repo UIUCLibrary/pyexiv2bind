@@ -1,6 +1,8 @@
 ARG CONAN_USER_HOME=/conan
 ARG CONAN_HOME=${CONAN_USER_HOME}/.conan2
 
+ARG SAMPLE_IMAGES_URL=https://nexus.library.illinois.edu/repository/sample-data/images/sample_images.tar.gz
+
 ARG PYTHON_VERSION=latest
 
 ARG CONAN_CENTER_PROXY_V2_URL=https://center2.conan.io
@@ -31,6 +33,12 @@ RUN mkdir -p /.cache/pip &&  \
     chmod -R 777 /.cache
 
 #==============================================================================
+
+
+FROM base_image AS sample_files_downloader
+ARG SAMPLE_IMAGES_URL
+ENV EXPECTED_SHA256="0461f57db3806ca47d9063151eec4bc0720c66a83153dda04e230f838b64f063"
+RUN mkdir /sampledata && wget $SAMPLE_IMAGES_URL -P /sampledata && echo "$EXPECTED_SHA256 /sampledata/sample_images.tar.gz" | sha256sum --check
 
 
 FROM base_image AS sonar_builder
@@ -141,11 +149,14 @@ COPY --from=dr_memory_builder /opt/drmemory /opt/drmemory/
 RUN ln -s /opt/drmemory/bin64/drmemory /usr/local/bin/drmemory && \
     drmemory -version
 
+COPY --from=sample_files_downloader /sampledata /sampledata
+
 ARG CONAN_USER_HOME
 ARG CONAN_HOME
 COPY --from=conan_builder --chmod=777 ${CONAN_HOME} ${CONAN_HOME}
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}\
-    CONAN_HOME=${CONAN_HOME}
+    CONAN_HOME=${CONAN_HOME}\
+    SAMPLE_IMAGES_ARCHIVE=/sampledata/sample_images.tar.gz
 
 # To help mark the image as a CI image so it can be cleaned up more easily
 LABEL purpose=ci

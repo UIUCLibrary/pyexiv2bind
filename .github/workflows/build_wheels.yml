@@ -31,6 +31,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Cache sample files
+        id: cache_samples
+        uses: actions/cache@v4
+        with:
+          path: "${{ github.workspace }}/sampledata/"
+          key: sample-images
+      - name: download sample files
+        if: steps.cache_samples.outputs.cache-hit != 'true'
+        run: curl -L https://nexus.library.illinois.edu/repository/sample-data/images/sample_images.tar.gz --create-dirs -o "${{ github.workspace }}/sampledata/sample_images.tar.gz"
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -51,6 +60,7 @@ jobs:
 #        uses: pypa/cibuildwheel@v2.11.2
         env:
            CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
+           SAMPLE_IMAGES_ARCHIVE: "${{ github.workspace }}/sampledata/sample_images.tar.gz"
 
         #   CIBW_SOME_OPTION: value
       - uses: actions/upload-artifact@v4
