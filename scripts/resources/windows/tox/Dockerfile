@@ -15,6 +15,8 @@ ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
 ARG CHOCOLATEY_SOURCE=https://chocolatey.org/api/v2
 ARG chocolateyVersion
 
+ARG SAMPLE_IMAGES_URL=https://nexus.library.illinois.edu/repository/sample-data/images/sample_images.tar.gz
+
 FROM ${FROM_IMAGE} AS certsgen
 RUN certutil -generateSSTFromWU roots.sst
 
@@ -62,6 +64,16 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
 
 
 # ==============================================================================
+FROM base_builder AS sample_files_downloader
+ARG SAMPLE_IMAGES_URL
+ENV EXPECTED_SHA256="0461f57db3806ca47d9063151eec4bc0720c66a83153dda04e230f838b64f063"
+ENV downloadPath="C:/sampledata/"
+RUN if (-not (Test-Path -Path ${env:downloadPath} -PathType Container)) {`
+        New-Item -Path ${env:downloadPath} -ItemType Directory -Force`
+    }; `
+    Invoke-WebRequest -Uri ${env:SAMPLE_IMAGES_URL} -OutFile "${env:downloadPath}\sample_images.tar.gz"
+
+# ==============================================================================
 FROM base_builder AS conan_builder
 ARG CONAN_HOME
 ARG PIP_EXTRA_INDEX_URL
@@ -105,11 +117,14 @@ RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force | Out-Null ;
     New-Item -type directory -path ${Env:UV_CACHE_DIR} -Force | Out-Null
 ARG CONAN_HOME
 COPY --from=conan_builder ${CONAN_HOME}/ ${CONAN_HOME}/
+COPY --from=sample_files_downloader c:/sampledata/ C:/sampledata/
+
 ARG CONAN_USER_HOME
 ENV CONAN_USER_HOME=${CONAN_USER_HOME}`
     CONAN_HOME=${CONAN_HOME}`
     PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE}`
-    UV_CACHE_DIR=${UV_CACHE_DIR}
+    UV_CACHE_DIR=${UV_CACHE_DIR}`
+    SAMPLE_IMAGES_ARCHIVE=C:/sampledata/sample_images.tar.gz
 
 WORKDIR C:/src
 ENV DISTUTILS_USE_SDK=1
