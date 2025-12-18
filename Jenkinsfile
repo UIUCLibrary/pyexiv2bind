@@ -143,7 +143,7 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes){
                                         script: "docker image rm --no-prune ${dockerImageName}",
                                         returnStatus: true
                                     )
-                                    bat "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                    bat "${tool(name: 'Default', type: 'git')} clean -dffx"
                                 }
                             }
                         }
@@ -188,7 +188,7 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes){
                                         }
                                     }
                                 } finally {
-                                    bat "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                    bat "${tool(name: 'Default', type: 'git')} clean -dffx"
                                 }
                             }
                         }
@@ -236,7 +236,7 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                         }
                                                     }
                                                 } finally {
-                                                    sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                                    sh "${tool(name: 'Default', type: 'git')} clean -dffx"
                                                 }
                                             }
                                         }
@@ -269,7 +269,7 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                                 }
                                                             }
                                                         } finally {
-                                                            sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                                            sh "${tool(name: 'Default', type: 'git')} clean -dffx"
                                                         }
                                                     }
                                                 }
@@ -327,7 +327,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                            wheelStashes << "python${pythonVersion} mac ${arch} wheel"
                                                            archiveArtifacts artifacts: 'dist/*.whl'
                                                         } finally {
-                                                            sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                                            sh "${tool(name: 'Default', type: 'git')} clean -dffx"
                                                         }
                                                     }
                                                 }
@@ -353,7 +353,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                                     }
                                                                 }
                                                             } finally {
-                                                                sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                                                sh "${tool(name: 'Default', type: 'git')} clean -dffx"
                                                             }
                                                         }
                                                     }
@@ -401,7 +401,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                archiveArtifacts artifacts: 'dist/*.whl'
                                             }
                                         } finally{
-                                            sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                            sh "${tool(name: 'Default', type: 'git')} clean -dffx"
                                         }
                                     }
                                 }
@@ -434,7 +434,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                         }
                                                         archiveArtifacts artifacts: 'dist/*.whl'
                                                     } finally {
-                                                        sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                                        sh "${tool(name: 'Default', type: 'git')} clean -dffx"
                                                     }
                                                 }
                                             }
@@ -884,7 +884,7 @@ pipeline {
                     }
                     post{
                         cleanup{
-                            sh "git clean -dfx"
+                            sh "git clean -dffx"
                         }
                     }
                 }
@@ -920,7 +920,7 @@ pipeline {
                                                     ).trim().split('\n')
                                                 }
                                             } finally{
-                                                sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                                sh "${tool(name: 'Default', type: 'git')} clean -dffx"
                                             }
                                         }
 
@@ -952,7 +952,7 @@ pipeline {
                                                                             }
                                                                         }
                                                                     } finally{
-                                                                        sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                                                        sh "${tool(name: 'Default', type: 'git')} clean -dffx"
                                                                     }
                                                                 }
                                                             } finally {
@@ -1002,7 +1002,7 @@ pipeline {
                                                 }
                                             }
                                          } finally{
-                                             bat "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                             bat "${tool(name: 'Default', type: 'git')} clean -dffx"
                                          }
                                      }
                                      parallel(
@@ -1051,7 +1051,7 @@ pipeline {
                                                                     }
                                                                 }
                                                             } finally {
-                                                                bat "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                                                bat "${tool(name: 'Default', type: 'git')} clean -dffx"
                                                             }
                                                         } finally{
                                                             if (image){
@@ -1204,7 +1204,7 @@ pipeline {
                                                                                 }
                                                                             }
                                                                         }finally{
-                                                                            sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                                                            sh "${tool(name: 'Default', type: 'git')} clean -dffx"
                                                                         }
                                                                     }
                                                                 }
@@ -1276,7 +1276,7 @@ pipeline {
                                                                                     }
                                                                                 }
                                                                             } finally {
-                                                                                bat "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                                                                bat "${tool(name: 'Default', type: 'git')} clean -dffx"
 
                                                                             }
                                                                         }
@@ -1352,7 +1352,7 @@ pipeline {
                                                                                 }
                                                                             }
                                                                         } finally{
-                                                                            sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                                                            sh "${tool(name: 'Default', type: 'git')} clean -dffx"
                                                                         }
                                                                     } finally{
                                                                         if(image){
