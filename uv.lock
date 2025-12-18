@@ -1242,7 +1242,7 @@ wheels = [
 
 [[package]]
 name = "py3exiv2bind"
-version = "0.1.15"
+version = "0.1.16.dev0"
 source = { editable = "." }
 
 [package.dev-dependencies]
