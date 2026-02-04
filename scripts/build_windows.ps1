@@ -47,29 +47,19 @@ function Build-Wheel {
     $projectRootDirectory = (Get-Item $PSScriptRoot).Parent.FullName
     $outputDirectory = Join-Path -Path $projectRootDirectory -ChildPath "dist"
     if (!(Test-Path -Path $outputDirectory)) {
-      New-Item -ItemType Directory -Path $outputDirectory
+      New-Item -ItemType Directory -Path $outputDirectory | Out-Null
     }
     $containerSourcePath = "c:\src"
-    $containerWorkingPath = "c:\build"
     $containerCacheDir = "C:\Users\ContainerUser\Documents\cache"
-    $venv = "${containerCacheDir}\venv"
 
     $UV_TOOL_DIR = "${containerCacheDir}\uvtools"
     $UV_PYTHON_INSTALL_DIR = "${containerCacheDir}\uvpython"
-
-    # This makes a symlink copy of the files mounted in the source. Any changes to the files will not affect outside the container
-    $createShallowCopy = "foreach (`$item in `$(Get-ChildItem -Path $containerSourcePath)) { `
-        Write-Host `"Creating symlink for `$item.Name`"; `
-        `$LinkPath = Join-Path -Path $containerWorkingPath -ChildPath `$item.Name ; `
-        New-Item -ItemType SymbolicLink -Path `$LinkPath -Target `$item.FullName | Out-Null `
-    }"
 
     $dockerArgsList = @(
         "run",
         "--isolation", $DockerIsolation,
         "--platform windows/amd64",
         "--rm",
-        "--workdir=${containerWorkingPath}",
         "--mount type=volume,source=${ContainerName}Cache,target=${containerCacheDir}",
         "--mount type=bind,source=$(Resolve-Path $projectRootDirectory),target=${containerSourcePath}",
         "--mount type=bind,source=$(Resolve-Path $outputDirectory),target=${containerDistPath}",
@@ -77,19 +67,14 @@ function Build-Wheel {
         "-e UV_PYTHON_INSTALL_DIR=${UV_PYTHON_INSTALL_DIR}",
         '--entrypoint', 'powershell',
         $DockerImageName
-        "-c",
-        ${createShallowCopy};`
-        "uv build --python=${PythonVersion} --wheel --out-dir=${containerDistPath} --config-setting=conan_cache=C:/Users/ContainerAdministrator/.conan2 --verbose"
+        "New-Wheels -SourcePath ${containerSourcePath} -OutputDir ${containerDistPath} -PythonVersion ${PythonVersion}"
     )
-
     $local:dockerBuildProcess = Start-Process -FilePath $DockerExec -WorkingDirectory $(Get-Item $PSScriptRoot).Parent.FullName -ArgumentList $dockerArgsList -NoNewWindow -PassThru -Wait
     if ($local:dockerBuildProcess.ExitCode -ne 0)
     {
         throw "An error creating docker image occurred. Exit code: $($local:dockerBuildProcess.ExitCode)"
     }
 }
-
-
 
 Build-DockerImage -ImageName $DockerImageName
 

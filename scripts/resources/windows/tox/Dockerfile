@@ -129,5 +129,6 @@ ENV CONAN_USER_HOME=${CONAN_USER_HOME}`
 WORKDIR C:/src
 ENV DISTUTILS_USE_SDK=1
 
+COPY ["scripts/resources/windows/tox/powershell_modules", "c:/Program Files/WindowsPowerShell/Modules/"]
 # To help mark the image as a CI image so it can be cleaned up more easily
 LABEL purpose=ci
