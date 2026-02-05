@@ -28,12 +28,6 @@ function CreateNewWheel {
         [string]$OutputDir
 
     )
-    uv python install $PythonVersion
-    if ($LASTEXITCODE -ne 0) {
-        uv --version
-        uv python list
-        throw "An error installing Python version $PythonVersion."
-    }
     uv build --python=$PythonVersion --wheel --out-dir=$OutputDir --config-setting=conan_cache=$CONAN_CACHE_DIR --verbose $SourcePath
     if ($LASTEXITCODE -ne 0) {
         throw "An error creating Wheel for Python version $PythonVersion."
