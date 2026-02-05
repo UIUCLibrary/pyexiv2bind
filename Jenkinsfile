@@ -659,6 +659,11 @@ pipeline {
                                                         stash includes: 'reports/pytest/junit-pytest.xml', name: 'PYTEST_REPORT'
                                                         junit 'reports/pytest/junit-pytest.xml'
                                                     }
+                                                },
+                                                'Audit uv.lock File': {
+                                                    catchError(buildResult: 'SUCCESS', message: 'uv-secure found issues', stageResult: 'UNSTABLE') {
+                                                        sh 'uv run --only-group=audit-dependencies --isolated uv-secure --disable-cache uv.lock'
+                                                    }
                                                 }
                                             ])
                                         }
