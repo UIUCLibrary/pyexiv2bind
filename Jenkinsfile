@@ -71,9 +71,9 @@ def installMSVCRuntime(cacheLocation){
         powershell(label: 'Install VC Runtime', script: 'Start-Process -filepath "$Env:CACHED_FILE" -ArgumentList "/install", "/passive", "/norestart" -Passthru | Wait-Process;')
     }
 }
-def SUPPORTED_MAC_VERSIONS = ['3.10+gil', '3.11+gil', '3.12+gil', '3.13+gil', '3.14+gil', '3.14t']
-def SUPPORTED_LINUX_VERSIONS = ['3.10+gil', '3.11+gil', '3.12+gil', '3.13+gil', '3.14+gil', '3.14t']
-def SUPPORTED_WINDOWS_VERSIONS = ['3.10+gil', '3.11+gil', '3.12+gil', '3.13+gil', '3.14+gil', '3.14t']
+def SUPPORTED_MAC_VERSIONS = ['3.10', '3.11', '3.12', '3.13+gil', '3.14+gil', '3.14t']
+def SUPPORTED_LINUX_VERSIONS = ['3.10', '3.11', '3.12', '3.13+gil', '3.14+gil', '3.14t']
+def SUPPORTED_WINDOWS_VERSIONS = ['3.10', '3.11', '3.12', '3.13+gil', '3.14+gil', '3.14t']
 // ============================================================================
 //  Dynamic variables. Used to help manage state
 def wheelStashes = []
@@ -128,21 +128,24 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes){
                     stage("Build Wheel (${pythonVersion} Windows)"){
                         node('windows && docker'){
                             def dockerImageName = "${currentBuild.fullProjectName}_${UUID.randomUUID().toString()}".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase()
+                            checkout scm
                             retry(3){
-                                checkout scm
-                                timeout(60){
-                                    powershell(label: 'Building Wheel for Windows', script: "scripts/build_windows.ps1 -PythonVersion ${pythonVersion} -DockerImageName ${dockerImageName}")
-                                }
                                 try{
-                                    stash includes: 'dist/*.whl', name: "python${pythonVersion} windows wheel"
-                                    wheelStashes << "python${pythonVersion} windows wheel"
-                                    archiveArtifacts artifacts: 'dist/*.whl'
+                                    try{
+                                        timeout(60){
+                                            powershell(label: 'Building Wheel for Windows', script: "scripts/build_windows.ps1 -PythonVersion ${pythonVersion} -DockerImageName ${dockerImageName}")
+                                        }
+                                        stash includes: 'dist/*.whl', name: "python${pythonVersion} windows wheel"
+                                        wheelStashes << "python${pythonVersion} windows wheel"
+                                        archiveArtifacts artifacts: 'dist/*.whl'
+                                    } finally {
+                                        powershell(
+                                            label: "Untagging Docker Image used",
+                                            script: "docker image rm --no-prune ${dockerImageName}",
+                                            returnStatus: true
+                                        )
+                                    }
                                 } finally {
-                                    powershell(
-                                        label: "Untagging Docker Image used",
-                                        script: "docker image rm --no-prune ${dockerImageName}",
-                                        returnStatus: true
-                                    )
                                     bat "${tool(name: 'Default', type: 'git')} clean -dffx"
                                 }
                             }
@@ -174,14 +177,19 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes){
                                             findFiles(glob: 'dist/*.whl').each{
                                                 retry(3){
                                                     timeout(60){
-                                                        bat(label: 'Running Tox',
-                                                            script: """python -m venv venv
-                                                                       venv\\Scripts\\pip install --disable-pip-version-check uv
-                                                                       venv\\Scripts\\uv run --only-group tox --python ${pythonVersion} --with tox-uv tox run -e py${pythonVersion.replace('.', '').replace('+gil', '')}  --installpkg ${it.path}
-                                                                       rmdir /S /Q venv
-                                                                       rmdir /S /Q .tox
-                                                                    """
-                                                        )
+                                                        try{
+                                                            bat(label: 'Running Tox',
+                                                                script: """python -m venv venv
+                                                                           venv\\Scripts\\pip install --disable-pip-version-check uv
+                                                                           venv\\Scripts\\uv run --only-group tox --python ${pythonVersion} --with tox-uv tox run -e py${pythonVersion.replace('.', '').replace('+gil', '')}  --installpkg ${it.path}
+                                                                           rmdir /S /Q venv
+                                                                           rmdir /S /Q .tox
+                                                                        """
+                                                            )
+                                                        } catch (e){
+                                                            bat 'dir dist\\'
+                                                            throw e
+                                                        }
                                                     }
                                                 }
                                             }
