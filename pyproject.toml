@@ -33,6 +33,7 @@ test = [
     "pytest-bdd",
     "coverage",
 ]
+audit-dependencies = ['uv-secure']
 docs = ["sphinx", "setuptools", "toml; python_version < '3.11'"]
 tox = ["tox"]
 dev = [
@@ -47,6 +48,7 @@ dev = [
     "macholib ; sys_platform == 'darwin'",
     "mypy",
     "pylint",
+    {include-group = "audit-dependencies"},
 ]
 conan =["conan>=2.0", "cmake<4.0"]
 cibuildwheel = ["cibuildwheel"]
