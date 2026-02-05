@@ -12,8 +12,6 @@ ARG CONAN_CENTER_PROXY_V2_URL=https://center2.conan.io
 
 ARG UV_CACHE_DIR=c:/users/containeradministrator/appdata/local/uv
 ARG PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip
-ARG CHOCOLATEY_SOURCE=https://chocolatey.org/api/v2
-ARG chocolateyVersion
 
 ARG SAMPLE_IMAGES_URL=https://nexus.library.illinois.edu/repository/sample-data/images/sample_images.tar.gz
 
@@ -35,34 +33,20 @@ RUN c:/scripts/install_msvc.ps1 -InstallPath ${Env:VS_INSTALL_PATH} -VSConfigFil
     Write-Host "Note: Exporting This layer can take a while."
 RUN New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 
-ARG CHOCOLATEY_SOURCE=https://chocolatey.org/api/v2
-ARG ChocolateyEnvironmentDebug=false
-ARG chocolateyVersion
-COPY scripts/resources/windows/tox/chocolatey/install.ps1 c:/choco/install.ps1
-COPY scripts/resources/windows/tox/chocolatey/get_latest_chocolatey_url.ps1 c:/choco/get_latest_chocolatey_url.ps1
-COPY scripts/resources/windows/tox/chocolatey/packages.config c:/choco/packages.config
-COPY scripts/resources/windows/tox/chocolatey/verifyenv.ps1 c:/verifyenv.ps1
-RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
-    $chocolateyDownloadUrl = c:/choco/get_latest_chocolatey_url.ps1 -packageRepo $env:CHOCOLATEY_SOURCE; `
-    c:/choco/install.ps1 -ChocolateyDownloadUrl $chocolateyDownloadUrl;`
-    . $profile;`
-    if( -not ([string]::IsNullOrEmpty($Env:CHOCOLATEY_SOURCE ))) `
-    { `
-        Write-Host "Adding $env:CHOCOLATEY_SOURCE to chocolatey sources" ; `
-        choco source add -n=CHOCOLATEY_SOURCE --priority=1 -s=\"${env:CHOCOLATEY_SOURCE}\"; `
-    }; `
-    Write-Host "Disabling Showing Download Progress" ; `
-    choco feature disable -n=showDownloadProgress ; `
-    choco sources ; `
-    choco install -y --stoponfirstfailure --no-progress c:/choco/packages.config ;`
-    refreshenv ; `
-    choco cache remove --confirm;`
-    Write-Host "Finished install packages with Chocolatey" ;`
+COPY scripts/resources/windows/tox/scoop c:/scoopinstall
+RUN irm get.scoop.sh -outfile 'install.ps1' ; `
+    .\install.ps1 -RunAsAdmin ; `
+    Remove-Item -Path ".\install.ps1" ; `
+    scoop install git ; `
+    scoop bucket add versions ; `
+    scoop import c:/scoopinstall/scoopfile.json ; `
+    scoop cache show ; `
+    Write-Host "Cleaning up cache" ;`
+    scoop cache clean ; `
+    Write-Host "Cleaning up cache - Done" ;`
     Write-Host "Verifying installed packages" ;`
-    c:/verifyenv.ps1 ;`
+    c:/scoopinstall/verifyenv.ps1 ;`
     Write-Host "Verifying installed packages - Done"
-
-
 # ==============================================================================
 FROM base_builder AS sample_files_downloader
 ARG SAMPLE_IMAGES_URL
