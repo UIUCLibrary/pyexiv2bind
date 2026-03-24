@@ -263,15 +263,12 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                                 'UV_CACHE_DIR=/tmp/uvcache',
                                                                 "UV_CONFIG_FILE=${createUVConfig()}"
                                                             ]){
-                                                                docker.image('python').inside('--mount source=python-tmp-py3exiv2bind,target=/tmp --tmpfs /.local/share:exec --tmpfs /.local/bin:exec'){
+                                                                docker.image('ghcr.io/astral-sh/uv:debian').inside('--mount source=python-tmp-py3exiv2bind,target=/tmp --tmpfs /.local/share:exec --tmpfs /.local/bin:exec'){
                                                                     timeout(60){
                                                                         sh(
                                                                             label: 'Testing with tox',
-                                                                            script: """python3 -m venv venv
-                                                                                       trap "rm -rf venv" EXIT
-                                                                                       ./venv/bin/pip install --disable-pip-version-check uv
-                                                                                       ./venv/bin/uv python install ${pythonVersion.replace('+gil','')}
-                                                                                       ./venv/bin/uv run --only-group=tox --with=tox-uv tox --installpkg ${findFiles(glob:'dist/*.whl')[0].path} -e py${pythonVersion.replace('.', '').replace('+gil','')}
+                                                                            script: """uv python install ${pythonVersion.replace('+gil','')}
+                                                                                       uv run --only-group=tox --with=tox-uv tox --installpkg ${findFiles(glob:'dist/*.whl')[0].path} -e py${pythonVersion.replace('.', '').replace('+gil','')}
                                                                                        rm -rf .tox
                                                                                     """
                                                                         )
@@ -926,11 +923,10 @@ pipeline {
                                         checkout scm
                                         withEnv(["UV_CONFIG_FILE=${createUVConfig()}"]){
                                             try{
-                                                docker.image('python').inside('--mount source=python-tmp-py3exiv2bind,target=/tmp --tmpfs /venv:exec -e UV_PROJECT_ENVIRONMENT=/venv --tmpfs /tox:exec  -e TOX_WORK_DIR=/tox'){
-                                                    sh(script: 'python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv')
+                                                docker.image('ghcr.io/astral-sh/uv:debian').inside('--mount source=python-tmp-py3exiv2bind,target=/tmp --tmpfs /venv:exec -e UV_PROJECT_ENVIRONMENT=/venv --tmpfs /tox:exec -e TOX_WORK_DIR=/tox'){
                                                     envs = sh(
                                                         label: 'Get tox environments',
-                                                        script: './venv/bin/uv run --quiet --only-group tox --with tox-uv --frozen tox list -d --no-desc',
+                                                        script: 'uv run --quiet --only-group tox --with tox-uv --frozen tox list -d --no-desc',
                                                         returnStdout: true,
                                                     ).trim().split('\n')
                                                 }
@@ -1133,7 +1129,7 @@ pipeline {
                         stage('Build sdist'){
                             agent {
                                 docker{
-                                    image 'python'
+                                    image 'ghcr.io/astral-sh/uv:debian'
                                     label 'linux && docker'
                                     args '--mount source=python-tmp-py3exiv2bind,target=/tmp'
                                   }
@@ -1152,10 +1148,7 @@ pipeline {
                                         timeout(60){
                                             sh(
                                                 label: 'Package',
-                                                script: '''python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv
-                                                           trap "rm -rf venv" EXIT
-                                                           venv/bin/uv build --sdist
-                                                        '''
+                                                script: 'uv build --sdist'
                                             )
                                         }
                                         stash includes: 'dist/*.tar.gz,dist/*.zip', name: 'sdist'
