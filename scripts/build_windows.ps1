@@ -1,6 +1,7 @@
 param (
     [string]$DockerImageName = "pyexiv2builder",
-    [string]$PythonVersion = "3.11"
+    [string]$PythonVersion = "3.11",
+    [string]$outputDirectory = $(Join-Path -Path $($(Get-Item $PSScriptRoot).Parent.FullName) -ChildPath "dist")
 )
 
 function Build-DockerImage {
@@ -40,19 +41,19 @@ function Build-Wheel {
         [string]$DockerExec = "docker.exe",
         [string]$DockerIsolation = "process",
         [string]$PythonVersion = "3.11",
-        [string]$ContainerName = "pyexiv2builder"
+        [string]$ContainerName = "pyexiv2builder",
+        [string]$OutputDirectory = $(Join-Path -Path $($(Get-Item $PSScriptRoot).Parent.FullName) -ChildPath "dist")
     )
     $containerDistPath = "c:\dist"
     $projectRootDirectory = (Get-Item $PSScriptRoot).Parent.FullName
-    $outputDirectory = Join-Path -Path $projectRootDirectory -ChildPath "dist"
-    if (!(Test-Path -Path $outputDirectory)) {
-      New-Item -ItemType Directory -Path $outputDirectory | Out-Null
+    if (!(Test-Path -Path $OutputDirectory)) {
+      New-Item -ItemType Directory -Path $OutputDirectory | Out-Null
     }
     $containerSourcePath = "c:\src"
     $containerCacheDir = "C:\Users\ContainerUser\Documents\cache"
 
     $UV_TOOL_DIR = "${containerCacheDir}\uvtools"
-    $UV_PYTHON_INSTALL_DIR = "${containerCacheDir}\uvpython"
+    $UV_PYTHON_CACHE_DIR = "${containerCacheDir}\uvpython"
 
     $dockerArgsList = @(
         "run",
@@ -61,9 +62,9 @@ function Build-Wheel {
         "--rm",
         "--mount type=volume,source=${ContainerName}Cache,target=${containerCacheDir}",
         "--mount type=bind,source=$(Resolve-Path $projectRootDirectory),target=${containerSourcePath}",
-        "--mount type=bind,source=$(Resolve-Path $outputDirectory),target=${containerDistPath}",
+        "--mount type=bind,source=$(Resolve-Path $OutputDirectory),target=${containerDistPath}",
         "-e UV_TOOL_DIR=${UV_TOOL_DIR}",
-        "-e UV_PYTHON_INSTALL_DIR=${UV_PYTHON_INSTALL_DIR}",
+        "-e UV_PYTHON_CACHE_DIR=${UV_PYTHON_CACHE_DIR}",
         '--entrypoint', 'powershell',
         $DockerImageName
         "New-Wheels -SourcePath ${containerSourcePath} -OutputDir ${containerDistPath} -PythonVersion ${PythonVersion}"
@@ -77,4 +78,5 @@ function Build-Wheel {
 
 Build-DockerImage -ImageName $DockerImageName
 
-Build-Wheel -PythonVersion $PythonVersion -DockerImageName $DockerImageName
+Build-Wheel -PythonVersion $PythonVersion -DockerImageName $DockerImageName -OutputDirectory $outputDirectory
+Write-Host "Check $outputDirectory folder for the output."
