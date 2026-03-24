@@ -515,7 +515,7 @@ pipeline {
                             filename 'ci/docker/linux/jenkins/Dockerfile'
                             label 'linux && docker && x86'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL'
-                            args '--mount source=sonar-cache-py3exiv2bind,target=/opt/sonar/.sonar/cache --mount source=python-tmp-py3exiv2bind,target=/tmp'
+                            args '--mount source=sonar-cache-py3exiv2bind,target=/opt/sonar/.sonar/cache --mount source=python-tmp-py3exiv2bind,target=/tmp --tmpfs /venv:exec -e UV_PROJECT_ENVIRONMENT=/venv --tmpfs /.config:exec'
                         }
                     }
                     environment{
@@ -549,7 +549,7 @@ pipeline {
                                 )
                                 sh(
                                     label: 'Install project as editable module with ci dependencies',
-                                    script: '''uv pip install "pybind11>=2.13" "uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/releases/download/v0.5.0/uiucprescon_build-0.5.0-py3-none-any.whl"
+                                    script: '''VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT uv pip install "pybind11>=2.13" "uiucprescon.build @ https://github.com/UIUCLibrary/uiucprescon_build/releases/download/v0.5.0/uiucprescon_build-0.5.0-py3-none-any.whl"
                                                mkdir -p build/build_wrapper_output_directory
                                                build-wrapper-linux --out-dir build/build_wrapper_output_directory uv run setup.py build_clib build_ext --inplace --build-temp build/temp  --build-lib build/lib --debug -v
                                             '''
@@ -926,7 +926,7 @@ pipeline {
                                         checkout scm
                                         withEnv(["UV_CONFIG_FILE=${createUVConfig()}"]){
                                             try{
-                                                docker.image('python').inside('--mount source=python-tmp-py3exiv2bind,target=/tmp'){
+                                                docker.image('python').inside('--mount source=python-tmp-py3exiv2bind,target=/tmp --tmpfs /venv:exec -e UV_PROJECT_ENVIRONMENT=/venv --tmpfs /tox:exec  -e TOX_WORK_DIR=/tox'){
                                                     sh(script: 'python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv')
                                                     envs = sh(
                                                         label: 'Get tox environments',
@@ -960,7 +960,7 @@ pipeline {
                                                                 retry(maxRetries){
                                                                     try{
                                                                         withEnv(["UV_CONFIG_FILE=${createUVConfig()}"]){
-                                                                            image.inside('--mount source=python-tmp-py3exiv2bind,target=/tmp'){
+                                                                            image.inside('--mount source=python-tmp-py3exiv2bind,target=/tmp --tmpfs /venv:exec -e UV_PROJECT_ENVIRONMENT=/venv --tmpfs /tox:exec -e TOX_WORK_DIR=/tox'){
                                                                                 sh( label: 'Running Tox',
                                                                                     script: "uv run --only-group tox -p ${version} --python-preference only-system --with tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vvv"
                                                                                     )
@@ -993,6 +993,7 @@ pipeline {
                                  UV_TOOL_DIR='C:\\Users\\ContainerUser\\Documents\\uvtools'
                                  UV_PYTHON_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\cache\\uvpython'
                                  UV_CACHE_DIR='C:\\cache\\uvcache'
+                                 TOX_WORK_DIR='C:\\Users\\ContainerUser\\AppData\\Local\\Temp\\tox'
                              }
                              steps{
                                  script{
@@ -1050,12 +1051,13 @@ pipeline {
                                                                                 bat(label: 'Running Tox',
                                                                                     script: """uv python install cpython-${version}
                                                                                                uv run --only-group tox --with tox-uv tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv
+                                                                                               rmdir /S /Q %TOX_WORK_DIR%
                                                                                             """
                                                                                 )
                                                                             } catch(err){
                                                                                 cleanWs(
                                                                                     patterns: [
-                                                                                            [pattern: '.tox', type: 'INCLUDE'],
+                                                                                            [pattern: 'CMakeUserPresets.json', type: 'INCLUDE'],
                                                                                         ],
                                                                                     notFailBuild: true,
                                                                                     deleteDirs: true
@@ -1250,6 +1252,7 @@ pipeline {
                                                                     'UV_TOOL_DIR=C:\\Users\\ContainerUser\\Documents\\uvtools',
                                                                     'UV_PYTHON_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython',
                                                                     'UV_CACHE_DIR=C:\\cache\\uvcache',
+                                                                    'TOX_WORK_DIR=C:\\Users\\ContainerUser\\AppData\\Local\\Temp\\tox'
                                                                 ]){
                                                                     def image
                                                                     checkout scm
@@ -1273,7 +1276,7 @@ pipeline {
                                                                                                 try{
                                                                                                     bat(label: 'Running Tox',
                                                                                                         script: """uv run --only-group tox --with tox-uv tox run --runner=uv-venv-runner --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')} -vv
-                                                                                                                   rmdir /S /Q .tox
+                                                                                                                   rmdir /S /Q %TOX_WORK_DIR%
                                                                                                                 """
                                                                                                     )
                                                                                                 } finally{
