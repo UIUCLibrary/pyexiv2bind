@@ -36,6 +36,10 @@ test = [
 audit-dependencies = ['uv-secure']
 docs = ["sphinx", "setuptools", "toml; python_version < '3.11'"]
 tox = ["tox"]
+tox-uv = [
+    {include-group = "tox"},
+    "tox-uv-bare"
+]
 dev = [
     {include-group = "docs"},
     {include-group = "tox"},
