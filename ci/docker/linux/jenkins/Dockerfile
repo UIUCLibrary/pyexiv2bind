@@ -92,7 +92,7 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     fi && \
     uv run --only-group conan conan install /tmp -pr:b=default --build missing -pr:b=default && \
     uv run --only-group conan conan cache clean "*" -b --source --build --temp && \
-    if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
+    if [ -f "/tmp/remotes.json" ]; then \
       mv -f /tmp/remotes.json ${CONAN_HOME}/remotes.json; \
     fi && \
     mv -f /tmp/global.conf.original ${CONAN_HOME}/global.conf
