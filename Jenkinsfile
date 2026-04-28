@@ -176,15 +176,19 @@ def windows_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                 retry(3){
                                                     timeout(60){
                                                         try{
-                                                            bat(label: 'Running Tox',
-                                                                script: """python -m venv venv
-                                                                           venv\\Scripts\\pip install --disable-pip-version-check uv
-                                                                           venv\\Scripts\\uv python install ${pythonVersion.replace('+gil','')}
-                                                                           venv\\Scripts\\uv run --only-group=tox-uv --python ${pythonVersion} tox run -e py${pythonVersion.replace('.', '').replace('+gil', '')}  --installpkg ${it.path}
-                                                                           rmdir /S /Q venv
-                                                                           rmdir /S /Q .tox
-                                                                        """
-                                                            )
+                                                            bat """python -m venv venv
+                                                                   venv\\Scripts\\pip install --disable-pip-version-check uv
+                                                                   venv\\Scripts\\uv python install ${pythonVersion.replace('+gil','')}
+                                                                """
+                                                            def attempt = 0
+                                                            retry(2){
+                                                                attempt += 1
+                                                                withEnv([(attempt == 1) ? "UV_OFFLINE=1" : 'UV_OFFLINE=0']){
+                                                                    bat(label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
+                                                                        script: "venv\\Scripts\\uv run --only-group=tox-uv --python ${pythonVersion} tox run -e py${pythonVersion.replace('.', '').replace('+gil', '')}  --installpkg ${it.path}"
+                                                                    )
+                                                                }
+                                                            }
                                                         } catch (e){
                                                             bat 'dir dist\\'
                                                             throw e
@@ -266,14 +270,20 @@ def linux_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                                     "--label \"absoluteUrl=${currentBuild.absoluteUrl}\" --label \"BUILD_NUMBER=${currentBuild.number}\" " +
                                                                     '--mount source=python-tmp-py3exiv2bind,target=/tmp --tmpfs /.local/share:exec --tmpfs /.local/bin:exec'
                                                                 ){
-                                                                    timeout(60){
-                                                                        sh(
-                                                                            label: 'Testing with tox',
-                                                                            script: """uv python install ${pythonVersion.replace('+gil','')}
-                                                                                       uv run --only-group=tox-uv tox --installpkg ${findFiles(glob:'dist/*.whl')[0].path} -e py${pythonVersion.replace('.', '').replace('+gil','')}
-                                                                                       rm -rf .tox
-                                                                                    """
-                                                                        )
+                                                                    def attempt = 0
+                                                                    sh "uv python install ${pythonVersion.replace('+gil','')}"
+                                                                    retry(2){
+                                                                        attempt += 1
+                                                                        withEnv([(attempt == 1) ? "UV_OFFLINE=1" : 'UV_OFFLINE=0']){
+                                                                            timeout(60){
+                                                                                sh(
+                                                                                    label: 'Testing with tox',
+                                                                                    script: """uv run --only-group=tox-uv tox --installpkg ${findFiles(glob:'dist/*.whl')[0].path} -e py${pythonVersion.replace('.', '').replace('+gil','')}
+                                                                                               rm -rf .tox
+                                                                                            """
+                                                                                )
+                                                                            }
+                                                                        }
                                                                     }
                                                                 }
                                                             }
@@ -352,13 +362,21 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                         }
                                                         wheels.each{
                                                             try{
-                                                                withEnv(["UV_CONFIG_FILE=${createUVConfig()}", "TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"]){
-                                                                    timeout(60){
-                                                                        sh(label: 'Running Tox',
-                                                                           script: """python3 -m venv venv
-                                                                           ./venv/bin/python -m pip install --disable-pip-version-check uv
-                                                                           ./venv/bin/uv run --only-group=tox-uv --frozen tox run --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}"""
-                                                                        )
+                                                                def attempt = 0
+                                                                retry(2){
+                                                                    attempt += 1
+                                                                    withEnv([
+                                                                        (attempt == 1) ? "UV_OFFLINE=1" : 'UV_OFFLINE=0',
+                                                                        "UV_CONFIG_FILE=${createUVConfig()}",
+                                                                        "TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"
+                                                                    ]){
+                                                                        timeout(60){
+                                                                            sh(label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
+                                                                               script: """python3 -m venv venv
+                                                                               ./venv/bin/python -m pip install --disable-pip-version-check uv
+                                                                               ./venv/bin/uv run --only-group=tox-uv --frozen tox run --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}"""
+                                                                            )
+                                                                        }
                                                                     }
                                                                 }
                                                             } finally {
@@ -428,17 +446,25 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                 node("mac && python3 && ${arch}"){
                                                     try{
                                                         checkout scm
-                                                        withEnv(["UV_CONFIG_FILE=${createUVConfig()}", "TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"]){
-                                                            unstash "python${pythonVersion} mac-universal2 wheel"
-                                                            findFiles(glob: 'dist/*.whl').each{
-                                                                sh(label: 'Running Tox',
-                                                                   script: """python3 -m venv venv
-                                                                              trap 'rm -rf venv' EXIT
-                                                                              ./venv/bin/python -m pip install --disable-pip-version-check uv
-                                                                              trap "rm -rf venv && rm -rf .tox" EXIT
-                                                                              ./venv/bin/uv run --only-group=tox-uv --frozen --python=${pythonVersion} tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
-                                                                           """
-                                                                )
+                                                        def attempt = 0
+                                                        retry(2){
+                                                            attempt += 1
+                                                            withEnv([
+                                                                (attempt == 1) ? "UV_OFFLINE=1" : 'UV_OFFLINE=0',
+                                                                "UV_CONFIG_FILE=${createUVConfig()}",
+                                                                "TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"
+                                                            ]){
+                                                                unstash "python${pythonVersion} mac-universal2 wheel"
+                                                                findFiles(glob: 'dist/*.whl').each{
+                                                                    sh(label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
+                                                                       script: """python3 -m venv venv
+                                                                                  trap 'rm -rf venv' EXIT
+                                                                                  ./venv/bin/python -m pip install --disable-pip-version-check uv
+                                                                                  trap "rm -rf venv && rm -rf .tox" EXIT
+                                                                                  ./venv/bin/uv run --only-group=tox-uv --frozen --python=${pythonVersion} tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
+                                                                               """
+                                                                    )
+                                                                }
                                                             }
                                                         }
                                                         archiveArtifacts artifacts: 'dist/*.whl'
@@ -492,17 +518,24 @@ def get_sdist_linux(params, pythonVersions){
                                                 image.inside(
                                                     '--label=purpose=ci --label "JOB_NAME=$JOB_NAME" ' +
                                                     "--label \"absoluteUrl=${currentBuild.absoluteUrl}\" --label \"BUILD_NUMBER=${currentBuild.number}\" " +
-                                                    '--mount source=python-tmp-py3exiv2bind,target=/tmp'
+                                                    '--mount source=python-tmp-py3exiv2bind,target=/tmp --tmpfs /.local/share:exec --tmpfs /.local/bin:exec'
                                                 ){
+                                                    sh "uv python install ${pythonVersion.replace('+gil','')}"
                                                     findFiles(glob: 'dist/*.tar.gz').each{
                                                         retry(3){
                                                             try{
                                                                 timeout(60){
-                                                                    sh(label: 'Running Tox',
-                                                                       script: """trap 'rm -rf .tox' EXIT
-                                                                                  uv run --only-group=tox-uv --python=${pythonVersion} --python-preference only-system tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
-                                                                               """
-                                                                    )
+                                                                    def attempt = 0
+                                                                    retry(2){
+                                                                        attempt += 1
+                                                                        withEnv([(attempt == 1) ? "UV_OFFLINE=1" : 'UV_OFFLINE=0']){
+                                                                            sh(label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
+                                                                               script: """trap 'rm -rf .tox' EXIT
+                                                                                          uv run --only-group=tox-uv --python=${pythonVersion} --python-preference only-system tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
+                                                                                       """
+                                                                            )
+                                                                        }
+                                                                    }
                                                                 }
                                                             } catch(err){
                                                                 cleanWs(
@@ -573,18 +606,23 @@ def get_sdist_windows(params, pythonVersions){
                                                     image.inside(
                                                         '--label=purpose=ci --label "JOB_NAME=$JOB_NAME" ' +
                                                         "--label \"absoluteUrl=${currentBuild.absoluteUrl}\" --label \"BUILD_NUMBER=${currentBuild.number}\" " +
-                                                        '--mount type=volume,source=uv_python_cache_dir,target=$UV_PYTHON_CACHE_DIR --mount type=volume,source=pipcache,target=$PIP_CACHE_DIR '
-                                                        // + '--mount type=volume,source=uv_cache_dir,target=$UV_CACHE_DIR'
+                                                        '--mount type=volume,source=uv_python_cache_dir,target=$UV_PYTHON_CACHE_DIR --mount type=volume,source=pipcache,target=$PIP_CACHE_DIR ' +
+                                                        '--mount type=volume,source=uv_cache_dir,target=$UV_CACHE_DIR'
                                                     ){
+                                                        bat "uv python install ${pythonVersion.replace('+gil','')}"
                                                         unstash 'sdist'
                                                         findFiles(glob: 'dist/*.tar.gz').each{
                                                             timeout(60){
                                                                 try{
-                                                                    bat(label: 'Running Tox',
-                                                                        script: """uv run --only-group=tox-uv --frozen tox run --runner=uv-venv-runner --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')} -vv
-                                                                                   rmdir /S /Q %TOX_WORK_DIR%
-                                                                                """
-                                                                    )
+                                                                    def attempt = 0
+                                                                    retry(2){
+                                                                        attempt += 1
+                                                                        withEnv([(attempt == 1) ? "UV_OFFLINE=1" : 'UV_OFFLINE=0']){
+                                                                            bat(label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
+                                                                                script: "uv run --only-group=tox-uv --frozen tox run --runner=uv-venv-runner --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')} -vv"
+                                                                            )
+                                                                        }
+                                                                    }
                                                                 } finally{
                                                                     cleanWs(
                                                                         patterns: [
@@ -643,19 +681,24 @@ def get_sdist_macos(params, pythonVersions){
                                 findFiles(glob: 'dist/*.tar.gz').each{
                                     retry(3){
                                         try{
-                                            withEnv([
-                                                "UV_CONFIG_FILE=${createUVConfig()}",
-                                                "TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"
-                                            ]){
-                                                timeout(60){
-                                                    sh(label: 'Running Tox',
-                                                       script: """python3 -m venv venv
-                                                                  trap 'rm -rf venv' EXIT
-                                                                  ./venv/bin/python -m pip install --disable-pip-version-check uv
-                                                                  trap "rm -rf venv && rm -rf .tox" EXIT
-                                                                  ./venv/bin/uv run --only-group=tox-uv --frozen --python=${pythonVersion} tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
-                                                           """
-                                                    )
+                                            def attempt = 0
+                                            retry(2){
+                                                attempt += 1
+                                                withEnv([
+                                                    (attempt == 1) ? "UV_OFFLINE=1" : 'UV_OFFLINE=0',
+                                                    "UV_CONFIG_FILE=${createUVConfig()}",
+                                                    "TOX_UV_PATH=${WORKSPACE}/venv/bin/uv"
+                                                ]){
+                                                    timeout(60){
+                                                        sh(label: "Running Tox: ${(attempt == 1) ? 'Offline' : 'Online'}",
+                                                           script: """python3 -m venv venv
+                                                                      trap 'rm -rf venv' EXIT
+                                                                      ./venv/bin/python -m pip install --disable-pip-version-check uv
+                                                                      trap "rm -rf venv && rm -rf .tox" EXIT
+                                                                      ./venv/bin/uv run --only-group=tox-uv --frozen --python=${pythonVersion} tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '').replace('+gil', '')}
+                                                               """
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }finally{
