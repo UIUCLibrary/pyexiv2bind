@@ -734,7 +734,9 @@ def get_sonarqube_unresolved_issues(report_task_file){
     }
 }
 def calculateGCOV_PREFIX_STRIP(){
-    return sh(returnStdout: true, label: 'configuring GCOV_PREFIX_STRIP', script:'echo "$PWD" | awk -F/ \'{c=0; for(i=1;i<=NF;i++) if($i!="") c++; print c+2}\'')
+    def value = sh(returnStdout: true, label: 'configuring GCOV_PREFIX_STRIP', script:'echo "$PWD" | awk -F/ \'{c=0; for(i=1;i<=NF;i++) if($i!="") c++; print c+2}\'')
+    echo "Calculated GCOV_PREFIX_STRIP value: ${value}"
+    return value
 }
 
 // *****************************************************************************
