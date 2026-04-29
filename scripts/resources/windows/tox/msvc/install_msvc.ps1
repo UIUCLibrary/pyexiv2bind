@@ -239,7 +239,25 @@ function InstallMSVC{
     }
     Write-Host "Cleaning up Package Cache - Done"
 
+    # ======== Wait for Windows Update to finish ========
+    # It seems that installing MSVC build tools triggers Windows
+    # update. This generates a lot of extra unneeded files for
+    # the docker layer and bloats the image significantly.
+    # Waiting for the update to finish and then cleaning up the
+    # generated files seems to be the best solution to keep the
+    # layor size down.
 
+    $timeout = New-TimeSpan -Hours 1
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+    $installer = New-Object -ComObject Microsoft.Update.Installer
+    while ($installer.IsBusy) {
+        Write-Host "Windows Update is currently busy installing updates. Waiting..."
+        if ($stopwatch.Elapsed -gt $timeout) {
+            $stopwatch.Stop()
+            throw "Timeout exceeded: Operation took longer than 1 hour."
+        }
+        Start-Sleep -Seconds 30
+    }
     # ======== Cleanup SoftwareDistribution folder ========
     $SoftwareDistributionDownloadPath = "C:\Windows\SoftwareDistribution\Download"
     if (Test-Path "$SoftwareDistributionDownloadPath"){

@@ -59,7 +59,13 @@ generate_wheel(){
             exit 1
     esac
 
+    dockerPurposeLabel='build-wheel'
+    if [[ -v ci ]]; then
+        dockerPurposeLabel='ci'
+    fi
+
     docker build \
+        --label="purpose=$dockerPurposeLabel" \
         -t $docker_image_name_to_use \
         --platform=$platform \
         -f "$DOCKERFILE" \
@@ -115,6 +121,7 @@ generate_wheel(){
             echo 'Done'
             "
     docker run --rm \
+        --label="purpose=$dockerPurposeLabel" \
         --platform=$platform \
         -v "$PROJECT_ROOT":/project:ro \
         -v $OUTPUT_PATH:/dist \

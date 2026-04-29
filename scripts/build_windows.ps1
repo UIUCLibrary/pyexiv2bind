@@ -12,10 +12,14 @@ function Build-DockerImage {
         [string]$DockerExec = "docker.exe",
         [string]$DockerIsolation = "process"
     )
-
+    $dockerPurpose = "build-wheel"
+    if ($env:CI) {
+        $dockerPurpose = "ci"
+    }
     $projectRootDirectory = (Get-Item $PSScriptRoot).Parent.FullName
     $dockerArgsList = @(
         "build",
+        "--label=purpose=$dockerPurpose",
         "--isolation", $DockerIsolation,
         "--platform windows/amd64",
         "-f", $DockerfilePath,
@@ -55,8 +59,13 @@ function Build-Wheel {
     $UV_TOOL_DIR = "${containerCacheDir}\uvtools"
     $UV_PYTHON_CACHE_DIR = "${containerCacheDir}\uvpython"
 
+    $dockerPurpose = "build-wheel"
+    if ($env:CI) {
+        $dockerPurpose = "ci"
+    }
     $dockerArgsList = @(
         "run",
+        "--label=purpose=$dockerPurpose",
         "--isolation", $DockerIsolation,
         "--platform windows/amd64",
         "--rm",

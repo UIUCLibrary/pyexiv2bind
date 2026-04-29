@@ -11,7 +11,7 @@ ARG CONAN_CENTER_PROXY_V2_URL=https://center2.conan.io
 # If you want to use a diffrent remote for Conan, such as a proxy. Set the CONAN_CENTER_PROXY_V2_URL
 # Not this is only for building the image. The actual conan center proxy URL is set in the remotes.json file.
 
-ARG manylinux_image=quay.io/pypa/manylinux2014_x86_64
+ARG manylinux_image=quay.io/pypa/manylinux2014
 # Base image to use, this should be of the manylinux family. More info at: https://github.com/pypa/manylinux
 
 ARG UV_CACHE_DIR=/.cache/uv
@@ -33,7 +33,21 @@ RUN --mount=type=cache,target=/path/to/pipx/cache \
 # ==============================================================================
 FROM base AS conan_builder
 RUN --mount=type=cache,target=/var/cache/yum \
-    yum install -y jq
+    case $(uname -m) in \
+      x86_64)  yum install -y jq ;; \
+      aarch64) yum install -y wget gawk; \
+               DOWNLOAD_URL='https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-arm64' && \
+               EXPECTED_HASH='4dd2d8a0661df0b22f1bb9a1f9830f06b6f3b8f7d91211a1ef5d7c4f06a8b4a5' && \
+               wget $DOWNLOAD_URL -P /tmp && \
+               CALCULATED_HASH=$(sha256sum /tmp/jq-linux-arm64 | awk '{print $1}') && \
+               if [ "$CALCULATED_HASH" != "$EXPECTED_HASH" ]; then \
+                echo "Hash does not match. Expected: $EXPECTED_HASH. Got: $CALCULATED_HASH." && exit 1; \
+               fi && \
+               mv /tmp/jq-linux-arm64 /usr/local/bin/jq && \
+               chmod +x /usr/local/bin/jq ;; \
+    esac; \
+    jq --version && \
+    yum install -y perl-IPC-Cmd perl-Digest-SHA perl-Time-Piece
 
 ARG CONAN_USER_HOME
 ARG CONAN_HOME
@@ -66,7 +80,7 @@ RUN --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv run --only-group conan conan install /tmp --build missing && \
     uv run --only-group conan conan cache clean "*" -b --source --build --temp && \
     uv cache prune && \
-    if [ "$(jq -r '.remotes[0].url' ${CONAN_HOME}/remotes.json )" != "${CONAN_CENTER_PROXY_V2_URL}" ]; then \
+    if [ -f "/tmp/remotes.json" ]; then \
         mv -f /tmp/remotes.json ${CONAN_HOME}/remotes.json; \
     fi && \
     mv -f /tmp/global.conf.original ${CONAN_HOME}/global.conf
