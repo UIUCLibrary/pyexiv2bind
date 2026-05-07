@@ -87,7 +87,7 @@ RUN --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
 # ==============================================================================
 
 FROM base
-
+COPY --chmod=755 scripts/resources/package_for_linux/scripts/build-wheel.sh /usr/bin/build-wheel
 ARG CONAN_USER_HOME
 ARG CONAN_HOME
 COPY --from=conan_builder --chmod=777 ${CONAN_HOME}/ ${CONAN_HOME}/

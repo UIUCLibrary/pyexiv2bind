@@ -14,17 +14,17 @@ remove_venv(){
 }
 
 generate_venv_with_venv(){
-    base_python=$1
-    virtual_env=$2
-    trap "remove_venv $virtual_env" ERR SIGINT SIGTERM
-    $base_python -m venv $virtual_env
-    $virtual_env/bin/pip install --disable-pip-version-check uv
+    local base_python=$1
+    local virtual_env=$2
+    trap 'remove_venv "$virtual_env"' ERR SIGINT SIGTERM
+    $base_python -m venv "$virtual_env"
+    "$virtual_env/bin/pip" install --disable-pip-version-check uv
 }
 
 generate_wheel(){
-    uv_exec=$1
-    project_root=$2
-    python_version=$3
+    local uv_exec=$1
+    local project_root=$2
+    local python_version=$3
 
     # Get the processor type
     processor_type=$(uname -m)
@@ -53,19 +53,19 @@ generate_wheel(){
     out_temp_wheels_dir=$(mktemp -d /tmp/python_wheels.XXXXXX)
     output_path="./dist"
     echo "Building wheel for Python $python_version on macOS $processor_type"
-    trap "rm -rf $out_temp_wheels_dir" ERR SIGINT SIGTERM RETURN
+    trap 'rm -rf "$out_temp_wheels_dir"' ERR SIGINT SIGTERM RETURN
     _PYTHON_HOST_PLATFORM=$_PYTHON_HOST_PLATFORM MACOSX_DEPLOYMENT_TARGET=$MACOSX_DEPLOYMENT_TARGET ARCHFLAGS=$ARCHFLAGS $uv_exec build --wheel --out-dir=$out_temp_wheels_dir --python=$python_version $project_root
     pattern="$out_temp_wheels_dir/*.whl"
-    files=( $pattern )
+    files=( "$pattern" )
     undelocate_wheel="${files[0]}"
 
     echo ""
     echo "================================================================================"
     echo "${undelocate_wheel} is linked to the following:"
-    $uv_path run --only-group=package --python=$python_version delocate-listdeps --depending "${undelocate_wheel}"
+    $uv_exec run --frozen --only-group=package --python="$python_version" delocate-listdeps --depending "${undelocate_wheel}"
     echo ""
     echo "================================================================================"
-    $uv_path run --only-group=package --python=$python_version delocate-wheel -w $output_path --require-archs $REQUIRED_ARCH --verbose "$undelocate_wheel"
+    $uv_exec run --frozen --only-group=package --python="$python_version" delocate-wheel -w $output_path --require-archs $REQUIRED_ARCH --verbose "$undelocate_wheel"
 }
 
 
@@ -119,7 +119,7 @@ while [[ "$#" -gt 0 ]]; do
       ;;
   esac
 done
-if [ -z "{uv_path+x}" ]; then
+if [ -z "${uv_path+x}" ]; then
   uv_path=uv
 fi
 if [[ ! -f "$uv_path" ]]; then
@@ -129,7 +129,7 @@ if [[ ! -f "$uv_path" ]]; then
     uv_path=/tmp/uv/bin/uv
     echo "installed uv: $uv_path"
 else
-    echo "Using existing venv: $build_virtual_env"
+    echo "Using existing venv: $uv_path"
 fi
 
-generate_wheel $uv_path $PROJECT_ROOT $python_version
+generate_wheel "$uv_path" "$PROJECT_ROOT" "$python_version"
