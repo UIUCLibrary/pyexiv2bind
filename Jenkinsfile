@@ -1234,7 +1234,7 @@ pipeline {
                                                                                 '--mount source=python-tmp-py3exiv2bind,target=/tmp --tmpfs /venv:exec -e UV_PROJECT_ENVIRONMENT=/venv --tmpfs /tox:exec -e TOX_WORK_DIR=/tox'
                                                                             ){
                                                                                 sh( label: 'Running Tox',
-                                                                                    script: "uv run --only-group=tox-uv --frozen -p ${version} --python-preference only-system tox run -e ${toxEnv} --runner uv-venv-lock-runner -vvv"
+                                                                                    script: "uv run --only-group=tox-uv --frozen -p ${version} --python-preference only-system tox run -e ${toxEnv} --runner uv-venv-lock-runner --recreate -vvv"
                                                                                     )
                                                                             }
                                                                         }
@@ -1320,7 +1320,7 @@ pipeline {
                                                                             try{
                                                                                 bat(label: 'Running Tox',
                                                                                     script: """uv python install cpython-${version}
-                                                                                               uv run --only-group=tox-uv --frozen tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv
+                                                                                               uv run --only-group=tox-uv --frozen tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv --recreate
                                                                                                rmdir /S /Q %TOX_WORK_DIR%
                                                                                             """
                                                                                 )
