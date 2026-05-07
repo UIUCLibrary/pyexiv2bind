@@ -924,8 +924,8 @@ pipeline {
                                                     }
                                                 },
                                                 'Audit uv.lock File': {
-                                                    catchError(buildResult: 'UNSTABLE', message: 'uv-secure found issues', stageResult: 'UNSTABLE') {
-                                                        sh 'uv run uv-secure --disable-cache uv.lock'
+                                                    catchError(buildResult: 'UNSTABLE', message: 'uv audit', stageResult: 'UNSTABLE') {
+                                                        sh 'uv audit'
                                                     }
                                                 }
                                             ])
