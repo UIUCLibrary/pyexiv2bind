@@ -31,9 +31,7 @@ Download = "https://github.com/UIUCLibrary/pyexiv2bind"
 test = [
     "pytest",
     "pytest-bdd",
-    "coverage",
 ]
-audit-dependencies = ['uv-secure']
 docs = ["sphinx", "setuptools", "toml; python_version < '3.11'"]
 tox = ["tox"]
 tox-uv = [
@@ -45,14 +43,14 @@ dev = [
     {include-group = "tox"},
     {include-group = "test"},
     "bandit",
+    "coverage",
     "flake8",
     "gcovr",
     "importlib-metadata>=0.12; python_version < '3.8'",
     "lxml",
     "macholib ; sys_platform == 'darwin'",
     "mypy",
-    "pylint",
-    {include-group = "audit-dependencies"},
+    "pylint"
 ]
 conan =["conan>=2.0", "cmake<4.0"]
 cibuildwheel = ["cibuildwheel"]

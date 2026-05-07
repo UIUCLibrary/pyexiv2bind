@@ -77,7 +77,7 @@ RUN --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
           cp ${CONAN_HOME}/remotes.json /tmp/remotes.json && \
           uv run --only-group conan conan remote update conan-center --url ${CONAN_CENTER_PROXY_V2_URL}; \
         fi && \
-    uv run --only-group conan conan install /tmp --build missing && \
+    uv run --only-group conan conan install /tmp --build missing -c tools.graph:skip_test=True -c tools.build:skip_test=True && \
     uv run --only-group conan conan cache clean "*" -b --source --build --temp && \
     uv cache prune && \
     if [ -f "/tmp/remotes.json" ]; then \
@@ -87,7 +87,7 @@ RUN --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
 # ==============================================================================
 
 FROM base
-
+COPY --chmod=755 scripts/resources/package_for_linux/scripts/build-wheel.sh /usr/bin/build-wheel
 ARG CONAN_USER_HOME
 ARG CONAN_HOME
 COPY --from=conan_builder --chmod=777 ${CONAN_HOME}/ ${CONAN_HOME}/

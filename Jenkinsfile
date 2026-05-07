@@ -734,7 +734,9 @@ def get_sonarqube_unresolved_issues(report_task_file){
     }
 }
 def calculateGCOV_PREFIX_STRIP(){
-    return sh(returnStdout: true, label: 'configuring GCOV_PREFIX_STRIP', script:'echo "$PWD" | awk -F/ \'{c=0; for(i=1;i<=NF;i++) if($i!="") c++; print c+2}\'')
+    def value = sh(returnStdout: true, label: 'configuring GCOV_PREFIX_STRIP', script:'echo "$PWD" | awk -F/ \'{c=0; for(i=1;i<=NF;i++) if($i!="") c++; print c+2}\'')
+    echo "Calculated GCOV_PREFIX_STRIP value: ${value}"
+    return value
 }
 
 // *****************************************************************************
@@ -774,7 +776,7 @@ pipeline {
                             filename 'ci/docker/linux/jenkins/Dockerfile'
                             label 'linux && docker && x86'
                             additionalBuildArgs '--label=purpose=ci --build-arg PIP_EXTRA_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL'
-                            args "--label=purpose=ci --label \"absoluteUrl=${currentBuild.absoluteUrl}\" --label \"JOB_NAME=${env.JOB_NAME}\" --label \"BUILD_NUMBER=${currentBuild.number}\" --mount source=sonar-cache-py3exiv2bind,target=/opt/sonar/.sonar/cache --mount source=python-tmp-py3exiv2bind,target=/tmp --tmpfs /venv:exec -e UV_PROJECT_ENVIRONMENT=/venv --tmpfs /.config:exec"
+                            args "--label=purpose=ci --label \"absoluteUrl=${currentBuild.absoluteUrl}\" --label \"JOB_NAME=${env.JOB_NAME}\" --label \"BUILD_NUMBER=${currentBuild.number}\" --mount source=sonar-cache-py3exiv2bind,target=/opt/sonar/.sonar/cache --mount source=python-tmp-py3exiv2bind,target=/tmp --tmpfs /venv:exec -e UV_PROJECT_ENVIRONMENT=/venv --tmpfs /.config:exec --tmpfs /.tree-sitter:exec "
                         }
                     }
                     environment{
@@ -922,8 +924,8 @@ pipeline {
                                                     }
                                                 },
                                                 'Audit uv.lock File': {
-                                                    catchError(buildResult: 'UNSTABLE', message: 'uv-secure found issues', stageResult: 'UNSTABLE') {
-                                                        sh 'uv run uv-secure --disable-cache uv.lock'
+                                                    catchError(buildResult: 'UNSTABLE', message: 'uv audit', stageResult: 'UNSTABLE') {
+                                                        sh 'uv audit'
                                                     }
                                                 }
                                             ])
@@ -1133,7 +1135,7 @@ pipeline {
                                             // When released, upgrade pysonar and pin pysonar again
                                             sh(
                                                 label: 'Running Sonar Scanner',
-                                                script: 'uvx pysonar -t $token -Dsonar.projectVersion=$VERSION -Dsonar.buildString="$BUILD_TAG" -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.compile-commands=build/build_wrapper_output_directory/compile_commands.json -Dsonar.python.coverage.reportPaths=./reports/coverage/coverage-python.xml -Dsonar.cfamily.cobertura.reportPaths=reports/coverage/coverage_cpp.xml ' + (env.CHANGE_ID ?  '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$CHANGE_TARGET' : '-Dsonar.branch.name=$BRANCH_NAME')
+                                                script: 'uv run pysonar -t $token -Dsonar.projectVersion=$VERSION -Dsonar.buildString="$BUILD_TAG" -Dsonar.cfamily.cache.enabled=false -Dsonar.cfamily.threads=$(grep -c ^processor /proc/cpuinfo) -Dsonar.cfamily.compile-commands=build/build_wrapper_output_directory/compile_commands.json -Dsonar.python.coverage.reportPaths=./reports/coverage/coverage-python.xml -Dsonar.cfamily.cobertura.reportPaths=reports/coverage/coverage_cpp.xml ' + (env.CHANGE_ID ?  '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$CHANGE_TARGET' : '-Dsonar.branch.name=$BRANCH_NAME')
                                             )
                                         }
                                     }
@@ -1232,7 +1234,7 @@ pipeline {
                                                                                 '--mount source=python-tmp-py3exiv2bind,target=/tmp --tmpfs /venv:exec -e UV_PROJECT_ENVIRONMENT=/venv --tmpfs /tox:exec -e TOX_WORK_DIR=/tox'
                                                                             ){
                                                                                 sh( label: 'Running Tox',
-                                                                                    script: "uv run --only-group=tox-uv --frozen -p ${version} --python-preference only-system tox run -e ${toxEnv} --runner uv-venv-lock-runner -vvv"
+                                                                                    script: "uv run --only-group=tox-uv --frozen -p ${version} --python-preference only-system tox run -e ${toxEnv} --runner uv-venv-lock-runner --recreate -vvv"
                                                                                     )
                                                                             }
                                                                         }
@@ -1318,7 +1320,7 @@ pipeline {
                                                                             try{
                                                                                 bat(label: 'Running Tox',
                                                                                     script: """uv python install cpython-${version}
-                                                                                               uv run --only-group=tox-uv --frozen tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv
+                                                                                               uv run --only-group=tox-uv --frozen tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv --recreate
                                                                                                rmdir /S /Q %TOX_WORK_DIR%
                                                                                             """
                                                                                 )
@@ -1403,7 +1405,7 @@ pipeline {
                                 docker{
                                     image 'ghcr.io/astral-sh/uv:debian'
                                     label 'linux && docker'
-                                    args '--mount source=python-tmp-py3exiv2bind,target=/tmp'
+                                    args "--label=purpose=ci --label \"JOB_NAME=\$JOB_NAME\" --label \"absoluteUrl=${currentBuild.absoluteUrl}\" --label \"BUILD_NUMBER=${currentBuild.number}\" --tmpfs /.config  --tmpfs /.local/share:exec --tmpfs /tmp_data:exec -e UV_PROJECT_ENVIRONMENT=/tmp_data/.venv --mount source=python-tmp-py3exiv2bind,target=/tmp"
                                   }
                             }
                             environment{
