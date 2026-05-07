@@ -21,7 +21,6 @@ SKIP_DIRS_NAMED=(\
 
 REMOVE_FILES_FIRST=(\
   'CMakeUserPresets.json'
-  'conan.lock'
   )
 
 print_usage(){
