@@ -1242,7 +1242,6 @@ publish = [
     { name = "twine" },
 ]
 test = [
-    { name = "coverage" },
     { name = "pytest" },
     { name = "pytest-bdd" },
 ]
@@ -1310,7 +1309,6 @@ docs = [
 package = [{ name = "delocate", marker = "sys_platform == 'darwin'" }]
 publish = [{ name = "twine" }]
 test = [
-    { name = "coverage" },
     { name = "pytest" },
     { name = "pytest-bdd" },
 ]

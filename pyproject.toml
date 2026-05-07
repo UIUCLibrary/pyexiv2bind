@@ -31,7 +31,6 @@ Download = "https://github.com/UIUCLibrary/pyexiv2bind"
 test = [
     "pytest",
     "pytest-bdd",
-    "coverage",
 ]
 docs = ["sphinx", "setuptools", "toml; python_version < '3.11'"]
 tox = ["tox"]
@@ -44,6 +43,7 @@ dev = [
     {include-group = "tox"},
     {include-group = "test"},
     "bandit",
+    "coverage",
     "flake8",
     "gcovr",
     "importlib-metadata>=0.12; python_version < '3.8'",
