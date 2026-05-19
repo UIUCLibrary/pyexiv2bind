@@ -421,7 +421,7 @@ def mac_wheels(pythonVersions, testPackages, params, wheelStashes){
                                                    )
                                                def fusedWheel = findFiles(excludes: '', glob: 'out/*.whl')[0]
                                                def props = readTOML( file: 'pyproject.toml')['project']
-                                               def universalWheel = "py3exiv2bind-${props.version}-cp${pythonVersion.replace('.', '').replace('+git', '')}-cp${pythonVersion.replace('.','').replace('+gil', '')}-macosx_11_0_universal2.whl"
+                                               def universalWheel = "py3exiv2bind-${props.version}-cp${pythonVersion.replace('.', '').replace('+gil', '')}-cp${pythonVersion.replace('.','').replace('+gil', '')}-macosx_11_0_universal2.whl"
                                                sh "mv ${fusedWheel.path} ./dist/${universalWheel}"
                                                stash includes: 'dist/*.whl', name: "python${pythonVersion} mac-universal2 wheel"
                                                wheelStashes << "python${pythonVersion} mac-universal2 wheel"
