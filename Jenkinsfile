@@ -1304,7 +1304,9 @@ pipeline {
                                                         checkout scm
                                                         lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
                                                             retry(maxRetries){
-                                                                image = docker.build(UUID.randomUUID().toString(), '-f scripts/resources/windows/tox/Dockerfile --label=purpose=ci --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL --build-arg CHOCOLATEY_SOURCE' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                                timeout(240){
+                                                                    image = docker.build(UUID.randomUUID().toString(), '-f scripts/resources/windows/tox/Dockerfile --label=purpose=ci --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL --build-arg CHOCOLATEY_SOURCE' + (env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE ? " --build-arg FROM_IMAGE=${env.DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE} ": ' ') + '.')
+                                                                }
                                                             }
                                                         }
                                                         try{
@@ -1318,12 +1320,14 @@ pipeline {
                                                                     withEnv(["UV_CONFIG_FILE=${createUVConfig()}"]){
                                                                         retry(maxRetries){
                                                                             try{
-                                                                                bat(label: 'Running Tox',
-                                                                                    script: """uv python install cpython-${version}
-                                                                                               uv run --only-group=tox-uv --frozen tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv --recreate
-                                                                                               rmdir /S /Q %TOX_WORK_DIR%
-                                                                                            """
-                                                                                )
+                                                                                timeout(120){
+                                                                                    bat(label: 'Running Tox',
+                                                                                        script: """uv python install cpython-${version}
+                                                                                                   uv run --only-group=tox-uv --frozen tox run -e ${toxEnv} --runner uv-venv-lock-runner -vv --recreate
+                                                                                                   rmdir /S /Q %TOX_WORK_DIR%
+                                                                                                """
+                                                                                    )
+                                                                                }
                                                                             } catch(err){
                                                                                 cleanWs(
                                                                                     patterns: [
@@ -1338,7 +1342,9 @@ pipeline {
                                                                     }
                                                                 }
                                                             } finally {
-                                                                bat "${tool(name: 'Default', type: 'git')} clean -dffx"
+                                                                timeout(10){
+                                                                    bat "${tool(name: 'Default', type: 'git')} clean -dffx"
+                                                                }
                                                             }
                                                         } finally{
                                                             if (image){
