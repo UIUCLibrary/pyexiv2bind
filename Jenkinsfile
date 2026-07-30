@@ -1063,11 +1063,18 @@ pipeline {
                                     }
                                     post{
                                         always{
-                                            sh(label: 'Creating gcovr coverage report',
-                                               script: '''uv run gcovr --root $WORKSPACE --print-summary --exclude \'/.*/build/\' --json=$WORKSPACE/reports/coverage/coverage_cpp_tests.json --txt=$WORKSPACE/reports/coverage/text_cpp_tests_summary.txt --exclude-throw-branches --gcov-object-directory=$WORKSPACE/build/cpp build/cpp
-                                                          cat reports/coverage/text_cpp_tests_summary.txt
-                                                       '''
-                                            )
+                                            script{
+                                                try{
+                                                    sh(label: 'Creating gcovr coverage report',
+                                                       script: '''uv run gcovr --root $WORKSPACE --filter=src/py3exiv2bind/  --filter=src/py3exiv2bind/core --filter=src/py3exiv2bind/core/glue  --keep --print-summary --json=$WORKSPACE/reports/coverage/coverage_cpp_tests.json --txt=$WORKSPACE/reports/coverage/text_cpp_tests_summary.txt --exclude-throw-branches --exclude-unreachable-branches --gcov-object-directory=$WORKSPACE/build/cpp build/cpp/src
+                                                                  cat reports/coverage/text_cpp_tests_summary.txt
+                                                               '''
+                                                    )
+                                                } catch (e){
+                                                    sh(label: 'locating gcno and gcda files', script: 'find . \\( -name "*.gcno" -o -name "*.gcda" \\)')
+                                                    throw e
+                                                }
+                                            }
                                         }
                                     }
                                 }
