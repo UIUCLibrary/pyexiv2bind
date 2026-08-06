@@ -1663,16 +1663,16 @@ wheels = [
 
 [[package]]
 name = "pysonar"
-version = "1.5.0.4793"
+version = "1.7.0.5143"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jproperties" },
     { name = "requests" },
     { name = "tomli" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f1/36/563d1e96dc7105b33d65cba2cc25df3eeb838aabd87a6e821051cce07c37/pysonar-1.5.0.4793.tar.gz", hash = "sha256:52791bcb8b01efd7dc203a5428f2b1b48b19269bc2982582d6e4e5f127716ac3", size = 28328, upload-time = "2026-04-30T12:38:40.371Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/11/1f/854da1093b491a42ecdc7138504ffcaef23da61efc586ae572553b76dbe2/pysonar-1.7.0.5143.tar.gz", hash = "sha256:60222644179e3127efa205ecfb20911bf96bbeaa6f443df20da528f809dba01c", size = 30924, upload-time = "2026-07-08T08:27:13.064Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c3/9b/33b693c772e662d47bbde5890b939690e0ba9a5dff252bcd6e6ceae8285d/pysonar-1.5.0.4793-py3-none-any.whl", hash = "sha256:c55113e592562a5eddab6090c437cc60dde73e4cc6fea74b1292d438c62865d6", size = 42470, upload-time = "2026-04-30T12:38:39.464Z" },
+    { url = "https://files.pythonhosted.org/packages/f8/9e/16b4c5a07acfcb018ca004245b3e6971016c877299b08fdfd24deb20957e/pysonar-1.7.0.5143-py3-none-any.whl", hash = "sha256:79710c3616d19a38719a8d0a0472df9281357e81842611b557b7aecfd1842786", size = 46060, upload-time = "2026-07-08T08:27:12.102Z" },
 ]
 
 [[package]]
