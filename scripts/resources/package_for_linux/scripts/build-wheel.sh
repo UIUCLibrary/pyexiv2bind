@@ -24,7 +24,7 @@ REMOVE_FILES_FIRST=(\
   )
 
 print_usage(){
-    echo "Usage: $0 SOURCE_DIRECTORY OUTPUT_DIRECTORY PYTHON_VERSION [PYTHON_VERSION...] [--help]"
+    echo "Usage: $0 SOURCE_DIRECTORY OUTPUT_DIRECTORY PYTHON_VERSION [PYTHON_VERSION...] [--build-constraints=PATH] [--help]"
 }
 
 show_help() {
@@ -32,6 +32,7 @@ show_help() {
   echo "  SOURCE_DIRECTORY   : path to project source code.                             "
   echo "  OUTPUT_DIRECTORY   : path to create wheel files.                              "
   echo "  PYTHON_VERSION     : Python version to generate wheel file for.               "
+  echo "  --build-constraints: Optional path to a constraints file used building wheel. "
   echo "                                                                                "
   echo "  --help, -h       : Display this help message.                                 "
 }
@@ -84,6 +85,8 @@ make_wheels() {
   local build_constraints=$3
   local python_versions=("${@:4}")
   local output_manifest
+  echo "project_directory = $project_directory"
+#  exit 1
   output_manifest="$(mktemp)"
   touch output_manifest
   mkdir -p "$dist_directory"
@@ -118,14 +121,59 @@ fix_up_wheels(){
       auditwheel show "$file"
   done
 }
+for arg in "$@"; do
+  if [[ "$arg" == "--help" || "$arg" == "-h" ]]; then
+    show_help
+    exit 0
+  fi
+done
+
+if [[ $# -lt 2 ]]; then
+  echo "Error: SOURCE_DIRECTORY and OUTPUT_DIRECTORY are required."
+  print_usage
+  exit 1
+fi
+
 source_directory="$1"
 output_directory="$2"
-python_versions_to_use=("${@:3}")
+shift 2
+
+build_constraints=""
+python_versions_to_use=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --build-constraints=*)
+      build_constraints="${1#*=}"
+      shift
+      ;;
+    --build-constraints)
+      build_constraints="$2"
+      shift 2
+      ;;
+    --help|-h)
+      show_help
+      exit 0
+      ;;
+    *)
+      python_versions_to_use+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if [[ ${#python_versions_to_use[@]} -eq 0 ]]; then
+  echo "Error: at least one Python version is required."
+  print_usage
+  exit 1
+fi
+
 echo "Building wheels for Python versions: ${python_versions_to_use[*]}"
 make_shadow_copy "$source_directory" "$WORKSPACE"
-build_constraints=/tmp/constraints.txt
-uv export --frozen --only-group dev --no-hashes --format requirements.txt --no-emit-project --no-annotate --directory "${WORKSPACE}" > $build_constraints
-make_wheels "$WORKSPACE" "/tmp/dist" "${build_constraints}" "${python_versions_to_use[@]}"
+if [[ -z "$build_constraints" ]]; then
+  build_constraints=/tmp/constraints.txt
+  uv export --frozen --only-group dev --no-hashes --format requirements.txt --no-emit-project --no-annotate --directory "${WORKSPACE}" > "$build_constraints"
+fi
+make_wheels "$WORKSPACE" "/tmp/dist" "${WORKSPACE}/${build_constraints}" "${python_versions_to_use[@]}"
 verify_package_with_twine "/tmp/dist" "${source_directory}"
 fix_up_wheels "/tmp/dist" "${output_directory}"
 echo 'Done'

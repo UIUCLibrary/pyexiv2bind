@@ -28,7 +28,7 @@ function CreateNewWheel {
         [string]$OutputDir
 
     )
-    uv build --python=$PythonVersion --wheel --out-dir=$OutputDir --config-setting=conan_cache=$CONAN_CACHE_DIR --verbose $SourcePath
+    uv build --python=$PythonVersion --wheel --out-dir=$OutputDir --config-setting=conan_cache=$CONAN_CACHE_DIR --verbose $SourcePath --build-constraints="$SourcePath/requirements-build.txt"
     if ($LASTEXITCODE -ne 0) {
         throw "An error creating Wheel for Python version $PythonVersion."
     }

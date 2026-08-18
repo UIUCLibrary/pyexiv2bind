@@ -7,6 +7,7 @@ DEFAULT_PYTHON_VERSION="3.10"
 DOCKERFILE=$(realpath "$scriptDir/resources/package_for_linux/Dockerfile")
 DEFAULT_DOCKER_IMAGE_NAME="pyexiv2bind_builder"
 OUTPUT_PATH="$PROJECT_ROOT/dist"
+BUILD_CONSTRAINTS="$PROJECT_ROOT/requirements-build.txt"
 
 arch=$(uname -m)
 
@@ -68,11 +69,11 @@ generate_wheel(){
         -v "$PROJECT_ROOT":/project:ro \
         -v "$OUTPUT_PATH":/dist \
         "$docker_image_name_to_use" \
-        build-wheel /project /dist "${python_versions_to_use[@]}"
+        build-wheel /project /dist "${python_versions_to_use[@]}" --build-constraints="requirements-build.txt"
     echo "Built wheel can be found in '$OUTPUT_PATH'"
 }
 print_usage(){
-    echo "Usage: $0 [--project-root[=PROJECT_ROOT]] [--python-version[=PYTHON_VERSION]] [--help]"
+    echo "Usage: $0 [--project-root[=PROJECT_ROOT]] [--python-version[=PYTHON_VERSION]] [--build-constraints[=PATH]] [--help]"
 }
 #
 show_help() {
@@ -84,6 +85,7 @@ show_help() {
   echo "  --python-version : Version of Python wheel to build. This can be specified    "
   echo "                   multiple times to build for multiple versions.               "
   echo "                   Defaults to \"$DEFAULT_PYTHON_VERSION\".                     "
+  echo "  --build-constraints: Optional path to a constraints file passed to uv build. "
   echo "  --platform       : Platform to build the wheel for.                           "
   echo "                   Defaults to \"$DEFAULT_PLATFORM\".                           "
   echo "  --docker-image-name                                                           "
@@ -162,6 +164,14 @@ while [[ "$#" -gt 0 ]]; do
       ;;
     --platform)
       PLATFORM="$2"
+      shift 2
+      ;;
+    --build-constraints=*)
+      BUILD_CONSTRAINTS="${1#*=}"
+      shift
+      ;;
+    --build-constraints)
+      BUILD_CONSTRAINTS="$2"
       shift 2
       ;;
     *)
