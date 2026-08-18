@@ -6,6 +6,8 @@ PROJECT_ROOT=$(realpath "$scriptDir/..")
 DEFAULT_PYTHON_VENV="./wheel_builder_venv"
 DEFAULT_BASE_PYTHON="python3"
 DEFAULT_PYTHON_VERSION=3.10
+BUILD_CONSTRAINTS="$PROJECT_ROOT/requirements-build.txt"
+
 remove_venv(){
     if [ -d $1 ]; then
         echo "removing $1"
@@ -54,7 +56,7 @@ generate_wheel(){
     output_path="./dist"
     echo "Building wheel for Python $python_version on macOS $processor_type"
     trap 'rm -rf "$out_temp_wheels_dir"' ERR SIGINT SIGTERM RETURN
-    _PYTHON_HOST_PLATFORM=$_PYTHON_HOST_PLATFORM MACOSX_DEPLOYMENT_TARGET=$MACOSX_DEPLOYMENT_TARGET ARCHFLAGS=$ARCHFLAGS $uv_exec build --wheel --out-dir=$out_temp_wheels_dir --python=$python_version $project_root
+    _PYTHON_HOST_PLATFORM=$_PYTHON_HOST_PLATFORM MACOSX_DEPLOYMENT_TARGET=$MACOSX_DEPLOYMENT_TARGET ARCHFLAGS=$ARCHFLAGS $uv_exec build --build-constraints="$BUILD_CONSTRAINTS" --wheel --out-dir=$out_temp_wheels_dir --python=$python_version $project_root
     pattern="$out_temp_wheels_dir/*.whl"
     files=( "$pattern" )
     undelocate_wheel="${files[0]}"
@@ -70,7 +72,7 @@ generate_wheel(){
 
 
 print_usage(){
-     echo "Usage: $0 [--uv path] [--python-version version]"
+     echo "Usage: $0 [--uv path] [--python-version version] [--build-constraints path]"
 }
 
 
@@ -80,6 +82,7 @@ show_help() {
   echo "Arguments:"
   echo "  --uv[=path]           Path to uv executable. If not provided, defaults to 'uv' and if that is missing, a copy will be downloaded."
   echo "  --python-version[=version]      Python version to generate wheel for. Default is $DEFAULT_PYTHON_VERSION."
+  echo "  --build-constraints[=path]      Optional path to a constraints file passed to uv build. Default is $BUILD_CONSTRAINTS."
   echo "  --help, -h            Display this help message."
 }
 
@@ -111,6 +114,15 @@ while [[ "$#" -gt 0 ]]; do
       ;;
     --uv)
       uv_path="$2"
+      shift 2
+      ;;
+
+    --build-constraints=*)
+      BUILD_CONSTRAINTS="${1#*=}"
+      shift
+      ;;
+    --build-constraints)
+      BUILD_CONSTRAINTS="$2"
       shift 2
       ;;
 
