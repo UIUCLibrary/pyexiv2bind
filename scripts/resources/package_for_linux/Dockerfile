@@ -26,10 +26,6 @@ FROM ${manylinux_image} AS base
 RUN --mount=type=cache,target=/var/cache/yum \
     yum install -y lndir
 
-# This needed to use uvx with --constraint option
-RUN --mount=type=cache,target=/path/to/pipx/cache \
-    pipx install "uv>=0.6.5" --force
-
 # ==============================================================================
 FROM base AS conan_builder
 RUN --mount=type=cache,target=/var/cache/yum \
