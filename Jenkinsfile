@@ -511,7 +511,9 @@ def get_sdist_linux(params, pythonVersions){
                                 ]){
                                     def image
                                     try{
-                                        image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/linux/tox/Dockerfile --label=purpose=ci --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL .')
+                                        retry(3){
+                                            image = docker.build(UUID.randomUUID().toString(), '-f ci/docker/linux/tox/Dockerfile --label=purpose=ci --build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CONAN_CENTER_PROXY_V2_URL .')
+                                        }
                                         try{
                                             withEnv(["UV_CONFIG_FILE=${createUVConfig()}"]){
                                                 unstash 'sdist'
@@ -1306,7 +1308,7 @@ pipeline {
                                                  "Tox Environment: ${toxEnv}",
                                                  {
                                                      node('docker && windows'){
-                                                        def maxRetries = 1
+                                                        def maxRetries = 2
                                                         def image
                                                         checkout scm
                                                         lock("${env.JOB_NAME} - ${env.NODE_NAME}"){
