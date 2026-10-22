@@ -146,6 +146,7 @@ before-build = [
 
 [tool.cibuildwheel.windows.environment]
 CONAN_USER_HOME="$TEMP/conan"
+CONAN_HOME="$TEMP/conan/.conan2"
 
 [tool.cibuildwheel.linux]
 manylinux-x86_64-image = "quay.io/pypa/manylinux_2_28"
