@@ -136,8 +136,8 @@ MACOSX_DEPLOYMENT_TARGET="10.15"
 [tool.cibuildwheel.windows]
 before-all = [
     "pip install --disable-pip-version-check uv",
-    "uv run --only-group conan conan profile detect --exist-ok",
-    "uv run --only-group conan conan install conanfile.py --build missing -pr:b=default -of build\\conan\\temp",
+    "uv run --only-group conan --with=ninja conan profile detect --exist-ok",
+    "uv run --only-group conan --with=ninja conan install conanfile.py --build missing -pr:b=default -of build\\conan\\temp --conf=tools.cmake.cmaketoolchain:generator=Ninja -c tools.graph:skip_test=True -c tools.build:skip_test=True",
     "rmdir /S /Q build\\conan\\temp",
 ]
 before-build = [
