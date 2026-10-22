@@ -100,7 +100,7 @@ test-requires = [
 test-command = [
     "pytest {package}/tests -o pythonpath="
 ]
-build-frontend = "build"
+build-frontend = "build[uv]"
 skip = [
     "cp36-*",
     "cp37-*",
@@ -111,7 +111,7 @@ skip = [
     "*-manylinux_i686"
 ]
 environment-pass = ["CONAN_COMPILER_LIBCXX", "CONAN_COMPILER_VERSION", "CONAN_USER_HOME"]
-
+dependency-versions = { file = "./requirements-build.txt" }
 [tool.cibuildwheel.macos]
 
 before-all = [
