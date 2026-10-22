@@ -82,10 +82,12 @@ jobs:
         if: contains(matrix.os, 'windows')
         shell: cmd
         run: |
-          rmdir /S /Q C:\\Strawberry
-          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uv run --only-group conan conan profile detect --exist-ok
-          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uv run --only-group conan conan install conanfile.py --build missing -of %TEMP%/ciwheelbuilder -pr:b=default 
-          "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uv run --only-group tox --with tox-uv tox -e ${{ steps.tox-env.outputs.result }}
+          for /f "usebackq tokens=*" %%i in (`vswhere.exe -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
+            set "VS_PATH=%%i"
+          )
+          call "%VS_PATH%\Common7\Tools\vsdevcmd.bat" -arch=amd64 && uv run --only-group conan conan profile detect --exist-ok
+          call "%VS_PATH%\Common7\Tools\vsdevcmd.bat" -arch=amd64 && uv run --only-group conan conan install conanfile.py --build missing -of %TEMP%/ciwheelbuilder -pr:b=default 
+          call "%VS_PATH%\Common7\Tools\vsdevcmd.bat" -arch=amd64 && uv run --only-group tox --with tox-uv tox -e ${{ steps.tox-env.outputs.result }}
         env:
           CONAN_USER_HOME: ${{ matrix.conan_user_home }}
           SAMPLE_IMAGES_ARCHIVE: "${{ github.workspace }}/sampledata/sample_images.tar.gz"
