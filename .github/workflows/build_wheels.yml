@@ -49,7 +49,6 @@ jobs:
         if: contains(matrix.os, 'windows')
         shell: cmd
         run: |
-          rmdir /S /Q C:\\Strawberry
           "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64 && uv run --only-group cibuildwheel -m cibuildwheel --output-dir wheelhouse
         env:
           CONAN_COMPILER_VERSION: ${{ matrix.compiler_version }}
