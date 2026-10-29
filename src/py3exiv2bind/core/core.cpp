@@ -11,9 +11,13 @@
 #include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 
+// GCOVR_EXCL_BR_START
+// ignore branch cover because it keeps getting it wrong
+
 // PyBind11 library generates warnings for clang-tidy that I can't do anything about
 // NOLINTNEXTLINE
 PYBIND11_MODULE(core, m, pybind11::mod_gil_not_used()){
+// GCOVR_EXCL_BR_STOP
     pybind11::options options;
     options.enable_function_signatures();
     m.doc() = R"pbdoc(
